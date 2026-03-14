@@ -32,28 +32,24 @@ public class ChannelManager {
 
     private final Gateway gateway;
 
-    // 核心魔法：Spring 会自动把所有实现了 ChannelAdapter 的 Bean 塞进这个 List 里
     @Autowired
     public ChannelManager(List<ChannelAdapter> adapters, Gateway gateway) {
         this.gateway = gateway;
         for (ChannelAdapter adapter : adapters) {
             registry.put(adapter.getChannelName(), adapter);
-            log.info("[Manager] 成功注册渠道插件: " + adapter.getChannelName());
+            log.info("[Manager] 成功注册channel插件: " + adapter.getChannelName());
         }
     }
 
-    // Spring Boot 启动完成后自动执行
     @PostConstruct
     public void startAllChannels() {
-        log.info("[Manager] 正在启动所有渠道监听服务...");
+        log.info("[Manager] 正在启动所有channel监听服务...");
         for (ChannelAdapter adapter : registry.values()) {
-            // 必须异步启动！因为 Netty 的 bind().sync() 会阻塞线程
-            // 如果不异步，Spring Boot 将永远卡在这里无法完成启动
             CompletableFuture.runAsync(() -> {
                 try {
                     adapter.startListening(gateway);
                 } catch (Exception e) {
-                    log.error("[Manager] 渠道 " + adapter.getChannelName() + " 启动失败: " + e.getMessage());
+                    log.error("[Manager] channel: " + adapter.getChannelName() + " 启动失败: " + e.getMessage());
                 }
             });
         }
@@ -61,20 +57,20 @@ public class ChannelManager {
 
     @Scheduled(fixedRate = 30000)
     public void healthCheckProbes() {
-        log.info("[Watchdog] 开始执行全渠道健康巡检...");
+        log.info("[Watchdog] 开始执行channel健康巡检...");
 
         for (ChannelAdapter adapter : registry.values()) {
             try {
                 if (!adapter.isHealthy()) {
-                    log.error("[Watchdog] 发现渠道异常宕机: " + adapter.getChannelName() + "，准备触发自愈流程！");
+                    log.error("[Watchdog] 发现channel异常宕机:{}, 准备restart", adapter.getChannelName());
 
                     // 必须异步执行重启，千万不能卡死巡检线程！
                     CompletableFuture.runAsync(() -> {
                         try {
                             adapter.restart();
-                            log.info("[Watchdog] 渠道 " + adapter.getChannelName() + " 重启自愈成功！");
+                            log.info("[Watchdog] channel:{} restart success!", adapter.getChannelName());
                         } catch (Exception e) {
-                            log.error("[Watchdog] 渠道自愈失败，可能需要人工介入: " + e.getMessage());
+                            log.error("[Watchdog] channel restart fail，可能需要人工介入: " + e.getMessage());
                         }
                     });
                 }
@@ -89,7 +85,7 @@ public class ChannelManager {
     public CompletableFuture<Void> routeMessageOutbound(String targetChannel, String targetUser, NormalizedMessage msg) {
         ChannelAdapter adapter = registry.get(targetChannel);
         if (adapter == null) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("未找到对应的渠道: " + targetChannel));
+            return CompletableFuture.failedFuture(new IllegalArgumentException("未找到对应的channel: " + targetChannel));
         }
         return adapter.sendMessage(targetUser, msg);
     }
@@ -97,7 +93,7 @@ public class ChannelManager {
     // Spring Boot 关闭时自动执行，优雅释放 Netty 资源
     @PreDestroy
     public void stopAllChannels() {
-        log.info("[Manager] 收到停机指令，正在关闭所有渠道...");
+        log.info("[Manager] 服务中止，正在关闭所有channel...");
         registry.values().forEach(ChannelAdapter::stop);
     }
 }
