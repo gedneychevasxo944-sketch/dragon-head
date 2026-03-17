@@ -2,244 +2,142 @@ package org.dragon.config.store;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * 内存配置存储实现
- * 使用 ConcurrentHashMap 存储，支持命名空间隔离和 workspace 维度配置
+ * 使用 ConcurrentHashMap 存储，支持命名空间和 workspace 维度配置
+ *
+ * <p>存储结构：使用组合键 "workspace|entityType|entityId|key" 作为单层 Map 的 key
  */
 @Slf4j
 public class MemoryConfigStore implements ConfigStore {
 
     /**
-     * 存储结构: namespace -> (key -> value)
+     * 存储结构: compositeKey -> value
+     * compositeKey 格式: "workspace|entityType|entityId|key"
+     * 空值用空字符串表示
      */
-    private final ConcurrentMap<String, ConcurrentMap<String, Object>> store = new ConcurrentHashMap<>();
-
-    /**
-     * Workspace 维度存储: workspace -> entityType -> entityId -> key -> value
-     */
-    private final ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, Object>>>> workspaceStore = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Object> store = new ConcurrentHashMap<>();
 
     @Override
-    public void set(String namespace, String key, Object value) {
-        if (namespace == null || key == null) {
-            throw new IllegalArgumentException("namespace and key cannot be null");
+    public void set(ConfigKey configKey, Object value) {
+        if (configKey == null || configKey.getKey() == null) {
+            throw new IllegalArgumentException("configKey and key cannot be null");
         }
-        store.computeIfAbsent(namespace, k -> new ConcurrentHashMap<>()).put(key, value);
-        log.debug("Config set: {}.{} = {}", namespace, key, value);
+        String compositeKey = buildKey(configKey);
+        store.put(compositeKey, value);
+        log.debug("Config set: {} = {}", configKey, value);
     }
 
     @Override
-    public Optional<Object> get(String namespace, String key) {
-        if (namespace == null || key == null) {
+    public Optional<Object> get(ConfigKey configKey) {
+        if (configKey == null || configKey.getKey() == null) {
             return Optional.empty();
         }
-        ConcurrentMap<String, Object> namespaceMap = store.get(namespace);
-        if (namespaceMap == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(namespaceMap.get(key));
+        return Optional.ofNullable(store.get(buildKey(configKey)));
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T get(String namespace, String key, T defaultValue) {
-        return (T) get(namespace, key).orElse(defaultValue);
+    public <T> T get(ConfigKey configKey, T defaultValue) {
+        return (T) get(configKey).orElse(defaultValue);
     }
 
     @Override
-    public void delete(String namespace, String key) {
-        if (namespace == null || key == null) {
+    public void delete(ConfigKey configKey) {
+        if (configKey == null || configKey.getKey() == null) {
             return;
         }
-        ConcurrentMap<String, Object> namespaceMap = store.get(namespace);
-        if (namespaceMap != null) {
-            namespaceMap.remove(key);
-            // 如果命名空间为空，删除该命名空间
-            if (namespaceMap.isEmpty()) {
-                store.remove(namespace);
-            }
-        }
-        log.debug("Config deleted: {}.{}", namespace, key);
+        store.remove(buildKey(configKey));
+        log.debug("Config deleted: {}", configKey);
     }
 
     @Override
-    public Map<String, Object> getNamespace(String namespace) {
-        if (namespace == null) {
-            return Collections.emptyMap();
-        }
-        ConcurrentMap<String, Object> namespaceMap = store.get(namespace);
-        if (namespaceMap == null) {
-            return Collections.emptyMap();
-        }
-        return new HashMap<>(namespaceMap);
-    }
-
-    @Override
-    public void deleteNamespace(String namespace) {
-        if (namespace == null) {
-            return;
-        }
-        store.remove(namespace);
-        log.debug("Namespace deleted: {}", namespace);
-    }
-
-    @Override
-    public boolean exists(String namespace, String key) {
-        if (namespace == null || key == null) {
+    public boolean exists(ConfigKey configKey) {
+        if (configKey == null || configKey.getKey() == null) {
             return false;
         }
-        ConcurrentMap<String, Object> namespaceMap = store.get(namespace);
-        return namespaceMap != null && namespaceMap.containsKey(key);
+        return store.containsKey(buildKey(configKey));
     }
 
     @Override
-    public Set<String> getAllNamespaces() {
-        return new HashSet<>(store.keySet());
-    }
-
-    @Override
-    public long count(String namespace) {
-        if (namespace == null) {
-            return 0;
+    public Map<String, Object> getAll(ConfigKey configKey) {
+        if (configKey == null) {
+            return Collections.emptyMap();
         }
-        ConcurrentMap<String, Object> namespaceMap = store.get(namespace);
-        return namespaceMap == null ? 0 : namespaceMap.size();
+
+        String prefix = buildPrefix(configKey);
+        Map<String, Object> result = new HashMap<>();
+
+        store.forEach((key, value) -> {
+            if (key.startsWith(prefix)) {
+                String suffix = key.substring(prefix.length());
+                // 提取最后一个部分作为配置键
+                String[] parts = suffix.split("\\|", 2);
+                if (parts.length > 1) {
+                    result.put(parts[1], value);
+                }
+            }
+        });
+
+        return result;
+    }
+
+    @Override
+    public void deleteAll(ConfigKey configKey) {
+        if (configKey == null) {
+            return;
+        }
+
+        String prefix = buildPrefix(configKey);
+        List<String> keysToRemove = new ArrayList<>();
+
+        store.forEach((key, value) -> {
+            if (key.startsWith(prefix)) {
+                keysToRemove.add(key);
+            }
+        });
+
+        keysToRemove.forEach(store::remove);
+        log.debug("Config deleted all with prefix: {}", prefix);
     }
 
     @Override
     public void clear() {
         store.clear();
-        workspaceStore.clear();
         log.info("All config cleared");
     }
 
-    // ==================== Workspace 维度配置实现 ====================
+    // ==================== 私有辅助方法 ====================
 
-    @Override
-    public void set(String workspace, String entityType, String entityId, String key, Object value) {
-        if (workspace == null || entityType == null || entityId == null || key == null) {
-            throw new IllegalArgumentException("workspace, entityType, entityId and key cannot be null");
-        }
-        workspaceStore.computeIfAbsent(workspace, w ->
-                new ConcurrentHashMap<>()).computeIfAbsent(entityType, t ->
-                new ConcurrentHashMap<>()).computeIfAbsent(entityId, eid ->
-                new ConcurrentHashMap<>()).put(key, value);
-        log.debug("Workspace config set: {}.{}.{}.{} = {}", workspace, entityType, entityId, key, value);
+    /**
+     * 构建组合键
+     * 格式: workspace|entityType|entityId|key
+     * 空值用空字符串表示
+     */
+    private String buildKey(ConfigKey configKey) {
+        String workspace = configKey.getWorkspace() != null ? configKey.getWorkspace() : "";
+        String entityType = configKey.getEntityType() != null ? configKey.getEntityType() : "";
+        String entityId = configKey.getEntityId() != null ? configKey.getEntityId() : "";
+        String key = configKey.getKey() != null ? configKey.getKey() : "";
+        return workspace + "|" + entityType + "|" + entityId + "|" + key;
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T get(String workspace, String entityType, String entityId, String key, T defaultValue) {
-        if (workspace == null || entityType == null || entityId == null || key == null) {
-            return defaultValue;
-        }
-        ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, Object>>> entityTypeMap = workspaceStore.get(workspace);
-        if (entityTypeMap == null) {
-            return defaultValue;
-        }
-        ConcurrentMap<String, ConcurrentMap<String, Object>> entityIdMap = entityTypeMap.get(entityType);
-        if (entityIdMap == null) {
-            return defaultValue;
-        }
-        ConcurrentMap<String, Object> keyMap = entityIdMap.get(entityId);
-        if (keyMap == null) {
-            return defaultValue;
-        }
-        return (T) keyMap.getOrDefault(key, defaultValue);
-    }
-
-    @Override
-    public Map<String, Object> get(String workspace, String entityType, String entityId) {
-        if (workspace == null || entityType == null || entityId == null) {
-            return Collections.emptyMap();
-        }
-        ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, Object>>> entityTypeMap = workspaceStore.get(workspace);
-        if (entityTypeMap == null) {
-            return Collections.emptyMap();
-        }
-        ConcurrentMap<String, ConcurrentMap<String, Object>> entityIdMap = entityTypeMap.get(entityType);
-        if (entityIdMap == null) {
-            return Collections.emptyMap();
-        }
-        ConcurrentMap<String, Object> keyMap = entityIdMap.get(entityId);
-        if (keyMap == null) {
-            return Collections.emptyMap();
-        }
-        return new HashMap<>(keyMap);
-    }
-
-    @Override
-    public Map<String, Map<String, Object>> getByEntityType(String workspace, String entityType) {
-        if (workspace == null || entityType == null) {
-            return Collections.emptyMap();
-        }
-        ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, Object>>> entityTypeMap = workspaceStore.get(workspace);
-        if (entityTypeMap == null) {
-            return Collections.emptyMap();
-        }
-        ConcurrentMap<String, ConcurrentMap<String, Object>> entityIdMap = entityTypeMap.get(entityType);
-        if (entityIdMap == null) {
-            return Collections.emptyMap();
-        }
-        Map<String, Map<String, Object>> result = new HashMap<>();
-        entityIdMap.forEach((entityId, keyMap) -> result.put(entityId, new HashMap<>(keyMap)));
-        return result;
-    }
-
-    @Override
-    public Map<String, Map<String, Map<String, Object>>> getWorkspace(String workspace) {
-        if (workspace == null) {
-            return Collections.emptyMap();
-        }
-        ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, Object>>> entityTypeMap = workspaceStore.get(workspace);
-        if (entityTypeMap == null) {
-            return Collections.emptyMap();
-        }
-        Map<String, Map<String, Map<String, Object>>> result = new HashMap<>();
-        entityTypeMap.forEach((entityType, entityIdMap) -> {
-            Map<String, Map<String, Object>> entityIdResult = new HashMap<>();
-            entityIdMap.forEach((entityId, keyMap) -> entityIdResult.put(entityId, new HashMap<>(keyMap)));
-            result.put(entityType, entityIdResult);
-        });
-        return result;
-    }
-
-    @Override
-    public void delete(String workspace, String entityType, String entityId) {
-        if (workspace == null || entityType == null || entityId == null) {
-            return;
-        }
-        ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, Object>>> entityTypeMap = workspaceStore.get(workspace);
-        if (entityTypeMap != null) {
-            ConcurrentMap<String, ConcurrentMap<String, Object>> entityIdMap = entityTypeMap.get(entityType);
-            if (entityIdMap != null) {
-                entityIdMap.remove(entityId);
-                if (entityIdMap.isEmpty()) {
-                    entityTypeMap.remove(entityType);
-                }
-            }
-            if (entityTypeMap.isEmpty()) {
-                workspaceStore.remove(workspace);
-            }
-        }
-        log.debug("Workspace config deleted: {}.{}.{}", workspace, entityType, entityId);
-    }
-
-    @Override
-    public void deleteWorkspace(String workspace) {
-        if (workspace == null) {
-            return;
-        }
-        workspaceStore.remove(workspace);
-        log.debug("Workspace deleted: {}", workspace);
-    }
-
-    @Override
-    public Set<String> getAllWorkspaces() {
-        return new HashSet<>(workspaceStore.keySet());
+    /**
+     * 构建前缀（用于批量查询和删除）
+     */
+    private String buildPrefix(ConfigKey configKey) {
+        String workspace = configKey.getWorkspace() != null ? configKey.getWorkspace() : "";
+        String entityType = configKey.getEntityType() != null ? configKey.getEntityType() : "";
+        String entityId = configKey.getEntityId() != null ? configKey.getEntityId() : "";
+        return workspace + "|" + entityType + "|" + entityId + "|";
     }
 }
