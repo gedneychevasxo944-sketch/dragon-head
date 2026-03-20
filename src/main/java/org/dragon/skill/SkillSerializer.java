@@ -1,4 +1,4 @@
-package org.dragon.character.mind.skills;
+package org.dragon.skill;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

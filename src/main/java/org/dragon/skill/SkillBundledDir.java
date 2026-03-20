@@ -1,7 +1,5 @@
-package org.dragon.character.mind.skills;
+package org.dragon.skill;
 
-import org.dragon.character.mind.skills.SkillTypes.Skill;
-import org.dragon.character.mind.skills.SkillTypes.SkillSource;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -123,8 +121,8 @@ public final class SkillBundledDir {
             return new BundledSkillsContext(null, names);
         }
 
-        List<Skill> skills = SkillLoader.loadSkillsFromDir(Paths.get(dir), SkillSource.BUNDLED);
-        for (Skill skill : skills) {
+        List<SkillTypes.Skill> skills = SkillLoader.loadSkillsFromDir(Paths.get(dir), SkillTypes.SkillSource.BUNDLED);
+        for (SkillTypes.Skill skill : skills) {
             if (skill.getName() != null && !skill.getName().trim().isEmpty()) {
                 names.add(skill.getName());
             }

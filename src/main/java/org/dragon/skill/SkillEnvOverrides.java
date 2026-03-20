@@ -1,8 +1,5 @@
-package org.dragon.character.mind.skills;
+package org.dragon.skill;
 
-import org.dragon.character.mind.skills.SkillTypes.SkillEntry;
-import org.dragon.character.mind.skills.SkillTypes.SkillSnapshot;
-import org.dragon.character.mind.skills.SkillTypes.SkillSummary;
 import org.dragon.config.config.ConfigProperties;
 
 import java.util.ArrayList;
@@ -44,10 +41,10 @@ public final class SkillEnvOverrides {
      * 返回一个 Runnable，调用时会恢复所有覆盖。
      */
     @SuppressWarnings("unchecked")
-    public static Runnable applySkillEnvOverrides(List<SkillEntry> skills, ConfigProperties config) {
+    public static Runnable applySkillEnvOverrides(List<SkillTypes.SkillEntry> skills, ConfigProperties config) {
         List<EnvUpdate> updates = new ArrayList<>();
 
-        for (SkillEntry entry : skills) {
+        for (SkillTypes.SkillEntry entry : skills) {
             String skillKey = SkillFrontmatterParser.resolveSkillKey(entry.getSkill(), entry);
             Map<String, Object> skillConfig = SkillConfigResolver.resolveSkillConfig(config, skillKey);
             if (skillConfig == null)
@@ -98,13 +95,13 @@ public final class SkillEnvOverrides {
      */
     @SuppressWarnings("unchecked")
     public static Runnable applySkillEnvOverridesFromSnapshot(
-            SkillSnapshot snapshot, ConfigProperties config) {
+            SkillTypes.SkillSnapshot snapshot, ConfigProperties config) {
         if (snapshot == null)
             return () -> {
             };
         List<EnvUpdate> updates = new ArrayList<>();
 
-        for (SkillSummary skill : snapshot.getSkills()) {
+        for (SkillTypes.SkillSummary skill : snapshot.getSkills()) {
             Map<String, Object> skillConfig = SkillConfigResolver.resolveSkillConfig(config, skill.getName());
             if (skillConfig == null)
                 continue;
