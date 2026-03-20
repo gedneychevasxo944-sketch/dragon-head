@@ -1,4 +1,4 @@
-package org.dragon.character.mind.skills;
+package org.dragon.skill;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

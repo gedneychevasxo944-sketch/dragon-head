@@ -1,4 +1,4 @@
-package org.dragon.character.mind.skills;
+package org.dragon.skill;
 
 import org.dragon.config.config.ConfigProperties;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package org.dragon.character.mind.skills;
+package org.dragon.skill;
 
 import lombok.Value;
 
