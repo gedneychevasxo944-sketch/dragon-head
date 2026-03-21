@@ -1,52 +1,49 @@
 package org.dragon.workspace.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
-import org.dragon.workspace.actionlog.WorkspaceActionLog;
-import org.dragon.workspace.actionlog.WorkspaceActionLogStore;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.observer.actionlog.ActionType;
+import org.dragon.observer.actionlog.ObserverActionLog;
+import org.dragon.observer.actionlog.ObserverActionLogService;
 
 /**
  * WorkspaceActionLogService Workspace 行为日志服务
  * 统一记录 Workspace 内所有行为（Character 行为、Character 间交互、任务行为、雇佣行为等）
  *
+ * @deprecated 请使用 {@link ObserverActionLogService} 代替
  * @author wyj
  * @version 1.0
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Deprecated
 public class WorkspaceActionLogService {
 
-    private final WorkspaceActionLogStore actionLogStore;
+    private final ObserverActionLogService observerActionLogService;
 
     /**
      * 记录动作日志
      *
-     * @param workspaceId Workspace ID
-     * @param actionType 动作类型
-     * @param targetCharacterId 目标 Character ID
-     * @param operator 操作者 (user / hr)
-     * @param details 详情
+     * @deprecated 请使用 {@link ObserverActionLogService} 代替
      */
-    public void logAction(String workspaceId, WorkspaceActionLog.ActionType actionType,
+    @Deprecated
+    public void logAction(String workspaceId, ActionType actionType,
             String targetCharacterId, String operator, String details) {
-        WorkspaceActionLog actionLog = WorkspaceActionLog.builder()
-                .id(UUID.randomUUID().toString())
-                .workspaceId(workspaceId)
-                .actionType(actionType)
-                .targetCharacterId(targetCharacterId)
-                .operator(operator)
-                .details(details)
-                .createdAt(LocalDateTime.now())
-                .build();
+        // 构建详细信息
+        Map<String, Object> observerDetails = Map.of(
+                "workspaceId", workspaceId != null ? workspaceId : "",
+                "details", details != null ? details : ""
+        );
 
-        actionLogStore.save(actionLog);
+        // 上报到 ObserverActionLogService
+        observerActionLogService.logAction("CHARACTER", targetCharacterId, actionType, operator, observerDetails);
+
         log.info("[WorkspaceActionLogService] Logged action: {} for character: {} in workspace: {}",
                 actionType.name(), targetCharacterId, workspaceId);
     }
@@ -54,32 +51,30 @@ public class WorkspaceActionLogService {
     /**
      * 获取 Workspace 的所有动作日志
      *
-     * @param workspaceId Workspace ID
-     * @return 动作日志列表
+     * @deprecated 请使用 {@link ObserverActionLogService#getActionLogs(String, String)} 代替
      */
-    public List<WorkspaceActionLog> getActionLogs(String workspaceId) {
-        return actionLogStore.findByWorkspaceId(workspaceId);
+    @Deprecated
+    public List<ObserverActionLog> getActionLogs(String workspaceId) {
+        return observerActionLogService.getActionLogs("WORKSPACE", workspaceId);
     }
 
     /**
      * 根据 Character 获取动作日志
      *
-     * @param workspaceId Workspace ID
-     * @param characterId Character ID
-     * @return 动作日志列表
+     * @deprecated 请使用 {@link ObserverActionLogService#getActionLogs(String, String)} 代替
      */
-    public List<WorkspaceActionLog> getActionLogsByCharacter(String workspaceId, String characterId) {
-        return actionLogStore.findByWorkspaceIdAndCharacterId(workspaceId, characterId);
+    @Deprecated
+    public List<ObserverActionLog> getActionLogsByCharacter(String workspaceId, String characterId) {
+        return observerActionLogService.getActionLogs("CHARACTER", characterId);
     }
 
     /**
      * 根据动作类型获取动作日志
      *
-     * @param workspaceId Workspace ID
-     * @param actionType 动作类型
-     * @return 动作日志列表
+     * @deprecated 请使用 {@link ObserverActionLogService#getActionLogsByType(ActionType)} 代替
      */
-    public List<WorkspaceActionLog> getActionLogsByType(String workspaceId, WorkspaceActionLog.ActionType actionType) {
-        return actionLogStore.findByWorkspaceIdAndActionType(workspaceId, actionType);
+    @Deprecated
+    public List<ObserverActionLog> getActionLogsByType(String workspaceId, ActionType actionType) {
+        return observerActionLogService.getActionLogsByType(actionType);
     }
 }

@@ -2,12 +2,14 @@ package org.dragon.workspace.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.workspace.WorkspaceRegistry;
-import org.dragon.workspace.actionlog.WorkspaceActionLog;
+import org.dragon.observer.actionlog.ActionType;
+import org.dragon.observer.actionlog.ObserverActionLogService;
 import org.dragon.workspace.built_ins.character.hr.HrCharacterFactory;
 import org.dragon.workspace.built_ins.character.hr.HrHiringExecutor;
 import org.dragon.workspace.hiring.HireMode;
@@ -34,7 +36,7 @@ public class WorkspaceHiringService {
     private final WorkspaceRegistry workspaceRegistry;
     private final CharacterRegistry characterRegistry;
     private final CharacterDutyStore characterDutyStore;
-    private final WorkspaceActionLogService actionLogService;
+    private final ObserverActionLogService actionLogService;
     private final HrCharacterFactory hrCharacterFactory;
     private final HrHiringExecutor hrHiringExecutor;
     private final WorkspaceMemberManagementService memberManagementService;
@@ -164,8 +166,8 @@ public class WorkspaceHiringService {
         }
 
         // 记录动作日志
-        actionLogService.logAction(workspaceId, WorkspaceActionLog.ActionType.UPDATE_DUTY, characterId, "user",
-                "Updated duty description: " + dutyDescription);
+        actionLogService.logHireEvent(workspaceId, characterId, ActionType.UPDATE_DUTY, "user",
+                Map.of("dutyDescription", dutyDescription != null ? dutyDescription : ""));
 
         log.info("[WorkspaceHiringService] Set duty for character {} in workspace {}", characterId, workspaceId);
     }
@@ -199,8 +201,8 @@ public class WorkspaceHiringService {
                 WorkspaceMember.Layer.NORMAL);
 
         // 记录动作日志
-        actionLogService.logAction(workspaceId, WorkspaceActionLog.ActionType.HIRE, character.getId(), "user",
-                "Hired via DEFAULT mode");
+        actionLogService.logHireEvent(workspaceId, character.getId(), ActionType.HIRE, "user",
+                Map.of("mode", "DEFAULT"));
 
         log.info("[WorkspaceHiringService] Hired character {} to workspace {} via DEFAULT mode",
                 character.getId(), workspaceId);
@@ -215,8 +217,8 @@ public class WorkspaceHiringService {
                 WorkspaceMember.Layer.NORMAL);
 
         // 记录动作日志
-        actionLogService.logAction(workspaceId, WorkspaceActionLog.ActionType.HIRE, character.getId(), "user",
-                "Hired via MANUAL mode");
+        actionLogService.logHireEvent(workspaceId, character.getId(), ActionType.HIRE, "user",
+                Map.of("mode", "MANUAL"));
 
         log.info("[WorkspaceHiringService] Hired character {} to workspace {} via MANUAL mode",
                 character.getId(), workspaceId);
@@ -250,8 +252,8 @@ public class WorkspaceHiringService {
             // 执行实际的雇佣操作
             memberManagementService.addMember(workspaceId, hiredCharacter.getId(), "MEMBER",
                     WorkspaceMember.Layer.NORMAL);
-            actionLogService.logAction(workspaceId, WorkspaceActionLog.ActionType.HIRE, hiredCharacter.getId(), "hr",
-                    "Hired via AUTO mode with auto-selection");
+            actionLogService.logHireEvent(workspaceId, hiredCharacter.getId(), ActionType.HIRE, "hr",
+                    Map.of("mode", "AUTO"));
             log.info("[WorkspaceHiringService] Hired character {} to workspace {} via AUTO mode",
                     hiredCharacter.getId(), workspaceId);
         });
@@ -265,8 +267,8 @@ public class WorkspaceHiringService {
         memberManagementService.removeMember(workspaceId, characterId);
 
         // 记录动作日志
-        actionLogService.logAction(workspaceId, WorkspaceActionLog.ActionType.FIRE, characterId, "user",
-                "Fired via MANUAL mode");
+        actionLogService.logHireEvent(workspaceId, characterId, ActionType.FIRE, "user",
+                Map.of("mode", "MANUAL"));
 
         log.info("[WorkspaceHiringService] Fired character {} from workspace {} via MANUAL mode",
                 characterId, workspaceId);
@@ -279,8 +281,8 @@ public class WorkspaceHiringService {
         hrHiringExecutor.fireAuto(workspaceId, characterId, () -> {
             // 执行实际的解雇操作
             memberManagementService.removeMember(workspaceId, characterId);
-            actionLogService.logAction(workspaceId, WorkspaceActionLog.ActionType.FIRE, characterId, "hr",
-                    "Fired via AUTO mode");
+            actionLogService.logHireEvent(workspaceId, characterId, ActionType.FIRE, "hr",
+                    Map.of("mode", "AUTO"));
         });
 
         log.info("[WorkspaceHiringService] Fired character {} from workspace {} via AUTO mode",

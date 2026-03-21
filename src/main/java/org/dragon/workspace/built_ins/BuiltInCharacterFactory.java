@@ -10,6 +10,7 @@ import org.dragon.character.CharacterFactory;
 import org.dragon.workspace.built_ins.character.hr.HrCharacterFactory;
 import org.dragon.workspace.built_ins.character.member_selector.MemberSelectorCharacterFactory;
 import org.dragon.workspace.built_ins.character.project_manager.ProjectManagerCharacterFactory;
+import org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharacterFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,6 +26,7 @@ public class BuiltInCharacterFactory {
     private final HrCharacterFactory hrCharacterFactory;
     private final MemberSelectorCharacterFactory memberSelectorCharacterFactory;
     private final ProjectManagerCharacterFactory projectManagerCharacterFactory;
+    private final PromptWriterCharacterFactory promptWriterCharacterFactory;
 
     /**
      * 内置 Character 工厂映射 (type -> factory)
@@ -33,10 +35,12 @@ public class BuiltInCharacterFactory {
 
     public BuiltInCharacterFactory(HrCharacterFactory hrCharacterFactory,
             MemberSelectorCharacterFactory memberSelectorCharacterFactory,
-            ProjectManagerCharacterFactory projectManagerCharacterFactory) {
+            ProjectManagerCharacterFactory projectManagerCharacterFactory,
+            PromptWriterCharacterFactory promptWriterCharacterFactory) {
         this.hrCharacterFactory = hrCharacterFactory;
         this.memberSelectorCharacterFactory = memberSelectorCharacterFactory;
         this.projectManagerCharacterFactory = projectManagerCharacterFactory;
+        this.promptWriterCharacterFactory = promptWriterCharacterFactory;
 
         // 初始化注册
         initFactories();
@@ -49,6 +53,7 @@ public class BuiltInCharacterFactory {
         registerFactory(hrCharacterFactory.getCharacterType(), hrCharacterFactory);
         registerFactory(memberSelectorCharacterFactory.getCharacterType(), memberSelectorCharacterFactory);
         registerFactory(projectManagerCharacterFactory.getCharacterType(), projectManagerCharacterFactory);
+        registerFactory(promptWriterCharacterFactory.getCharacterType(), promptWriterCharacterFactory);
     }
 
     /**
@@ -96,6 +101,15 @@ public class BuiltInCharacterFactory {
      */
     public ProjectManagerCharacterFactory getProjectManagerCharacterFactory() {
         return projectManagerCharacterFactory;
+    }
+
+    /**
+     * 获取 PromptWriter Character 工厂
+     *
+     * @return PromptWriter Character 工厂
+     */
+    public PromptWriterCharacterFactory getPromptWriterCharacterFactory() {
+        return promptWriterCharacterFactory;
     }
 
     /**

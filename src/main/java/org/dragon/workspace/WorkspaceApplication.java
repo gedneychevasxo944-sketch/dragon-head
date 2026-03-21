@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
-import org.dragon.workspace.actionlog.WorkspaceActionLog;
+import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.workspace.hiring.HireMode;
 import org.dragon.workspace.material.Material;
 import org.dragon.workspace.member.CharacterDuty;
@@ -143,7 +143,7 @@ public class WorkspaceApplication {
 
     // ==================== 动作日志委托 ====================
 
-    public List<WorkspaceActionLog> getActionLogs(String workspaceId) {
+    public List<ObserverActionLog> getActionLogs(String workspaceId) {
         return workspaceActionLogService.getActionLogs(workspaceId);
     }
 

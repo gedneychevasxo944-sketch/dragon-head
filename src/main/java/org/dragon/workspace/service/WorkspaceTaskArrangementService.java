@@ -15,6 +15,7 @@ import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.built_ins.character.member_selector.MemberSelectorCharacterFactory;
 import org.dragon.workspace.built_ins.character.project_manager.ProjectManagerCharacterFactory;
+import org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharacterFactory;
 import org.dragon.workspace.chat.ChatRoom;
 import org.dragon.workspace.chat.ChatSession;
 import org.dragon.workspace.member.WorkspaceMember;
@@ -44,6 +45,7 @@ public class WorkspaceTaskArrangementService {
     private final PromptManager promptManager;
     private final MemberSelectorCharacterFactory memberSelectorCharacterFactory;
     private final ProjectManagerCharacterFactory projectManagerCharacterFactory;
+    private final PromptWriterCharacterFactory promptWriterCharacterFactory;
     private final TaskStore taskStore;
 
     /**
@@ -200,23 +202,33 @@ public class WorkspaceTaskArrangementService {
 
     /**
      * 通过 MemberSelector Character 选择成员
+     * 使用 PromptWriter Character 组装 prompt
      */
     private List<Character> selectMembersWithCharacter(Task task, Workspace workspace,
             List<WorkspaceMember> members) {
         try {
-            // 获取或创建 MemberSelector Character
+            // 1. 获取或创建 PromptWriter Character 用于组装 prompt
+            Character promptWriterCharacter = promptWriterCharacterFactory
+                    .getOrCreatePromptWriterCharacter(workspace.getId());
+
+            // 2. 获取 prompt 模板
+            String promptTemplate = promptManager.getGlobalPrompt(PromptKeys.MEMBER_SELECTOR_SELECT,
+                    "请从以下候选成员中选择最合适的执行者来完成指定任务。");
+
+            // 3. 构建给 PromptWriter 的输入（包含模板和动态数据）
+            String promptWriterInput = buildPromptWriterInput("member_selection", promptTemplate, task, members);
+
+            // 4. 调用 PromptWriter Character 获取完整的 prompt
+            String fullPrompt = characterCaller.call(promptWriterCharacter, promptWriterInput);
+
+            // 5. 获取或创建 MemberSelector Character
             Character memberSelectorCharacter = memberSelectorCharacterFactory
                     .getOrCreateMemberSelectorCharacter(workspace.getId());
 
-            // 构建 prompt
-            String systemPrompt = promptManager.getGlobalPrompt(PromptKeys.MEMBER_SELECTOR_SELECT,
-                    "请从以下候选成员中选择最合适的执行者来完成指定任务。");
-            String prompt = buildMemberSelectionPrompt(task, members, systemPrompt);
+            // 6. 调用 MemberSelector Character 进行选择
+            String result = characterCaller.call(memberSelectorCharacter, fullPrompt);
 
-            // 调用 Character 进行选择
-            String result = characterCaller.call(memberSelectorCharacter, prompt);
-
-            // 解析结果
+            // 7. 解析结果
             return parseSelectedCharacters(result, members);
         } catch (Exception e) {
             log.error("[WorkspaceTaskArrangementService] Member selection failed: {}", e.getMessage());
@@ -229,29 +241,73 @@ public class WorkspaceTaskArrangementService {
 
     /**
      * 通过 ProjectManager Character 分解任务
+     * 使用 PromptWriter Character 组装 prompt
      */
     private List<Task> decomposeTaskWithCharacter(Task task, Workspace workspace,
             List<WorkspaceMember> members) {
         try {
-            // 获取或创建 ProjectManager Character
+            // 1. 获取或创建 PromptWriter Character 用于组装 prompt
+            Character promptWriterCharacter = promptWriterCharacterFactory
+                    .getOrCreatePromptWriterCharacter(workspace.getId());
+
+            // 2. 获取 prompt 模板
+            String promptTemplate = promptManager.getGlobalPrompt(PromptKeys.PROJECT_MANAGER_DECOMPOSE,
+                    "请将以下任务拆解为可执行的子任务。");
+
+            // 3. 构建给 PromptWriter 的输入（包含模板和动态数据）
+            String promptWriterInput = buildPromptWriterInput("task_decompose", promptTemplate, task, members);
+
+            // 4. 调用 PromptWriter Character 获取完整的 prompt
+            String fullPrompt = characterCaller.call(promptWriterCharacter, promptWriterInput);
+
+            // 5. 获取或创建 ProjectManager Character
             Character projectManagerCharacter = projectManagerCharacterFactory
                     .getOrCreateProjectManagerCharacter(workspace.getId());
 
-            // 构建 prompt
-            String systemPrompt = promptManager.getGlobalPrompt(PromptKeys.PROJECT_MANAGER_DECOMPOSE,
-                    "请将以下任务拆解为可执行的子任务。");
-            String prompt = buildTaskDecomposePrompt(task, members, systemPrompt);
+            // 6. 调用 ProjectManager Character 进行任务分解
+            String result = characterCaller.call(projectManagerCharacter, fullPrompt);
 
-            // 调用 Character 进行任务分解
-            String result = characterCaller.call(projectManagerCharacter, prompt);
-
-            // 解析结果
+            // 7. 解析结果
             return parseDecomposedTasks(result, task.getId());
         } catch (Exception e) {
             log.error("[WorkspaceTaskArrangementService] Task decomposition failed: {}", e.getMessage());
             // 降级：创建单个简单子任务
             return createFallbackChildTasks(task);
         }
+    }
+
+    /**
+     * 构建给 PromptWriter Character 的输入
+     * 格式：任务类型|模板内容|动态数据
+     *
+     * @param promptType prompt 类型
+     * @param promptTemplate prompt 模板
+     * @param task 任务信息
+     * @param members 成员列表
+     * @return 给 PromptWriter 的输入
+     */
+    private String buildPromptWriterInput(String promptType, String promptTemplate, Task task,
+            List<WorkspaceMember> members) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("请根据以下信息组装完整的 prompt。\n\n");
+        sb.append("## Prompt 类型\n").append(promptType).append("\n\n");
+        sb.append("## Prompt 模板\n").append(promptTemplate).append("\n\n");
+        sb.append("## 任务信息\n");
+        sb.append("任务ID: ").append(task.getId()).append("\n");
+        sb.append("任务名称: ").append(task.getName()).append("\n");
+        sb.append("任务描述: ").append(task.getDescription()).append("\n");
+        sb.append("任务输入: ").append(task.getInput()).append("\n\n");
+        sb.append("## 成员列表\n");
+        for (WorkspaceMember member : members) {
+            sb.append("- ID: ").append(member.getCharacterId())
+                    .append(", 角色: ").append(member.getRole())
+                    .append(", 层级: ").append(member.getLayer()).append("\n");
+        }
+        if (task.getWorkspaceId() != null) {
+            sb.append("\n## 工作空间信息\n");
+            sb.append("工作空间ID: ").append(task.getWorkspaceId()).append("\n");
+        }
+        return sb.toString();
     }
 
     /**
@@ -289,7 +345,10 @@ public class WorkspaceTaskArrangementService {
 
     /**
      * 构建成员选择 prompt
+     *
+     * @deprecated 请使用 PromptWriter Character 代替
      */
+    @Deprecated
     private String buildMemberSelectionPrompt(Task task, List<WorkspaceMember> members,
             String systemPrompt) {
         StringBuilder sb = new StringBuilder();
@@ -310,7 +369,10 @@ public class WorkspaceTaskArrangementService {
 
     /**
      * 构建任务分解 prompt
+     *
+     * @deprecated 请使用 PromptWriter Character 代替
      */
+    @Deprecated
     private String buildTaskDecomposePrompt(Task task, List<WorkspaceMember> members,
             String systemPrompt) {
         StringBuilder sb = new StringBuilder();
