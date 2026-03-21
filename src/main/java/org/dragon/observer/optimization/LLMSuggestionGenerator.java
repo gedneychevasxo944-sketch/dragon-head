@@ -302,7 +302,7 @@ public class LLMSuggestionGenerator {
     private List<String> callLLM(String workspace, String organizationId, String targetId, String prompt) {
         // 通过 PromptManager 获取 system prompt，支持层级查找
         String characterId = targetId; // targetId 对于 CHARACTER 类型就是 characterId
-        String systemPrompt = promptManager.getPrompt(workspace, organizationId, characterId, PromptKeys.OBSERVER_SUGGESTION);
+        String systemPrompt = promptManager.getPrompt(workspace, characterId, PromptKeys.OBSERVER_SUGGESTION);
         if (systemPrompt == null) {
             // 使用默认 system prompt
             systemPrompt = "你是一个专业的AI优化顾问，擅长分析AI角色的行为模式并提供改进建议。请根据提供的数据生成具体、可执行的优化建议。";

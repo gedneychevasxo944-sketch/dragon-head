@@ -279,12 +279,10 @@ public class Character {
         // 构建系统 prompt（优先从 PromptManager 获取，支持 workspace-organization-character 层级）
         String systemPrompt = "";
         if (promptManager != null) {
-            // 获取 Character 所在的第一个 Workspace 和 Organization
+            // 获取 Character 所在的第一个 Workspace
             String workspace = workspaceIds != null && !workspaceIds.isEmpty()
                     ? workspaceIds.get(0) : null;
-            String organizationId = organizationIds != null && !organizationIds.isEmpty()
-                    ? organizationIds.get(0) : null;
-            systemPrompt = promptManager.getPrompt(workspace, organizationId, id, PromptKeys.CHARACTER_SYSTEM);
+            systemPrompt = promptManager.getPrompt(workspace, id, PromptKeys.CHARACTER_SYSTEM);
         }
         // 如果 PromptManager 没有获取到，则从 Mind 获取
         if (systemPrompt == null || systemPrompt.isEmpty()) {
@@ -340,9 +338,7 @@ public class Character {
         if (promptManager != null) {
             String workspace = workspaceIds != null && !workspaceIds.isEmpty()
                     ? workspaceIds.get(0) : null;
-            String organizationId = organizationIds != null && !organizationIds.isEmpty()
-                    ? organizationIds.get(0) : null;
-            systemPrompt = promptManager.getPrompt(workspace, organizationId, id, PromptKeys.CHARACTER_SYSTEM);
+            systemPrompt = promptManager.getPrompt(workspace, id, PromptKeys.CHARACTER_SYSTEM);
         }
         if (systemPrompt == null || systemPrompt.isEmpty()) {
             Mind currentMind = getMind();

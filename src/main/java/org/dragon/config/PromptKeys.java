@@ -45,18 +45,6 @@ public class PromptKeys {
      */
     public static final String CHARACTER_TASK = "character.task";
 
-    // ==================== Organization 模块 ====================
-
-    /**
-     * Organization 任务分配 prompt
-     */
-    public static final String ORG_TASK_ASSIGN = "org.taskAssign";
-
-    /**
-     * Organization 协作 prompt
-     */
-    public static final String ORG_COLLABORATION = "org.collaboration";
-
     // ==================== HR 模块 ====================
 
     /**
@@ -121,13 +109,6 @@ public class PromptKeys {
      */
     public static boolean isCharacterPrompt(String key) {
         return key != null && key.startsWith("character.");
-    }
-
-    /**
-     * 判断是否为 Organization 相关的 prompt
-     */
-    public static boolean isOrganizationPrompt(String key) {
-        return key != null && key.startsWith("org.");
     }
 
     /**
