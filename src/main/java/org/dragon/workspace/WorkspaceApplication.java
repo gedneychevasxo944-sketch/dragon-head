@@ -11,7 +11,7 @@ import org.dragon.workspace.hiring.HireMode;
 import org.dragon.workspace.material.Material;
 import org.dragon.workspace.member.CharacterDuty;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.workspace.service.WorkspaceActionLogService;
+import org.dragon.observer.actionlog.ObserverActionLogService;
 import org.dragon.workspace.service.WorkspaceHiringService;
 import org.dragon.workspace.service.WorkspaceLifecycleService;
 import org.dragon.workspace.service.WorkspaceMaterialService;
@@ -39,7 +39,7 @@ public class WorkspaceApplication {
     private final String workspaceId;
     private final WorkspaceLifecycleService workspaceLifecycleService;
     private final WorkspaceHiringService workspaceHiringService;
-    private final WorkspaceActionLogService workspaceActionLogService;
+    private final ObserverActionLogService workspaceActionLogService;
     private final WorkspaceMemberManagementService workspaceMemberService;
     private final WorkspaceMaterialService materialService;
     private final WorkspaceTaskService workspaceTaskService;
@@ -144,7 +144,7 @@ public class WorkspaceApplication {
     // ==================== 动作日志委托 ====================
 
     public List<ObserverActionLog> getActionLogs(String workspaceId) {
-        return workspaceActionLogService.getActionLogs(workspaceId);
+        return workspaceActionLogService.getActionLogs("WORKSPACE", workspaceId);
     }
 
     // ==================== 任务管理委托 ====================

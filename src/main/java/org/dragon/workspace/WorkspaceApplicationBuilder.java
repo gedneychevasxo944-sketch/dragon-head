@@ -2,7 +2,7 @@ package org.dragon.workspace;
 
 import org.dragon.character.CharacterRegistry;
 import org.dragon.task.TaskStore;
-import org.dragon.workspace.service.WorkspaceActionLogService;
+import org.dragon.observer.actionlog.ObserverActionLogService;
 import org.dragon.workspace.service.WorkspaceHiringService;
 import org.dragon.workspace.service.WorkspaceLifecycleService;
 import org.dragon.workspace.service.WorkspaceMaterialService;
@@ -25,7 +25,7 @@ public class WorkspaceApplicationBuilder {
     // 服务依赖
     WorkspaceLifecycleService workspaceLifecycleService;
     WorkspaceHiringService workspaceHiringService;
-    WorkspaceActionLogService workspaceActionLogService;
+    ObserverActionLogService workspaceActionLogService;
     WorkspaceMemberManagementService workspaceMemberService;
     WorkspaceMaterialService materialService;
     WorkspaceTaskService workspaceTaskService;
@@ -72,7 +72,7 @@ public class WorkspaceApplicationBuilder {
      * @param workspaceActionLogService WorkspaceActionLogService
      * @return self
      */
-    public WorkspaceApplicationBuilder workspaceActionLogService(WorkspaceActionLogService workspaceActionLogService) {
+    public WorkspaceApplicationBuilder workspaceActionLogService(ObserverActionLogService workspaceActionLogService) {
         this.workspaceActionLogService = workspaceActionLogService;
         return this;
     }

@@ -2,7 +2,7 @@ package org.dragon.workspace;
 
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
-import org.dragon.workspace.service.WorkspaceActionLogService;
+import org.dragon.observer.actionlog.ObserverActionLogService;
 import org.dragon.workspace.service.WorkspaceHiringService;
 import org.dragon.workspace.service.WorkspaceLifecycleService;
 import org.dragon.workspace.service.WorkspaceMaterialService;
@@ -28,7 +28,7 @@ public class WorkspaceApplicationProvider {
 
     private final WorkspaceLifecycleService workspaceLifecycleService;
     private final WorkspaceHiringService workspaceHiringService;
-    private final WorkspaceActionLogService workspaceActionLogService;
+    private final ObserverActionLogService workspaceActionLogService;
     private final WorkspaceMemberManagementService workspaceMemberService;
     private final WorkspaceMaterialService materialService;
     private final WorkspaceTaskService workspaceTaskService;
