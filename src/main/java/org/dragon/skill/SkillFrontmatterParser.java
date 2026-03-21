@@ -1,10 +1,8 @@
 package org.dragon.skill;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonArray;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -24,7 +22,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SkillFrontmatterParser {
 
-    private static final JsonParser JSON = new JsonParser();
 
     /**
      * 用于提取文件开头 --- 分隔符之间的 frontmatter 块的正则表达式。
@@ -116,7 +113,7 @@ public class SkillFrontmatterParser {
             return null;
 
         try {
-            JsonElement root = JSON.parse(raw);
+            JsonElement root = JsonParser.parseString(raw);
             if (root == null || !root.isJsonObject())
                 return null;
 
