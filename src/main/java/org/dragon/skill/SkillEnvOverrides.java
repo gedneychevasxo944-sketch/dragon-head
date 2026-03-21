@@ -1,16 +1,10 @@
 package org.dragon.skill;
 
-<<<<<<< HEAD
-import org.dragon.skill.SkillTypes.SkillEntry;
-import org.dragon.skill.SkillTypes.SkillSnapshot;
-import org.dragon.skill.SkillTypes.SkillSummary;
-=======
->>>>>>> origin/main
-import org.dragon.config.config.ConfigProperties;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.dragon.config.config.ConfigProperties;
 
 /**
  * 应用来自技能配置的环境变量覆盖。

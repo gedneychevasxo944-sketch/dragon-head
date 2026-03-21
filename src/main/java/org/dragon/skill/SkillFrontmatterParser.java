@@ -1,7 +1,10 @@
 package org.dragon.skill;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -21,7 +24,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SkillFrontmatterParser {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final JsonParser JSON = new JsonParser();
 
     /**
      * 用于提取文件开头 --- 分隔符之间的 frontmatter 块的正则表达式。
@@ -113,28 +116,38 @@ public class SkillFrontmatterParser {
             return null;
 
         try {
-            JsonNode root = JSON.readTree(raw);
-            if (root == null || !root.isObject())
+            JsonElement root = JSON.parse(raw);
+            if (root == null || !root.isJsonObject())
                 return null;
 
             // 查找 dragonhead的skill 元数据（尝试多个键以保持兼容性）
-            JsonNode meta = findMetadataNode(root);
-            if (meta == null || !meta.isObject())
+            JsonElement meta = findMetadataNode(root.getAsJsonObject());
+            if (meta == null || !meta.isJsonObject())
                 return null;
 
+            JsonObject metaObj = meta.getAsJsonObject();
             return new SkillTypes.SkillMetadata(
-                    meta.has("always") ? meta.get("always").asBoolean() : null,
-                    textOrNull(meta, "skillKey"),
-                    textOrNull(meta, "primaryEnv"),
-                    textOrNull(meta, "emoji"),
-                    textOrNull(meta, "homepage"),
-                    stringList(meta, "os"),
-                    resolveRequires(meta),
+                    hasAndTrue(metaObj, "always") ? true : null,
+                    textOrNull(metaObj, "skillKey"),
+                    textOrNull(metaObj, "primaryEnv"),
+                    textOrNull(metaObj, "emoji"),
+                    textOrNull(metaObj, "homepage"),
+                    stringList(metaObj, "os"),
+                    resolveRequires(metaObj),
                     null);
         } catch (Exception e) {
             log.debug("解析技能元数据失败: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * 检查 JSON 对象中是否存在某字段且值为 true
+     */
+    private static boolean hasAndTrue(JsonObject obj, String field) {
+        if (!obj.has(field)) return false;
+        JsonElement el = obj.get(field);
+        return el != null && el.isJsonPrimitive() && el.getAsBoolean();
     }
 
     /**
@@ -163,35 +176,39 @@ public class SkillFrontmatterParser {
     // 辅助方法 (Helpers)
     // =========================================================================
 
-    private static JsonNode findMetadataNode(JsonNode root) {
+    private static JsonElement findMetadataNode(JsonObject root) {
         // metadata: { "dragonhead": { "always": true, "emoji": "🧪", "os": ["darwin", "linux"] } }
         for (String key : Arrays.asList("dragonhead")) {
-            JsonNode node = root.get(key);
-            if (node != null && node.isObject())
-                return node;
+            if (root.has(key)) {
+                JsonElement node = root.get(key);
+                if (node != null && node.isJsonObject())
+                    return node;
+            }
         }
         return null;
     }
 
-    private static String textOrNull(JsonNode node, String field) {
-        JsonNode child = node.get(field);
-        return (child != null && child.isTextual()) ? child.asText() : null;
+    private static String textOrNull(JsonObject obj, String field) {
+        if (!obj.has(field)) return null;
+        JsonElement child = obj.get(field);
+        return (child != null && !child.isJsonNull() && child.isJsonPrimitive()) ? child.getAsString() : null;
     }
 
-    private static List<String> stringList(JsonNode node, String field) {
-        JsonNode child = node.get(field);
-        if (child == null)
+    private static List<String> stringList(JsonObject obj, String field) {
+        if (!obj.has(field)) return Collections.emptyList();
+        JsonElement child = obj.get(field);
+        if (child == null || child.isJsonNull())
             return Collections.emptyList();
-        if (child.isArray()) {
+        if (child.isJsonArray()) {
             List<String> result = new ArrayList<>();
-            child.forEach(el -> {
-                if (el.isTextual())
-                    result.add(el.asText().trim());
-            });
+            for (JsonElement el : child.getAsJsonArray()) {
+                if (el != null && el.isJsonPrimitive())
+                    result.add(el.getAsString().trim());
+            }
             return result;
         }
-        if (child.isTextual()) {
-            return Arrays.stream(child.asText().split(","))
+        if (child.isJsonPrimitive()) {
+            return Arrays.stream(child.getAsString().split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
                     .collect(Collectors.toList());
@@ -199,15 +216,17 @@ public class SkillFrontmatterParser {
         return Collections.emptyList();
     }
 
-    private static SkillTypes.SkillRequires resolveRequires(JsonNode meta) {
-        JsonNode req = meta.get("requires");
-        if (req == null || !req.isObject())
+    private static SkillTypes.SkillRequires resolveRequires(JsonObject meta) {
+        if (!meta.has("requires")) return null;
+        JsonElement req = meta.get("requires");
+        if (req == null || !req.isJsonObject())
             return null;
+        JsonObject reqObj = req.getAsJsonObject();
         return new SkillTypes.SkillRequires(
-                stringList(req, "bins"),
-                stringList(req, "anyBins"),
-                stringList(req, "env"),
-                stringList(req, "config"));
+                stringList(reqObj, "bins"),
+                stringList(reqObj, "anyBins"),
+                stringList(reqObj, "env"),
+                stringList(reqObj, "config"));
     }
 
     private static boolean parseBool(String value, boolean fallback) {

@@ -1,13 +1,5 @@
 package org.dragon.skill;
 
-<<<<<<< HEAD
-import org.dragon.skill.SkillTypes.Skill;
-import org.dragon.skill.SkillTypes.SkillEntry;
-import org.dragon.skill.SkillTypes.SkillSource;
-=======
->>>>>>> origin/main
-import org.junit.jupiter.api.Test;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -16,6 +8,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class SkillLoaderTest {
 

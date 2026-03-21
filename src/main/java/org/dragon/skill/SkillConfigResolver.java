@@ -1,13 +1,5 @@
 package org.dragon.skill;
 
-<<<<<<< HEAD
-import org.dragon.skill.SkillTypes.SkillEligibilityContext;
-import org.dragon.skill.SkillTypes.SkillEntry;
-import org.dragon.skill.SkillTypes.SkillRequires;
-=======
->>>>>>> origin/main
-import org.dragon.config.config.ConfigProperties;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -20,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.dragon.config.config.ConfigProperties;
 
 /**
  * 技能配置解析器 — 处理配置路径遍历、资格检查、内置白名单、二进制文件检测。

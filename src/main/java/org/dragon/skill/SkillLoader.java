@@ -1,18 +1,5 @@
 package org.dragon.skill;
 
-<<<<<<< HEAD
-import org.dragon.skill.SkillTypes.Skill;
-import org.dragon.skill.SkillTypes.SkillEntry;
-import org.dragon.skill.SkillTypes.SkillInvocationPolicy;
-import org.dragon.skill.SkillTypes.SkillMetadata;
-import org.dragon.skill.SkillTypes.SkillSnapshot;
-import org.dragon.skill.SkillTypes.SkillSource;
-import org.dragon.skill.SkillTypes.SkillSummary;
-=======
->>>>>>> origin/main
-import org.dragon.config.config.ConfigProperties;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -25,6 +12,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.dragon.config.config.ConfigProperties;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 从工作区、内置和托管目录中发现并加载技能。

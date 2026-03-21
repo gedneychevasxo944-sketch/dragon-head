@@ -1,12 +1,5 @@
 package org.dragon.skill;
 
-<<<<<<< HEAD
-import org.dragon.skill.SkillTypes.Skill;
-import org.dragon.skill.SkillTypes.SkillSource;
-=======
->>>>>>> origin/main
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
@@ -16,6 +9,8 @@ import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 内置技能目录解析和上下文加载。
