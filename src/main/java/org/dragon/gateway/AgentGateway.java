@@ -76,7 +76,7 @@ public class AgentGateway implements Gateway {
      */
     private ActionMessage buildActionMessage(NormalizedMessage inboundMsg, String content) {
         ActionMessage actionMessage = new ActionMessage();
-        actionMessage.setChannelName("Feishu");
+        actionMessage.setChannelName(inboundMsg.getChannel());
         actionMessage.setActionType(ActionType.REPLY);
         actionMessage.setQuoteMessageId(inboundMsg.getMessageId());
         actionMessage.setMessageType("text");

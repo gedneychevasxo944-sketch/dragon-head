@@ -2,6 +2,7 @@ package org.dragon.workspace.scheduler;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
@@ -36,8 +37,8 @@ public class WorkspaceScheduler {
     private final ChatRoom chatRoom;
 
     // 任务存储
-    private final Map<String, WorkspaceTask> tasks = new HashMap<>();
-    private final Map<String, SubTask> subTasks = new HashMap<>();
+    private final Map<String, WorkspaceTask> tasks = new ConcurrentHashMap<>();
+    private final Map<String, SubTask> subTasks = new ConcurrentHashMap<>();
 
     /**
      * 提交任务到工作空间

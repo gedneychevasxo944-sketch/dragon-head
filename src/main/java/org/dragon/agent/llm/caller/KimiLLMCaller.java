@@ -1,0 +1,204 @@
+package org.dragon.agent.llm.caller;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import lombok.extern.slf4j.Slf4j;
+import org.dragon.agent.llm.LLMRequest;
+import org.dragon.agent.llm.LLMResponse;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
+
+/**
+ * Kimi (Moonshot AI) LLM 调用器实现
+ *
+ * @author wyj
+ * @version 1.0
+ */
+@Slf4j
+@Component
+@Primary
+public class KimiLLMCaller implements LLMCaller {
+
+    private final HttpClient httpClient;
+    private final Gson gson;
+
+    @Value("${llm.kimi.apiKey:}")
+    private String apiKey;
+
+    @Value("${llm.kimi.baseUrl:https://api.moonshot.cn/v1}")
+    private String baseUrl;
+
+    @Value("${llm.kimi.model:moonshot-v1-8k-online}")
+    private String defaultModel;
+
+    public KimiLLMCaller() {
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(30))
+                .build();
+        this.gson = new Gson();
+    }
+
+    @Override
+    public LLMResponse call(LLMRequest request) {
+        return call(defaultModel, request);
+    }
+
+    @Override
+    public CompletableFuture<LLMResponse> callAsync(LLMRequest request) {
+        return callAsync(defaultModel, request);
+    }
+
+    @Override
+    public LLMResponse call(String modelId, LLMRequest request) {
+        try {
+            String url = baseUrl + "/chat/completions";
+
+            // Kimi 模型需要追加 /online 对于在线版本
+            String effectiveModel = modelId != null ? modelId : defaultModel;
+            if (effectiveModel.contains("online")) {
+                url = baseUrl + "/chat/online_versions/v1/chat/completions";
+            }
+
+            String body = buildRequestBody(effectiveModel, request);
+
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .timeout(Duration.ofSeconds(60))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(httpRequest,
+                    HttpResponse.BodyHandlers.ofString());
+
+            return parseResponse(response.body());
+
+        } catch (Exception e) {
+            log.error("[Kimi] 调用失败: {}", e.getMessage(), e);
+            return buildErrorResponse(e.getMessage());
+        }
+    }
+
+    @Override
+    public CompletableFuture<LLMResponse> callAsync(String modelId, LLMRequest request) {
+        return CompletableFuture.supplyAsync(() -> call(modelId, request));
+    }
+
+    @Override
+    public Stream<LLMResponse> streamCall(LLMRequest request) {
+        return streamCall(defaultModel, request);
+    }
+
+    @Override
+    public Stream<LLMResponse> streamCall(String modelId, LLMRequest request) {
+        return Stream.of(call(modelId, request));
+    }
+
+    private String buildRequestBody(String modelId, LLMRequest request) {
+        JsonObject body = new JsonObject();
+        body.addProperty("model", modelId);
+        body.addProperty("stream", request.isStream());
+
+        // 构建消息
+        JsonArray messages = new JsonArray();
+
+        // 系统提示词
+        if (request.getSystemPrompt() != null && !request.getSystemPrompt().isEmpty()) {
+            JsonObject systemMsg = new JsonObject();
+            systemMsg.addProperty("role", "system");
+            systemMsg.addProperty("content", request.getSystemPrompt());
+            messages.add(systemMsg);
+        }
+
+        // 消息列表
+        if (request.getMessages() != null) {
+            for (LLMRequest.LLMMessage msg : request.getMessages()) {
+                JsonObject msgObj = new JsonObject();
+                msgObj.addProperty("role", msg.getRole().name().toLowerCase());
+                msgObj.addProperty("content", msg.getContent());
+                if (msg.getName() != null) {
+                    msgObj.addProperty("name", msg.getName());
+                }
+                messages.add(msgObj);
+            }
+        }
+
+        body.add("messages", messages);
+
+        // 可选参数
+        if (request.getTemperature() != null) {
+            body.addProperty("temperature", request.getTemperature());
+        }
+        if (request.getMaxTokens() != null) {
+            body.addProperty("max_tokens", request.getMaxTokens());
+        }
+
+        return body.toString();
+    }
+
+    private LLMResponse parseResponse(String responseBody) {
+        try {
+            JsonObject json = gson.fromJson(responseBody, JsonObject.class);
+
+            // 检查错误
+            if (json.has("error")) {
+                JsonObject error = json.getAsJsonObject("error");
+                String errorMsg = error.get("message").getAsString();
+                log.error("[Kimi] API 错误: {}", errorMsg);
+                return buildErrorResponse(errorMsg);
+            }
+
+            JsonObject choice = json.getAsJsonArray("choices").get(0).getAsJsonObject();
+            JsonObject message = choice.getAsJsonObject("message");
+            String content = message.get("content").getAsString();
+
+            String finishReason = choice.has("finish_reason")
+                    ? choice.get("finish_reason").getAsString()
+                    : "stop";
+
+            // 用量统计
+            LLMResponse.Usage usage = null;
+            if (json.has("usage")) {
+                JsonObject usageJson = json.getAsJsonObject("usage");
+                usage = LLMResponse.Usage.builder()
+                        .promptTokens(usageJson.has("prompt_tokens")
+                                ? usageJson.get("prompt_tokens").getAsInt() : 0)
+                        .completionTokens(usageJson.has("completion_tokens")
+                                ? usageJson.get("completion_tokens").getAsInt() : 0)
+                        .totalTokens(usageJson.has("total_tokens")
+                                ? usageJson.get("total_tokens").getAsInt() : 0)
+                        .build();
+            }
+
+            return LLMResponse.builder()
+                    .content(content)
+                    .finishReason(finishReason)
+                    .usage(usage)
+                    .lastChunk(true)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("[Kimi] 解析响应失败: {}", e.getMessage());
+            return buildErrorResponse("解析响应失败: " + e.getMessage());
+        }
+    }
+
+    private LLMResponse buildErrorResponse(String errorMessage) {
+        return LLMResponse.builder()
+                .content("")
+                .finishReason("error")
+                .build();
+    }
+}

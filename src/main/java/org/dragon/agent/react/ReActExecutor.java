@@ -1,5 +1,6 @@
 package org.dragon.agent.react;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.dragon.agent.llm.LLMRequest;
@@ -9,6 +10,10 @@ import org.dragon.agent.tool.ToolConnector;
 import org.dragon.agent.tool.ToolRegistry;
 import org.dragon.character.mind.memory.MemoryAccess;
 import org.springframework.stereotype.Component;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,6 +33,7 @@ public class ReActExecutor {
     private final LLMCaller llmCaller;
     private final ToolRegistry toolRegistry;
     private final MemoryAccess memoryAccess;
+    private final Gson gson;
 
     public ReActExecutor(LLMCaller llmCaller,
                          ToolRegistry toolRegistry,
@@ -35,6 +41,7 @@ public class ReActExecutor {
         this.llmCaller = llmCaller;
         this.toolRegistry = toolRegistry;
         this.memoryAccess = memoryAccess;
+        this.gson = new Gson();
     }
 
     /**
@@ -186,14 +193,97 @@ public class ReActExecutor {
 
     /**
      * 解析动作
+     * 优先尝试 JSON 解析，回退到关键词匹配
      *
      * @param thought LLM 响应
      * @return 动作
      */
     private Action parseAction(String thought) {
-        // TODO: 实现更复杂的动作解析逻辑
-        // 可以使用 JSON 解析、正则匹配等方式
+        // 优先尝试 JSON 解析
+        Action jsonAction = parseJsonAction(thought);
+        if (jsonAction != null) {
+            return jsonAction;
+        }
 
+        // 回退到关键词匹配
+        return parseKeywordAction(thought);
+    }
+
+    /**
+     * 尝试从 JSON 格式解析动作
+     * 期望格式: {"action": "TOOL|RESPOND|FINISH", "tool": "xxx", "params": {...}}
+     *
+     * @param thought LLM 响应
+     * @return 动作，如果解析失败返回 null
+     */
+    private Action parseJsonAction(String thought) {
+        try {
+            // 尝试提取 JSON 对象
+            String jsonStr = extractJson(thought);
+            if (jsonStr == null) {
+                return null;
+            }
+
+            JsonObject json = gson.fromJson(jsonStr, JsonObject.class);
+
+            if (!json.has("action")) {
+                return null;
+            }
+
+            String actionType = json.get("action").getAsString().toUpperCase();
+            Action.ActionType type = switch (actionType) {
+                case "TOOL" -> Action.ActionType.TOOL;
+                case "RESPOND" -> Action.ActionType.RESPOND;
+                case "FINISH" -> Action.ActionType.FINISH;
+                case "MEMORY" -> Action.ActionType.MEMORY;
+                default -> null;
+            };
+
+            if (type == null) {
+                return null;
+            }
+
+            Action.ActionBuilder builder = Action.builder().type(type);
+
+            if (json.has("tool")) {
+                builder.toolName(json.get("tool").getAsString());
+            }
+
+            if (json.has("params")) {
+                Map<String, Object> params = gson.fromJson(json.get("params"), Map.class);
+                builder.parameters(params);
+            }
+
+            return builder.build();
+
+        } catch (JsonSyntaxException | IllegalStateException e) {
+            log.debug("[ReAct] JSON 解析失败，回退到关键词匹配");
+            return null;
+        }
+    }
+
+    /**
+     * 从文本中提取 JSON 对象
+     *
+     * @param text 文本
+     * @return JSON 字符串，如果不存在返回 null
+     */
+    private String extractJson(String text) {
+        int start = text.indexOf('{');
+        int end = text.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return null;
+    }
+
+    /**
+     * 通过关键词匹配解析动作（回退方案）
+     *
+     * @param thought LLM 响应
+     * @return 动作
+     */
+    private Action parseKeywordAction(String thought) {
         if (thought.contains("FINISH") || thought.contains("完成")) {
             return Action.builder()
                     .type(Action.ActionType.FINISH)
@@ -201,7 +291,6 @@ public class ReActExecutor {
         }
 
         if (thought.contains("TOOL:") || thought.contains("工具:")) {
-            // 提取工具名称
             String toolName = extractToolName(thought);
             return Action.builder()
                     .type(Action.ActionType.TOOL)
@@ -323,11 +412,17 @@ public class ReActExecutor {
         }
 
         prompt.append("请分析上述信息，给出下一步的行动。\n");
-        prompt.append("如果你认为任务已完成，请回复 FINISH 并给出最终回复。\n");
-        prompt.append("格式：\n");
-        prompt.append("- TOOL: <工具名称> - 使用工具\n");
-        prompt.append("- FINISH: <最终回复> - 完成任务\n");
-        prompt.append("- RESPOND: <回复内容> - 直接回复用户\n");
+        prompt.append("请以 JSON 格式返回你的决策：\n");
+        prompt.append("{\n");
+        prompt.append("  \"action\": \"TOOL|RESPOND|FINISH|MEMORY\",  // 动作类型\n");
+        prompt.append("  \"tool\": \"工具名称\",  // TOOL 类型时必填\n");
+        prompt.append("  \"params\": {\"key\": \"value\"}  // 可选参数\n");
+        prompt.append("}\n");
+        prompt.append("说明：\n");
+        prompt.append("- TOOL: 使用工具，tool 填写工具名称\n");
+        prompt.append("- RESPOND: 直接回复用户\n");
+        prompt.append("- FINISH: 完成任务并给出最终回复\n");
+        prompt.append("- MEMORY: 搜索记忆，params 需要包含 query 字段\n");
 
         return prompt.toString();
     }

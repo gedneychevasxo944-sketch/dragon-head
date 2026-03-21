@@ -169,8 +169,8 @@ public class FeishuChannelAdaptor implements ChannelAdapter{
 
     @Override
     public boolean isHealthy() {
-        // empty
-        return true;
+        // 检查客户端是否已初始化并启动
+        return wsClient != null;
     }
 
     @Override
