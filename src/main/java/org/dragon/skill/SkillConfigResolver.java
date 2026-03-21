@@ -1,8 +1,11 @@
 package org.dragon.skill;
 
+<<<<<<< HEAD
 import org.dragon.skill.SkillTypes.SkillEligibilityContext;
 import org.dragon.skill.SkillTypes.SkillEntry;
 import org.dragon.skill.SkillTypes.SkillRequires;
+=======
+>>>>>>> origin/main
 import org.dragon.config.config.ConfigProperties;
 
 import java.io.File;
@@ -88,7 +91,7 @@ public final class SkillConfigResolver {
         return null;
     }
 
-    // ── 内置白名单 (Bundled allowlist) ────────────────────────────────────────────
+    // ── 内置白名单 (Bundled allowlist) ───────────────────────────────────────────
 
     /**
      * 从配置中解析内置技能白名单。
@@ -100,7 +103,7 @@ public final class SkillConfigResolver {
         return normalizeAllowlist(raw);
     }
 
-    public static boolean isBundledSkillAllowed(SkillEntry entry, List<String> allowlist) {
+    public static boolean isBundledSkillAllowed(SkillTypes.SkillEntry entry, List<String> allowlist) {
         if (allowlist == null || allowlist.isEmpty())
             return true;
         if (!isBundledSkill(entry))
@@ -143,7 +146,7 @@ public final class SkillConfigResolver {
     /**
      * 根据配置、操作系统、依赖要求确定是否应包含某个技能。
      */
-    public static boolean shouldIncludeSkill(SkillEntry entry, ConfigProperties config) {
+    public static boolean shouldIncludeSkill(SkillTypes.SkillEntry entry, ConfigProperties config) {
         return shouldIncludeSkill(entry, config, null);
     }
 
@@ -152,7 +155,7 @@ public final class SkillConfigResolver {
      */
     @SuppressWarnings("unchecked")
     public static boolean shouldIncludeSkill(
-            SkillEntry entry, ConfigProperties config, SkillEligibilityContext eligibility) {
+            SkillTypes.SkillEntry entry, ConfigProperties config, SkillTypes.SkillEligibilityContext eligibility) {
 
         String skillKey = SkillFrontmatterParser.resolveSkillKey(entry.getSkill(), entry);
 
@@ -187,7 +190,7 @@ public final class SkillConfigResolver {
 
         // 必需的二进制文件
         if (entry.getMetadata() != null && entry.getMetadata().getRequires() != null) {
-            SkillRequires req = entry.getMetadata().getRequires();
+            SkillTypes.SkillRequires req = entry.getMetadata().getRequires();
 
             if (req.getBins() != null && !req.getBins().isEmpty()) {
                 for (String bin : req.getBins()) {
@@ -246,7 +249,7 @@ public final class SkillConfigResolver {
 
     // ── 辅助方法 (Helpers) ─────────────────────────────────────────────────────
 
-    private static boolean isBundledSkill(SkillEntry entry) {
+    private static boolean isBundledSkill(SkillTypes.SkillEntry entry) {
         return entry.getSkill().getSource() != null
                 && BUNDLED_SOURCES.contains(entry.getSkill().getSource().label());
     }

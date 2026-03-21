@@ -1,7 +1,10 @@
 package org.dragon.skill;
 
+<<<<<<< HEAD
 import org.dragon.skill.SkillTypes.SkillInvocationPolicy;
 import org.dragon.skill.SkillTypes.SkillMetadata;
+=======
+>>>>>>> origin/main
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -51,7 +54,7 @@ class SkillFrontmatterParserTest {
                 "---\n";
 
         Map<String, String> frontmatter = SkillFrontmatterParser.parseFrontmatter(content);
-        SkillMetadata metadata = SkillFrontmatterParser.resolveMetadata(frontmatter);
+        SkillTypes.SkillMetadata metadata = SkillFrontmatterParser.resolveMetadata(frontmatter);
 
         assertNotNull(metadata);
         assertTrue(metadata.getAlways());
@@ -69,7 +72,7 @@ class SkillFrontmatterParserTest {
                 "---\n";
 
         Map<String, String> frontmatter = SkillFrontmatterParser.parseFrontmatter(content);
-        SkillInvocationPolicy policy = SkillFrontmatterParser.resolveInvocationPolicy(frontmatter);
+        SkillTypes.SkillInvocationPolicy policy = SkillFrontmatterParser.resolveInvocationPolicy(frontmatter);
 
         assertNotNull(policy);
         assertFalse(policy.isUserInvocable());
