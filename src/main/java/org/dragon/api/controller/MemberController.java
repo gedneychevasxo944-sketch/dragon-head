@@ -1,5 +1,6 @@
 package org.dragon.api.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.dragon.workspace.hiring.HireMode;
@@ -46,19 +47,13 @@ public class MemberController {
 
     // ==================== 成员查询 ====================
 
-    /**
-     * 查询工作空间的所有成员
-     * GET /api/workspaces/{workspaceId}/members
-     */
+    @Operation(summary = "查询工作空间的所有成员")
     @GetMapping
     public ResponseEntity<List<WorkspaceMember>> listMembers(@PathVariable String workspaceId) {
         return ResponseEntity.ok(memberManagementService.listMembers(workspaceId));
     }
 
-    /**
-     * 查询指定成员
-     * GET /api/workspaces/{workspaceId}/members/{characterId}
-     */
+    @Operation(summary = "查询工作空间下的指定成员")
     @GetMapping("/{characterId}")
     public ResponseEntity<WorkspaceMember> getMember(
             @PathVariable String workspaceId,
@@ -70,11 +65,7 @@ public class MemberController {
 
     // ==================== 成员属性变更 ====================
 
-    /**
-     * 更新成员角色
-     * PATCH /api/workspaces/{workspaceId}/members/{characterId}/role
-     * Body: { "role": "队长" }
-     */
+    @Operation(summary = "更新成员角色")
     @PatchMapping("/{characterId}/role")
     public ResponseEntity<Void> updateRole(
             @PathVariable String workspaceId,
@@ -84,11 +75,7 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 更新成员标签
-     * PUT /api/workspaces/{workspaceId}/members/{characterId}/tags
-     * Body: ["Java", "算法", "可信"]
-     */
+    @Operation(summary = "更新成员标签")
     @PutMapping("/{characterId}/tags")
     public ResponseEntity<Void> updateTags(
             @PathVariable String workspaceId,
@@ -98,11 +85,7 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 更新成员调度权重
-     * PATCH /api/workspaces/{workspaceId}/members/{characterId}/weight
-     * Body: { "weight": 1.5 }
-     */
+    @Operation(summary = "更新成员调度权重")
     @PatchMapping("/{characterId}/weight")
     public ResponseEntity<Void> updateWeight(
             @PathVariable String workspaceId,
@@ -112,11 +95,7 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 更新成员调度优先级
-     * PATCH /api/workspaces/{workspaceId}/members/{characterId}/priority
-     * Body: { "priority": 10 }
-     */
+    @Operation(summary = "更新成员调度优先级")
     @PatchMapping("/{characterId}/priority")
     public ResponseEntity<Void> updatePriority(
             @PathVariable String workspaceId,
@@ -126,11 +105,7 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 调整成员声誉积分（正值加分，负值扣分）
-     * PATCH /api/workspaces/{workspaceId}/members/{characterId}/reputation
-     * Body: { "change": 10 }
-     */
+    @Operation(summary = "调整成员声誉积分（正值加分，负值扣分）")
     @PatchMapping("/{characterId}/reputation")
     public ResponseEntity<Void> updateReputation(
             @PathVariable String workspaceId,
@@ -142,19 +117,7 @@ public class MemberController {
 
     // ==================== 雇佣与解雇 ====================
 
-    /**
-     * 雇佣 Character 到工作空间
-     * POST /api/workspaces/{workspaceId}/members/hire
-     *
-     * <p>三种模式：
-     * <ul>
-     *   <li>DEFAULT：从预设候选池中选，characterId 必填</li>
-     *   <li>MANUAL：管理员直接指定，characterId 必填</li>
-     *   <li>AUTO：HR Character 自动审批，characterId 可为空</li>
-     * </ul>
-     *
-     * Body: { "characterId": "c-001", "mode": "MANUAL" }
-     */
+    @Operation(summary = "雇佣Character到工作空间")
     @PostMapping("/hire")
     public ResponseEntity<Void> hire(
             @PathVariable String workspaceId,
@@ -163,11 +126,7 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 解雇 Character
-     * POST /api/workspaces/{workspaceId}/members/{characterId}/fire
-     * Body: { "mode": "MANUAL" }
-     */
+    @Operation(summary = "解雇Character")
     @PostMapping("/{characterId}/fire")
     public ResponseEntity<Void> fire(
             @PathVariable String workspaceId,
@@ -177,10 +136,7 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 直接移除成员（不走雇佣审批流程）
-     * DELETE /api/workspaces/{workspaceId}/members/{characterId}
-     */
+    @Operation(summary = "直接移除成员（不走雇佣审批流程）")
     @DeleteMapping("/{characterId}")
     public ResponseEntity<Void> removeMember(
             @PathVariable String workspaceId,
@@ -191,10 +147,7 @@ public class MemberController {
 
     // ==================== 职责管理 ====================
 
-    /**
-     * 查询 Character 在工作空间中的职责描述
-     * GET /api/workspaces/{workspaceId}/members/{characterId}/duty
-     */
+    @Operation(summary = "查询Character在工作空间中的职责描述")
     @GetMapping("/{characterId}/duty")
     public ResponseEntity<CharacterDuty> getDuty(
             @PathVariable String workspaceId,
@@ -204,11 +157,7 @@ public class MemberController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * 设置 Character 的职责描述（新增或覆盖）
-     * PUT /api/workspaces/{workspaceId}/members/{characterId}/duty
-     * Body: { "description": "负责代码审查和技术方案设计" }
-     */
+    @Operation(summary = "设置Character的职责描述（新增或覆盖）")
     @PutMapping("/{characterId}/duty")
     public ResponseEntity<Void> setDuty(
             @PathVariable String workspaceId,

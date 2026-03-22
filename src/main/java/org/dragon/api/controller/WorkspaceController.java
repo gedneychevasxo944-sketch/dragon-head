@@ -1,5 +1,6 @@
 package org.dragon.api.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
@@ -56,21 +57,14 @@ public class WorkspaceController {
 
     // ==================== Workspace 生命周期 ====================
 
-    /**
-     * 创建工作空间
-     * POST /api/workspaces
-     */
+    @Operation(summary = "创建工作空间")
     @PostMapping
     public ResponseEntity<Workspace> createWorkspace(@RequestBody Workspace workspace) {
         Workspace created = workspaceLifecycleService.createWorkspace(workspace);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    /**
-     * 获取所有工作空间
-     * GET /api/workspaces
-     * GET /api/workspaces?status=ACTIVE
-     */
+    @Operation(summary = "获取所有工作空间")
     @GetMapping
     public ResponseEntity<List<Workspace>> listWorkspaces(
             @RequestParam(required = false) Workspace.Status status) {
@@ -80,10 +74,7 @@ public class WorkspaceController {
         return ResponseEntity.ok(list);
     }
 
-    /**
-     * 获取指定工作空间
-     * GET /api/workspaces/{workspaceId}
-     */
+    @Operation(summary = "获取指定工作空间")
     @GetMapping("/{workspaceId}")
     public ResponseEntity<Workspace> getWorkspace(@PathVariable String workspaceId) {
         return workspaceLifecycleService.getWorkspace(workspaceId)
@@ -91,10 +82,7 @@ public class WorkspaceController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * 更新工作空间
-     * PUT /api/workspaces/{workspaceId}
-     */
+    @Operation(summary = "更新工作空间")
     @PutMapping("/{workspaceId}")
     public ResponseEntity<Workspace> updateWorkspace(
             @PathVariable String workspaceId,
@@ -104,40 +92,28 @@ public class WorkspaceController {
         return ResponseEntity.ok(updated);
     }
 
-    /**
-     * 删除工作空间
-     * DELETE /api/workspaces/{workspaceId}
-     */
+    @Operation(summary = "删除工作空间")
     @DeleteMapping("/{workspaceId}")
     public ResponseEntity<Void> deleteWorkspace(@PathVariable String workspaceId) {
         workspaceLifecycleService.deleteWorkspace(workspaceId);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * 激活工作空间
-     * POST /api/workspaces/{workspaceId}/activate
-     */
+    @Operation(summary = "激活工作空间")
     @PostMapping("/{workspaceId}/activate")
     public ResponseEntity<Void> activateWorkspace(@PathVariable String workspaceId) {
         workspaceLifecycleService.activateWorkspace(workspaceId);
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 停用工作空间
-     * POST /api/workspaces/{workspaceId}/deactivate
-     */
+    @Operation(summary = "停用工作空间")
     @PostMapping("/{workspaceId}/deactivate")
     public ResponseEntity<Void> deactivateWorkspace(@PathVariable String workspaceId) {
         workspaceLifecycleService.deactivateWorkspace(workspaceId);
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 归档工作空间
-     * POST /api/workspaces/{workspaceId}/archive
-     */
+    @Operation(summary = "归档工作空间")
     @PostMapping("/{workspaceId}/archive")
     public ResponseEntity<Void> archiveWorkspace(@PathVariable String workspaceId) {
         workspaceLifecycleService.archiveWorkspace(workspaceId);
@@ -146,11 +122,7 @@ public class WorkspaceController {
 
     // ==================== 任务监控 ====================
 
-    /**
-     * 查询工作空间的所有任务
-     * GET /api/workspaces/{workspaceId}/tasks
-     * GET /api/workspaces/{workspaceId}/tasks?status=RUNNING
-     */
+    @Operation(summary = "查询工作空间的所有任务")
     @GetMapping("/{workspaceId}/tasks")
     public ResponseEntity<List<Task>> listTasks(
             @PathVariable String workspaceId,
@@ -161,10 +133,7 @@ public class WorkspaceController {
         return ResponseEntity.ok(tasks);
     }
 
-    /**
-     * 查询指定任务详情
-     * GET /api/workspaces/{workspaceId}/tasks/{taskId}
-     */
+    @Operation(summary = "查询指定任务详情")
     @GetMapping("/{workspaceId}/tasks/{taskId}")
     public ResponseEntity<Task> getTask(
             @PathVariable String workspaceId,
@@ -174,10 +143,7 @@ public class WorkspaceController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * 查询任务执行结果
-     * GET /api/workspaces/{workspaceId}/tasks/{taskId}/result
-     */
+    @Operation(summary = "查询任务执行结果")
     @GetMapping("/{workspaceId}/tasks/{taskId}/result")
     public ResponseEntity<String> getTaskResult(
             @PathVariable String workspaceId,
@@ -186,10 +152,7 @@ public class WorkspaceController {
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * 取消任务
-     * POST /api/workspaces/{workspaceId}/tasks/{taskId}/cancel
-     */
+    @Operation(summary = "取消任务")
     @PostMapping("/{workspaceId}/tasks/{taskId}/cancel")
     public ResponseEntity<Task> cancelTask(
             @PathVariable String workspaceId,
@@ -200,12 +163,7 @@ public class WorkspaceController {
 
     // ==================== 行为日志查询 ====================
 
-    /**
-     * 查询工作空间的所有行为日志
-     * GET /api/workspaces/{workspaceId}/logs
-     * GET /api/workspaces/{workspaceId}/logs?characterId=xxx
-     * GET /api/workspaces/{workspaceId}/logs?actionType=HIRE
-     */
+    @Operation(summary = "查询工作空间的所有行为日志")
     @GetMapping("/{workspaceId}/logs")
     public ResponseEntity<List<WorkspaceActionLog>> getActionLogs(
             @PathVariable String workspaceId,
@@ -224,20 +182,14 @@ public class WorkspaceController {
 
     // ==================== 物料管理 ====================
 
-    /**
-     * 查询工作空间的所有物料
-     * GET /api/workspaces/{workspaceId}/materials
-     */
+    @Operation(summary = "查询工作空间的所有物料")
     @GetMapping("/{workspaceId}/materials")
     public ResponseEntity<List<Material>> listMaterials(@PathVariable String workspaceId) {
         List<Material> materials = workspaceMaterialService.listByWorkspace(workspaceId);
         return ResponseEntity.ok(materials);
     }
 
-    /**
-     * 上传物料
-     * POST /api/workspaces/{workspaceId}/materials
-     */
+    @Operation(summary = "上传物料")
     @PostMapping(value = "/{workspaceId}/materials", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Material> uploadMaterial(
             @PathVariable String workspaceId,
@@ -253,10 +205,7 @@ public class WorkspaceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(material);
     }
 
-    /**
-     * 获取物料元数据
-     * GET /api/workspaces/{workspaceId}/materials/{materialId}
-     */
+    @Operation(summary = "获取物料元数据")
     @GetMapping("/{workspaceId}/materials/{materialId}")
     public ResponseEntity<Material> getMaterial(
             @PathVariable String workspaceId,
@@ -266,10 +215,7 @@ public class WorkspaceController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * 下载物料
-     * GET /api/workspaces/{workspaceId}/materials/{materialId}/download
-     */
+    @Operation(summary = "下载物料")
     @GetMapping("/{workspaceId}/materials/{materialId}/download")
     public ResponseEntity<InputStreamResource> downloadMaterial(
             @PathVariable String workspaceId,
@@ -284,10 +230,7 @@ public class WorkspaceController {
                 .body(new InputStreamResource(inputStream));
     }
 
-    /**
-     * 删除物料
-     * DELETE /api/workspaces/{workspaceId}/materials/{materialId}
-     */
+    @Operation(summary = "删除物料")
     @DeleteMapping("/{workspaceId}/materials/{materialId}")
     public ResponseEntity<Void> deleteMaterial(
             @PathVariable String workspaceId,
