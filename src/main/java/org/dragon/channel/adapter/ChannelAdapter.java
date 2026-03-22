@@ -1,6 +1,7 @@
 package org.dragon.channel.adapter;
 
 import org.dragon.channel.entity.ActionMessage;
+import org.dragon.channel.entity.ChannelConfig;
 import org.dragon.gateway.Gateway;
 
 import java.util.concurrent.CompletableFuture;
@@ -18,6 +19,8 @@ public interface ChannelAdapter {
     String getChannelName();
     // 启动监听消息
     void startListening(Gateway gateway) throws Exception;
+    // 动态配置
+    void configure(ChannelConfig config);
     // 异步发送消息
     CompletableFuture<Void> sendMessage(ActionMessage message);
     // 关闭channel
