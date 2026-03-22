@@ -8,7 +8,10 @@ import org.dragon.channel.entity.ActionMessage;
 import org.dragon.channel.entity.MentionConfig;
 import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.channel.enums.ActionType;
+import org.dragon.channel.service.ChannelBindingService;
 import org.dragon.character.CharacterRegistry;
+import org.dragon.task.Task;
+import org.dragon.workspace.WorkspaceApplication;
 import org.dragon.workspace.WorkspaceApplicationProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -37,14 +40,65 @@ public class AgentGateway implements Gateway {
     @Autowired
     private WorkspaceApplicationProvider workspaceApplicationProvider;
 
+    @Autowired
+    private ChannelBindingService channelBindingService;
+
     @Override
     public void dispatch(NormalizedMessage inboundMsg) {
+        // 路由解析：用 (channel, chatId) 查找绑定的 workspaceId
+        Optional<String> workspaceIdOpt = channelBindingService.resolveWorkspaceId(inboundMsg.getChannel(), inboundMsg.getChatId());
+        // 将解析结果写回消息，方便下游链路使用
+        workspaceIdOpt.ifPresent(inboundMsg::setWorkspaceId);
+        if (workspaceIdOpt.isPresent()) {
+            // ========== 路径 A：Workspace 多 Agent 编排路径 ==========
+            dispatchToWorkspace(inboundMsg, workspaceIdOpt.get());
+        } else {
+            // ========== 路径 B：单 Character Fallback 路径 ==========
+            log.info("[Gateway] No workspace binding found for channel={} chatId={}, falling back to single character", inboundMsg.getChannel(), inboundMsg.getChatId());
+            dispatchToSingleCharacter(inboundMsg);
+        }
+    }
+
+
+
+    /**
+     * 路径 A：分发到 Workspace，走多 Agent 智能编排
+     */
+    private void dispatchToWorkspace(NormalizedMessage inboundMsg, String workspaceId) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                log.info("[Gateway] Dispatching to workspace={} from channel={} chatId={}",
+                        workspaceId, inboundMsg.getChannel(), inboundMsg.getChatId());
+                WorkspaceApplication app = workspaceApplicationProvider.getApplication(workspaceId);
+                // 将用户消息作为任务提交给 Workspace 编排层
+                Task task = app.executeTask(
+                        "用户请求", // taskName
+                        inboundMsg.getTextContent(), // taskDescription
+                        inboundMsg, // input（完整消息上下文）
+                        inboundMsg.getSenderId() // creatorId
+                );
+                log.info("[Gateway] Workspace task submitted, taskId={}", task.getId());
+                // Workspace 编排为异步执行，回复由各 Character 通过 ActionMessage 下行推送
+                // 此处无需再主动发消息，等待编排层回调
+            } catch (Exception e) {
+                log.error("[Gateway] Workspace dispatch failed for workspaceId={}", workspaceId, e);
+                ActionMessage actionMessage = buildActionMessage(inboundMsg, "任务提交失败: " + e.getMessage());
+                channelManager.routeMessageOutbound(actionMessage);
+            }
+        });
+    }
+
+    /**
+     * 路径 B：无 Workspace 绑定，Fallback 到单 Character 即时任务
+     */
+
+    private void dispatchToSingleCharacter(NormalizedMessage inboundMsg) {
         CompletableFuture.runAsync(() -> {
             try {
                 // 1. 获取默认 Character
                 Optional<org.dragon.character.Character> characterOpt = characterRegistry.getDefaultCharacter();
 
-                if (characterOpt.isEmpty()) {
+                if (!characterOpt.isPresent()) {
                     log.warn("[Gateway] No default character configured");
                     // Fallback to mock
                     ActionMessage actionMessage = buildActionMessage(inboundMsg, "你刚刚给我发了 '" + inboundMsg.getTextContent() +"' 我选择不回复你");
@@ -61,7 +115,7 @@ public class AgentGateway implements Gateway {
                 channelManager.routeMessageOutbound(actionMessage);
 
             } catch (Exception e) {
-                log.error("[Gateway] Execution failed", e);
+                log.error("[Gateway] Single character dispatch failed", e);
                 ActionMessage actionMessage = buildActionMessage(inboundMsg, "处理失败: " + e.getMessage());
                 channelManager.routeMessageOutbound(actionMessage);
             }
