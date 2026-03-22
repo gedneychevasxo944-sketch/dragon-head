@@ -12,6 +12,7 @@ import org.dragon.observer.commons.CommonSenseValidator;
 import org.dragon.observer.evaluation.EvaluationEngine;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.optimization.OptimizationAction;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,8 +41,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ObserverController {
 
+    @Autowired
     private final ObserverRegistry observerRegistry;
+    @Autowired
     private final ObserverService observerService;
+    @Autowired
     private final CommonSenseStore commonSenseStore;
 
     // ==================== Observer 生命周期 ====================

@@ -7,6 +7,7 @@ import org.dragon.channel.ChannelManager;
 import org.dragon.channel.entity.ChannelBinding;
 import org.dragon.channel.entity.ChannelConfig;
 import org.dragon.channel.service.ChannelBindingService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,7 +42,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ChannelController {
 
+    @Autowired
     private final ChannelBindingService channelBindingService;
+    @Autowired
     private final ChannelManager channelManager;
 
     // ==================== ChannelConfig（Bot 凭证）管理 ====================

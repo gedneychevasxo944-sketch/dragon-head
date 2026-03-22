@@ -8,6 +8,7 @@ import org.dragon.workspace.member.CharacterDuty;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.service.WorkspaceHiringService;
 import org.dragon.workspace.service.WorkspaceMemberManagementService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +43,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MemberController {
 
+    @Autowired
     private final WorkspaceMemberManagementService memberManagementService;
+    @Autowired
     private final WorkspaceHiringService workspaceHiringService;
 
     // ==================== 成员查询 ====================

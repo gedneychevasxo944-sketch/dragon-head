@@ -11,6 +11,7 @@ import org.dragon.workspace.service.WorkspaceActionLogService;
 import org.dragon.workspace.service.WorkspaceLifecycleService;
 import org.dragon.workspace.service.WorkspaceMaterialService;
 import org.dragon.workspace.service.WorkspaceTaskService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -50,9 +51,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WorkspaceController {
 
+    @Autowired
     private final WorkspaceLifecycleService workspaceLifecycleService;
+    @Autowired
     private final WorkspaceTaskService workspaceTaskService;
+    @Autowired
     private final WorkspaceActionLogService workspaceActionLogService;
+    @Autowired
     private final WorkspaceMaterialService workspaceMaterialService;
 
     // ==================== Workspace 生命周期 ====================

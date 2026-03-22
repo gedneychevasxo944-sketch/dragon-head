@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -37,6 +38,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CharacterController {
 
+    @Autowired
     private final CharacterRegistry characterRegistry;
 
     // ==================== 查询 ====================
