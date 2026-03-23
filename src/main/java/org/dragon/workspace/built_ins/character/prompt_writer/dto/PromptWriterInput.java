@@ -1,4 +1,4 @@
-package org.dragon.workspace.service.dto;
+package org.dragon.workspace.built_ins.character.prompt_writer.dto;
 
 import java.util.List;
 import java.util.Map;

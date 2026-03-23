@@ -23,7 +23,7 @@ import org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharac
 import org.dragon.workspace.chat.ChatRoom;
 import org.dragon.workspace.chat.ChatSession;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.workspace.service.dto.PromptWriterInput;
+import org.dragon.workspace.built_ins.character.prompt_writer.dto.PromptWriterInput;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
