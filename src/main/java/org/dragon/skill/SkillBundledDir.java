@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 内置技能目录解析和上下文加载。
- * 对应 TypeScript 中的 skills/bundled-dir.ts + bundled-context.ts。
  */
 @Slf4j
 public final class SkillBundledDir {
@@ -32,7 +31,7 @@ public final class SkillBundledDir {
      */
     public static String resolveBundledSkillsDir() {
         // 1. 环境变量覆盖
-        String override = System.getenv("OPENCLAW_BUNDLED_SKILLS_DIR");
+        String override = System.getenv("DRAGONHEAD_BUNDLED_SKILLS_DIR");
         if (override != null && !override.trim().isEmpty()) {
             return override.trim();
         }

@@ -97,7 +97,7 @@ public final class SkillTypes {
     // =========================================================================
 
     /**
-     * 解析后的 OpenClaw 专属技能元数据。
+     * 解析后的 DragonHead 专属技能元数据。
      */
     @Value
     public static class SkillMetadata {

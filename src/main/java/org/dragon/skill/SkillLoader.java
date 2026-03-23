@@ -19,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 从工作区、内置和托管目录中发现并加载技能。
- * 对应 TypeScript 中的 skills/workspace.ts。
  */
 @Slf4j
 public class SkillLoader {

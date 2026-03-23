@@ -8,7 +8,6 @@ import org.dragon.config.config.ConfigProperties;
 
 /**
  * 应用来自技能配置的环境变量覆盖。
- * 对应 TypeScript 中的 skills/env-overrides.ts。
  */
 public final class SkillEnvOverrides {
 

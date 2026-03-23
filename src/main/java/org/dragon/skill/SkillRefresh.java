@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
 /**
  * 技能文件监视器和快照版本控制。
  * 监视工作区/托管/额外技能目录的更改，并增加快照版本以触发提示词重建。
- * 对应 TypeScript 中的 skills/refresh.ts。
  */
 @Slf4j
 public final class SkillRefresh {

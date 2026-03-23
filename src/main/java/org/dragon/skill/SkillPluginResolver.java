@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
 
 /**
  * 解析由插件提供的技能目录。
- * 对应 TypeScript 中的 skills/plugin-skills.ts。
  */
 @Slf4j
 public final class SkillPluginResolver {
