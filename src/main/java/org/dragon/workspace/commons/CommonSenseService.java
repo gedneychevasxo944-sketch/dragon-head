@@ -7,8 +7,13 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.dragon.agent.llm.util.CharacterCaller;
+import org.dragon.character.Character;
+import org.dragon.workspace.built_ins.character.commonsense_writer.CommonSenseWriterCharacterFactory;
 import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
 import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * CommonSenseService 常识服务
@@ -18,10 +23,13 @@ import org.springframework.stereotype.Component;
  * @author wyj
  * @version 1.0
  */
+@Slf4j
 @Component
 public class CommonSenseService {
 
     private final WorkspaceCommonSenseStore store;
+    private final CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory;
+    private final CharacterCaller characterCaller;
 
     /**
      * Prompt 缓存
@@ -29,8 +37,12 @@ public class CommonSenseService {
      */
     private final Map<String, CachedPrompt> promptCache = new ConcurrentHashMap<>();
 
-    public CommonSenseService(WorkspaceCommonSenseStore store) {
+    public CommonSenseService(WorkspaceCommonSenseStore store,
+                              CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory,
+                              CharacterCaller characterCaller) {
         this.store = store;
+        this.commonSenseWriterCharacterFactory = commonSenseWriterCharacterFactory;
+        this.characterCaller = characterCaller;
     }
 
     // ==================== 文件夹管理 ====================
@@ -210,6 +222,7 @@ public class CommonSenseService {
 
     /**
      * 执行实际的 prompt 生成逻辑
+     * 使用 CommonSenseWriter Character 生成 prompt
      */
     String doGeneratePrompt(String workspaceId) {
         List<CommonSense> enabledCommonSenses = getEnabled(workspaceId);
@@ -218,12 +231,67 @@ public class CommonSenseService {
             return "";
         }
 
+        // 构建输入给 CommonSenseWriter Character
+        String input = buildCommonSenseWriterInput(workspaceId, enabledCommonSenses);
+
+        try {
+            // 获取 CommonSenseWriter Character
+            Character commonSenseWriter = commonSenseWriterCharacterFactory
+                    .getOrCreateCommonSenseWriterCharacter(workspaceId);
+
+            // 调用 Character 生成 prompt
+            String generatedPrompt = characterCaller.call(commonSenseWriter, input);
+
+            log.info("[CommonSenseService] Generated prompt for workspace: {}", workspaceId);
+
+            return generatedPrompt;
+        } catch (Exception e) {
+            log.warn("[CommonSenseService] Failed to generate prompt via Character, using fallback: {}", e.getMessage());
+            // 如果 Character 调用失败，使用 fallback 逻辑
+            return doGeneratePromptFallback(enabledCommonSenses);
+        }
+    }
+
+    /**
+     * 构建给 CommonSenseWriter Character 的输入
+     */
+    private String buildCommonSenseWriterInput(String workspaceId, List<CommonSense> commonSenses) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("请根据以下常识信息，生成适合的 prompt。\n\n");
+        sb.append("## 工作空间 ID\n").append(workspaceId).append("\n\n");
+        sb.append("## 常识列表\n");
+
+        for (CommonSense cs : commonSenses) {
+            sb.append("- 名称: ").append(cs.getName()).append("\n");
+            sb.append("  类别: ").append(cs.getCategory()).append("\n");
+            sb.append("  严重程度: ").append(cs.getSeverity()).append("\n");
+            if (cs.getDescription() != null && !cs.getDescription().isEmpty()) {
+                sb.append("  描述: ").append(cs.getDescription()).append("\n");
+            }
+            if (cs.getRule() != null && !cs.getRule().isEmpty()) {
+                sb.append("  规则: ").append(cs.getRule()).append("\n");
+            }
+            if (cs.getPromptTemplate() != null && !cs.getPromptTemplate().isEmpty()) {
+                sb.append("  模板: ").append(cs.getPromptTemplate()).append("\n");
+            }
+            sb.append("\n");
+        }
+
+        sb.append("\n请生成一个结构化的 prompt，包含所有常识信息。");
+
+        return sb.toString();
+    }
+
+    /**
+     * Fallback: 当 Character 调用失败时使用
+     */
+    private String doGeneratePromptFallback(List<CommonSense> commonSenses) {
         StringBuilder sb = new StringBuilder();
         sb.append("# Workspace Common Sense\n\n");
         sb.append("以下是本工作空间的常识规则：\n\n");
 
         // 按类别分组
-        Map<CommonSense.Category, List<CommonSense>> grouped = enabledCommonSenses.stream()
+        Map<CommonSense.Category, List<CommonSense>> grouped = commonSenses.stream()
                 .collect(Collectors.groupingBy(CommonSense::getCategory));
 
         for (CommonSense.Category category : CommonSense.Category.values()) {
