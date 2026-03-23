@@ -5,9 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.workspace.Workspace;
-import org.dragon.workspace.actionlog.WorkspaceActionLog;
+import org.dragon.observer.actionlog.ActionType;
+import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.workspace.material.Material;
-import org.dragon.workspace.service.WorkspaceActionLogService;
+import org.dragon.observer.actionlog.ObserverActionLogService;
 import org.dragon.workspace.service.WorkspaceLifecycleService;
 import org.dragon.workspace.service.WorkspaceMaterialService;
 import org.dragon.workspace.service.WorkspaceTaskService;
@@ -56,7 +57,7 @@ public class WorkspaceController {
     @Autowired
     private final WorkspaceTaskService workspaceTaskService;
     @Autowired
-    private final WorkspaceActionLogService workspaceActionLogService;
+    private final ObserverActionLogService workspaceActionLogService;
     @Autowired
     private final WorkspaceMaterialService workspaceMaterialService;
 
@@ -170,17 +171,17 @@ public class WorkspaceController {
 
     @Operation(summary = "查询工作空间的所有行为日志")
     @GetMapping("/{workspaceId}/logs")
-    public ResponseEntity<List<WorkspaceActionLog>> getActionLogs(
+    public ResponseEntity<List<ObserverActionLog>> getActionLogs(
             @PathVariable String workspaceId,
             @RequestParam(required = false) String characterId,
-            @RequestParam(required = false) WorkspaceActionLog.ActionType actionType) {
-        List<WorkspaceActionLog> logs;
+            @RequestParam(required = false) ActionType actionType) {
+        List<ObserverActionLog> logs;
         if (characterId != null) {
-            logs = workspaceActionLogService.getActionLogsByCharacter(workspaceId, characterId);
+            logs = workspaceActionLogService.getActionLogs("CHARACTER", characterId);
         } else if (actionType != null) {
-            logs = workspaceActionLogService.getActionLogsByType(workspaceId, actionType);
+            logs = workspaceActionLogService.getActionLogsByType(actionType);
         } else {
-            logs = workspaceActionLogService.getActionLogs(workspaceId);
+            logs = workspaceActionLogService.getActionLogs("WORKSPACE", workspaceId);
         }
         return ResponseEntity.ok(logs);
     }

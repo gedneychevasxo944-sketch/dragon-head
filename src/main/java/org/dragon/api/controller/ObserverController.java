@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.observer.Observer;
 import org.dragon.observer.ObserverRegistry;
 import org.dragon.observer.ObserverService;
-import org.dragon.observer.commons.CommonSense;
-import org.dragon.observer.commons.CommonSenseStore;
-import org.dragon.observer.commons.CommonSenseValidator;
+import org.dragon.workspace.commons.CommonSense;
+import org.dragon.workspace.commons.CommonSenseValidator;
+import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
 import org.dragon.observer.evaluation.EvaluationEngine;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.optimization.OptimizationAction;
@@ -46,7 +46,7 @@ public class ObserverController {
     @Autowired
     private final ObserverService observerService;
     @Autowired
-    private final CommonSenseStore commonSenseStore;
+    private final WorkspaceCommonSenseStore commonSenseStore;
 
     // ==================== Observer 生命周期 ====================
 
@@ -238,18 +238,17 @@ public class ObserverController {
     @Operation(summary = "查询某个目标（Character/Workspace）的所有评价记录")
     @GetMapping("/common-senses")
     public ResponseEntity<List<CommonSense>> listCommonSenses(
+            @RequestParam String workspaceId,
             @RequestParam(required = false) CommonSense.Category category,
             @RequestParam(required = false) CommonSense.Severity severity,
             @RequestParam(required = false, defaultValue = "false") boolean enabledOnly) {
         List<CommonSense> list;
         if (category != null) {
-            list = commonSenseStore.findByCategory(category);
-        } else if (severity != null) {
-            list = commonSenseStore.findBySeverity(severity);
+            list = commonSenseStore.findByWorkspaceAndCategory(workspaceId, category);
         } else if (enabledOnly) {
-            list = commonSenseStore.findEnabled();
+            list = commonSenseStore.findEnabled(workspaceId);
         } else {
-            list = commonSenseStore.findAll();
+            list = commonSenseStore.findByWorkspace(workspaceId);
         }
         return ResponseEntity.ok(list);
     }
