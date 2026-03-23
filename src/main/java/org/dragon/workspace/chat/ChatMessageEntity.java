@@ -1,6 +1,7 @@
 package org.dragon.workspace.chat;
 
 import io.ebean.annotation.DbJson;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
@@ -48,6 +49,7 @@ public class ChatMessageEntity {
 
     private LocalDateTime timestamp;
 
+    @Column(name = "`read`")
     private boolean read;
 
     @DbJson
