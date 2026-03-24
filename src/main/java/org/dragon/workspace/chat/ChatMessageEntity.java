@@ -55,6 +55,20 @@ public class ChatMessageEntity {
     @DbJson
     private Map<String, Object> metadata;
 
+    // ==================== 任务协作字段 ====================
+
+    private String taskId;
+
+    private String parentTaskId;
+
+    private String taskPurpose;
+
+    private String messageSubtype;
+
+    private String relatedTaskId;
+
+    private String correlationId;
+
     /**
      * 转换为ChatMessage
      */
@@ -70,6 +84,12 @@ public class ChatMessageEntity {
                 .timestamp(this.timestamp)
                 .read(this.read)
                 .metadata(this.metadata)
+                .taskId(this.taskId)
+                .parentTaskId(this.parentTaskId)
+                .taskPurpose(this.taskPurpose != null ? ChatMessage.TaskMessagePurpose.valueOf(this.taskPurpose) : null)
+                .messageSubtype(this.messageSubtype)
+                .relatedTaskId(this.relatedTaskId)
+                .correlationId(this.correlationId)
                 .build();
     }
 
@@ -88,6 +108,12 @@ public class ChatMessageEntity {
                 .timestamp(message.getTimestamp())
                 .read(message.isRead())
                 .metadata(message.getMetadata())
+                .taskId(message.getTaskId())
+                .parentTaskId(message.getParentTaskId())
+                .taskPurpose(message.getTaskPurpose() != null ? message.getTaskPurpose().name() : null)
+                .messageSubtype(message.getMessageSubtype())
+                .relatedTaskId(message.getRelatedTaskId())
+                .correlationId(message.getCorrelationId())
                 .build();
     }
 }

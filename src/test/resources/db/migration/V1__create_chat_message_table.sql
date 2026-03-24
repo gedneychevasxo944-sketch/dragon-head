@@ -10,9 +10,18 @@ CREATE TABLE chat_message (
     timestamp DATETIME NOT NULL,
     `read` BOOLEAN NOT NULL DEFAULT FALSE,
     metadata JSON,
+    task_id VARCHAR(64),
+    parent_task_id VARCHAR(64),
+    task_purpose VARCHAR(32),
+    message_subtype VARCHAR(32),
+    related_task_id VARCHAR(64),
+    correlation_id VARCHAR(64),
     INDEX idx_workspace_id (workspace_id),
     INDEX idx_sender_id (sender_id),
     INDEX idx_receiver_id (receiver_id),
     INDEX idx_session_id (session_id),
-    INDEX idx_timestamp (timestamp)
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_task_id (task_id),
+    INDEX idx_parent_task_id (parent_task_id),
+    INDEX idx_correlation_id (correlation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -122,4 +122,17 @@ public class MySqlChatMessageStore implements ChatMessageStore {
                 .eq("workspaceId", workspaceId)
                 .delete();
     }
+
+    @Override
+    public List<ChatMessage> findByTaskId(String taskId) {
+        return DB.find(ChatMessageEntity.class)
+                .where()
+                .eq("taskId", taskId)
+                .orderBy()
+                .asc("timestamp")
+                .findList()
+                .stream()
+                .map(ChatMessageEntity::toChatMessage)
+                .collect(Collectors.toList());
+    }
 }
