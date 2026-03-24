@@ -26,7 +26,9 @@ public class OptimizationAction {
      */
     public enum TargetType {
         CHARACTER,
-        WORKSPACE
+        WORKSPACE,
+        MEMORY,
+        SKILL
     }
 
     /**

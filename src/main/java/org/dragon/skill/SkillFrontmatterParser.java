@@ -16,8 +16,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
+ * 技能 Frontmatter 解析器。
  * 解析 SKILL.md 文件中类似 YAML 的 frontmatter 并提取元数据。
- * 对应 TypeScript 中的 skills/frontmatter.ts。
+ *
+ * @since 1.0
  */
 @Slf4j
 public class SkillFrontmatterParser {
@@ -101,7 +103,7 @@ public class SkillFrontmatterParser {
     // =========================================================================
 
     /**
-     * 从解析后的 frontmatter 中解析 OpenClaw 专属元数据。
+     * 从解析后的 frontmatter 中解析 DragonHead 专属元数据。
      * 查找包含 "dragonhead" 子键的 JSON 对象的 "metadata" 键。
      *
      * @param frontmatter 解析后的 frontmatter 映射

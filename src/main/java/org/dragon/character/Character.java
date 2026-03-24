@@ -1,8 +1,10 @@
 package org.dragon.character;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.dragon.agent.model.ModelRegistry;
@@ -10,16 +12,14 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActContext;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.react.ReActResult;
+import org.dragon.agent.workflow.Workflow;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowResult;
+import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.mind.Mind;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.PromptManager;
 import org.dragon.character.mind.DefaultMind;
-import org.dragon.character.task.DefaultTaskManager;
-import org.dragon.character.task.Task;
-import org.dragon.character.task.TaskManager;
-import org.dragon.character.task.TaskOperation;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,12 +41,6 @@ import lombok.NoArgsConstructor;
 public class Character {
 
     /**
-     * 任务管理器
-     */
-    @Builder.Default
-    private TaskManager taskManager = new DefaultTaskManager();
-
-    /**
      * ReAct 执行器
      * 由外部注入，负责实际执行 ReAct 流程
      */
@@ -63,6 +57,12 @@ public class Character {
      * 由外部注入，负责实际执行 Workflow
      */
     private WorkflowExecutor workflowExecutor;
+
+    /**
+     * Workflow 存储
+     * 由外部注入，负责存储工作流定义
+     */
+    private WorkflowStore workflowStore;
 
     /**
      * 模型注册中心
@@ -128,6 +128,12 @@ public class Character {
      * 扩展属性
      */
     private Map<String, Object> extensions;
+
+    /**
+     * 当前 Character 允许使用的工具名称集合
+     */
+    @Builder.Default
+    private Set<String> allowedTools = new HashSet<>();
 
     /**
      * 创建时间
@@ -302,6 +308,7 @@ public class Character {
                 .systemPrompt(systemPrompt)
                 .maxIterations(maxIterations)
                 .streamingEnabled(false)
+                .allowedTools(this.allowedTools)
                 .build();
 
         return reActExecutor.execute(context);
@@ -358,6 +365,7 @@ public class Character {
                 .maxIterations(maxIterations)
                 .streamingEnabled(streaming)
                 .task(task)
+                .allowedTools(this.allowedTools)
                 .build();
 
         return reActExecutor.execute(context);
@@ -373,14 +381,31 @@ public class Character {
         if (workflowExecutor == null) {
             throw new IllegalStateException("WorkflowExecutor not initialized");
         }
+        if (workflowStore == null) {
+            throw new IllegalStateException("WorkflowStore not initialized");
+        }
 
-        // TODO: 需要 WorkflowRegistry 来获取 Workflow 对象
-        // 暂时返回未实现的状态
-        return WorkflowResult.builder()
-                .workflowId(workflowId)
-                .status(org.dragon.agent.workflow.WorkflowState.State.FAILED)
-                .errorMessage("Workflow execution not fully implemented yet")
-                .build();
+        // 从 store 获取工作流定义
+        Workflow workflow = workflowStore.findById(workflowId)
+                .orElse(null);
+
+        if (workflow == null) {
+            return WorkflowResult.builder()
+                    .workflowId(workflowId)
+                    .status(org.dragon.agent.workflow.WorkflowState.State.FAILED)
+                    .errorMessage("Workflow not found: " + workflowId)
+                    .build();
+        }
+
+        // 构建输入上下文
+        java.util.Map<String, Object> input = new java.util.HashMap<>();
+        input.put("characterId", this.id);
+        if (workspaceIds != null && !workspaceIds.isEmpty()) {
+            input.put("workspaceId", workspaceIds.get(0));
+        }
+
+        // 执行工作流
+        return workflowExecutor.execute(workflow, input);
     }
 
     /**
@@ -419,155 +444,4 @@ public class Character {
         }
     }
 
-    // ==================== 任务管理接口 ====================
-
-    /**
-     * 添加任务
-     *
-     * @param task 任务
-     * @return 添加后的任务
-     */
-    public Task addTask(Task task) {
-        task.setCharacterId(this.id);
-        if (task.getType() == null) {
-            task.setType(Task.TaskType.USER_REQUEST);
-        }
-        return taskManager.addTask(task);
-    }
-
-    /**
-     * 创建并添加任务，然后执行
-     *
-     * @param userInput 用户输入
-     * @return 执行结果
-     */
-    public Task addTaskAndRun(String userInput) {
-        Task task = Task.builder()
-                .name("Task-" + System.currentTimeMillis())
-                .type(Task.TaskType.USER_REQUEST)
-                .input(userInput)
-                .characterId(this.id)
-                .executionMode("REACT")
-                .build();
-
-        task = addTask(task);
-
-        // 执行任务
-        try {
-            String result = run(userInput);
-            task.setResult(result);
-            task.setStatus(org.dragon.character.task.TaskStatus.COMPLETED);
-        } catch (Exception e) {
-            task.setErrorMessage(e.getMessage());
-            task.setStatus(org.dragon.character.task.TaskStatus.FAILED);
-        }
-
-        return task;
-    }
-
-    /**
-     * 操作任务
-     *
-     * @param taskId    任务ID
-     * @param operation 操作
-     * @return 操作后的任务，如果不存在则返回 null
-     */
-    public Task operateTask(String taskId, TaskOperation operation) {
-        return taskManager.operateTask(taskId, operation);
-    }
-
-    /**
-     * 暂停任务
-     *
-     * @param taskId 任务ID
-     * @return 暂停后的任务，如果不存在则返回 null
-     */
-    public Task pauseTask(String taskId) {
-        return operateTask(taskId, TaskOperation.PAUSE);
-    }
-
-    /**
-     * 恢复任务
-     *
-     * @param taskId 任务ID
-     * @return 恢复后的任务，如果不存在则返回 null
-     */
-    public Task resumeTask(String taskId) {
-        return operateTask(taskId, TaskOperation.RESUME);
-    }
-
-    /**
-     * 取消任务
-     *
-     * @param taskId 任务ID
-     * @return 取消后的任务，如果不存在则返回 null
-     */
-    public Task cancelTask(String taskId) {
-        return operateTask(taskId, TaskOperation.CANCEL);
-    }
-
-    /**
-     * 重试任务
-     *
-     * @param taskId 任务ID
-     * @return 任务，如果不存在则返回 null
-     */
-    public Task retryTask(String taskId) {
-        return operateTask(taskId, TaskOperation.RETRY);
-    }
-
-    /**
-     * 获取任务
-     *
-     * @param taskId 任务ID
-     * @return 任务，如果不存在则返回 null
-     */
-    public Task getTask(String taskId) {
-        return taskManager.getTask(taskId);
-    }
-
-    /**
-     * 列出所有任务
-     *
-     * @return 任务列表
-     */
-    public List<Task> listTasks() {
-        return taskManager.listTasks();
-    }
-
-    /**
-     * 根据状态获取任务
-     *
-     * @param status 任务状态
-     * @return 任务列表
-     */
-    public List<Task> getTasksByStatus(org.dragon.character.task.TaskStatus status) {
-        return taskManager.getTasksByStatus(status);
-    }
-
-    /**
-     * 删除任务
-     *
-     * @param taskId 任务ID
-     * @return 是否删除成功
-     */
-    public boolean deleteTask(String taskId) {
-        return taskManager.deleteTask(taskId);
-    }
-
-    /**
-     * 清空所有任务
-     */
-    public void clearTasks() {
-        taskManager.clear();
-    }
-
-    /**
-     * 获取任务数量
-     *
-     * @return 任务数量
-     */
-    public int getTaskCount() {
-        return taskManager.size();
-    }
 }

@@ -100,6 +100,50 @@ public class Observer {
     private Map<String, Object> properties;
 
     /**
+     * Planner Character ID 列表
+     * 用于生成优化计划的 Character
+     */
+    private java.util.List<String> plannerCharacterIds;
+
+    /**
+     * Reviewer Character ID 列表
+     * 用于复核优化计划的 Character
+     */
+    private java.util.List<String> reviewerCharacterIds;
+
+    /**
+     * 支持的目标类型
+     */
+    private java.util.List<String> supportedTargetTypes;
+
+    /**
+     * 是否需要人工确认
+     * 默认 true - 生成的计划需要人工确认后执行
+     */
+    @Builder.Default
+    private boolean manualApprovalRequired = true;
+
+    /**
+     * 定时 cron 表达式
+     * 用于定时触发评价和计划生成
+     */
+    private String scheduleCron;
+
+    /**
+     * 计划时间窗口（小时）
+     * 用于限定收集数据的时间范围
+     */
+    @Builder.Default
+    private int planWindowHours = 24;
+
+    /**
+     * 最大计划项数量
+     * 限制单次计划生成的最大条目数
+     */
+    @Builder.Default
+    private int maxPlanItems = 50;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createdAt;

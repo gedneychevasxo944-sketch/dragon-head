@@ -111,7 +111,15 @@ public class Workflow {
             /** 循环 */
             LOOP,
             /** 结束 */
-            END
+            END,
+            /** Character 执行节点 */
+            CHARACTER,
+            /** 插件节点 */
+            PLUGIN,
+            /** 代理节点 */
+            PROXY,
+            /** 脚本节点 */
+            SCRIPT
         }
     }
 

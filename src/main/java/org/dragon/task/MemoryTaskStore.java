@@ -69,7 +69,55 @@ public class MemoryTaskStore implements TaskStore {
     }
 
     @Override
+    public List<Task> findByCharacterId(String characterId) {
+        return store.values().stream()
+                .filter(task -> characterId.equals(task.getCharacterId()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Task> findByCreatorId(String creatorId) {
+        return store.values().stream()
+                .filter(task -> creatorId.equals(task.getCreatorId()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Task> findByCollaborationSessionId(String collaborationSessionId) {
+        return store.values().stream()
+                .filter(task -> collaborationSessionId.equals(task.getCollaborationSessionId()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Task> findWaitingTasksByWorkspaceId(String workspaceId) {
+        return store.values().stream()
+                .filter(task -> workspaceId.equals(task.getWorkspaceId()))
+                .filter(task -> task.getStatus() == TaskStatus.SUSPENDED
+                        || task.getStatus() == TaskStatus.WAITING_USER_INPUT
+                        || task.getStatus() == TaskStatus.WAITING_DEPENDENCY)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public boolean exists(String id) {
         return store.containsKey(id);
+    }
+
+    @Override
+    public List<Task> findRunnableChildTasks(String parentTaskId) {
+        return store.values().stream()
+                .filter(task -> parentTaskId.equals(task.getParentTaskId()))
+                .filter(task -> task.getStatus() == TaskStatus.PENDING)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Task> findWaitingTasksByDependencyTaskId(String dependencyTaskId) {
+        return store.values().stream()
+                .filter(task -> task.getStatus() == TaskStatus.WAITING_DEPENDENCY)
+                .filter(task -> task.getDependencyTaskIds() != null)
+                .filter(task -> task.getDependencyTaskIds().contains(dependencyTaskId))
+                .collect(Collectors.toList());
     }
 }

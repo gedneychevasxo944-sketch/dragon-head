@@ -27,7 +27,9 @@ public class EvaluationRecord {
      */
     public enum TargetType {
         CHARACTER,     // Character
-        WORKSPACE      // Workspace
+        WORKSPACE,      // Workspace
+        MEMORY,        // 记忆
+        SKILL          // 技能
     }
 
     /**
@@ -60,9 +62,34 @@ public class EvaluationRecord {
     private String taskId;
 
     /**
+     * 关联的计划 ID
+     */
+    private String planId;
+
+    /**
      * 评价类型
      */
     private EvaluationType evaluationType;
+
+    /**
+     * 优化维度列表
+     */
+    private List<String> dimensions;
+
+    /**
+     * 发现列表（发现的问题或优化点）
+     */
+    private List<ObservationFinding> findings;
+
+    /**
+     * 不安全标志列表
+     */
+    private List<String> unsafeFlags;
+
+    /**
+     * 证据引用列表
+     */
+    private List<String> evidenceRefs;
 
     /**
      * 评分 - 任务完成度 (0-1)

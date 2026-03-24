@@ -65,4 +65,29 @@ public class Material {
      * 扩展属性
      */
     private Map<String, Object> metadata;
+
+    /**
+     * 物料种类（DOCUMENT, IMAGE, AUDIO, VIDEO, OTHER）
+     */
+    private String kind;
+
+    /**
+     * 解析状态（PENDING, PARSING, SUCCESS, FAILED）
+     */
+    private String parseStatus;
+
+    /**
+     * 解析内容 ID（关联 ParsedMaterialContent）
+     */
+    private String parsedContentId;
+
+    /**
+     * 来源渠道
+     */
+    private String sourceChannel;
+
+    /**
+     * 来源消息 ID
+     */
+    private String sourceMessageId;
 }

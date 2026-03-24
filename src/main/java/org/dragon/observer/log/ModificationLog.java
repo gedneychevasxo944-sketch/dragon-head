@@ -25,7 +25,9 @@ public class ModificationLog {
      */
     public enum TargetType {
         CHARACTER,
-        ORGANIZATION
+        WORKSPACE,
+        MEMORY,
+        SKILL
     }
 
     /**

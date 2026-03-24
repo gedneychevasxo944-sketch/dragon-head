@@ -57,6 +57,26 @@ public class ChatSession {
     private Map<String, Object> context;
 
     /**
+     * 参与者状态 (characterId -> state)
+     */
+    private Map<String, String> participantStates;
+
+    /**
+     * 任务状态 (taskId -> state)
+     */
+    private Map<String, String> taskStates;
+
+    /**
+     * 阻塞中的参与者 ID 列表
+     */
+    private List<String> blockedParticipants;
+
+    /**
+     * 最近摘要
+     */
+    private String lastSummary;
+
+    /**
      * 决策记录
      */
     private List<DecisionRecord> decisions;

@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
+import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.observer.actionlog.ObserverActionLog;
@@ -19,7 +20,10 @@ import org.dragon.workspace.service.WorkspaceMemberManagementService;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.service.WorkspaceTaskArrangementService;
+import org.dragon.workspace.service.WorkspaceTaskExecutionService;
 import org.dragon.workspace.service.WorkspaceTaskService;
+import org.dragon.workspace.service.TaskContinuationResolver;
+import org.dragon.workspace.service.TaskResumeTargetResolver;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +50,9 @@ public class WorkspaceApplication {
     private final CharacterRegistry characterRegistry;
     private final WorkspaceTaskArrangementService workspaceTaskArrangementService;
     private final TaskStore taskStore;
+    private final TaskContinuationResolver taskContinuationResolver;
+    private final TaskResumeTargetResolver taskResumeTargetResolver;
+    private final WorkspaceTaskExecutionService taskExecutionService;
 
     /**
      * 私有构造函数，通过 Builder 构建
@@ -61,6 +68,9 @@ public class WorkspaceApplication {
         this.characterRegistry = builder.characterRegistry;
         this.workspaceTaskArrangementService = builder.workspaceTaskArrangementService;
         this.taskStore = builder.taskStore;
+        this.taskContinuationResolver = builder.taskContinuationResolver;
+        this.taskResumeTargetResolver = builder.taskResumeTargetResolver;
+        this.taskExecutionService = builder.taskExecutionService;
     }
 
     // ==================== Workspace 生命周期管理委托 ====================
@@ -182,6 +192,55 @@ public class WorkspaceApplication {
     public Task executeTask(String taskName, String taskDescription, Object input, String creatorId) {
         return workspaceTaskArrangementService.submitTask(
                 workspaceId, taskName, taskDescription, input, creatorId);
+    }
+
+    /**
+     * 执行任务（处理 NormalizedMessage，支持任务续跑）
+     * 当消息应该继续已有任务时，直接恢复该任务
+     * 当消息应该开启新任务时，创建新任务
+     *
+     * @param message 归一化的用户消息
+     * @param creatorId 创建者 ID
+     * @return 工作空间任务
+     */
+    public Task executeTask(NormalizedMessage message, String creatorId) {
+        // 调用续跑解析器判断
+        TaskContinuationResolver.ContinuationResult result =
+                taskContinuationResolver.resolve(workspaceId, message);
+
+        if (result.getDecision() == TaskContinuationResolver.ContinuationDecision.CONTINUE_EXISTING_TASK) {
+            // 继续已有任务
+            String taskId = result.getTaskId();
+            log.info("[WorkspaceApplication] Continuing existing task {} for message", taskId);
+
+            Task matchedTask = workspaceTaskService.getTask(workspaceId, taskId)
+                    .orElseThrow(() -> new IllegalStateException("Task not found: " + taskId));
+
+            // 使用恢复目标解析器获取实际可执行的任务
+            Task executableTask = taskResumeTargetResolver.resolveExecutableTask(matchedTask);
+
+            // 获取父任务（用于 executeChildTask）
+            Task parentTask = matchedTask.getParentTaskId() != null
+                    ? workspaceTaskService.getTask(workspaceId, matchedTask.getParentTaskId())
+                            .orElse(matchedTask)
+                    : matchedTask;
+
+            // 恢复任务（追加用户输入）
+            executableTask = workspaceTaskService.resumeTask(workspaceId, executableTask.getId(), message.getTextContent());
+
+            // 继续执行（传递正确的父子关系）
+            taskExecutionService.executeChildTask(executableTask, parentTask);
+
+            return matchedTask;
+        } else {
+            // 开启新任务
+            return executeTask(
+                    "用户请求",
+                    message.getTextContent(),
+                    message,
+                    creatorId
+            );
+        }
     }
 
     // ==================== 物料管理委托 ====================

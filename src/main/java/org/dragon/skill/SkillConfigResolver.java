@@ -16,8 +16,10 @@ import java.util.stream.Collectors;
 import org.dragon.config.config.ConfigProperties;
 
 /**
- * 技能配置解析器 — 处理配置路径遍历、资格检查、内置白名单、二进制文件检测。
- * 对应 TypeScript 中的 skills/config.ts。
+ * 技能配置解析器。
+ * 处理配置路径遍历、资格检查、内置白名单、二进制文件检测等功能。
+ *
+ * @since 1.0
  */
 public final class SkillConfigResolver {
 
@@ -70,7 +72,7 @@ public final class SkillConfigResolver {
     // ── 技能配置 (Skill config) ────────────────────────────────────────────────
 
     /**
-     * 从 OpenClaw 配置中解析特定技能的配置。
+     * 从 DragonHead 配置中解析特定技能的配置。
      */
     @SuppressWarnings("unchecked")
     public static Map<String, Object> resolveSkillConfig(ConfigProperties config, String skillKey) {
