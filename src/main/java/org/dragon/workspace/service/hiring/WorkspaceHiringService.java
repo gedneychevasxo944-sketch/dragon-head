@@ -1,4 +1,4 @@
-package org.dragon.workspace.service;
+package org.dragon.workspace.service.hiring;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +16,7 @@ import org.dragon.workspace.hiring.HireMode;
 import org.dragon.workspace.member.CharacterDuty;
 import org.dragon.workspace.member.CharacterDutyStore;
 import org.dragon.workspace.member.WorkspaceMember;
+import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;

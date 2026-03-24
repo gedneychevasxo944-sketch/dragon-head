@@ -1,4 +1,4 @@
-package org.dragon.workspace.service;
+package org.dragon.workspace.service.task.execution;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class WorkspaceTaskExecutionService {
     public void executeChildTask(Task childTask, Task parentTask) {
         String workspaceId = parentTask.getWorkspaceId();
 
-        log.info("[WorkspaceTaskExecutionService] Executing childTask {} on character {}",
+        log.info("[TaskExecutionService] Executing childTask {} on character {}",
                 childTask.getId(), childTask.getCharacterId());
 
         // 更新状态为 RUNNING
@@ -88,14 +88,14 @@ public class WorkspaceTaskExecutionService {
 
         // 记录执行结果并发送通知
         if (result.getStatus() == TaskStatus.COMPLETED) {
-            log.info("[WorkspaceTaskExecutionService] ChildTask {} completed successfully", childTask.getId());
+            log.info("[TaskExecutionService] ChildTask {} completed successfully", childTask.getId());
             taskNotifier.notifyCompleted(result);
             // 通知依赖已解决
             if (result.getCollaborationSessionId() != null) {
                 chatRoom.markParticipantReady(result.getCollaborationSessionId(), result.getCharacterId());
             }
         } else if (result.getStatus() == TaskStatus.FAILED) {
-            log.warn("[WorkspaceTaskExecutionService] ChildTask {} failed: {}", childTask.getId(), result.getErrorMessage());
+            log.warn("[TaskExecutionService] ChildTask {} failed: {}", childTask.getId(), result.getErrorMessage());
             taskNotifier.notifyFailed(result, result.getErrorMessage());
         } else if (result.getStatus() == TaskStatus.SUSPENDED) {
             taskNotifier.notifyWaiting(result, result.getErrorMessage());
@@ -176,7 +176,7 @@ public class WorkspaceTaskExecutionService {
                 // 检查依赖是否满足
                 if (!areDependenciesMet(childTask)) {
                     // 依赖未满足，跳过执行（后续可改为加入等待队列）
-                    log.warn("[WorkspaceTaskExecutionService] Dependencies not met for task {}, marking as WAITING_DEPENDENCY", childTask.getId());
+                    log.warn("[TaskExecutionService] Dependencies not met for task {}, marking as WAITING_DEPENDENCY", childTask.getId());
                     childTask.setStatus(TaskStatus.WAITING_DEPENDENCY);
                     taskStore.update(childTask);
                     taskNotifier.notifyWaiting(childTask, "Waiting for dependency");
@@ -186,7 +186,7 @@ public class WorkspaceTaskExecutionService {
                 executeChildTask(childTask, parentTask);
 
             } catch (Exception e) {
-                log.error("[WorkspaceTaskExecutionService] Error executing childTask {}: {}", childTask.getId(), e.getMessage(), e);
+                log.error("[TaskExecutionService] Error executing childTask {}: {}", childTask.getId(), e.getMessage(), e);
                 childTask.setStatus(TaskStatus.FAILED);
                 childTask.setErrorMessage(e.getMessage());
                 taskStore.update(childTask);
@@ -248,11 +248,11 @@ public class WorkspaceTaskExecutionService {
             parentTask.setCompletedAt(LocalDateTime.now());
             parentTask.setResult("All child tasks completed successfully");
             taskStore.update(parentTask);
-            log.info("[WorkspaceTaskExecutionService] Parent task {} completed", parentTask.getId());
+            log.info("[TaskExecutionService] Parent task {} completed", parentTask.getId());
         } else if (anyFailed) {
             parentTask.setStatus(TaskStatus.FAILED);
             taskStore.update(parentTask);
-            log.warn("[WorkspaceTaskExecutionService] Parent task {} has failed child tasks", parentTask.getId());
+            log.warn("[TaskExecutionService] Parent task {} has failed child tasks", parentTask.getId());
         } else if (!anyRunning && anyWaiting) {
             // 没有正在运行的，但有等待中的
             parentTask.setStatus(TaskStatus.RUNNING); // 保持运行状态
@@ -267,7 +267,7 @@ public class WorkspaceTaskExecutionService {
         Task task = taskStore.findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
-        SuspendContext context = SuspendContext.builder()
+        TaskBridge.SuspendContext context = TaskBridge.SuspendContext.builder()
                 .reason(reason)
                 .suspendedAt(LocalDateTime.now().toString())
                 .build();
@@ -281,7 +281,7 @@ public class WorkspaceTaskExecutionService {
         Task task = taskStore.findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
-        ResumeContext context = ResumeContext.builder()
+        TaskBridge.ResumeContext context = TaskBridge.ResumeContext.builder()
                 .newInput(newInput)
                 .reason("User resumed")
                 .build();
@@ -300,7 +300,7 @@ public class WorkspaceTaskExecutionService {
         task.setUpdatedAt(LocalDateTime.now());
         taskStore.update(task);
 
-        log.info("[WorkspaceTaskExecutionService] Task {} waiting for user input: {}", taskId, question);
+        log.info("[TaskExecutionService] Task {} waiting for user input: {}", taskId, question);
         taskNotifier.notifyQuestion(task, question);
         return task;
     }
@@ -326,7 +326,7 @@ public class WorkspaceTaskExecutionService {
         task.setUpdatedAt(LocalDateTime.now());
         taskStore.update(task);
 
-        log.info("[WorkspaceTaskExecutionService] Task {} waiting for dependency: {}", taskId, dependencyTaskId);
+        log.info("[TaskExecutionService] Task {} waiting for dependency: {}", taskId, dependencyTaskId);
         taskNotifier.notifyWaiting(task, "Waiting for dependency: " + dependencyTaskId);
 
         // 同步更新 ChatRoom 参与者状态
@@ -360,7 +360,7 @@ public class WorkspaceTaskExecutionService {
             try {
                 executeChildTask(task, parentTask);
             } catch (Exception e) {
-                log.error("[WorkspaceTaskExecutionService] Error executing runnable child task {}: {}",
+                log.error("[TaskExecutionService] Error executing runnable child task {}: {}",
                         task.getId(), e.getMessage(), e);
                 task.setStatus(TaskStatus.FAILED);
                 task.setErrorMessage(e.getMessage());

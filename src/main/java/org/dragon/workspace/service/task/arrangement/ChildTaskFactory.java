@@ -1,4 +1,4 @@
-package org.dragon.workspace.service;
+package org.dragon.workspace.service.task.arrangement;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -8,8 +8,8 @@ import java.util.UUID;
 
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
-import org.dragon.workspace.service.dto.ChildTaskPlan;
-import org.dragon.workspace.service.dto.TaskDecompositionResult;
+import org.dragon.workspace.service.task.arrangement.dto.ChildTaskPlan;
+import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;

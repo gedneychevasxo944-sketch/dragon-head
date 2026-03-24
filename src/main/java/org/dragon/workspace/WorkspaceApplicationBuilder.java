@@ -3,12 +3,12 @@ package org.dragon.workspace;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.task.TaskStore;
 import org.dragon.observer.actionlog.ObserverActionLogService;
-import org.dragon.workspace.service.WorkspaceHiringService;
-import org.dragon.workspace.service.WorkspaceLifecycleService;
-import org.dragon.workspace.service.WorkspaceMaterialService;
-import org.dragon.workspace.service.WorkspaceMemberManagementService;
-import org.dragon.workspace.service.WorkspaceTaskArrangementService;
-import org.dragon.workspace.service.WorkspaceTaskExecutionService;
+import org.dragon.workspace.service.hiring.WorkspaceHiringService;
+import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
+import org.dragon.workspace.service.material.WorkspaceMaterialService;
+import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
+import org.dragon.workspace.service.task.arrangement.WorkspaceTaskArrangementService;
+import org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService;
 import org.dragon.workspace.service.WorkspaceTaskService;
 import org.dragon.workspace.service.TaskContinuationResolver;
 import org.dragon.workspace.service.TaskResumeTargetResolver;
@@ -53,7 +53,7 @@ public class WorkspaceApplicationBuilder {
     /**
      * 设置 Workspace 生命周期服务
      *
-     * @param workspaceLifecycleService WorkspaceLifecycleService
+     * @param workspaceLifecycleService Lifecycle
      * @return self
      */
     public WorkspaceApplicationBuilder workspaceLifecycleService(WorkspaceLifecycleService workspaceLifecycleService) {
@@ -64,7 +64,7 @@ public class WorkspaceApplicationBuilder {
     /**
      * 设置 Workspace 雇佣服务
      *
-     * @param workspaceHiringService WorkspaceHiringService
+     * @param workspaceHiringService Hiring
      * @return self
      */
     public WorkspaceApplicationBuilder workspaceHiringService(WorkspaceHiringService workspaceHiringService) {
@@ -86,7 +86,7 @@ public class WorkspaceApplicationBuilder {
     /**
      * 设置 Workspace 成员服务
      *
-     * @param workspaceMemberService WorkspaceMemberManagementService
+     * @param workspaceMemberService MemberManagement
      * @return self
      */
     public WorkspaceApplicationBuilder workspaceMemberService(WorkspaceMemberManagementService workspaceMemberService) {
@@ -97,7 +97,7 @@ public class WorkspaceApplicationBuilder {
     /**
      * 设置物料服务
      *
-     * @param materialService WorkspaceMaterialService
+     * @param materialService Material
      * @return self
      */
     public WorkspaceApplicationBuilder materialService(WorkspaceMaterialService materialService) {
@@ -130,7 +130,7 @@ public class WorkspaceApplicationBuilder {
     /**
      * 设置 Workspace 任务编排服务
      *
-     * @param workspaceTaskArrangementService WorkspaceTaskArrangementService
+     * @param workspaceTaskArrangementService TaskArrangement
      * @return self
      */
     public WorkspaceApplicationBuilder workspaceTaskArrangementService(WorkspaceTaskArrangementService workspaceTaskArrangementService) {
@@ -174,7 +174,7 @@ public class WorkspaceApplicationBuilder {
     /**
      * 设置任务执行服务
      *
-     * @param taskExecutionService WorkspaceTaskExecutionService
+     * @param taskExecutionService TaskExecution
      * @return self
      */
     public WorkspaceApplicationBuilder taskExecutionService(WorkspaceTaskExecutionService taskExecutionService) {

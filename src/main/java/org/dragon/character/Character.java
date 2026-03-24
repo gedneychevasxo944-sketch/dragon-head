@@ -373,7 +373,7 @@ public class Character {
      * @param bridgeContext 桥接上下文（可选，包含协作信息）
      * @return ReAct 执行结果
      */
-    public ReActResult runReAct(String userInput, boolean streaming, org.dragon.task.Task task, org.dragon.workspace.service.TaskBridgeContext bridgeContext) {
+    public ReActResult runReAct(String userInput, boolean streaming, org.dragon.task.Task task, org.dragon.workspace.service.task.execution.TaskBridgeContext bridgeContext) {
         if (reActExecutor == null) {
             throw new IllegalStateException("ReActExecutor not initialized");
         }

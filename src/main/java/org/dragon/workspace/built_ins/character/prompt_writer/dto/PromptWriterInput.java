@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * PromptWriter 输入结构
- * 用于 WorkspaceTaskArrangementService 向 PromptWriter Character 传递结构化输入
+ * 用于 TaskArrangement 向 PromptWriter Character 传递结构化输入
  *
  * @author wyj
  * @version 1.0

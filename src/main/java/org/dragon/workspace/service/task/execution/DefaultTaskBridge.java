@@ -1,4 +1,4 @@
-package org.dragon.workspace.service;
+package org.dragon.workspace.service.task.execution;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -137,7 +137,7 @@ public class DefaultTaskBridge implements TaskBridge {
     }
 
     @Override
-    public Task suspend(Task task, SuspendContext context) {
+    public Task suspend(Task task, TaskBridge.SuspendContext context) {
         task.setStatus(TaskStatus.SUSPENDED);
         task.setErrorMessage(context.getReason());
         task.setUpdatedAt(LocalDateTime.now());
@@ -148,7 +148,7 @@ public class DefaultTaskBridge implements TaskBridge {
     }
 
     @Override
-    public Task resume(Task task, ResumeContext context) {
+    public Task resume(Task task, TaskBridge.ResumeContext context) {
         // 更新输入（追加用户回复）
         if (context.getNewInput() != null) {
             Object currentInput = task.getInput();

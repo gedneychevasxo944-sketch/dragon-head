@@ -14,7 +14,7 @@ import org.dragon.task.Task;
 import org.dragon.workspace.WorkspaceApplication;
 import org.dragon.workspace.WorkspaceApplicationProvider;
 import org.dragon.workspace.material.Material;
-import org.dragon.workspace.service.WorkspaceMaterialService;
+import org.dragon.workspace.service.material. WorkspaceMaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -47,7 +47,7 @@ public class AgentGateway implements Gateway {
 
     @Autowired
     @Lazy
-    private WorkspaceMaterialService workspaceMaterialService;
+    private  WorkspaceMaterialService workspaceMaterialService;
 
     @Override
     public void dispatch(NormalizedMessage inboundMsg) {

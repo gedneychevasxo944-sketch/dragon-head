@@ -27,7 +27,7 @@ public class WorkspaceTaskService {
 
     private final TaskStore taskStore;
     private final WorkspaceRegistry workspaceRegistry;
-    private final TaskBridge taskBridge;
+    private final org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService taskExecutionService;
 
     /**
      * 获取任务
@@ -194,23 +194,9 @@ public class WorkspaceTaskService {
 
     /**
      * 暂停任务
-     *
-     * @param workspaceId 工作空间 ID
-     * @param taskId 任务 ID
-     * @param reason 暂停原因
-     * @return 更新后的任务
      */
     public Task suspendTask(String workspaceId, String taskId, String reason) {
-        Task task = getTask(workspaceId, taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
-
-        task.setStatus(TaskStatus.SUSPENDED);
-        task.setWaitingReason(reason);
-        task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
-
-        log.info("[WorkspaceTaskService] Suspended task {}: {}", taskId, reason);
-        return task;
+        return taskExecutionService.suspendTask(workspaceId, taskId, reason);
     }
 
     /**
@@ -266,29 +252,9 @@ public class WorkspaceTaskService {
 
     /**
      * 恢复任务
-     *
-     * @param workspaceId 工作空间 ID
-     * @param taskId 任务 ID
-     * @param newInput 新的输入（用户回复）
-     * @return 更新后的任务
      */
     public Task resumeTask(String workspaceId, String taskId, Object newInput) {
-        Task task = getTask(workspaceId, taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
-
-        // 更新输入（追加用户回复）
-        if (newInput != null) {
-            Object currentInput = task.getInput();
-            task.setInput(currentInput != null ? currentInput.toString() + "\n" + newInput.toString() : newInput.toString());
-        }
-
-        task.setStatus(TaskStatus.RUNNING);
-        task.setWaitingReason(null);
-        task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
-
-        log.info("[WorkspaceTaskService] Resumed task {}", taskId);
-        return task;
+        return taskExecutionService.resumeTask(workspaceId, taskId, newInput);
     }
 
     /**

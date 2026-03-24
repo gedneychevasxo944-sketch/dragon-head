@@ -1,4 +1,4 @@
-package org.dragon.workspace.service;
+package org.dragon.workspace.service.lifecycle;
 
 import java.time.LocalDateTime;
 import java.util.List;

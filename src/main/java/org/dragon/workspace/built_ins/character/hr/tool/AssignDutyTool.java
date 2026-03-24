@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.dragon.agent.tool.ToolConnector;
-import org.dragon.workspace.service.WorkspaceHiringService;
+import org.dragon.workspace.service.hiring.WorkspaceHiringService;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;

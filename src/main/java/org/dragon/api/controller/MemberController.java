@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.workspace.hiring.HireMode;
 import org.dragon.workspace.member.CharacterDuty;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.workspace.service.WorkspaceHiringService;
-import org.dragon.workspace.service.WorkspaceMemberManagementService;
+import org.dragon.workspace.service.hiring.WorkspaceHiringService;
+import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -46,7 +46,7 @@ public class MemberController {
     @Autowired
     private final WorkspaceMemberManagementService memberManagementService;
     @Autowired
-    private final WorkspaceHiringService workspaceHiringService;
+    private final   WorkspaceHiringService workspaceHiringService;
 
     // ==================== 成员查询 ====================
 

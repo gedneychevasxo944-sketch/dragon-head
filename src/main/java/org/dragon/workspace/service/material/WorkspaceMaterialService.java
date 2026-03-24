@@ -1,4 +1,4 @@
-package org.dragon.workspace.service;
+package org.dragon.workspace.service.material;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;

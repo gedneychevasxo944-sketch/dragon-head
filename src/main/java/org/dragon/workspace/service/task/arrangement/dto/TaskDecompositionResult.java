@@ -1,4 +1,4 @@
-package org.dragon.workspace.service.dto;
+package org.dragon.workspace.service.task.arrangement.dto;
 
 import java.util.List;
 

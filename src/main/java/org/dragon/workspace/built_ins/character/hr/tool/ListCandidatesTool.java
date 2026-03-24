@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.dragon.agent.tool.ToolConnector;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
-import org.dragon.workspace.service.WorkspaceMemberManagementService;
+import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;

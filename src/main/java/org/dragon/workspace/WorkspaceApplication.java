@@ -13,14 +13,14 @@ import org.dragon.workspace.material.Material;
 import org.dragon.workspace.member.CharacterDuty;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.observer.actionlog.ObserverActionLogService;
-import org.dragon.workspace.service.WorkspaceHiringService;
-import org.dragon.workspace.service.WorkspaceLifecycleService;
-import org.dragon.workspace.service.WorkspaceMaterialService;
-import org.dragon.workspace.service.WorkspaceMemberManagementService;
+import org.dragon.workspace.service.hiring.WorkspaceHiringService;
+import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
+import org.dragon.workspace.service.material.WorkspaceMaterialService;
+import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
-import org.dragon.workspace.service.WorkspaceTaskArrangementService;
-import org.dragon.workspace.service.WorkspaceTaskExecutionService;
+import org.dragon.workspace.service.task.arrangement.WorkspaceTaskArrangementService;
+import org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService;
 import org.dragon.workspace.service.WorkspaceTaskService;
 import org.dragon.workspace.service.TaskContinuationResolver;
 import org.dragon.workspace.service.TaskResumeTargetResolver;
@@ -178,7 +178,7 @@ public class WorkspaceApplication {
     // ==================== 任务分发执行 ====================
 
     /**
-     * 执行任务（通过 WorkspaceTaskArrangementService 进行智能编排）
+     * 执行任务（通过 TaskArrangement 进行智能编排）
      * 1. 通过 MemberSelector 选择合适的 Character
      * 2. 通过 ProjectManager 拆分任务为子任务
      * 3. 分派子任务给合适的 Character 执行
