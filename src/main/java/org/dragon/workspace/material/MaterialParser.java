@@ -38,6 +38,21 @@ public interface MaterialParser {
     List<String> supportedTypes();
 
     /**
+     * 检查是否支持解析该物料
+     *
+     * @param material 物料
+     * @return 是否支持
+     */
+    default boolean supports(Material material) {
+        if (material == null || material.getType() == null) {
+            return false;
+        }
+        return supportedTypes().stream()
+                .anyMatch(type -> type.equalsIgnoreCase(material.getType()) ||
+                        material.getType().equalsIgnoreCase(type));
+    }
+
+    /**
      * 解析结果
      */
     @lombok.Data

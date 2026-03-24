@@ -12,6 +12,11 @@ import org.dragon.character.CharacterRegistry;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
+import org.dragon.observer.collector.dto.CharacterObservationSnapshot;
+import org.dragon.observer.collector.dto.MemoryObservationSnapshot;
+import org.dragon.observer.collector.dto.ObservationDataset;
+import org.dragon.observer.collector.dto.SkillObservationSnapshot;
+import org.dragon.observer.collector.dto.WorkspaceObservationSnapshot;
 import org.dragon.observer.evaluation.EvaluationEngine;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
@@ -175,6 +180,225 @@ public class DataCollector {
         metrics.setSuccessRate(totalTasks > 0 ? (double) completedTasks / totalTasks : 0.0);
 
         return metrics;
+    }
+
+    /**
+     * 采集 Character 观测快照
+     *
+     * @param characterId Character ID
+     * @return Character 观测快照
+     */
+    public CharacterObservationSnapshot collectCharacterObservation(String characterId) {
+        log.info("[DataCollector] Collecting character observation for: {}", characterId);
+
+        Character character = characterRegistry.get(characterId).orElse(null);
+        if (character == null) {
+            log.warn("[DataCollector] Character not found: {}", characterId);
+            return null;
+        }
+
+        // 采集该 Character 的任务数据
+        List<Task> tasks = taskStore.findByCharacterId(characterId);
+        int completedCount = (int) tasks.stream()
+                .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
+                .count();
+        int failedCount = (int) tasks.stream()
+                .filter(t -> t.getStatus() == TaskStatus.FAILED)
+                .count();
+
+        // 计算平均任务执行时长
+        double avgDuration = tasks.stream()
+                .filter(t -> t.getCreatedAt() != null && t.getUpdatedAt() != null)
+                .mapToLong(t -> java.time.Duration.between(t.getCreatedAt(), t.getUpdatedAt()).toMillis())
+                .average()
+                .orElse(0.0);
+
+        boolean isActive = character.getStatus() == Character.Status.RUNNING;
+
+        return CharacterObservationSnapshot.builder()
+                .characterId(character.getId())
+                .name(character.getName())
+                .roleType(character.getClass().getSimpleName())
+                .status(isActive ? "ACTIVE" : "INACTIVE")
+                .activeTaskCount((int) tasks.stream().filter(t -> t.getStatus() == TaskStatus.PENDING || t.getStatus() == TaskStatus.RUNNING).count())
+                .completedTaskCount(completedCount)
+                .failedTaskCount(failedCount)
+                .avgTaskDurationSeconds(avgDuration / 1000.0)
+                .successRate(tasks.isEmpty() ? 1.0 : (double) completedCount / tasks.size())
+                .skillTags(new ArrayList<>())
+                .extensions(new HashMap<>())
+                .snapshotTime(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 采集 Workspace 观测快照
+     *
+     * @param workspaceId Workspace ID
+     * @return Workspace 观测快照
+     */
+    public WorkspaceObservationSnapshot collectWorkspaceObservation(String workspaceId) {
+        log.info("[DataCollector] Collecting workspace observation for: {}", workspaceId);
+
+        Workspace workspace = workspaceRegistry.get(workspaceId).orElse(null);
+        if (workspace == null) {
+            log.warn("[DataCollector] Workspace not found: {}", workspaceId);
+            return null;
+        }
+
+        List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
+        int completedCount = (int) tasks.stream()
+                .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
+                .count();
+        int failedCount = (int) tasks.stream()
+                .filter(t -> t.getStatus() == TaskStatus.FAILED)
+                .count();
+
+        double avgDuration = tasks.stream()
+                .filter(t -> t.getCreatedAt() != null && t.getUpdatedAt() != null)
+                .mapToLong(t -> java.time.Duration.between(t.getCreatedAt(), t.getUpdatedAt()).toMillis())
+                .average()
+                .orElse(0.0);
+
+        List<org.dragon.workspace.member.WorkspaceMember> members = workspace.getMembers();
+        int activeCharCount = 0;
+        if (members != null) {
+            for (var member : members) {
+                if (member.getCharacterId() != null) {
+                    var charOpt = characterRegistry.get(member.getCharacterId());
+                    if (charOpt.isPresent() && charOpt.get().getStatus() == Character.Status.RUNNING) {
+                        activeCharCount++;
+                    }
+                }
+            }
+        }
+
+        return WorkspaceObservationSnapshot.builder()
+                .workspaceId(workspace.getId())
+                .name(workspace.getName())
+                .status(workspace.getStatus() == Workspace.Status.ACTIVE ? "ACTIVE" : "INACTIVE")
+                .characterCount(members != null ? members.size() : 0)
+                .activeCharacterCount(activeCharCount)
+                .totalTaskCount(tasks.size())
+                .activeTaskCount((int) tasks.stream().filter(t -> t.getStatus() == TaskStatus.PENDING || t.getStatus() == TaskStatus.RUNNING).count())
+                .completedTaskCount(completedCount)
+                .failedTaskCount(failedCount)
+                .avgTaskDurationSeconds(avgDuration / 1000.0)
+                .successRate(tasks.isEmpty() ? 1.0 : (double) completedCount / tasks.size())
+                .extensions(new HashMap<>())
+                .snapshotTime(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 采集 Memory 观测快照
+     *
+     * @param memoryId Memory ID
+     * @return Memory 观测快照
+     */
+    public MemoryObservationSnapshot collectMemoryObservation(String memoryId) {
+        log.info("[DataCollector] Collecting memory observation for: {}", memoryId);
+
+        // MemoryStore 不存在，构建基础快照
+        // TODO: 当 MemoryStore 存在时，补充完整数据
+        return MemoryObservationSnapshot.builder()
+                .memoryId(memoryId)
+                .memoryType("UNKNOWN")
+                .status("UNKNOWN")
+                .totalRecordCount(0)
+                .activeRecordCount(0)
+                .archivedRecordCount(0)
+                .storageSizeBytes(0)
+                .retrievalCount(0)
+                .retrievalHitRate(0.0)
+                .extensions(new HashMap<>())
+                .snapshotTime(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 采集 Skill 观测快照
+     *
+     * @param skillId Skill ID
+     * @return Skill 观测快照
+     */
+    public SkillObservationSnapshot collectSkillObservation(String skillId) {
+        log.info("[DataCollector] Collecting skill observation for: {}", skillId);
+
+        // SkillStore 不存在，构建基础快照
+        // TODO: 当 SkillStore 存在时，补充完整数据
+        return SkillObservationSnapshot.builder()
+                .skillId(skillId)
+                .name("UNKNOWN")
+                .skillType("UNKNOWN")
+                .status("UNKNOWN")
+                .version("1.0")
+                .referenceCount(0)
+                .usageCount(0)
+                .successRate(1.0)
+                .ownerCharacterIds(new ArrayList<>())
+                .tags(new ArrayList<>())
+                .extensions(new HashMap<>())
+                .snapshotTime(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 采集完整的观测数据集
+     *
+     * @param workspaceId Workspace ID（可选，为 null 表示全局）
+     * @param startTime   开始时间
+     * @param endTime     结束时间
+     * @return 观测数据集
+     */
+    public ObservationDataset collectObservationDataset(String workspaceId, LocalDateTime startTime, LocalDateTime endTime) {
+        log.info("[DataCollector] Collecting observation dataset for workspace: {}, time range: {} - {}",
+                workspaceId, startTime, endTime);
+
+        ObservationDataset dataset = new ObservationDataset();
+        dataset.setStartTime(startTime);
+        dataset.setEndTime(endTime);
+
+        // 采集 Workspace 快照
+        if (workspaceId != null) {
+            dataset.setWorkspaceSnapshot(collectWorkspaceObservation(workspaceId));
+
+            // 采集 Workspace 下所有 Character 的快照
+            Workspace workspace = workspaceRegistry.get(workspaceId).orElse(null);
+            if (workspace != null && workspace.getMembers() != null) {
+                List<CharacterObservationSnapshot> characterSnapshots = new ArrayList<>();
+                for (org.dragon.workspace.member.WorkspaceMember member : workspace.getMembers()) {
+                    if (member.getCharacterId() != null) {
+                        CharacterObservationSnapshot charSnapshot = collectCharacterObservation(member.getCharacterId());
+                        if (charSnapshot != null) {
+                            characterSnapshots.add(charSnapshot);
+                        }
+                    }
+                }
+                // 存储到 workspaceSnapshot 的扩展字段
+                if (dataset.getWorkspaceSnapshot() != null) {
+                    dataset.getWorkspaceSnapshot().getExtensions().put("characterSnapshots", characterSnapshots);
+                }
+            }
+        }
+
+        // 采集原始任务数据
+        dataset.setRawTaskData(new ArrayList<>());
+        List<EvaluationEngine.TaskData> taskDataList = collectTaskData(workspaceId, startTime, endTime);
+        for (EvaluationEngine.TaskData taskData : taskDataList) {
+            Map<String, Object> taskMap = new HashMap<>();
+            taskMap.put("taskId", taskData.getTaskId());
+            taskMap.put("targetId", taskData.getTargetId());
+            taskMap.put("targetType", taskData.getTargetType());
+            taskMap.put("success", taskData.getSuccess());
+            taskMap.put("durationMs", taskData.getDurationMs());
+            taskMap.put("startTime", taskData.getStartTime());
+            taskMap.put("endTime", taskData.getEndTime());
+            dataset.getRawTaskData().add(taskMap);
+        }
+
+        dataset.setExtensions(new HashMap<>());
+        return dataset;
     }
 
     /**

@@ -30,18 +30,43 @@ public class PromptWriterInputAssembler {
     public String buildTaskDecomposeInput(String promptType, String promptTemplate,
             Task task, List<WorkspaceMember> members) {
         List<PromptWriterInput.MemberInfo> memberInfos = members.stream()
-                .map(m -> PromptWriterInput.MemberInfo.builder()
-                        .characterId(m.getCharacterId())
-                        .role(m.getRole())
-                        .layer(m.getLayer() != null ? m.getLayer().toString() : null)
-                        .build())
+                .map(m -> {
+                    // 构建 capability：使用 tags 列表
+                    String capability = m.getTags() != null && !m.getTags().isEmpty()
+                            ? String.join(", ", m.getTags())
+                            : null;
+                    // 构建 description：综合 role、layer、tags
+                    String description = buildMemberDescription(m);
+                    return PromptWriterInput.MemberInfo.builder()
+                            .characterId(m.getCharacterId())
+                            .role(m.getRole())
+                            .layer(m.getLayer() != null ? m.getLayer().toString() : null)
+                            .capability(capability)
+                            .description(description)
+                            .build();
+                })
                 .collect(Collectors.toList());
+
+        // 构建成员能力描述和协作约束
+        Map<String, Object> memberCapabilities = members.stream()
+                .collect(Collectors.toMap(
+                        WorkspaceMember::getCharacterId,
+                        m -> m.getTags() != null ? m.getTags() : List.of()
+                ));
+        Map<String, Object> memberDescriptions = members.stream()
+                .collect(Collectors.toMap(
+                        WorkspaceMember::getCharacterId,
+                        this::buildMemberDescription
+                ));
 
         Map<String, Object> contextHints = Map.of(
                 "timestamp", LocalDateTime.now().toString(),
                 "collaborationMode", "AUTO",
                 "allowFollowUp", true,
-                "maxChildTasks", 10
+                "maxChildTasks", 10,
+                "memberCapabilities", memberCapabilities,
+                "memberDescriptions", memberDescriptions,
+                "collaborationConstraint", "子任务间应保持独立性，按依赖关系顺序执行"
         );
 
         PromptWriterInput input = PromptWriterInput.builder()
@@ -60,5 +85,29 @@ public class PromptWriterInputAssembler {
                 .build();
 
         return gson.toJson(input);
+    }
+
+    /**
+     * 构建成员描述
+     * 综合 role、layer、tags 生成描述文本
+     */
+    private String buildMemberDescription(WorkspaceMember m) {
+        StringBuilder sb = new StringBuilder();
+        if (m.getRole() != null) {
+            sb.append("角色: ").append(m.getRole());
+        }
+        if (m.getLayer() != null) {
+            if (sb.length() > 0) {
+                sb.append(" | ");
+            }
+            sb.append("层级: ").append(m.getLayer());
+        }
+        if (m.getTags() != null && !m.getTags().isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append(" | ");
+            }
+            sb.append("标签: ").append(String.join(", ", m.getTags()));
+        }
+        return sb.toString();
     }
 }

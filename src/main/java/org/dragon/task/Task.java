@@ -165,6 +165,11 @@ public class Task {
     private String resumeToken;
 
     /**
+     * 恢复上下文
+     */
+    private Map<String, Object> resumeContext;
+
+    /**
      * 源消息 ID
      */
     private String sourceMessageId;
@@ -198,6 +203,11 @@ public class Task {
      * 任务元数据
      */
     private Map<String, Object> metadata;
+
+    /**
+     * 任务扩展属性
+     */
+    private Map<String, Object> extensions;
 
     /**
      * ExecutionStep 执行步骤

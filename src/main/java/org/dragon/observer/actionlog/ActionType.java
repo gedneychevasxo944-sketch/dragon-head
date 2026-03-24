@@ -74,7 +74,23 @@ public enum ActionType {
     /** 执行优化 */
     OPTIMIZATION_EXECUTE,
 
+    // ==================== Plan 生命周期 ====================
+    /** 生成优化计划 */
+    PLAN_GENERATE,
+    /** 复核优化计划 */
+    PLAN_REVIEW,
+    /** 审批优化计划 */
+    PLAN_APPROVE,
+    /** 拒绝优化计划 */
+    PLAN_REJECT,
+    /** 执行优化计划 */
+    PLAN_EXECUTE,
+    /** 回滚优化计划 */
+    PLAN_ROLLBACK,
+
     // ==================== Schedule ====================
+    /** 注册定时任务 */
+    SCHEDULE_REGISTER,
     /** 定时任务触发 */
     SCHEDULE_TRIGGER,
     /** 定时任务执行 */

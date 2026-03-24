@@ -15,28 +15,28 @@ public interface TaskBridge {
      * 执行任务
      *
      * @param task 任务
-     * @param workspaceId Workspace ID
+     * @param context 执行上下文
      * @return 执行后的任务
      */
-    Task execute(Task task, String workspaceId);
+    Task execute(Task task, TaskBridgeContext context);
 
     /**
      * 暂停任务
      *
      * @param task 任务
-     * @param reason 暂停原因
+     * @param context 暂停上下文
      * @return 暂停后的任务
      */
-    Task suspend(Task task, String reason);
+    Task suspend(Task task, SuspendContext context);
 
     /**
      * 恢复任务
      *
      * @param task 任务
-     * @param newInput 新的输入
+     * @param context 恢复上下文
      * @return 恢复后的任务
      */
-    Task resume(Task task, Object newInput);
+    Task resume(Task task, ResumeContext context);
 
     /**
      * 通知依赖任务已解决

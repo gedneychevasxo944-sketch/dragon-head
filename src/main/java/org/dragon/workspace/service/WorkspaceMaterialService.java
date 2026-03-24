@@ -13,6 +13,7 @@ import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.material.Material;
+import org.dragon.workspace.material.MaterialContentStore;
 import org.dragon.workspace.material.MaterialParser;
 import org.dragon.workspace.material.MaterialStore;
 import org.dragon.workspace.material.MaterialStorage;
@@ -37,6 +38,7 @@ public class WorkspaceMaterialService {
     private final WorkspaceRegistry workspaceRegistry;
     private final TaskStore taskStore;
     private final MaterialParser materialParser;
+    private final MaterialContentStore materialContentStore;
 
     /**
      * 上传物料
@@ -202,12 +204,16 @@ public class WorkspaceMaterialService {
                             .materialId(materialId)
                             .textContent(result.getTextContent())
                             .structuredContent(result.getStructuredContent())
+                            .metadata(result.getMetadata())
                             .status(result.isSuccess()
                                     ? org.dragon.workspace.material.ParsedMaterialContent.ParseStatus.SUCCESS
                                     : org.dragon.workspace.material.ParsedMaterialContent.ParseStatus.FAILED)
                             .errorMessage(result.getErrorMessage())
                             .parsedAt(java.time.LocalDateTime.now())
                             .build();
+
+            // 通过 MaterialContentStore 保存解析内容
+            materialContentStore.saveParsedContent(content);
 
             // 更新物料状态
             material.setParseStatus(content.getStatus().name());
@@ -232,8 +238,8 @@ public class WorkspaceMaterialService {
         if (material == null || material.getParsedContentId() == null) {
             return java.util.Optional.empty();
         }
-        // 这里应该有一个 MaterialContentStore 来查询，简化处理返回空
-        return java.util.Optional.empty();
+        // 通过 MaterialContentStore 查询解析内容
+        return materialContentStore.findByMaterialId(materialId);
     }
 
     // ==================== 任务关联方法 ====================

@@ -21,7 +21,7 @@ public class MemoryMaterialContentStore implements MaterialContentStore {
     private final Map<String, ParsedMaterialContent> store = new ConcurrentHashMap<>();
 
     @Override
-    public void save(ParsedMaterialContent content) {
+    public void saveParsedContent(ParsedMaterialContent content) {
         store.put(content.getId(), content);
         log.debug("[MemoryMaterialContentStore] Saved parsed content: {}", content.getId());
     }
@@ -32,7 +32,7 @@ public class MemoryMaterialContentStore implements MaterialContentStore {
     }
 
     @Override
-    public Optional<ParsedMaterialContent> findLatestByMaterialId(String materialId) {
+    public Optional<ParsedMaterialContent> findByMaterialId(String materialId) {
         return store.values().stream()
                 .filter(c -> materialId.equals(c.getMaterialId()))
                 .reduce((first, second) -> second);

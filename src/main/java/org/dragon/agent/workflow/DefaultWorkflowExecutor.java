@@ -32,6 +32,8 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
     private final CharacterRuntimeBinder characterRuntimeBinder;
     private final WorkflowStore workflowStore;
 
+    private final Map<String, WorkflowState> runningWorkflows = new ConcurrentHashMap<>();
+
     @Override
     public WorkflowResult execute(Workflow workflow, Map<String, Object> input) {
         String executionId = UUID.randomUUID().toString();
@@ -131,6 +133,14 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
                 return executeLoop(node, state);
             case END:
                 return state.getContext().get("result");
+            case CHARACTER:
+                return executeCharacterNode(node, state);
+            case PLUGIN:
+                return executePluginNode(node, state);
+            case PROXY:
+                return executeProxyNode(node, state);
+            case SCRIPT:
+                return executeScriptNode(node, state);
             default:
                 throw new IllegalArgumentException("Unknown node type: " + node.getType());
         }
@@ -254,6 +264,87 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
         }
 
         return null;
+    }
+
+    /**
+     * 执行 Character 节点
+     * 在当前 Workspace 内选择并执行一个 Character 子任务
+     */
+    private Object executeCharacterNode(Workflow.Node node, WorkflowState state) throws Exception {
+        String characterId = (String) node.getConfig().get("characterId");
+        String taskPrompt = (String) node.getConfig().get("taskPrompt");
+        String workspaceId = (String) state.getContext().get("workspaceId");
+
+        log.info("[DefaultWorkflowExecutor] Executing CHARACTER node: characterId={}, workspaceId={}", characterId, workspaceId);
+
+        // 解析任务提示模板
+        String task = replaceVariables(taskPrompt, state.getContext());
+
+        // 获取 Character 并执行任务
+        var characterOpt = characterRegistry.get(characterId);
+        if (characterOpt.isEmpty()) {
+            throw new IllegalStateException("Character not found: " + characterId);
+        }
+
+        org.dragon.character.Character character = characterOpt.get();
+        String result = character.run(task);
+
+        state.getContext().put("_lastResult", result);
+        state.getContext().put("_characterId", characterId);
+        return result;
+    }
+
+    /**
+     * 执行 Plugin 节点
+     * 通过插件扩展点执行
+     */
+    private Object executePluginNode(Workflow.Node node, WorkflowState state) throws Exception {
+        String pluginName = (String) node.getConfig().get("pluginName");
+        String pluginMethod = (String) node.getConfig().get("pluginMethod");
+        Map<String, Object> pluginParams = (Map<String, Object>) node.getConfig().get("params");
+
+        log.info("[DefaultWorkflowExecutor] Executing PLUGIN node: plugin={}, method={}", pluginName, pluginMethod);
+
+        // TODO: 通过插件扩展点执行
+        // 目前简化处理，返回模拟结果
+        String result = "Plugin result: " + pluginName + "." + pluginMethod;
+        state.getContext().put("_lastResult", result);
+        return result;
+    }
+
+    /**
+     * 执行 Proxy 节点
+     * 调用外部代理服务
+     */
+    private Object executeProxyNode(Workflow.Node node, WorkflowState state) throws Exception {
+        String proxyEndpoint = (String) node.getConfig().get("proxyEndpoint");
+        String proxyMethod = (String) node.getConfig().get("proxyMethod");
+        Map<String, Object> proxyParams = (Map<String, Object>) node.getConfig().get("params");
+
+        log.info("[DefaultWorkflowExecutor] Executing PROXY node: endpoint={}, method={}", proxyEndpoint, proxyMethod);
+
+        // TODO: 调用外部代理
+        // 目前简化处理，返回模拟结果
+        String result = "Proxy result: " + proxyEndpoint;
+        state.getContext().put("_lastResult", result);
+        return result;
+    }
+
+    /**
+     * 执行 Script 节点
+     * 在沙箱中执行脚本
+     */
+    private Object executeScriptNode(Workflow.Node node, WorkflowState state) throws Exception {
+        String scriptLanguage = (String) node.getConfig().get("scriptLanguage");
+        String scriptCode = (String) node.getConfig().get("scriptCode");
+
+        log.info("[DefaultWorkflowExecutor] Executing SCRIPT node: language={}", scriptLanguage);
+
+        // TODO: 通过沙箱执行接口执行脚本
+        // 目前简化处理，返回模拟结果
+        String result = "Script result: " + scriptLanguage;
+        state.getContext().put("_lastResult", result);
+        return result;
     }
 
     /**

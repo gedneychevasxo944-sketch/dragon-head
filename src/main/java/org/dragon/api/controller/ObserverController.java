@@ -9,14 +9,21 @@ import org.dragon.observer.ObserverService;
 import org.dragon.workspace.commons.CommonSense;
 import org.dragon.workspace.commons.CommonSenseValidator;
 import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
+import org.dragon.observer.collector.DataCollector;
+import org.dragon.observer.collector.dto.ObservationDataset;
 import org.dragon.observer.evaluation.EvaluationEngine;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.optimization.OptimizationAction;
+import org.dragon.observer.optimization.OptimizationPlan;
+import org.dragon.observer.optimization.OptimizationPlanItem;
+import org.dragon.observer.optimization.OptimizationPlanParser;
+import org.dragon.observer.optimization.ObserverPlanningService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +54,12 @@ public class ObserverController {
     private final ObserverService observerService;
     @Autowired
     private final WorkspaceCommonSenseStore commonSenseStore;
+    @Autowired
+    private final ObserverPlanningService planningService;
+    @Autowired
+    private final OptimizationPlanParser planParser;
+    @Autowired
+    private final DataCollector dataCollector;
 
     // ==================== Observer 生命周期 ====================
 
@@ -298,6 +311,138 @@ public class ObserverController {
         return ResponseEntity.ok(result);
     }
 
+    // ==================== 优化计划管理（Plan-first 模式） ====================
+
+    @Operation(summary = "从评价记录生成优化计划")
+    @PostMapping("/{observerId}/plans/generate")
+    public ResponseEntity<OptimizationPlan> generatePlan(
+            @PathVariable String observerId,
+            @RequestBody GeneratePlanRequest request) {
+        EvaluationRecord record = observerService.getEvaluation(request.getEvaluationId());
+        if (record == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // 如果提供了原始文本，使用解析器解析
+        if (request.getPlanText() != null && !request.getPlanText().isEmpty()) {
+            OptimizationPlan plan = planParser.parse(
+                    request.getPlanText(),
+                    observerId,
+                    request.getEvaluationId(),
+                    OptimizationAction.TargetType.valueOf(request.getTargetType()),
+                    request.getTargetId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(plan);
+        }
+
+        // 否则使用默认的基于评价的计划生成
+        OptimizationPlan plan = planningService.generatePlan(request.getEvaluationId(), observerId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(plan);
+    }
+
+    @Operation(summary = "查询优化计划详情")
+    @GetMapping("/{observerId}/plans/{planId}")
+    public ResponseEntity<OptimizationPlan> getPlan(
+            @PathVariable String observerId,
+            @PathVariable String planId) {
+        OptimizationPlan plan = planningService.getPlan(planId);
+        if (plan == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(plan);
+    }
+
+    @Operation(summary = "查询计划的所有项目")
+    @GetMapping("/{observerId}/plans/{planId}/items")
+    public ResponseEntity<List<OptimizationPlanItem>> getPlanItems(
+            @PathVariable String observerId,
+            @PathVariable String planId) {
+        List<OptimizationPlanItem> items = planningService.getPlanItems(planId);
+        return ResponseEntity.ok(items);
+    }
+
+    @Operation(summary = "查询待审批的计划列表")
+    @GetMapping("/{observerId}/plans/pending")
+    public ResponseEntity<List<OptimizationPlan>> getPendingApprovalPlans(
+            @PathVariable String observerId) {
+        List<OptimizationPlan> plans = planningService.getPendingApprovalPlans();
+        return ResponseEntity.ok(plans);
+    }
+
+    @Operation(summary = "复核优化计划（Reviewer Character 执行）")
+    @PostMapping("/{observerId}/plans/{planId}/review")
+    public ResponseEntity<ObserverPlanningService.ReviewResult> reviewPlan(
+            @PathVariable String observerId,
+            @PathVariable String planId,
+            @RequestBody ReviewPlanRequest request) {
+        ObserverPlanningService.ReviewResult result = planningService.reviewPlan(planId, request.getReviewer());
+        return ResponseEntity.ok(result);
+    }
+
+    @Operation(summary = "审批通过优化计划")
+    @PostMapping("/{observerId}/plans/{planId}/approve")
+    public ResponseEntity<OptimizationPlan> approvePlan(
+            @PathVariable String observerId,
+            @PathVariable String planId,
+            @RequestBody ApprovePlanRequest request) {
+        try {
+            OptimizationPlan plan = planningService.approvePlan(planId, request.getApprover(), request.getComment());
+            return ResponseEntity.ok(plan);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @Operation(summary = "拒绝优化计划")
+    @PostMapping("/{observerId}/plans/{planId}/reject")
+    public ResponseEntity<OptimizationPlan> rejectPlan(
+            @PathVariable String observerId,
+            @PathVariable String planId,
+            @RequestBody RejectPlanRequest request) {
+        OptimizationPlan plan = planningService.rejectPlan(planId, request.getReason());
+        return ResponseEntity.ok(plan);
+    }
+
+    @Operation(summary = "执行优化计划")
+    @PostMapping("/{observerId}/plans/{planId}/execute")
+    public ResponseEntity<OptimizationPlan> executePlan(
+            @PathVariable String observerId,
+            @PathVariable String planId) {
+        try {
+            OptimizationPlan plan = planningService.executePlan(planId);
+            return ResponseEntity.ok(plan);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @Operation(summary = "回滚优化计划")
+    @PostMapping("/{observerId}/plans/{planId}/rollback")
+    public ResponseEntity<OptimizationPlan> rollbackPlan(
+            @PathVariable String observerId,
+            @PathVariable String planId) {
+        OptimizationPlan plan = planningService.rollbackPlan(planId);
+        return ResponseEntity.ok(plan);
+    }
+
+    @Operation(summary = "获取计划摘要")
+    @GetMapping("/{observerId}/plans/{planId}/summary")
+    public ResponseEntity<Map<String, Object>> getPlanSummary(
+            @PathVariable String observerId,
+            @PathVariable String planId) {
+        String summary = planningService.buildPlanSummary(planId);
+        return ResponseEntity.ok(Map.of("summary", summary));
+    }
+
+    @Operation(summary = "查询目标的优化计划历史")
+    @GetMapping("/{observerId}/plans")
+    public ResponseEntity<List<OptimizationPlan>> getPlansByTarget(
+            @PathVariable String observerId,
+            @RequestParam OptimizationAction.TargetType targetType,
+            @RequestParam String targetId) {
+        List<OptimizationPlan> plans = planningService.getPlansByTarget(targetType, targetId);
+        return ResponseEntity.ok(plans);
+    }
+
     // ==================== 请求体 DTO ====================
 
     @Data
@@ -313,5 +458,29 @@ public class ObserverController {
         private String actionTargetType;
         private String actionType;
         private Map<String, Object> parameters;
+    }
+
+    @Data
+    public static class GeneratePlanRequest {
+        private String evaluationId;
+        private String planText;
+        private String targetType;
+        private String targetId;
+    }
+
+    @Data
+    public static class ReviewPlanRequest {
+        private String reviewer;
+    }
+
+    @Data
+    public static class ApprovePlanRequest {
+        private String approver;
+        private String comment;
+    }
+
+    @Data
+    public static class RejectPlanRequest {
+        private String reason;
     }
 }

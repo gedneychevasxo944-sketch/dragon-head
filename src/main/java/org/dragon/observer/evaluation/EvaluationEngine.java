@@ -7,6 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.dragon.observer.collector.dto.ObservationDataset;
+import org.dragon.observer.collector.dto.CharacterObservationSnapshot;
+import org.dragon.observer.collector.dto.WorkspaceObservationSnapshot;
+import org.dragon.observer.collector.dto.MemoryObservationSnapshot;
+import org.dragon.observer.collector.dto.SkillObservationSnapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -359,5 +364,229 @@ public class EvaluationEngine {
 
     public EvaluationConfig getConfig() {
         return config;
+    }
+
+    /**
+     * 基于观测数据集的多维度评价
+     *
+     * @param dataset 观测数据集
+     * @param targetType 目标类型
+     * @param targetId 目标 ID
+     * @return 评价记录（包含多维度发现）
+     */
+    public EvaluationRecord evaluateWithFindings(ObservationDataset dataset,
+            EvaluationRecord.TargetType targetType, String targetId) {
+        log.info("[EvaluationEngine] Multi-dimension evaluation for {}: {}", targetType, targetId);
+
+        EvaluationRecord record = EvaluationRecord.builder()
+                .id(UUID.randomUUID().toString())
+                .targetId(targetId)
+                .targetType(targetType)
+                .evaluationType(EvaluationRecord.EvaluationType.PERIODIC)
+                .timestamp(LocalDateTime.now())
+                .evaluator("OBSERVER")
+                .dimensions(new ArrayList<>())
+                .findings(new ArrayList<>())
+                .unsafeFlags(new ArrayList<>())
+                .evidenceRefs(new ArrayList<>())
+                .build();
+
+        List<String> dimensions = new ArrayList<>();
+        List<ObservationFinding> findings = new ArrayList<>();
+
+        // 1. 任务完成度维度
+        dimensions.add("TASK_COMPLETION");
+        double taskScore = evaluateTaskCompletionDimension(dataset, targetType, targetId);
+        record.setTaskCompletionScore(taskScore);
+
+        if (taskScore < 0.6) {
+            findings.add(ObservationFinding.builder()
+                    .dimension("TASK_COMPLETION")
+                    .severity(taskScore < 0.3 ? "HIGH" : "MEDIUM")
+                    .summary("任务完成度偏低")
+                    .details(String.format("当前得分: %.2f", taskScore))
+                    .targetType(targetType.name())
+                    .targetId(targetId)
+                    .suggestedActionType("UPDATE_MIND")
+                    .confidence(taskScore)
+                    .unsafe(false)
+                    .evidence(new HashMap<>())
+                    .build());
+        }
+
+        // 2. 效率维度
+        dimensions.add("EFFICIENCY");
+        double efficiencyScore = evaluateEfficiencyDimension(dataset, targetType, targetId);
+        record.setEfficiencyScore(efficiencyScore);
+
+        if (efficiencyScore < 0.6) {
+            findings.add(ObservationFinding.builder()
+                    .dimension("EFFICIENCY")
+                    .severity(efficiencyScore < 0.3 ? "HIGH" : "MEDIUM")
+                    .summary("执行效率偏低")
+                    .details(String.format("当前得分: %.2f", efficiencyScore))
+                    .targetType(targetType.name())
+                    .targetId(targetId)
+                    .suggestedActionType("UPDATE_CONFIG")
+                    .confidence(efficiencyScore)
+                    .unsafe(false)
+                    .evidence(new HashMap<>())
+                    .build());
+        }
+
+        // 3. 合规性维度
+        dimensions.add("COMPLIANCE");
+        double complianceScore = evaluateComplianceDimension(dataset, targetType, targetId);
+        record.setComplianceScore(complianceScore);
+
+        if (complianceScore < 0.6) {
+            findings.add(ObservationFinding.builder()
+                    .dimension("COMPLIANCE")
+                    .severity(complianceScore < 0.3 ? "HIGH" : "MEDIUM")
+                    .summary("合规性问题")
+                    .details(String.format("当前得分: %.2f", complianceScore))
+                    .targetType(targetType.name())
+                    .targetId(targetId)
+                    .suggestedActionType("UPDATE_PERSONALITY")
+                    .confidence(complianceScore)
+                    .unsafe(false)
+                    .evidence(new HashMap<>())
+                    .build());
+        }
+
+        // 4. 协作维度
+        dimensions.add("COLLABORATION");
+        double collaborationScore = evaluateCollaborationDimension(dataset, targetType, targetId);
+        record.setCollaborationScore(collaborationScore);
+
+        if (collaborationScore < 0.6) {
+            findings.add(ObservationFinding.builder()
+                    .dimension("COLLABORATION")
+                    .severity(collaborationScore < 0.3 ? "HIGH" : "MEDIUM")
+                    .summary("协作能力有待提升")
+                    .details(String.format("当前得分: %.2f", collaborationScore))
+                    .targetType(targetType.name())
+                    .targetId(targetId)
+                    .suggestedActionType("UPDATE_MIND")
+                    .confidence(collaborationScore)
+                    .unsafe(false)
+                    .evidence(new HashMap<>())
+                    .build());
+        }
+
+        // 5. 满意度维度
+        dimensions.add("SATISFACTION");
+        double satisfactionScore = evaluateSatisfactionDimension(dataset, targetType, targetId);
+        record.setSatisfactionScore(satisfactionScore);
+
+        if (satisfactionScore < 0.6) {
+            findings.add(ObservationFinding.builder()
+                    .dimension("SATISFACTION")
+                    .severity(satisfactionScore < 0.3 ? "HIGH" : "MEDIUM")
+                    .summary("满意度偏低")
+                    .details(String.format("当前得分: %.2f", satisfactionScore))
+                    .targetType(targetType.name())
+                    .targetId(targetId)
+                    .suggestedActionType("UPDATE_MEMORY")
+                    .confidence(satisfactionScore)
+                    .unsafe(false)
+                    .evidence(new HashMap<>())
+                    .build());
+        }
+
+        // 设置维度和发现
+        record.setDimensions(dimensions);
+        record.setFindings(findings);
+
+        // 计算综合评分
+        record.calculateOverallScore();
+
+        // 生成分析和建议
+        record.setAnalysis(generateAnalysis(record));
+        record.setSuggestions(generateSuggestions(record));
+
+        // 保存记录
+        evaluationRecordStore.save(record);
+
+        log.info("[EvaluationEngine] Multi-dimension evaluation completed: overallScore={}, findings={}",
+                record.getOverallScore(), findings.size());
+        return record;
+    }
+
+    private double evaluateTaskCompletionDimension(ObservationDataset dataset,
+            EvaluationRecord.TargetType targetType, String targetId) {
+        if (dataset.getRawTaskData() == null || dataset.getRawTaskData().isEmpty()) {
+            return 1.0;
+        }
+
+        long totalTasks = dataset.getRawTaskData().size();
+        long completedTasks = dataset.getRawTaskData().stream()
+                .filter(t -> Boolean.TRUE.equals(t.get("success")))
+                .count();
+
+        return totalTasks > 0 ? (double) completedTasks / totalTasks : 1.0;
+    }
+
+    private double evaluateEfficiencyDimension(ObservationDataset dataset,
+            EvaluationRecord.TargetType targetType, String targetId) {
+        if (dataset.getRawTaskData() == null || dataset.getRawTaskData().isEmpty()) {
+            return 1.0;
+        }
+
+        double avgDuration = dataset.getRawTaskData().stream()
+                .filter(t -> t.get("durationMs") != null)
+                .mapToLong(t -> ((Number) t.get("durationMs")).longValue())
+                .average()
+                .orElse(0.0);
+
+        // 低于30秒为满分，超过5分钟为0分
+        if (avgDuration <= 0) return 1.0;
+        if (avgDuration > 300000) return 0.0;
+        return 1.0 - (avgDuration / 300000);
+    }
+
+    private double evaluateComplianceDimension(ObservationDataset dataset,
+            EvaluationRecord.TargetType targetType, String targetId) {
+        // 基于目标类型的快照进行合规性评估
+        switch (targetType) {
+            case CHARACTER:
+                if (dataset.getCharacterSnapshot() != null) {
+                    return dataset.getCharacterSnapshot().getSuccessRate();
+                }
+                break;
+            case WORKSPACE:
+                if (dataset.getWorkspaceSnapshot() != null) {
+                    return dataset.getWorkspaceSnapshot().getSuccessRate();
+                }
+                break;
+            default:
+                break;
+        }
+        return 1.0;
+    }
+
+    private double evaluateCollaborationDimension(ObservationDataset dataset,
+            EvaluationRecord.TargetType targetType, String targetId) {
+        if (targetType != EvaluationRecord.TargetType.WORKSPACE) {
+            return 1.0;
+        }
+
+        WorkspaceObservationSnapshot wsSnapshot = dataset.getWorkspaceSnapshot();
+        if (wsSnapshot == null) {
+            return 1.0;
+        }
+
+        // 基于活跃角色比例评估协作
+        if (wsSnapshot.getCharacterCount() == 0) {
+            return 1.0;
+        }
+
+        return (double) wsSnapshot.getActiveCharacterCount() / wsSnapshot.getCharacterCount();
+    }
+
+    private double evaluateSatisfactionDimension(ObservationDataset dataset,
+            EvaluationRecord.TargetType targetType, String targetId) {
+        // 暂无外部反馈机制，默认满分
+        return 1.0;
     }
 }

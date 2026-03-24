@@ -13,6 +13,8 @@ import org.dragon.character.CharacterRegistry;
 import org.dragon.task.Task;
 import org.dragon.workspace.WorkspaceApplication;
 import org.dragon.workspace.WorkspaceApplicationProvider;
+import org.dragon.workspace.material.Material;
+import org.dragon.workspace.service.WorkspaceMaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -43,6 +45,10 @@ public class AgentGateway implements Gateway {
     @Autowired
     private ChannelBindingService channelBindingService;
 
+    @Autowired
+    @Lazy
+    private WorkspaceMaterialService workspaceMaterialService;
+
     @Override
     public void dispatch(NormalizedMessage inboundMsg) {
         // 路由解析：用 (channel, chatId) 查找绑定的 workspaceId
@@ -69,6 +75,19 @@ public class AgentGateway implements Gateway {
             try {
                 log.info("[Gateway] Dispatching to workspace={} from channel={} chatId={}",
                         workspaceId, inboundMsg.getChannel(), inboundMsg.getChatId());
+
+                // 如果消息包含附件，先摄入为物料
+                if (inboundMsg.getNormalizedFiles() != null && !inboundMsg.getNormalizedFiles().isEmpty()) {
+                    log.info("[Gateway] Found {} files in message, ingesting as materials", inboundMsg.getNormalizedFiles().size());
+                    java.util.List<Material> materials = workspaceMaterialService.ingestNormalizedFiles(
+                            workspaceId,
+                            inboundMsg.getNormalizedFiles(),
+                            inboundMsg.getSenderId(),
+                            java.util.Map.of("chatId", inboundMsg.getChatId(), "messageId", inboundMsg.getMessageId())
+                    );
+                    log.info("[Gateway] Ingested {} materials", materials.size());
+                }
+
                 WorkspaceApplication app = workspaceApplicationProvider.getApplication(workspaceId);
                 // 将用户消息作为任务提交给 Workspace 编排层（走 NormalizedMessage 主入口）
                 Task task = app.executeTask(inboundMsg, inboundMsg.getSenderId());

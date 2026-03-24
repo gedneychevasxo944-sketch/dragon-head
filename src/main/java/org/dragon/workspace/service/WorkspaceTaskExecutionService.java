@@ -1,14 +1,17 @@
 package org.dragon.workspace.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
+import org.dragon.workspace.chat.ChatMessage;
+import org.dragon.workspace.chat.ChatRoom;
+import org.dragon.workspace.task.notify.WorkspaceTaskNotifier;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,8 @@ public class WorkspaceTaskExecutionService {
 
     private final TaskStore taskStore;
     private final TaskBridge taskBridge;
+    private final WorkspaceTaskNotifier taskNotifier;
+    private final ChatRoom chatRoom;
 
     /**
      * 执行单个子任务
@@ -41,18 +46,88 @@ public class WorkspaceTaskExecutionService {
         log.info("[WorkspaceTaskExecutionService] Executing childTask {} on character {}",
                 childTask.getId(), childTask.getCharacterId());
 
-        // 委托 TaskBridge 执行（状态管理由 Bridge 统一负责）
-        Task result = taskBridge.execute(childTask, workspaceId);
+        // 更新状态为 RUNNING
+        childTask.setStatus(TaskStatus.RUNNING);
+        childTask.setStartedAt(LocalDateTime.now());
+        taskStore.update(childTask);
 
-        // 记录执行结果
+        // 发送开始执行通知
+        taskNotifier.notifyStarted(childTask);
+
+        // 发送进度通知
+        taskNotifier.notifyProgress(childTask, "任务执行中");
+
+        // 组装协作上下文
+        TaskBridgeContext context = buildCollaborationContext(childTask, parentTask);
+
+        // 委托 TaskBridge 执行
+        Task result = taskBridge.execute(childTask, context);
+
+        // 如果任务进入等待依赖状态，同步更新 ChatRoom 参与者状态
+        if (result.getStatus() == TaskStatus.WAITING_DEPENDENCY) {
+            String sessionId = childTask.getCollaborationSessionId();
+            if (sessionId != null) {
+                String reason = result.getWaitingReason() != null ? result.getWaitingReason() : "Waiting for dependency";
+                chatRoom.markParticipantWaiting(sessionId, result.getCharacterId(), reason);
+            }
+        }
+
+        // 记录执行结果并发送通知
         if (result.getStatus() == TaskStatus.COMPLETED) {
             log.info("[WorkspaceTaskExecutionService] ChildTask {} completed successfully", childTask.getId());
+            taskNotifier.notifyCompleted(result);
+            // 通知依赖已解决
+            if (result.getCollaborationSessionId() != null) {
+                chatRoom.markParticipantReady(result.getCollaborationSessionId(), result.getCharacterId());
+            }
         } else if (result.getStatus() == TaskStatus.FAILED) {
             log.warn("[WorkspaceTaskExecutionService] ChildTask {} failed: {}", childTask.getId(), result.getErrorMessage());
+            taskNotifier.notifyFailed(result, result.getErrorMessage());
+        } else if (result.getStatus() == TaskStatus.SUSPENDED) {
+            taskNotifier.notifyWaiting(result, result.getErrorMessage());
         }
 
         // 检查并更新父任务状态
         checkAndCompleteParentTask(parentTask);
+    }
+
+    /**
+     * 构建协作上下文
+     */
+    private TaskBridgeContext buildCollaborationContext(Task childTask, Task parentTask) {
+        String collaborationSessionId = childTask.getCollaborationSessionId();
+
+        // 获取同级 Character ID 列表（同一父任务下的其他子任务的执行者）
+        List<String> peerCharacterIds = new ArrayList<>();
+        List<String> childTaskIds = parentTask.getChildTaskIds();
+        if (childTaskIds != null) {
+            for (String childTaskId : childTaskIds) {
+                if (!childTaskId.equals(childTask.getId())) {
+                    Optional<Task> siblingTask = taskStore.findById(childTaskId);
+                    if (siblingTask.isPresent() && siblingTask.get().getCharacterId() != null) {
+                        peerCharacterIds.add(siblingTask.get().getCharacterId());
+                    }
+                }
+            }
+        }
+
+        // 获取最新会话消息
+        List<String> latestSessionMessages = new ArrayList<>();
+        if (collaborationSessionId != null) {
+            List<ChatMessage> messages = chatRoom.listSessionMessages(collaborationSessionId, 10);
+            latestSessionMessages = messages.stream()
+                    .map(ChatMessage::getContent)
+                    .collect(Collectors.toList());
+        }
+
+        return TaskBridgeContext.builder()
+                .workspaceId(parentTask.getWorkspaceId())
+                .parentTaskId(parentTask.getId())
+                .collaborationSessionId(collaborationSessionId)
+                .peerCharacterIds(peerCharacterIds.isEmpty() ? null : peerCharacterIds)
+                .dependencyTaskIds(childTask.getDependencyTaskIds())
+                .latestSessionMessages(latestSessionMessages.isEmpty() ? null : latestSessionMessages)
+                .build();
     }
 
     /**
@@ -71,6 +146,7 @@ public class WorkspaceTaskExecutionService {
                     log.warn("[WorkspaceTaskExecutionService] Dependencies not met for task {}, marking as WAITING_DEPENDENCY", childTask.getId());
                     childTask.setStatus(TaskStatus.WAITING_DEPENDENCY);
                     taskStore.update(childTask);
+                    taskNotifier.notifyWaiting(childTask, "Waiting for dependency");
                     continue;
                 }
 
@@ -81,6 +157,7 @@ public class WorkspaceTaskExecutionService {
                 childTask.setStatus(TaskStatus.FAILED);
                 childTask.setErrorMessage(e.getMessage());
                 taskStore.update(childTask);
+                taskNotifier.notifyFailed(childTask, e.getMessage());
             }
         }
     }
@@ -157,7 +234,11 @@ public class WorkspaceTaskExecutionService {
         Task task = taskStore.findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
-        return taskBridge.suspend(task, reason);
+        SuspendContext context = SuspendContext.builder()
+                .reason(reason)
+                .suspendedAt(LocalDateTime.now().toString())
+                .build();
+        return taskBridge.suspend(task, context);
     }
 
     /**
@@ -167,7 +248,11 @@ public class WorkspaceTaskExecutionService {
         Task task = taskStore.findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
-        return taskBridge.resume(task, newInput);
+        ResumeContext context = ResumeContext.builder()
+                .newInput(newInput)
+                .reason("User resumed")
+                .build();
+        return taskBridge.resume(task, context);
     }
 
     /**
@@ -183,6 +268,7 @@ public class WorkspaceTaskExecutionService {
         taskStore.update(task);
 
         log.info("[WorkspaceTaskExecutionService] Task {} waiting for user input: {}", taskId, question);
+        taskNotifier.notifyQuestion(task, question);
         return task;
     }
 
@@ -196,7 +282,7 @@ public class WorkspaceTaskExecutionService {
         // 添加依赖
         List<String> deps = task.getDependencyTaskIds();
         if (deps == null) {
-            deps = new java.util.ArrayList<>();
+            deps = new ArrayList<>();
             task.setDependencyTaskIds(deps);
         }
         if (!deps.contains(dependencyTaskId)) {
@@ -208,6 +294,14 @@ public class WorkspaceTaskExecutionService {
         taskStore.update(task);
 
         log.info("[WorkspaceTaskExecutionService] Task {} waiting for dependency: {}", taskId, dependencyTaskId);
+        taskNotifier.notifyWaiting(task, "Waiting for dependency: " + dependencyTaskId);
+
+        // 同步更新 ChatRoom 参与者状态
+        String sessionId = task.getCollaborationSessionId();
+        if (sessionId != null && task.getCharacterId() != null) {
+            chatRoom.markParticipantWaiting(sessionId, task.getCharacterId(), "Waiting for dependency: " + dependencyTaskId);
+        }
+
         return task;
     }
 
@@ -238,6 +332,7 @@ public class WorkspaceTaskExecutionService {
                 task.setStatus(TaskStatus.FAILED);
                 task.setErrorMessage(e.getMessage());
                 taskStore.update(task);
+                taskNotifier.notifyFailed(task, e.getMessage());
             }
         }
         return runnableTasks;

@@ -94,7 +94,7 @@ public interface TaskStore {
      * @param workspaceId 工作空间 ID
      * @return 等待中的任务列表
      */
-    List<Task> findWaitingTasks(String workspaceId);
+    List<Task> findWaitingTasksByWorkspaceId(String workspaceId);
 
     /**
      * 检查任务是否存在

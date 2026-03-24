@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 
+import lombok.Data;
+
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -379,5 +381,171 @@ public class ObserverPlanningService {
      */
     public List<OptimizationPlan> getPlansByTarget(OptimizationAction.TargetType targetType, String targetId) {
         return planStore.findByTarget(targetType, targetId);
+    }
+
+    /**
+     * 复核计划
+     * 对生成的计划进行复核，评估其可行性和风险
+     *
+     * @param planId 计划 ID
+     * @param reviewer 复核人（Reviewer Character）
+     * @return 复核结果
+     */
+    public ReviewResult reviewPlan(String planId, String reviewer) {
+        log.info("[ObserverPlanningService] Reviewing plan {} by {}", planId, reviewer);
+
+        OptimizationPlan plan = planStore.findById(planId)
+                .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
+
+        List<OptimizationPlanItem> items = planStore.findItemsByPlanId(planId);
+
+        // 构建复核结果
+        ReviewResult result = new ReviewResult();
+        result.setPlanId(planId);
+        result.setReviewer(reviewer);
+        result.setReviewedAt(LocalDateTime.now());
+
+        // 检查计划项目数量
+        if (items.isEmpty()) {
+            result.setApproved(false);
+            result.setComment("计划为空，无法审批");
+            return result;
+        }
+
+        // 检查计划项目是否合理
+        int validCount = 0;
+        int riskyCount = 0;
+        List<String> concerns = new ArrayList<>();
+
+        for (OptimizationPlanItem item : items) {
+            // 检查动作类型是否与目标类型匹配
+            if (!isValidActionForTarget(item.getActionType(), plan.getTargetType())) {
+                concerns.add(String.format("项目 [%s] 动作类型 %s 与目标类型 %s 不匹配",
+                        item.getDescription(), item.getActionType(), plan.getTargetType()));
+                riskyCount++;
+            }
+            validCount++;
+        }
+
+        // 基于评价记录评估风险
+        EvaluationRecord evaluation = evaluationRecordStore.findById(plan.getEvaluationId()).orElse(null);
+        if (evaluation != null && evaluation.getFindings() != null) {
+            for (var finding : evaluation.getFindings()) {
+                if (Boolean.TRUE.equals(finding.isUnsafe())) {
+                    concerns.add(String.format("发现安全隐患 [%s]: %s", finding.getDimension(), finding.getSummary()));
+                    riskyCount++;
+                }
+            }
+        }
+
+        result.setApproved(concerns.isEmpty());
+        result.setConcerns(concerns);
+        result.setValidItemCount(validCount);
+        result.setRiskyItemCount(riskyCount);
+        result.setComment(buildReviewComment(result));
+
+        log.info("[ObserverPlanningService] Review result for plan {}: approved={}, concerns={}",
+                planId, result.isApproved(), concerns.size());
+
+        return result;
+    }
+
+    /**
+     * 检查动作类型是否对目标类型有效
+     */
+    private boolean isValidActionForTarget(OptimizationAction.ActionType actionType, OptimizationAction.TargetType targetType) {
+        // Character 目标支持所有动作类型
+        if (targetType == OptimizationAction.TargetType.CHARACTER) {
+            return true;
+        }
+        // Workspace 目标不支持 REMOVE_SKILL
+        if (targetType == OptimizationAction.TargetType.WORKSPACE) {
+            return actionType != OptimizationAction.ActionType.REMOVE_SKILL;
+        }
+        return true;
+    }
+
+    /**
+     * 构建复核评论
+     */
+    private String buildReviewComment(ReviewResult result) {
+        if (result.isApproved()) {
+            return String.format("复核通过。计划包含 %d 个有效项目，无风险项。", result.getValidItemCount());
+        } else {
+            return String.format("复核未通过。存在 %d 个风险项：\n%s",
+                    result.getRiskyItemCount(), String.join("\n", result.getConcerns()));
+        }
+    }
+
+    /**
+     * 构建计划摘要
+     *
+     * @param planId 计划 ID
+     * @return 摘要文本
+     */
+    public String buildPlanSummary(String planId) {
+        OptimizationPlan plan = planStore.findById(planId)
+                .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
+
+        List<OptimizationPlanItem> items = planStore.findItemsByPlanId(planId);
+
+        StringBuilder summary = new StringBuilder();
+        summary.append("# 优化计划摘要\n\n");
+        summary.append(String.format("**计划ID**: %s\n", plan.getId()));
+        summary.append(String.format("**目标类型**: %s\n", plan.getTargetType()));
+        summary.append(String.format("**目标ID**: %s\n", plan.getTargetId()));
+        summary.append(String.format("**状态**: %s\n", plan.getStatus()));
+        summary.append(String.format("**创建时间**: %s\n\n", plan.getCreatedAt()));
+
+        // 评价信息
+        EvaluationRecord evaluation = evaluationRecordStore.findById(plan.getEvaluationId()).orElse(null);
+        if (evaluation != null) {
+            summary.append("## 评价信息\n\n");
+            summary.append(String.format("- 综合评分: %.2f\n", evaluation.getOverallScore() != null ? evaluation.getOverallScore() : 0));
+            summary.append(String.format("- 评价时间: %s\n", evaluation.getTimestamp()));
+            if (evaluation.getFindings() != null && !evaluation.getFindings().isEmpty()) {
+                summary.append(String.format("- 发现问题: %d 个\n", evaluation.getFindings().size()));
+            }
+            summary.append("\n");
+        }
+
+        // 计划项目
+        summary.append("## 优化项目\n\n");
+        if (items.isEmpty()) {
+            summary.append("无优化项目。\n");
+        } else {
+            for (int i = 0; i < items.size(); i++) {
+                OptimizationPlanItem item = items.get(i);
+                summary.append(String.format("%d. **[%s]** %s\n", i + 1, item.getActionType(), item.getDescription()));
+                summary.append(String.format("   - 状态: %s\n", item.getStatus()));
+                summary.append(String.format("   - 序号: %d\n", item.getSequence()));
+            }
+        }
+
+        // 风险提示
+        if (evaluation != null && evaluation.getFindings() != null) {
+            boolean hasUnsafe = evaluation.getFindings().stream().anyMatch(f -> Boolean.TRUE.equals(f.isUnsafe()));
+            if (hasUnsafe) {
+                summary.append("\n## 风险提示\n\n");
+                summary.append("存在安全隐患，请谨慎审批。\n");
+            }
+        }
+
+        return summary.toString();
+    }
+
+    /**
+     * 复核结果
+     */
+    @Data
+    public static class ReviewResult {
+        private String planId;
+        private String reviewer;
+        private LocalDateTime reviewedAt;
+        private boolean approved;
+        private List<String> concerns;
+        private int validItemCount;
+        private int riskyItemCount;
+        private String comment;
     }
 }

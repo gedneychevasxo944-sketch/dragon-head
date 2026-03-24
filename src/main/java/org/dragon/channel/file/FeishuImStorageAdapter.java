@@ -3,27 +3,75 @@ package org.dragon.channel.file;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.im.v1.model.GetMessageResourceReq;
 import com.lark.oapi.service.im.v1.model.GetMessageResourceResp;
+
+import org.dragon.channel.entity.ChannelConfig;
 import org.dragon.channel.entity.NormalizedFile;
 import org.dragon.channel.enums.FileSource;
-import org.springframework.beans.factory.annotation.Value;
+import org.dragon.channel.store.ChannelConfigStore;
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * Description:
- * Author: zhz
- * Version: 1.0
- * Create Date Time: 2026/3/18 0:28
- * Update Date Time:
+ * 飞书 IM 文件存储适配器
+ * 通过飞书开放 API 下载/上传文件
+ *
+ * @author zhz
+ * @version 1.0
  */
+@Slf4j
 @Component
 public class FeishuImStorageAdapter implements FileStorageAdapter {
 
-    private final Client apiClient;
+    private final ChannelConfigStore channelConfigStore;
+    private Client apiClient;
+    private String currentConfigId;
 
-    public FeishuImStorageAdapter(
-            @Value("${channel.feishu.appId:cli_a93e931566785bcc}") String appId,
-            @Value("${channel.feishu.appSecret:usZg6YbUgxVSMoL4ihiT5fSWT6zrDNJR}") String appSecret) {
+    public FeishuImStorageAdapter(ChannelConfigStore channelConfigStore) {
+        this.channelConfigStore = channelConfigStore;
+        initializeApiClient();
+    }
+
+    /**
+     * 初始化 API 客户端
+     * 从 ChannelConfigStore 获取飞书配置
+     */
+    private void initializeApiClient() {
+        // 查询飞书渠道配置
+        var configs = channelConfigStore.findByChannelType("Feishu");
+        if (configs == null || configs.isEmpty()) {
+            log.warn("[FeishuImStorageAdapter] No Feishu config found, will retry on first use");
+            return;
+        }
+
+        // 使用第一个启用的配置
+        ChannelConfig config = configs.stream()
+                .filter(ChannelConfig::isEnabled)
+                .findFirst()
+                .orElse(null);
+
+        if (config == null) {
+            log.warn("[FeishuImStorageAdapter] No enabled Feishu config found");
+            return;
+        }
+
+        var credentials = config.getCredentials();
+        if (credentials == null) {
+            log.warn("[FeishuImStorageAdapter] Feishu config has no credentials");
+            return;
+        }
+
+        String appId = (String) credentials.get("appId");
+        String appSecret = (String) credentials.get("appSecret");
+
+        if (appId == null || appSecret == null) {
+            log.warn("[FeishuImStorageAdapter] Feishu credentials incomplete");
+            return;
+        }
+
         this.apiClient = Client.newBuilder(appId, appSecret).build();
+        this.currentConfigId = config.getId();
+        log.info("[FeishuImStorageAdapter] Initialized with config: {}", currentConfigId);
     }
 
     @Override
@@ -33,6 +81,14 @@ public class FeishuImStorageAdapter implements FileStorageAdapter {
 
     @Override
     public NormalizedFile download(NormalizedFile fileMeta) throws Exception {
+        // 如果客户端未初始化，尝试重新初始化
+        if (apiClient == null) {
+            initializeApiClient();
+            if (apiClient == null) {
+                throw new IllegalStateException("Feishu API client not initialized");
+            }
+        }
+
         // 创建请求对象
         GetMessageResourceReq req = GetMessageResourceReq.newBuilder()
                 .messageId(fileMeta.getMessageId())
@@ -48,7 +104,7 @@ public class FeishuImStorageAdapter implements FileStorageAdapter {
             throw new RuntimeException("Feishu file download failed: " + resp.getCode() + " " + resp.getMsg());
         }
 
-        // 标记存储 key（实际内容由调用方通过 resp 的流获取）
+        // 标记存储 key
         fileMeta.setStorageKey(fileMeta.getFileKey() + ":" + fileMeta.getMessageId());
         return fileMeta;
     }

@@ -32,7 +32,8 @@ public class DefaultTaskBridge implements TaskBridge {
     private final CharacterRuntimeBinder characterRuntimeBinder;
 
     @Override
-    public Task execute(Task task, String workspaceId) {
+    public Task execute(Task task, TaskBridgeContext context) {
+        String workspaceId = context.getWorkspaceId();
         String characterId = task.getCharacterId();
         if (characterId == null || characterId.isEmpty()) {
             log.error("[DefaultTaskBridge] No characterId assigned to task {}", task.getId());
@@ -80,22 +81,22 @@ public class DefaultTaskBridge implements TaskBridge {
     }
 
     @Override
-    public Task suspend(Task task, String reason) {
+    public Task suspend(Task task, SuspendContext context) {
         task.setStatus(TaskStatus.SUSPENDED);
-        task.setErrorMessage(reason);
+        task.setErrorMessage(context.getReason());
         task.setUpdatedAt(LocalDateTime.now());
         taskStore.update(task);
 
-        log.info("[DefaultTaskBridge] Task {} suspended: {}", task.getId(), reason);
+        log.info("[DefaultTaskBridge] Task {} suspended: {}", task.getId(), context.getReason());
         return task;
     }
 
     @Override
-    public Task resume(Task task, Object newInput) {
+    public Task resume(Task task, ResumeContext context) {
         // 更新输入（追加用户回复）
-        if (newInput != null) {
+        if (context.getNewInput() != null) {
             Object currentInput = task.getInput();
-            task.setInput(currentInput != null ? currentInput.toString() + "\n" + newInput.toString() : newInput.toString());
+            task.setInput(currentInput != null ? currentInput.toString() + "\n" + context.getNewInput().toString() : context.getNewInput().toString());
         }
 
         // 恢复为 RUNNING
@@ -106,7 +107,10 @@ public class DefaultTaskBridge implements TaskBridge {
         log.info("[DefaultTaskBridge] Task {} resumed", task.getId());
 
         // 继续执行
-        return execute(task, task.getWorkspaceId());
+        TaskBridgeContext bridgeContext = TaskBridgeContext.builder()
+                .workspaceId(task.getWorkspaceId())
+                .build();
+        return execute(task, bridgeContext);
     }
 
     @Override

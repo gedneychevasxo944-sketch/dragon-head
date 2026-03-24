@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(mvn compile:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(./mvnw compile:*)"
     ],
     "additionalDirectories": [
       "/Users/yijunwang/.claude/plans"

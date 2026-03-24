@@ -18,11 +18,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Service
-public class OrchestrationServiceImpl implements OrchestrationService {
+public class DefaultOrchestrationService implements OrchestrationService {
 
     private final CharacterRegistry characterRegistry;
 
-    public OrchestrationServiceImpl(CharacterRegistry characterRegistry) {
+    public DefaultOrchestrationService(CharacterRegistry characterRegistry) {
         this.characterRegistry = characterRegistry;
     }
 

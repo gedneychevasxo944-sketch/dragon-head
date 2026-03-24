@@ -90,7 +90,7 @@ public class MemoryTaskStore implements TaskStore {
     }
 
     @Override
-    public List<Task> findWaitingTasks(String workspaceId) {
+    public List<Task> findWaitingTasksByWorkspaceId(String workspaceId) {
         return store.values().stream()
                 .filter(task -> workspaceId.equals(task.getWorkspaceId()))
                 .filter(task -> task.getStatus() == TaskStatus.SUSPENDED

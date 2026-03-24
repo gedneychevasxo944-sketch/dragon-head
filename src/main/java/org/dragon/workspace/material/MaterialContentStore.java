@@ -13,7 +13,7 @@ public interface MaterialContentStore {
     /**
      * 保存解析后的内容
      */
-    void save(ParsedMaterialContent content);
+    void saveParsedContent(ParsedMaterialContent content);
 
     /**
      * 根据 ID 查询
@@ -23,7 +23,7 @@ public interface MaterialContentStore {
     /**
      * 根据物料 ID 查询最新解析内容
      */
-    Optional<ParsedMaterialContent> findLatestByMaterialId(String materialId);
+    Optional<ParsedMaterialContent> findByMaterialId(String materialId);
 
     /**
      * 删除
