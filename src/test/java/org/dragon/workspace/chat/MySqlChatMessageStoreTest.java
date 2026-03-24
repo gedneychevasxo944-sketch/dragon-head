@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
+
+import org.dragon.datasource.entity.ChatMessageEntity;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,18 +59,13 @@ class MySqlChatMessageStoreTest {
         // 创建 Ebean Database
         DatabaseConfig dbConfig = new DatabaseConfig();
         dbConfig.setDataSource(dataSource);
-        dbConfig.addPackage("org.dragon.workspace.chat");
+        dbConfig.addPackage("org.dragon.datasource.entity");
         database = DatabaseFactory.create(dbConfig);
-
-        // 使用反射调用 DB.mock()
-        Method mockMethod = io.ebean.DB.class.getDeclaredMethod("mock", String.class, Database.class, boolean.class);
-        mockMethod.setAccessible(true);
-        mockMethod.invoke(null, "test", database, true);
     }
 
     @BeforeEach
     void setUp() {
-        messageStore = new MySqlChatMessageStore();
+        messageStore = new MySqlChatMessageStore(database);
 
         testWorkspaceId = "workspace-" + UUID.randomUUID();
         testSenderId = "sender-" + UUID.randomUUID();

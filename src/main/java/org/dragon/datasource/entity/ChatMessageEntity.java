@@ -1,4 +1,4 @@
-package org.dragon.workspace.chat;
+package org.dragon.datasource.entity;
 
 import io.ebean.annotation.DbJson;
 import jakarta.persistence.Column;
@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dragon.workspace.chat.ChatMessage;
 
 import java.time.LocalDateTime;
 import java.util.Map;

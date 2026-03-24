@@ -1,4 +1,4 @@
-package org.dragon.datasource;
+package org.dragon.datasource.config;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
