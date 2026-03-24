@@ -45,6 +45,11 @@ public class Action {
     private String response;
 
     /**
+     * 状态变更 (用于 STATUS_CHANGE 类型)
+     */
+    private StatusChange statusChange;
+
+    /**
      * 动作类型枚举
      */
     public enum ActionType {
@@ -55,6 +60,37 @@ public class Action {
         /** 生成回复 */
         RESPOND,
         /** 结束执行 */
-        FINISH
+        FINISH,
+        /** 状态变更 */
+        STATUS_CHANGE
+    }
+
+    /**
+     * 状态变更结构
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StatusChange {
+        /**
+         * 目标状态
+         */
+        private String targetStatus;
+
+        /**
+         * 变更原因
+         */
+        private String reason;
+
+        /**
+         * 等待的依赖任务 ID（WAITING_DEPENDENCY 时填写）
+         */
+        private String dependencyTaskId;
+
+        /**
+         * 需要用户回答的问题（WAITING_USER_INPUT 时填写）
+         */
+        private String question;
     }
 }

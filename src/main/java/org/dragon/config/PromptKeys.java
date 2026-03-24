@@ -106,6 +106,11 @@ public class PromptKeys {
     public static final String CHARACTER_WAIT_DEPENDENCY = "character.waitDependency";
 
     /**
+     * Character 协作状态决策 prompt
+     */
+    public static final String CHARACTER_COLLABORATION_DECISION = "character.collaborationDecision";
+
+    /**
      * ProjectManager 任务续跑决策 prompt
      */
     public static final String PROJECT_MANAGER_CONTINUATION_DECISION = "projectManager.continuationDecision";

@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.dragon.agent.react.Action;
+import org.dragon.agent.react.ReActResult;
+import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
@@ -57,15 +60,27 @@ public class DefaultTaskBridge implements TaskBridge {
 
         try {
             // 将任务输入转为字符串
-            String userInput = task.getInput() != null ? task.getInput().toString() : "";
+            Object input = task.getInput();
+            String userInput;
+            if (input instanceof NormalizedMessage) {
+                userInput = ((NormalizedMessage) input).getTextContent();
+            } else {
+                userInput = input != null ? input.toString() : "";
+            }
 
-            // 调用 Character 执行
-            String result = character.run(userInput);
+            // 调用 Character 执行（透传 Task 和 bridgeContext 以便获取协作上下文）
+            ReActResult result = character.runReAct(userInput, false, task, context);
+
+            // 检查是否有 STATUS_CHANGE
+            Action.StatusChange statusChange = result.getStatusChange();
+            if (statusChange != null) {
+                return applyStatusChange(task, statusChange, context);
+            }
 
             // 执行成功
             task.setStatus(TaskStatus.COMPLETED);
             task.setCompletedAt(LocalDateTime.now());
-            task.setResult(result);
+            task.setResult(result.getResponse());
             taskStore.update(task);
 
             log.info("[DefaultTaskBridge] Task {} executed successfully on character {}", task.getId(), characterId);
@@ -78,6 +93,47 @@ public class DefaultTaskBridge implements TaskBridge {
             taskStore.update(task);
             return task;
         }
+    }
+
+    /**
+     * 应用状态变更
+     *
+     * @param task 任务
+     * @param statusChange 状态变更信息
+     * @param context 桥接上下文
+     * @return 更新后的任务
+     */
+    private Task applyStatusChange(Task task, Action.StatusChange statusChange, TaskBridgeContext context) {
+        String targetStatus = statusChange.getTargetStatus();
+
+        if ("WAITING_DEPENDENCY".equals(targetStatus)) {
+            task.setStatus(TaskStatus.WAITING_DEPENDENCY);
+            task.setWaitingReason(statusChange.getReason());
+            if (statusChange.getDependencyTaskId() != null && task.getDependencyTaskIds() != null) {
+                task.getDependencyTaskIds().add(statusChange.getDependencyTaskId());
+            }
+            log.info("[DefaultTaskBridge] Task {} changed to WAITING_DEPENDENCY: {}", task.getId(), statusChange.getReason());
+
+        } else if ("WAITING_USER_INPUT".equals(targetStatus)) {
+            task.setStatus(TaskStatus.WAITING_USER_INPUT);
+            task.setLastQuestion(statusChange.getQuestion());
+            task.setWaitingReason(statusChange.getReason());
+            log.info("[DefaultTaskBridge] Task {} changed to WAITING_USER_INPUT: {}", task.getId(), statusChange.getQuestion());
+
+        } else if ("SUSPENDED".equals(targetStatus)) {
+            task.setStatus(TaskStatus.SUSPENDED);
+            task.setErrorMessage(statusChange.getReason());
+            log.info("[DefaultTaskBridge] Task {} changed to SUSPENDED: {}", task.getId(), statusChange.getReason());
+
+        } else {
+            log.warn("[DefaultTaskBridge] Unknown targetStatus: {}, treating as COMPLETED", targetStatus);
+            task.setStatus(TaskStatus.COMPLETED);
+        }
+
+        task.setUpdatedAt(LocalDateTime.now());
+        taskStore.update(task);
+
+        return task;
     }
 
     @Override

@@ -58,4 +58,14 @@ public class ReActResult {
      * 错误信息
      */
     private String errorMessage;
+
+    /**
+     * 状态变更（如果执行过程中发生了状态变更）
+     */
+    private Action.StatusChange statusChange;
+
+    /**
+     * 最终动作类型
+     */
+    private Action.ActionType finalActionType;
 }

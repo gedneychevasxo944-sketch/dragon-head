@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import org.dragon.agent.model.ModelRegistry;
 import org.dragon.agent.orchestration.OrchestrationService;
+import org.dragon.task.Task;
 import org.dragon.agent.react.ReActContext;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.react.ReActResult;
@@ -259,6 +260,43 @@ public class Character {
     }
 
     /**
+     * 执行主入口（带 Task 透传）
+     * 通过 OrchestrationService 决策执行策略，然后执行
+     *
+     * @param userInput 用户输入
+     * @param task 关联的任务
+     * @return 执行结果
+     */
+    public String run(String userInput, Task task) {
+        if (orchestrationService == null) {
+            throw new IllegalStateException("OrchestrationService not initialized");
+        }
+
+        // 1. 调用 OrchestrationService 获取执行策略
+        OrchestrationService.OrchestrationRequest request = new OrchestrationService.OrchestrationRequest(
+                this.id, userInput, null, null);
+        OrchestrationService.OrchestrationResult orchestrationResult = orchestrationService.orchestrate(request);
+
+        if (!orchestrationResult.isSuccess()) {
+            return "Orchestration failed";
+        }
+
+        // 2. 根据决策结果执行
+        OrchestrationService.Mode mode = orchestrationResult.getMode();
+
+        if (mode == OrchestrationService.Mode.WORKFLOW) {
+            // 执行 Workflow
+            String workflowId = orchestrationResult.getWorkflowId();
+            WorkflowResult result = runWorkflow(workflowId);
+            return result.getErrorMessage() != null ? result.getErrorMessage() : "Workflow completed";
+        } else {
+            // 执行 ReAct
+            ReActResult result = runReAct(userInput, false, task);
+            return result.getResponse();
+        }
+    }
+
+    /**
      * 使用 ReAct 模式执行
      *
      * @param userInput 用户输入
@@ -323,6 +361,19 @@ public class Character {
      * @return ReAct 执行结果
      */
     public ReActResult runReAct(String userInput, boolean streaming, org.dragon.task.Task task) {
+        return runReAct(userInput, streaming, task, null);
+    }
+
+    /**
+     * 执行 ReAct（带流式、Task 和桥接上下文支持）
+     *
+     * @param userInput 用户输入
+     * @param streaming 是否启用流式调用
+     * @param task 关联的 Task
+     * @param bridgeContext 桥接上下文（可选，包含协作信息）
+     * @return ReAct 执行结果
+     */
+    public ReActResult runReAct(String userInput, boolean streaming, org.dragon.task.Task task, org.dragon.workspace.service.TaskBridgeContext bridgeContext) {
         if (reActExecutor == null) {
             throw new IllegalStateException("ReActExecutor not initialized");
         }
@@ -355,7 +406,7 @@ public class Character {
         }
 
         // 构建 ReAct 上下文
-        ReActContext context = ReActContext.builder()
+        ReActContext.ReActContextBuilder contextBuilder = ReActContext.builder()
                 .executionId(UUID.randomUUID().toString())
                 .characterId(this.id)
                 .defaultModelId(defaultModelId)
@@ -365,8 +416,42 @@ public class Character {
                 .maxIterations(maxIterations)
                 .streamingEnabled(streaming)
                 .task(task)
-                .allowedTools(this.allowedTools)
-                .build();
+                .allowedTools(this.allowedTools);
+
+        // 如果提供了 bridgeContext，则加载协作上下文
+        if (bridgeContext != null) {
+            // 判断是否启用协作判断
+            boolean collaborationEnabled = bridgeContext.isCollaborationJudgementEnabled();
+            // 检查 Task.metadata 中是否显式关闭了协作判断
+            if (task != null && task.getMetadata() != null) {
+                Object allowJudgement = task.getMetadata().get("allowCollaborationJudgement");
+                if (allowJudgement != null) {
+                    collaborationEnabled = Boolean.TRUE.equals(allowJudgement);
+                }
+            }
+
+            // 如果启用协作判断且存在协作会话 ID，则加载协作判断 prompt
+            if (collaborationEnabled && bridgeContext.getCollaborationSessionId() != null) {
+                String collaborationPrompt = "";
+                if (promptManager != null) {
+                    String workspace = workspaceIds != null && !workspaceIds.isEmpty()
+                            ? workspaceIds.get(0) : null;
+                    collaborationPrompt = promptManager.getPrompt(workspace, id, PromptKeys.CHARACTER_COLLABORATION_DECISION);
+                }
+                contextBuilder
+                        .collaborationJudgementEnabled(true)
+                        .collaborationDecisionPrompt(collaborationPrompt)
+                        .collaborationSessionId(bridgeContext.getCollaborationSessionId())
+                        .participantStates(bridgeContext.getParticipantStates())
+                        .blockedParticipants(bridgeContext.getBlockedParticipants())
+                        .sessionStatus(bridgeContext.getSessionStatus())
+                        .latestSessionMessages(bridgeContext.getLatestSessionMessages())
+                        .peerCharacterIds(bridgeContext.getPeerCharacterIds())
+                        .dependencyTaskIds(bridgeContext.getDependencyTaskIds());
+            }
+        }
+
+        ReActContext context = contextBuilder.build();
 
         return reActExecutor.execute(context);
     }

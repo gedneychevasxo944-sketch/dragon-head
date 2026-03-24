@@ -11,6 +11,7 @@ import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.chat.ChatMessage;
 import org.dragon.workspace.chat.ChatRoom;
+import org.dragon.workspace.chat.ChatSession;
 import org.dragon.workspace.task.notify.WorkspaceTaskNotifier;
 import org.springframework.stereotype.Service;
 
@@ -72,6 +73,19 @@ public class WorkspaceTaskExecutionService {
             }
         }
 
+        // 如果任务进入等待用户输入状态，同步更新 ChatRoom 参与者状态并通知用户
+        if (result.getStatus() == TaskStatus.WAITING_USER_INPUT) {
+            String sessionId = childTask.getCollaborationSessionId();
+            if (sessionId != null) {
+                String reason = result.getLastQuestion() != null ? result.getLastQuestion() : "Waiting for user input";
+                chatRoom.markParticipantWaiting(sessionId, result.getCharacterId(), reason);
+            }
+            // 通知用户
+            if (result.getLastQuestion() != null) {
+                taskNotifier.notifyQuestion(result, result.getLastQuestion());
+            }
+        }
+
         // 记录执行结果并发送通知
         if (result.getStatus() == TaskStatus.COMPLETED) {
             log.info("[WorkspaceTaskExecutionService] ChildTask {} completed successfully", childTask.getId());
@@ -111,12 +125,28 @@ public class WorkspaceTaskExecutionService {
             }
         }
 
-        // 获取最新会话消息
+        // 协作会话状态信息
+        java.util.Map<String, String> participantStates = null;
+        List<String> blockedParticipants = null;
+        String sessionStatus = null;
+
+        // 获取最新会话消息（格式化）
         List<String> latestSessionMessages = new ArrayList<>();
         if (collaborationSessionId != null) {
+            ChatSession session = chatRoom.getSession(collaborationSessionId);
+            if (session != null) {
+                participantStates = session.getParticipantStates();
+                blockedParticipants = session.getBlockedParticipants();
+                sessionStatus = session.getStatus() != null ? session.getStatus().name() : null;
+            }
+
             List<ChatMessage> messages = chatRoom.listSessionMessages(collaborationSessionId, 10);
             latestSessionMessages = messages.stream()
-                    .map(ChatMessage::getContent)
+                    .map(msg -> String.format("[sender=%s][purpose=%s][subtype=%s] %s",
+                            msg.getSenderId(),
+                            msg.getTaskPurpose() != null ? msg.getTaskPurpose().name() : "null",
+                            msg.getMessageType(),
+                            msg.getContent()))
                     .collect(Collectors.toList());
         }
 
@@ -127,6 +157,9 @@ public class WorkspaceTaskExecutionService {
                 .peerCharacterIds(peerCharacterIds.isEmpty() ? null : peerCharacterIds)
                 .dependencyTaskIds(childTask.getDependencyTaskIds())
                 .latestSessionMessages(latestSessionMessages.isEmpty() ? null : latestSessionMessages)
+                .participantStates(participantStates)
+                .blockedParticipants(blockedParticipants)
+                .sessionStatus(sessionStatus)
                 .build();
     }
 

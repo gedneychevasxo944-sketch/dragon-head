@@ -1,6 +1,7 @@
 package org.dragon.workspace.service;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,4 +49,25 @@ public class TaskBridgeContext {
      * 最新会话消息列表（可选）
      */
     private List<String> latestSessionMessages;
+
+    /**
+     * 是否启用协作判断（默认 true）
+     */
+    @Builder.Default
+    private boolean collaborationJudgementEnabled = true;
+
+    /**
+     * 参与者状态 Map（characterId -> status）
+     */
+    private Map<String, String> participantStates;
+
+    /**
+     * 阻塞中的参与者 ID 列表
+     */
+    private List<String> blockedParticipants;
+
+    /**
+     * 协作会话状态
+     */
+    private String sessionStatus;
 }
