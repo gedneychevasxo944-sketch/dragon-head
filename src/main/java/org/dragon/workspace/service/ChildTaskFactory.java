@@ -54,6 +54,11 @@ public class ChildTaskFactory {
                     .status(TaskStatus.PENDING)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
+                    // 继承父任务的协作上下文字段
+                    .metadata(parentTask.getMetadata())
+                    .sourceChatId(parentTask.getSourceChatId())
+                    .sourceMessageId(parentTask.getSourceMessageId())
+                    .sourceChannel(parentTask.getSourceChannel())
                     .build();
             tasks.add(task);
         }

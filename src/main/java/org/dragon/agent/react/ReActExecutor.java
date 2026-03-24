@@ -1,5 +1,7 @@
 package org.dragon.agent.react;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -9,8 +11,15 @@ import org.dragon.agent.llm.LLMResponse;
 import org.dragon.agent.llm.caller.LLMCaller;
 import org.dragon.agent.tool.ToolConnector;
 import org.dragon.agent.tool.ToolRegistry;
+import org.dragon.character.Character;
 import org.dragon.character.mind.memory.MemoryAccess;
+import org.dragon.config.PromptKeys;
+import org.dragon.config.PromptManager;
 import org.dragon.task.Task;
+import org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharacterFactory;
+import org.dragon.workspace.built_ins.character.prompt_writer.dto.PromptWriterInput;
+import org.dragon.agent.llm.util.CharacterCaller;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import com.google.gson.Gson;
@@ -36,13 +45,22 @@ public class ReActExecutor {
     private final ToolRegistry toolRegistry;
     private final MemoryAccess memoryAccess;
     private final Gson gson;
+    private final PromptManager promptManager;
+    private final PromptWriterCharacterFactory promptWriterCharacterFactory;
+    private final CharacterCaller characterCaller;
 
     public ReActExecutor(LLMCaller llmCaller,
                          ToolRegistry toolRegistry,
-                         MemoryAccess memoryAccess) {
+                         MemoryAccess memoryAccess,
+                         PromptManager promptManager,
+                         ObjectProvider<PromptWriterCharacterFactory> promptWriterCharacterFactoryProvider,
+                         ObjectProvider<CharacterCaller> characterCallerProvider) {
         this.llmCaller = llmCaller;
         this.toolRegistry = toolRegistry;
         this.memoryAccess = memoryAccess;
+        this.promptManager = promptManager;
+        this.promptWriterCharacterFactory = promptWriterCharacterFactoryProvider.getIfAvailable();
+        this.characterCaller = characterCallerProvider.getIfAvailable();
         this.gson = new Gson();
     }
 
@@ -66,11 +84,11 @@ public class ReActExecutor {
                 // Step 2: Action - 根据思考执行动作
                 String actionResult = act(context, thought);
 
-                // Step 3: Observation - 观察动作结果
-                observe(context, actionResult);
+                // Step 3: Observation - 观察动作结果，并评估可用性
+                ObservationAssessment assessment = observe(context, actionResult);
 
-                // 检查是否应该结束
-                if (shouldFinish(context)) {
+                // 检查是否应该结束（结合动作类型与观察结果可用性）
+                if (shouldFinish(context, assessment)) {
                     context.complete(actionResult);
                     log.info("[ReAct] Execution completed at iteration {}", context.getCurrentIteration());
                     break;
@@ -188,14 +206,64 @@ public class ReActExecutor {
 
     /**
      * Step 3: Observation
-     * 记录动作执行结果到上下文
+     * 记录动作执行结果到上下文，并评估结果可用性
      *
      * @param context 执行上下文
      * @param result 动作执行结果
+     * @return 观察结果可用性评估
      */
-    private void observe(ReActContext context, String result) {
+    private ObservationAssessment observe(ReActContext context, String result) {
         context.addObservation(result);
         log.debug("[ReAct] Observation: {}", result);
+        return assessObservation(result);
+    }
+
+    /**
+     * 观察结果可用性评估
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    private static class ObservationAssessment {
+        private boolean available;
+        private boolean isError;
+        private String reason;
+    }
+
+    /**
+     * 评估观察结果是否可用
+     */
+    private ObservationAssessment assessObservation(String observation) {
+        if (observation == null || observation.isEmpty()) {
+            return ObservationAssessment.builder()
+                    .available(false)
+                    .isError(false)
+                    .reason("观察结果为空")
+                    .build();
+        }
+
+        String lowerObs = observation.toLowerCase();
+        boolean isError = lowerObs.contains("error")
+                || lowerObs.contains("exception")
+                || lowerObs.contains("failed")
+                || lowerObs.contains("失败")
+                || lowerObs.contains("tool not allowed")
+                || lowerObs.contains("tool not found");
+
+        if (isError) {
+            return ObservationAssessment.builder()
+                    .available(false)
+                    .isError(true)
+                    .reason("观察结果包含错误信息")
+                    .build();
+        }
+
+        return ObservationAssessment.builder()
+                .available(true)
+                .isError(false)
+                .reason("观察结果正常")
+                .build();
     }
 
     // ==================== 辅助方法 ====================
@@ -204,16 +272,29 @@ public class ReActExecutor {
      * 判断是否应该结束执行
      *
      * @param context 执行上下文
+     * @param assessment 观察结果可用性评估
      * @return 是否应该结束
      */
-    private boolean shouldFinish(ReActContext context) {
+    private boolean shouldFinish(ReActContext context, ObservationAssessment assessment) {
         if (context.getActions().isEmpty()) {
             return false;
         }
 
         Action lastAction = context.getActions().get(context.getActions().size() - 1);
-        return lastAction.getType() == Action.ActionType.FINISH
-                || lastAction.getType() == Action.ActionType.RESPOND;
+        Action.ActionType type = lastAction.getType();
+
+        // STATUS_CHANGE 类型应该结束当前轮次（由执行层处理状态变更）
+        if (type == Action.ActionType.STATUS_CHANGE) {
+            return true;
+        }
+
+        // RESPOND/FINISH 类型需要检查观察结果是否可用
+        if (type == Action.ActionType.RESPOND || type == Action.ActionType.FINISH) {
+            return assessment != null && assessment.isAvailable();
+        }
+
+        // TOOL/MEMORY 类型不应该结束
+        return false;
     }
 
     /**
@@ -251,7 +332,7 @@ public class ReActExecutor {
 
     /**
      * 尝试从 JSON 格式解析动作
-     * 期望格式: {"action": "TOOL|RESPOND|FINISH", "tool": "xxx", "params": {...}}
+     * 期望格式: {"action": "TOOL|RESPOND|FINISH|MEMORY|STATUS_CHANGE", "tool": "xxx", "params": {...}, "response": "...", "modelId": "...", "statusChange": "..."}
      *
      * @param thought LLM 响应
      * @return 动作，如果解析失败返回 null
@@ -276,6 +357,7 @@ public class ReActExecutor {
                 case "RESPOND" -> Action.ActionType.RESPOND;
                 case "FINISH" -> Action.ActionType.FINISH;
                 case "MEMORY" -> Action.ActionType.MEMORY;
+                case "STATUS_CHANGE" -> Action.ActionType.STATUS_CHANGE;
                 default -> null;
             };
 
@@ -292,6 +374,25 @@ public class ReActExecutor {
             if (json.has("params")) {
                 Map<String, Object> params = gson.fromJson(json.get("params"), Map.class);
                 builder.parameters(params);
+            }
+
+            if (json.has("response")) {
+                builder.response(json.get("response").getAsString());
+            }
+
+            if (json.has("modelId")) {
+                builder.modelId(json.get("modelId").getAsString());
+            }
+
+            if (json.has("statusChange")) {
+                JsonObject statusChangeJson = json.getAsJsonObject("statusChange");
+                Action.StatusChange statusChange = Action.StatusChange.builder()
+                        .targetStatus(statusChangeJson.has("targetStatus") ? statusChangeJson.get("targetStatus").getAsString() : null)
+                        .reason(statusChangeJson.has("reason") ? statusChangeJson.get("reason").getAsString() : null)
+                        .dependencyTaskId(statusChangeJson.has("dependencyTaskId") ? statusChangeJson.get("dependencyTaskId").getAsString() : null)
+                        .question(statusChangeJson.has("question") ? statusChangeJson.get("question").getAsString() : null)
+                        .build();
+                builder.statusChange(statusChange);
             }
 
             return builder.build();
@@ -418,11 +519,111 @@ public class ReActExecutor {
 
     /**
      * 构建思考阶段的 Prompt
+     * 优先使用 PromptWriter 动态装配，回退到本地拼装
      *
      * @param context 上下文
      * @return Prompt
      */
     private String buildThoughtPrompt(ReActContext context) {
+        // 优先尝试动态装配
+        String dynamicPrompt = tryBuildDynamicThoughtPrompt(context);
+        if (dynamicPrompt != null) {
+            return dynamicPrompt;
+        }
+        // 回退到本地拼装
+        return buildLocalThoughtPrompt(context);
+    }
+
+    /**
+     * 尝试通过 PromptWriter 动态装配 Prompt
+     */
+    private String tryBuildDynamicThoughtPrompt(ReActContext context) {
+        if (promptManager == null || promptWriterCharacterFactory == null || characterCaller == null) {
+            return null;
+        }
+
+        try {
+            String workspaceId = resolveWorkspaceId(context);
+            if (workspaceId == null) {
+                return null;
+            }
+
+            // 获取 PromptWriter Character
+            Character promptWriterChar = promptWriterCharacterFactory.getOrCreatePromptWriterCharacter(workspaceId);
+            if (promptWriterChar == null) {
+                return null;
+            }
+
+            // 获取模板
+            String template = promptManager.getPrompt(workspaceId, context.getCharacterId(), PromptKeys.REACT_EXECUTE);
+            if (template == null || template.isEmpty()) {
+                return null;
+            }
+
+            // 组装 PromptWriter 输入
+            PromptWriterInput input = buildReActPromptWriterInput(context, template);
+            String inputJson = gson.toJson(input);
+
+            // 调用 PromptWriter Character 生成最终 Prompt
+            return characterCaller.call(promptWriterChar, inputJson);
+
+        } catch (Exception e) {
+            log.warn("[ReAct] PromptWriter dynamic prompt failed, falling back to local: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 解析工作空间 ID
+     */
+    private String resolveWorkspaceId(ReActContext context) {
+        // 优先从 context.workspaceId 获取
+        if (context.getWorkspaceId() != null) {
+            return context.getWorkspaceId();
+        }
+        // 回退到从 Task 获取
+        Task task = context.getTask();
+        if (task != null && task.getWorkspaceId() != null) {
+            return task.getWorkspaceId();
+        }
+        // 从 Character.workspaceIds 获取（需要在调用前设置）
+        return null;
+    }
+
+    /**
+     * 构建 ReAct 阶段的 PromptWriter 输入
+     */
+    private PromptWriterInput buildReActPromptWriterInput(ReActContext context, String template) {
+        List<PromptWriterInput.MemberInfo> memberInfos = new ArrayList<>();
+
+        Map<String, Object> contextHints = Map.of(
+                "timestamp", java.time.LocalDateTime.now().toString(),
+                "allowFollowUp", false,
+                "executionId", context.getExecutionId()
+        );
+
+        PromptWriterInput.TaskInfo taskInfo = PromptWriterInput.TaskInfo.builder()
+                .id(context.getTask() != null ? context.getTask().getId() : null)
+                .name(null)
+                .description(null)
+                .input(context.getUserInput())
+                .parentTaskId(null)
+                .build();
+
+        return PromptWriterInput.builder()
+                .workspaceId(resolveWorkspaceId(context))
+                .promptType("react_execute")
+                .promptTemplate(template)
+                .task(taskInfo)
+                .members(memberInfos)
+                .contextHints(contextHints)
+                .build();
+    }
+
+    /**
+     * 本地拼装 Prompt（回退方案）
+     */
+    private String buildLocalThoughtPrompt(ReActContext context) {
         StringBuilder prompt = new StringBuilder();
 
         prompt.append("用户输入: ").append(context.getUserInput()).append("\n\n");
@@ -457,6 +658,11 @@ public class ReActExecutor {
             prompt.append("\n");
         }
 
+        // 添加协作上下文（如果启用）
+        if (context.isCollaborationJudgementEnabled() && context.getCollaborationDecisionPrompt() != null) {
+            prompt.append(appendCollaborationContext(context));
+        }
+
         // 添加可用工具信息
         if (!context.getAllowedTools().isEmpty()) {
             prompt.append("## 可用工具\n");
@@ -485,17 +691,71 @@ public class ReActExecutor {
         prompt.append("请分析上述信息，给出下一步的行动。\n");
         prompt.append("请以 JSON 格式返回你的决策：\n");
         prompt.append("{\n");
-        prompt.append("  \"action\": \"TOOL|RESPOND|FINISH|MEMORY\",  // 动作类型\n");
+        prompt.append("  \"action\": \"TOOL|RESPOND|FINISH|MEMORY|STATUS_CHANGE\",  // 动作类型\n");
         prompt.append("  \"tool\": \"工具名称\",  // TOOL 类型时必填\n");
         prompt.append("  \"params\": {\"key\": \"value\"}  // 可选参数\n");
+        prompt.append("  \"response\": \"响应内容\"  // RESPOND/FINISH 类型时填写\n");
+        prompt.append("  \"statusChange\": {  // STATUS_CHANGE 类型时填写\n");
+        prompt.append("    \"targetStatus\": \"WAITING_DEPENDENCY|WAITING_USER_INPUT|SUSPENDED\",\n");
+        prompt.append("    \"reason\": \"变更原因\",\n");
+        prompt.append("    \"dependencyTaskId\": \"等待的依赖任务ID\",\n");
+        prompt.append("    \"question\": \"需要用户回答的问题\"\n");
+        prompt.append("  }\n");
         prompt.append("}\n");
         prompt.append("说明：\n");
         prompt.append("- TOOL: 使用工具，tool 填写工具名称\n");
         prompt.append("- RESPOND: 直接回复用户\n");
         prompt.append("- FINISH: 完成任务并给出最终回复\n");
         prompt.append("- MEMORY: 搜索记忆，params 需要包含 query 字段\n");
+        prompt.append("- STATUS_CHANGE: 状态变更，用于主动改变任务状态\n");
 
         return prompt.toString();
+    }
+
+    /**
+     * 追加协作上下文段落
+     */
+    private String appendCollaborationContext(ReActContext context) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("## 协作上下文\n");
+        sb.append(context.getCollaborationDecisionPrompt()).append("\n\n");
+
+        sb.append("当前协作会话 ID: ")
+                .append(context.getCollaborationSessionId() != null ? context.getCollaborationSessionId() : "无").append("\n\n");
+
+        sb.append("参与者状态:\n");
+        if (context.getParticipantStates() != null && !context.getParticipantStates().isEmpty()) {
+            context.getParticipantStates().forEach((charId, status) ->
+                    sb.append("  - ").append(charId).append(": ").append(status).append("\n"));
+        } else {
+            sb.append("  无\n");
+        }
+
+        sb.append("\n阻塞中的参与者:\n");
+        if (context.getBlockedParticipants() != null && !context.getBlockedParticipants().isEmpty()) {
+            context.getBlockedParticipants().forEach(p -> sb.append("  - ").append(p).append("\n"));
+        } else {
+            sb.append("  无\n");
+        }
+
+        sb.append("\n协作会话状态: ")
+                .append(context.getSessionStatus() != null ? context.getSessionStatus() : "未知").append("\n\n");
+
+        sb.append("最近协作消息:\n");
+        if (context.getLatestSessionMessages() != null && !context.getLatestSessionMessages().isEmpty()) {
+            context.getLatestSessionMessages().forEach(msg -> sb.append("  - ").append(msg).append("\n"));
+        } else {
+            sb.append("  无\n");
+        }
+
+        sb.append("\n同级 Character IDs: ")
+                .append(context.getPeerCharacterIds() != null ? String.join(", ", context.getPeerCharacterIds()) : "无").append("\n\n");
+
+        sb.append("依赖任务 IDs: ")
+                .append(context.getDependencyTaskIds() != null ? String.join(", ", context.getDependencyTaskIds()) : "无").append("\n\n");
+
+        return sb.toString();
     }
 
     /**
@@ -536,6 +796,18 @@ public class ReActExecutor {
      * @return 执行结果
      */
     private ReActResult buildResult(ReActContext context) {
+        // 提取最后一个动作的类型和状态变更信息
+        Action.StatusChange statusChange = null;
+        Action.ActionType finalActionType = null;
+
+        if (!context.getActions().isEmpty()) {
+            Action lastAction = context.getActions().get(context.getActions().size() - 1);
+            finalActionType = lastAction.getType();
+            if (lastAction.getType() == Action.ActionType.STATUS_CHANGE) {
+                statusChange = lastAction.getStatusChange();
+            }
+        }
+
         return ReActResult.builder()
                 .executionId(context.getExecutionId())
                 .success(context.isComplete())
@@ -545,6 +817,8 @@ public class ReActExecutor {
                 .actions(context.getActions())
                 .observations(context.getObservations())
                 .errorMessage(context.getErrorMessage())
+                .statusChange(statusChange)
+                .finalActionType(finalActionType)
                 .build();
     }
 }

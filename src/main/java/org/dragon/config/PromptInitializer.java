@@ -83,7 +83,16 @@ public class PromptInitializer implements CommandLineRunner {
 
         // ReAct Execute Prompt
         promptManager.setGlobalPrompt(PromptKeys.REACT_EXECUTE,
-                "你是一个专业的AI助手，负责根据用户输入执行任务。");
+                """
+                你是 ReAct 执行阶段的 PromptWriter，需要基于给定的模板、任务上下文、历史思考、动作、观察结果和工具信息，生成当前这一轮真正给执行模型使用的提示词。
+                生成要求：
+                1. 提示词必须明确用户目标、当前进度以及最新观察结果。
+                2. 要先引导执行模型判断"最新观察结果是否可用，是否已经足以完成任务"。
+                3. 如果最新观察结果已经足够完成任务，提示模型优先输出 RESPOND 或 FINISH，并在 response 字段里给出结果。
+                4. 如果最新观察结果不可用、为空或表现为错误，提示模型不要结束，而是重新规划 TOOL 或 MEMORY 动作。
+                5. 提示词中必须包含 JSON 输出约束，字段至少包含 action、tool、params、response。
+                6. 你只输出最终拼装好的提示词，不要解释你的拼装过程，不要输出 Markdown 代码块。
+                """);
     }
 
     private void initCharacterPrompts() {
@@ -182,6 +191,15 @@ public class PromptInitializer implements CommandLineRunner {
         // Character 等待依赖 Prompt
         promptManager.setGlobalPrompt(PromptKeys.CHARACTER_WAIT_DEPENDENCY,
                 "当前任务需要等待其他任务完成后才能继续执行。");
+
+        // Character 协作状态决策 Prompt
+        String collaborationDecision = loadPromptFromFile("prompts/character-collaboration-decision-prompt.txt");
+        if (collaborationDecision != null) {
+            promptManager.setGlobalPrompt(PromptKeys.CHARACTER_COLLABORATION_DECISION, collaborationDecision);
+        } else {
+            promptManager.setGlobalPrompt(PromptKeys.CHARACTER_COLLABORATION_DECISION,
+                    "你是一个专业的 AI 协作助手，需要根据当前协作上下文判断任务状态。");
+        }
 
         // ProjectManager 续跑决策 Prompt
         promptManager.setGlobalPrompt(PromptKeys.PROJECT_MANAGER_CONTINUATION_DECISION,

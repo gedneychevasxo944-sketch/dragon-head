@@ -99,31 +99,8 @@ public class WorkspaceTaskArrangementService {
     public Task submitTask(String workspaceId, String taskName,
             String taskDescription, Object input, String creatorId,
             TaskExecutionMode executionMode, List<String> specifiedCharacterIds) {
-        // 验证工作空间存在
-        Workspace workspace = workspaceRegistry.get(workspaceId)
-                .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
-
-        // 创建任务
-        Task task = Task.builder()
-                .id(UUID.randomUUID().toString())
-                .workspaceId(workspaceId)
-                .name(taskName)
-                .description(taskDescription)
-                .input(input)
-                .creatorId(creatorId)
-                .status(TaskStatus.PENDING)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        // 持久化任务
-        taskStore.save(task);
-        log.info("[WorkspaceTaskArrangementService] Submitted task {} to workspace {}", task.getId(), workspaceId);
-
-        // 自动开始处理任务
-        processTask(task, workspace, executionMode, specifiedCharacterIds);
-
-        return task;
+        return submitTask(workspaceId, taskName, taskDescription, input, creatorId,
+                executionMode, specifiedCharacterIds, null, null, null, null);
     }
 
     /**
@@ -139,7 +116,59 @@ public class WorkspaceTaskArrangementService {
     public Task submitTask(String workspaceId, String taskName,
             String taskDescription, Object input, String creatorId) {
         return submitTask(workspaceId, taskName, taskDescription, input, creatorId,
-                TaskExecutionMode.AUTO, null);
+                TaskExecutionMode.AUTO, null, null, null, null, null);
+    }
+
+    /**
+     * 提交任务到工作空间（带 metadata 和来源信息）
+     *
+     * @param workspaceId 工作空间 ID
+     * @param taskName 任务名称
+     * @param taskDescription 任务描述
+     * @param input 任务输入
+     * @param creatorId 创建者 ID
+     * @param executionMode 执行模式
+     * @param specifiedCharacterIds 指定的 Character ID 列表
+     * @param metadata 任务元数据（含 allowCollaborationJudgement 等）
+     * @param sourceChatId 来源聊天 ID
+     * @param sourceMessageId 来源消息 ID
+     * @param sourceChannel 来源渠道
+     * @return 工作空间任务
+     */
+    public Task submitTask(String workspaceId, String taskName,
+            String taskDescription, Object input, String creatorId,
+            TaskExecutionMode executionMode, List<String> specifiedCharacterIds,
+            java.util.Map<String, Object> metadata,
+            String sourceChatId, String sourceMessageId, String sourceChannel) {
+        // 验证工作空间存在
+        Workspace workspace = workspaceRegistry.get(workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
+
+        // 创建任务
+        Task task = Task.builder()
+                .id(UUID.randomUUID().toString())
+                .workspaceId(workspaceId)
+                .name(taskName)
+                .description(taskDescription)
+                .input(input)
+                .creatorId(creatorId)
+                .status(TaskStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .metadata(metadata)
+                .sourceChatId(sourceChatId)
+                .sourceMessageId(sourceMessageId)
+                .sourceChannel(sourceChannel)
+                .build();
+
+        // 持久化任务
+        taskStore.save(task);
+        log.info("[WorkspaceTaskArrangementService] Submitted task {} to workspace {}", task.getId(), workspaceId);
+
+        // 自动开始处理任务
+        processTask(task, workspace, executionMode, specifiedCharacterIds);
+
+        return task;
     }
 
     /**

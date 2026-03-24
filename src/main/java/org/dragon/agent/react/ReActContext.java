@@ -111,6 +111,11 @@ public class ReActContext {
     private Task task;
 
     /**
+     * 工作空间 ID（用于 PromptWriter 动态装配）
+     */
+    private String workspaceId;
+
+    /**
      * 是否完成
      */
     private boolean complete;
@@ -130,6 +135,56 @@ public class ReActContext {
      */
     @Builder.Default
     private Set<String> allowedTools = new HashSet<>();
+
+    // ==================== 协作上下文字段 ====================
+
+    /**
+     * 协作判断 prompt（独立于系统人格 prompt）
+     */
+    private String collaborationDecisionPrompt;
+
+    /**
+     * 是否启用协作判断
+     */
+    @Builder.Default
+    private boolean collaborationJudgementEnabled = false;
+
+    /**
+     * 协作会话 ID
+     */
+    private String collaborationSessionId;
+
+    /**
+     * 参与者状态 Map（characterId -> status）
+     */
+    private Map<String, String> participantStates;
+
+    /**
+     * 阻塞中的参与者 ID 列表
+     */
+    private List<String> blockedParticipants;
+
+    /**
+     * 协作会话状态
+     */
+    private String sessionStatus;
+
+    /**
+     * 最新会话消息列表
+     */
+    private List<String> latestSessionMessages;
+
+    /**
+     * 同级 Character ID 列表
+     */
+    private List<String> peerCharacterIds;
+
+    /**
+     * 依赖任务 ID 列表
+     */
+    private List<String> dependencyTaskIds;
+
+    // ==================== 业务方法 ====================
 
     /**
      * 获取当前模型 ID

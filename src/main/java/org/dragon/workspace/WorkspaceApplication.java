@@ -195,6 +195,16 @@ public class WorkspaceApplication {
     }
 
     /**
+     * 执行任务（带 metadata 和来源信息）
+     */
+    public Task executeTask(String taskName, String taskDescription, Object input, String creatorId,
+            java.util.Map<String, Object> metadata, String sourceChatId, String sourceMessageId, String sourceChannel) {
+        return workspaceTaskArrangementService.submitTask(
+                workspaceId, taskName, taskDescription, input, creatorId,
+                null, null, metadata, sourceChatId, sourceMessageId, sourceChannel);
+    }
+
+    /**
      * 执行任务（处理 NormalizedMessage，支持任务续跑）
      * 当消息应该继续已有任务时，直接恢复该任务
      * 当消息应该开启新任务时，创建新任务
@@ -233,12 +243,16 @@ public class WorkspaceApplication {
 
             return matchedTask;
         } else {
-            // 开启新任务
+            // 开启新任务 - 透传 metadata 和来源信息
             return executeTask(
                     "用户请求",
                     message.getTextContent(),
                     message,
-                    creatorId
+                    creatorId,
+                    message.getMetadata(),
+                    message.getChannel(),    // sourceChannel
+                    message.getMessageId(),  // sourceMessageId
+                    message.getChatId()      // sourceChatId
             );
         }
     }
