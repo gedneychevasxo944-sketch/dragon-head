@@ -116,6 +116,9 @@ public class ChatRoom implements ChatRoomObserver {
                 .taskId(taskId)
                 .participantIds(participantIds)
                 .context(java.util.Collections.emptyMap())
+                .participantStates(new java.util.HashMap<>())
+                .taskStates(new java.util.HashMap<>())
+                .blockedParticipants(new ArrayList<>())
                 .decisions(new ArrayList<>())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -279,7 +282,7 @@ public class ChatRoom implements ChatRoomObserver {
                 .content(content)
                 .messageType(ChatMessage.MessageType.TASK)
                 .taskPurpose(ChatMessage.TaskMessagePurpose.TASK_UPDATE)
-                .taskResultStatus(status)
+                .messageSubtype(status)
                 .build();
 
         return sendTaskMessage(message);
@@ -331,7 +334,7 @@ public class ChatRoom implements ChatRoomObserver {
                 .content(resultContent)
                 .messageType(ChatMessage.MessageType.TASK)
                 .taskPurpose(ChatMessage.TaskMessagePurpose.TASK_RESULT)
-                .taskResultStatus(resultStatus)
+                .messageSubtype(resultStatus)
                 .build();
 
         return sendTaskMessage(message);
@@ -378,7 +381,7 @@ public class ChatRoom implements ChatRoomObserver {
                 .content(summary)
                 .messageType(ChatMessage.MessageType.TASK)
                 .taskPurpose(ChatMessage.TaskMessagePurpose.TASK_COMPLETE)
-                .taskResultStatus("COMPLETED")
+                .messageSubtype("COMPLETED")
                 .build();
 
         return sendTaskMessage(message);
@@ -420,5 +423,97 @@ public class ChatRoom implements ChatRoomObserver {
             completeSession(session.getId());
             log.info("[ChatRoom] Task collaboration {} completed", taskId);
         }
+    }
+
+    // ==================== 参与者状态管理 ====================
+
+    /**
+     * 标记参与者等待状态
+     *
+     * @param sessionId 会话 ID
+     * @param characterId Character ID
+     * @param reason 等待原因
+     */
+    public void markParticipantWaiting(String sessionId, String characterId, String reason) {
+        ChatSession session = sessionStore.findById(sessionId);
+        if (session == null) {
+            throw new IllegalArgumentException("Session not found: " + sessionId);
+        }
+        if (session.getParticipantStates() == null) {
+            session.setParticipantStates(new java.util.HashMap<>());
+        }
+        session.getParticipantStates().put(characterId, "WAITING:" + reason);
+        if (session.getBlockedParticipants() == null) {
+            session.setBlockedParticipants(new ArrayList<>());
+        }
+        if (!session.getBlockedParticipants().contains(characterId)) {
+            session.getBlockedParticipants().add(characterId);
+        }
+        session.setUpdatedAt(LocalDateTime.now());
+        sessionStore.update(session);
+        log.info("[ChatRoom] Participant {} marked as waiting in session {}: {}", characterId, sessionId, reason);
+    }
+
+    /**
+     * 标记参与者就绪状态
+     *
+     * @param sessionId 会话 ID
+     * @param characterId Character ID
+     */
+    public void markParticipantReady(String sessionId, String characterId) {
+        ChatSession session = sessionStore.findById(sessionId);
+        if (session == null) {
+            throw new IllegalArgumentException("Session not found: " + sessionId);
+        }
+        if (session.getParticipantStates() == null) {
+            session.setParticipantStates(new java.util.HashMap<>());
+        }
+        session.getParticipantStates().put(characterId, "READY");
+        if (session.getBlockedParticipants() != null) {
+            session.getBlockedParticipants().remove(characterId);
+        }
+        session.setUpdatedAt(LocalDateTime.now());
+        sessionStore.update(session);
+        log.info("[ChatRoom] Participant {} marked as ready in session {}", characterId, sessionId);
+    }
+
+    /**
+     * 获取会话消息列表
+     *
+     * @param sessionId 会话 ID
+     * @param limit 限制数量
+     * @return 消息列表
+     */
+    public List<ChatMessage> listSessionMessages(String sessionId, int limit) {
+        List<ChatMessage> messages = messageStore.findBySessionId(sessionId);
+        if (messages.size() > limit) {
+            return messages.subList(messages.size() - limit, messages.size());
+        }
+        return messages;
+    }
+
+    /**
+     * 构建会话摘要
+     *
+     * @param sessionId 会话 ID
+     * @return 会话摘要信息
+     */
+    public java.util.Map<String, Object> buildSessionSummary(String sessionId) {
+        ChatSession session = sessionStore.findById(sessionId);
+        if (session == null) {
+            throw new IllegalArgumentException("Session not found: " + sessionId);
+        }
+        java.util.Map<String, Object> summary = new java.util.HashMap<>();
+        summary.put("sessionId", sessionId);
+        summary.put("workspaceId", session.getWorkspaceId());
+        summary.put("taskId", session.getTaskId());
+        summary.put("status", session.getStatus());
+        summary.put("participantCount", session.getParticipantIds() != null ? session.getParticipantIds().size() : 0);
+        summary.put("participantStates", session.getParticipantStates());
+        summary.put("taskStates", session.getTaskStates());
+        summary.put("blockedCount", session.getBlockedParticipants() != null ? session.getBlockedParticipants().size() : 0);
+        summary.put("lastSummary", session.getLastSummary());
+        summary.put("updatedAt", session.getUpdatedAt());
+        return summary;
     }
 }

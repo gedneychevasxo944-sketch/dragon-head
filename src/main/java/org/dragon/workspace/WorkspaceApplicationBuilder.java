@@ -11,6 +11,7 @@ import org.dragon.workspace.service.WorkspaceTaskArrangementService;
 import org.dragon.workspace.service.WorkspaceTaskExecutionService;
 import org.dragon.workspace.service.WorkspaceTaskService;
 import org.dragon.workspace.service.TaskContinuationResolver;
+import org.dragon.workspace.service.TaskResumeTargetResolver;
 
 /**
  * WorkspaceApplicationBuilder Workspace 应用构建器
@@ -35,6 +36,7 @@ public class WorkspaceApplicationBuilder {
     WorkspaceTaskArrangementService workspaceTaskArrangementService;
     TaskStore taskStore;
     TaskContinuationResolver taskContinuationResolver;
+    TaskResumeTargetResolver taskResumeTargetResolver;
     WorkspaceTaskExecutionService taskExecutionService;
 
     /**
@@ -159,6 +161,17 @@ public class WorkspaceApplicationBuilder {
     }
 
     /**
+     * 设置任务恢复目标解析器
+     *
+     * @param taskResumeTargetResolver TaskResumeTargetResolver
+     * @return self
+     */
+    public WorkspaceApplicationBuilder taskResumeTargetResolver(TaskResumeTargetResolver taskResumeTargetResolver) {
+        this.taskResumeTargetResolver = taskResumeTargetResolver;
+        return this;
+    }
+
+    /**
      * 设置任务执行服务
      *
      * @param taskExecutionService WorkspaceTaskExecutionService
@@ -191,6 +204,9 @@ public class WorkspaceApplicationBuilder {
         }
         if (taskContinuationResolver == null) {
             throw new IllegalStateException("taskContinuationResolver is required");
+        }
+        if (taskResumeTargetResolver == null) {
+            throw new IllegalStateException("taskResumeTargetResolver is required");
         }
         if (taskExecutionService == null) {
             throw new IllegalStateException("taskExecutionService is required");

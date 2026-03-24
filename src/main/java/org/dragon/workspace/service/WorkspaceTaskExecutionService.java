@@ -38,18 +38,13 @@ public class WorkspaceTaskExecutionService {
     public void executeChildTask(Task childTask, Task parentTask) {
         String workspaceId = parentTask.getWorkspaceId();
 
-        // 开始前更新状态为 RUNNING
-        childTask.setStatus(TaskStatus.RUNNING);
-        childTask.setStartedAt(LocalDateTime.now());
-        taskStore.update(childTask);
-
         log.info("[WorkspaceTaskExecutionService] Executing childTask {} on character {}",
                 childTask.getId(), childTask.getCharacterId());
 
-        // 委托 TaskBridge 执行
+        // 委托 TaskBridge 执行（状态管理由 Bridge 统一负责）
         Task result = taskBridge.execute(childTask, workspaceId);
 
-        // 根据执行结果更新状态
+        // 记录执行结果
         if (result.getStatus() == TaskStatus.COMPLETED) {
             log.info("[WorkspaceTaskExecutionService] ChildTask {} completed successfully", childTask.getId());
         } else if (result.getStatus() == TaskStatus.FAILED) {
@@ -214,5 +209,37 @@ public class WorkspaceTaskExecutionService {
 
         log.info("[WorkspaceTaskExecutionService] Task {} waiting for dependency: {}", taskId, dependencyTaskId);
         return task;
+    }
+
+    /**
+     * 通知依赖已解决，触发重调度
+     *
+     * @param dependencyTaskId 已解决的依赖任务 ID
+     */
+    public void notifyDependencyResolved(String dependencyTaskId) {
+        taskBridge.notifyDependencyResolved(null, dependencyTaskId);
+    }
+
+    /**
+     * 执行父任务下所有可执行的子任务
+     *
+     * @param parentTaskId 父任务 ID
+     * @param parentTask 父任务
+     * @return 被调度的子任务列表
+     */
+    public List<Task> executeRunnableChildTasks(String parentTaskId, Task parentTask) {
+        List<Task> runnableTasks = taskStore.findRunnableChildTasks(parentTaskId);
+        for (Task task : runnableTasks) {
+            try {
+                executeChildTask(task, parentTask);
+            } catch (Exception e) {
+                log.error("[WorkspaceTaskExecutionService] Error executing runnable child task {}: {}",
+                        task.getId(), e.getMessage(), e);
+                task.setStatus(TaskStatus.FAILED);
+                task.setErrorMessage(e.getMessage());
+                taskStore.update(task);
+            }
+        }
+        return runnableTasks;
     }
 }

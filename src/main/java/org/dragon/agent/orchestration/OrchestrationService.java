@@ -134,6 +134,8 @@ public interface OrchestrationService {
         private long durationMs;
         private Mode mode;
         private String workflowId;
+        private String errorMessage;
+        private boolean fallbackToReact;
 
         public OrchestrationResult() {
         }
@@ -186,6 +188,22 @@ public interface OrchestrationService {
             this.workflowId = workflowId;
         }
 
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public void setErrorMessage(String errorMessage) {
+            this.errorMessage = errorMessage;
+        }
+
+        public boolean isFallbackToReact() {
+            return fallbackToReact;
+        }
+
+        public void setFallbackToReact(boolean fallbackToReact) {
+            this.fallbackToReact = fallbackToReact;
+        }
+
         public static Builder builder() {
             return new Builder();
         }
@@ -196,6 +214,8 @@ public interface OrchestrationService {
             private long durationMs;
             private Mode mode;
             private String workflowId;
+            private String errorMessage;
+            private boolean fallbackToReact;
 
             public Builder success(boolean success) {
                 this.success = success;
@@ -222,8 +242,21 @@ public interface OrchestrationService {
                 return this;
             }
 
+            public Builder errorMessage(String errorMessage) {
+                this.errorMessage = errorMessage;
+                return this;
+            }
+
+            public Builder fallbackToReact(boolean fallbackToReact) {
+                this.fallbackToReact = fallbackToReact;
+                return this;
+            }
+
             public OrchestrationResult build() {
-                return new OrchestrationResult(success, executionId, durationMs, mode, workflowId);
+                OrchestrationResult result = new OrchestrationResult(success, executionId, durationMs, mode, workflowId);
+                result.setErrorMessage(errorMessage);
+                result.setFallbackToReact(fallbackToReact);
+                return result;
             }
         }
     }

@@ -119,12 +119,17 @@ public class ChatMessage {
     private TaskMessagePurpose taskPurpose;
 
     /**
+     * 消息子类型（PROGRESS / QUESTION / DECISION / DEPENDENCY / RESULT）
+     */
+    private String messageSubtype;
+
+    /**
      * 关联的子任务 ID（用于任务分配等场景）
      */
     private String relatedTaskId;
 
     /**
-     * 任务结果状态（用于 TASK_RESULT 类型消息）
+     * 关联 ID（用于消息关联和追溯）
      */
-    private String taskResultStatus;
+    private String correlationId;
 }

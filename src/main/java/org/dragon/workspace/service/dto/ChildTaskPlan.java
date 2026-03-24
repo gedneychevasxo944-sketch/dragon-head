@@ -21,6 +21,11 @@ import lombok.NoArgsConstructor;
 public class ChildTaskPlan {
 
     /**
+     * 计划内任务 ID（LLM 输出的临时 ID，用于建立依赖关系）
+     */
+    private String planTaskId;
+
+    /**
      * 子任务名称
      */
     private String name;
@@ -41,7 +46,12 @@ public class ChildTaskPlan {
     private String characterRole;
 
     /**
-     * 依赖的父任务 ID 列表
+     * 依赖的计划内任务 ID 列表（LLM 输出）
+     */
+    private List<String> dependencyPlanTaskIds;
+
+    /**
+     * 依赖的实际任务 ID 列表（解析后填充）
      */
     private List<String> dependencyTaskIds;
 

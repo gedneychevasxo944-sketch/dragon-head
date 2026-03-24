@@ -3,9 +3,9 @@ package org.dragon.channel.file;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.im.v1.model.GetMessageResourceReq;
 import com.lark.oapi.service.im.v1.model.GetMessageResourceResp;
-import org.dragon.channel.FileManager;
 import org.dragon.channel.entity.NormalizedFile;
 import org.dragon.channel.enums.FileSource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -16,9 +16,15 @@ import org.springframework.stereotype.Component;
  * Update Date Time:
  */
 @Component
-public class FeishuImStorageAdapter implements FileStorageAdapter{
+public class FeishuImStorageAdapter implements FileStorageAdapter {
 
-    private Client apiClient = Client.newBuilder("cli_a93e931566785bcc", "usZg6YbUgxVSMoL4ihiT5fSWT6zrDNJR").build();
+    private final Client apiClient;
+
+    public FeishuImStorageAdapter(
+            @Value("${channel.feishu.appId:cli_a93e931566785bcc}") String appId,
+            @Value("${channel.feishu.appSecret:usZg6YbUgxVSMoL4ihiT5fSWT6zrDNJR}") String appSecret) {
+        this.apiClient = Client.newBuilder(appId, appSecret).build();
+    }
 
     @Override
     public FileSource getSupportedSource() {
@@ -39,9 +45,12 @@ public class FeishuImStorageAdapter implements FileStorageAdapter{
 
         // 处理服务端错误
         if (!resp.success()) {
-            return null;
+            throw new RuntimeException("Feishu file download failed: " + resp.getCode() + " " + resp.getMsg());
         }
-        return null;
+
+        // 标记存储 key（实际内容由调用方通过 resp 的流获取）
+        fileMeta.setStorageKey(fileMeta.getFileKey() + ":" + fileMeta.getMessageId());
+        return fileMeta;
     }
 
     @Override

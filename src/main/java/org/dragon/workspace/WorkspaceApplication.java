@@ -23,6 +23,7 @@ import org.dragon.workspace.service.WorkspaceTaskArrangementService;
 import org.dragon.workspace.service.WorkspaceTaskExecutionService;
 import org.dragon.workspace.service.WorkspaceTaskService;
 import org.dragon.workspace.service.TaskContinuationResolver;
+import org.dragon.workspace.service.TaskResumeTargetResolver;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,7 @@ public class WorkspaceApplication {
     private final WorkspaceTaskArrangementService workspaceTaskArrangementService;
     private final TaskStore taskStore;
     private final TaskContinuationResolver taskContinuationResolver;
+    private final TaskResumeTargetResolver taskResumeTargetResolver;
     private final WorkspaceTaskExecutionService taskExecutionService;
 
     /**
@@ -67,6 +69,7 @@ public class WorkspaceApplication {
         this.workspaceTaskArrangementService = builder.workspaceTaskArrangementService;
         this.taskStore = builder.taskStore;
         this.taskContinuationResolver = builder.taskContinuationResolver;
+        this.taskResumeTargetResolver = builder.taskResumeTargetResolver;
         this.taskExecutionService = builder.taskExecutionService;
     }
 
@@ -210,16 +213,25 @@ public class WorkspaceApplication {
             String taskId = result.getTaskId();
             log.info("[WorkspaceApplication] Continuing existing task {} for message", taskId);
 
-            Task task = workspaceTaskService.getTask(workspaceId, taskId)
+            Task matchedTask = workspaceTaskService.getTask(workspaceId, taskId)
                     .orElseThrow(() -> new IllegalStateException("Task not found: " + taskId));
 
+            // 使用恢复目标解析器获取实际可执行的任务
+            Task executableTask = taskResumeTargetResolver.resolveExecutableTask(matchedTask);
+
+            // 获取父任务（用于 executeChildTask）
+            Task parentTask = matchedTask.getParentTaskId() != null
+                    ? workspaceTaskService.getTask(workspaceId, matchedTask.getParentTaskId())
+                            .orElse(matchedTask)
+                    : matchedTask;
+
             // 恢复任务（追加用户输入）
-            task = workspaceTaskService.resumeTask(workspaceId, taskId, message.getTextContent());
+            executableTask = workspaceTaskService.resumeTask(workspaceId, executableTask.getId(), message.getTextContent());
 
-            // 继续执行
-            taskExecutionService.executeChildTask(task, task);
+            // 继续执行（传递正确的父子关系）
+            taskExecutionService.executeChildTask(executableTask, parentTask);
 
-            return task;
+            return matchedTask;
         } else {
             // 开启新任务
             return executeTask(

@@ -70,13 +70,8 @@ public class AgentGateway implements Gateway {
                 log.info("[Gateway] Dispatching to workspace={} from channel={} chatId={}",
                         workspaceId, inboundMsg.getChannel(), inboundMsg.getChatId());
                 WorkspaceApplication app = workspaceApplicationProvider.getApplication(workspaceId);
-                // 将用户消息作为任务提交给 Workspace 编排层
-                Task task = app.executeTask(
-                        "用户请求", // taskName
-                        inboundMsg.getTextContent(), // taskDescription
-                        inboundMsg, // input（完整消息上下文）
-                        inboundMsg.getSenderId() // creatorId
-                );
+                // 将用户消息作为任务提交给 Workspace 编排层（走 NormalizedMessage 主入口）
+                Task task = app.executeTask(inboundMsg, inboundMsg.getSenderId());
                 log.info("[Gateway] Workspace task submitted, taskId={}", task.getId());
                 // Workspace 编排为异步执行，回复由各 Character 通过 ActionMessage 下行推送
                 // 此处无需再主动发消息，等待编排层回调

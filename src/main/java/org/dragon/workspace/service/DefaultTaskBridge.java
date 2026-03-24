@@ -1,6 +1,8 @@
 package org.dragon.workspace.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
@@ -110,8 +112,33 @@ public class DefaultTaskBridge implements TaskBridge {
     @Override
     public void notifyDependencyResolved(String taskId, String dependencyTaskId) {
         // 查找所有等待此依赖的任务
-        // 当依赖任务完成后，将等待依赖的任务重新置为可执行
-        // 目前是简单实现，后续可扩展为依赖图管理
-        log.info("[DefaultTaskBridge] Dependency {} resolved for task {}", dependencyTaskId, taskId);
+        List<Task> waitingTasks = taskStore.findWaitingTasksByDependencyTaskId(dependencyTaskId);
+        for (Task task : waitingTasks) {
+            // 检查所有依赖是否都已完成
+            if (areAllDependenciesMet(task)) {
+                log.info("[DefaultTaskBridge] All dependencies resolved for task {}, re-scheduling", task.getId());
+                task.setStatus(TaskStatus.PENDING);
+                task.setUpdatedAt(LocalDateTime.now());
+                taskStore.update(task);
+            }
+        }
+        log.info("[DefaultTaskBridge] Dependency {} resolved, checked {} waiting tasks", dependencyTaskId, waitingTasks.size());
+    }
+
+    /**
+     * 检查任务的所有依赖是否都已完成
+     */
+    private boolean areAllDependenciesMet(Task task) {
+        List<String> depIds = task.getDependencyTaskIds();
+        if (depIds == null || depIds.isEmpty()) {
+            return true;
+        }
+        for (String depId : depIds) {
+            Optional<Task> depTask = taskStore.findById(depId);
+            if (depTask.isEmpty() || depTask.get().getStatus() != TaskStatus.COMPLETED) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -13,6 +13,10 @@ import org.dragon.observer.evaluation.EvaluationRecordStore;
 import org.dragon.observer.optimization.OptimizationAction;
 import org.dragon.observer.optimization.OptimizationActionStore;
 import org.dragon.observer.optimization.OptimizationExecutor;
+import org.dragon.observer.optimization.OptimizationPlan;
+import org.dragon.observer.optimization.OptimizationPlanItem;
+import org.dragon.observer.optimization.OptimizationPlanStore;
+import org.dragon.observer.optimization.ObserverPlanningService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,12 +39,14 @@ public class ObserverService {
     private final ObserverRegistry observerRegistry;
     private final EvaluationRecordStore evaluationRecordStore;
     private final OptimizationActionStore optimizationActionStore;
+    private final OptimizationPlanStore optimizationPlanStore;
     private final DataCollector dataCollector;
     private final EvaluationEngine evaluationEngine;
     private final OptimizationExecutor optimizationExecutor;
     private final CommonSenseValidator commonSenseValidator;
     private final WorkspaceCommonSenseStore commonSenseStore;
     private final CharacterRegistry characterRegistry;
+    private final ObserverPlanningService planningService;
 
     /**
      * 评价任务
@@ -193,6 +199,111 @@ public class ObserverService {
      */
     public OptimizationAction rollbackOptimization(String actionId) {
         return optimizationExecutor.rollback(actionId);
+    }
+
+    // ==================== Plan-first 优化计划 API ====================
+
+    /**
+     * 从评价生成优化计划（Plan-first 模式）
+     *
+     * @param evaluationId 评价记录 ID
+     * @return 生成的优化计划（草稿状态）
+     */
+    public OptimizationPlan generateOptimizationPlan(String evaluationId) {
+        EvaluationRecord evaluation = evaluationRecordStore.findById(evaluationId)
+                .orElseThrow(() -> new IllegalArgumentException("Evaluation not found: " + evaluationId));
+
+        Observer observer = observerRegistry.get(evaluation.getTargetType().name())
+                .orElseThrow(() -> new IllegalArgumentException("Observer not found for target: " + evaluation.getTargetId()));
+
+        return planningService.generatePlan(evaluationId, observer.getId());
+    }
+
+    /**
+     * 审批优化计划
+     *
+     * @param planId   计划 ID
+     * @param approver 审批人
+     * @param comment  审批意见
+     * @return 审批后的计划
+     */
+    public OptimizationPlan approvePlan(String planId, String approver, String comment) {
+        return planningService.approvePlan(planId, approver, comment);
+    }
+
+    /**
+     * 拒绝优化计划
+     *
+     * @param planId 计划 ID
+     * @param reason 拒绝原因
+     * @return 拒绝后的计划
+     */
+    public OptimizationPlan rejectPlan(String planId, String reason) {
+        return planningService.rejectPlan(planId, reason);
+    }
+
+    /**
+     * 执行优化计划
+     *
+     * @param planId 计划 ID
+     * @return 执行后的计划
+     */
+    public OptimizationPlan executePlan(String planId) {
+        return planningService.executePlan(planId);
+    }
+
+    /**
+     * 回滚优化计划
+     *
+     * @param planId 计划 ID
+     * @return 回滚后的计划
+     */
+    public OptimizationPlan rollbackPlan(String planId) {
+        return planningService.rollbackPlan(planId);
+    }
+
+    /**
+     * 获取优化计划详情
+     *
+     * @param planId 计划 ID
+     * @return 优化计划
+     */
+    public OptimizationPlan getPlan(String planId) {
+        return planningService.getPlan(planId);
+    }
+
+    /**
+     * 获取优化计划的所有项目
+     *
+     * @param planId 计划 ID
+     * @return 计划项目列表
+     */
+    public List<OptimizationPlanItem> getPlanItems(String planId) {
+        return planningService.getPlanItems(planId);
+    }
+
+    /**
+     * 查询待审批的优化计划
+     *
+     * @return 计划列表
+     */
+    public List<OptimizationPlan> getPendingApprovalPlans() {
+        return planningService.getPendingApprovalPlans();
+    }
+
+    /**
+     * 查询目标的优化计划历史
+     *
+     * @param targetType 目标类型
+     * @param targetId   目标 ID
+     * @return 计划列表
+     */
+    public List<OptimizationPlan> getPlansByTarget(
+            EvaluationRecord.TargetType targetType, String targetId) {
+        OptimizationAction.TargetType type = targetType == EvaluationRecord.TargetType.CHARACTER
+                ? OptimizationAction.TargetType.CHARACTER
+                : OptimizationAction.TargetType.WORKSPACE;
+        return planningService.getPlansByTarget(type, targetId);
     }
 
     /**

@@ -30,11 +30,7 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
     private final ModelRegistry modelRegistry;
     private final CharacterRegistry characterRegistry;
     private final CharacterRuntimeBinder characterRuntimeBinder;
-
-    /**
-     * 正在执行的工作流状态
-     */
-    private final Map<String, WorkflowState> runningWorkflows = new ConcurrentHashMap<>();
+    private final WorkflowStore workflowStore;
 
     @Override
     public WorkflowResult execute(Workflow workflow, Map<String, Object> input) {
@@ -51,6 +47,7 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
                 .build();
 
         runningWorkflows.put(executionId, state);
+        workflowStore.saveState(state);
 
         try {
             // 执行工作流节点
@@ -287,34 +284,37 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
 
     @Override
     public void terminate(String executionId) {
-        WorkflowState state = runningWorkflows.get(executionId);
+        WorkflowState state = workflowStore.findStateByExecutionId(executionId).orElse(null);
         if (state != null) {
             state.setStatus(WorkflowState.State.TERMINATED);
             state.setEndTime(LocalDateTime.now());
+            workflowStore.saveState(state);
             log.info("[DefaultWorkflowExecutor] Terminated workflow: {}", executionId);
         }
     }
 
     @Override
     public void suspend(String executionId) {
-        WorkflowState state = runningWorkflows.get(executionId);
+        WorkflowState state = workflowStore.findStateByExecutionId(executionId).orElse(null);
         if (state != null) {
             state.setStatus(WorkflowState.State.SUSPENDED);
+            workflowStore.saveState(state);
             log.info("[DefaultWorkflowExecutor] Suspended workflow: {}", executionId);
         }
     }
 
     @Override
     public void resume(String executionId) {
-        WorkflowState state = runningWorkflows.get(executionId);
+        WorkflowState state = workflowStore.findStateByExecutionId(executionId).orElse(null);
         if (state != null) {
             state.setStatus(WorkflowState.State.RUNNING);
+            workflowStore.saveState(state);
             log.info("[DefaultWorkflowExecutor] Resumed workflow: {}", executionId);
         }
     }
 
     @Override
     public WorkflowState getState(String executionId) {
-        return runningWorkflows.get(executionId);
+        return workflowStore.findStateByExecutionId(executionId).orElse(null);
     }
 }

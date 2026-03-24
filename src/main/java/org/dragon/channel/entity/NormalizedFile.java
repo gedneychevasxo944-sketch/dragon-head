@@ -22,6 +22,16 @@ public class NormalizedFile {
     private String fileName;        // 文件名称，如a.txt
     private String mimeType;        // 文件类型，如 "image/png", "audio/ogg"
     private Long fileSize;          // 文件大小（字节 Byte）
-    // 特例元数据信息
+    // 渠道来源信息
+    private String sourceChannel;  // 来源渠道
+    private String sourceChatId;    // 来源会话 ID
+    // 存储相关信息
+    private String storageKey;     // 存储 key
+    private String localPath;       // 本地路径
+    // 媒体时长（音视频）
+    private Long durationMs;        // 媒体时长（毫秒）
+    // 关联消息 ID
     private String messageId;
+    // 扩展元数据
+    private java.util.Map<String, Object> extraMeta;
 }

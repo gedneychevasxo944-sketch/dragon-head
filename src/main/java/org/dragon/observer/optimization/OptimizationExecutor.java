@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import org.dragon.character.Character;
-import org.dragon.character.CharacterRegistry;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.PersonalityDescriptor;
 import org.dragon.character.mind.tag.Tag;
@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * OptimizationExecutor 优化执行器
- * 负责执行优化动作，更新 Character Mind 或 Organization Personality
+ * 负责执行优化动作，通过策略模式将动作分派到对应的 OptimizationTargetApplier
  *
  * @author wyj
  * @version 1.0
@@ -39,28 +39,30 @@ public class OptimizationExecutor {
     private final ModificationLogStore modificationLogStore;
     private final CommonSenseValidator commonSenseValidator;
     private final EvaluationRecordStore evaluationRecordStore;
-    private final CharacterRegistry characterRegistry;
-    // TODO: OrganizationRegistry 和 OrganizationEnhancer 已移除，需要替换为 Workspace 相关
+    private final List<OptimizationTargetApplier> appliers;
     private final LLMSuggestionGenerator suggestionGenerator;
 
     /**
+     * 获取指定目标类型的 applier
+     */
+    private OptimizationTargetApplier getApplier(OptimizationAction.TargetType targetType) {
+        return appliers.stream()
+                .filter(a -> a.getTargetType() == targetType)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
      * 执行优化动作
-     *
-     * @param actionId 优化动作 ID
-     * @return 执行结果
      */
     public OptimizationAction execute(String actionId) {
         OptimizationAction action = optimizationActionStore.findById(actionId)
                 .orElseThrow(() -> new IllegalArgumentException("Optimization action not found: " + actionId));
-
         return execute(action);
     }
 
     /**
      * 执行优化动作
-     *
-     * @param action 优化动作
-     * @return 执行后的动作
      */
     public OptimizationAction execute(OptimizationAction action) {
         if (!action.canExecute()) {
@@ -84,15 +86,29 @@ public class OptimizationExecutor {
             return action;
         }
 
+        OptimizationTargetApplier applier = getApplier(action.getTargetType());
+        if (applier == null) {
+            log.warn("[OptimizationExecutor] No applier found for target type: {}", action.getTargetType());
+            action.markRejected("No applier for target type: " + action.getTargetType());
+            optimizationActionStore.save(action);
+            return action;
+        }
+
         try {
             // 保存修改前的快照
-            String beforeSnapshot = captureSnapshot(action.getTargetType(), action.getTargetId());
+            String beforeSnapshot = applier.captureSnapshot(action.getTargetId());
 
             // 执行修改
-            applyModification(action);
+            OptimizationTargetApplier.ApplyResult result = applier.apply(action);
+
+            if (!result.isSuccess()) {
+                action.markRejected(result.getError());
+                optimizationActionStore.save(action);
+                return action;
+            }
 
             // 保存修改后的快照
-            String afterSnapshot = captureSnapshot(action.getTargetType(), action.getTargetId());
+            String afterSnapshot = applier.captureSnapshot(action.getTargetId());
 
             // 记录修改日志
             ModificationLog modLog = ModificationLog.builder()
@@ -110,7 +126,7 @@ public class OptimizationExecutor {
             modificationLogStore.save(modLog);
 
             // 标记为已执行
-            action.markExecuted("Successfully executed");
+            action.markExecuted(result.getMessage());
             optimizationActionStore.save(action);
 
             log.info("[OptimizationExecutor] Action executed successfully: {}", action.getId());
@@ -127,9 +143,6 @@ public class OptimizationExecutor {
 
     /**
      * 批量执行优化动作
-     *
-     * @param actionIds 优化动作 ID 列表
-     * @return 执行结果列表
      */
     public List<OptimizationAction> executeBatch(List<String> actionIds) {
         List<OptimizationAction> results = new ArrayList<>();
@@ -141,9 +154,6 @@ public class OptimizationExecutor {
 
     /**
      * 回滚优化动作
-     *
-     * @param actionId 优化动作 ID
-     * @return 回滚后的动作
      */
     public OptimizationAction rollback(String actionId) {
         OptimizationAction action = optimizationActionStore.findById(actionId)
@@ -154,12 +164,16 @@ public class OptimizationExecutor {
             return action;
         }
 
-        try {
-            // 获取修改前的快照并恢复
-            if (action.getBeforeSnapshot() != null) {
-                restoreFromSnapshot(action.getTargetType(), action.getTargetId(), action.getBeforeSnapshot());
+        OptimizationTargetApplier applier = getApplier(action.getTargetType());
+        if (applier == null) {
+            log.warn("[OptimizationExecutor] No applier found for target type: {}", action.getTargetType());
+            return action;
+        }
 
-                // 记录回滚日志
+        try {
+            if (action.getBeforeSnapshot() != null) {
+                applier.restoreFromSnapshot(action.getTargetId(), action.getBeforeSnapshot());
+
                 ModificationLog rollbackLog = ModificationLog.builder()
                         .id(UUID.randomUUID().toString())
                         .targetType(ModificationLog.TargetType.valueOf(action.getTargetType().name()))
@@ -191,17 +205,13 @@ public class OptimizationExecutor {
 
     /**
      * 根据评价生成优化动作
-     *
-     * @param evaluationId 评价 ID
-     * @return 生成的优化动作列表
      */
     public List<OptimizationAction> generateActionsFromEvaluation(String evaluationId) {
         List<OptimizationAction> actions = new ArrayList<>();
 
-        EvaluationRecord evaluation = evaluationRecordStore().findById(evaluationId)
+        EvaluationRecord evaluation = evaluationRecordStore.findById(evaluationId)
                 .orElseThrow(() -> new IllegalArgumentException("Evaluation not found: " + evaluationId));
 
-        // 根据评分和优化建议生成动作
         if (evaluation.getSuggestions() != null) {
             for (String suggestion : evaluation.getSuggestions()) {
                 OptimizationAction action = generateAction(evaluation, suggestion);
@@ -213,11 +223,6 @@ public class OptimizationExecutor {
         }
 
         return actions;
-    }
-
-    private EvaluationRecordStore evaluationRecordStore() {
-        // 通过 Spring 获取
-        return null; // TODO: 注入
     }
 
     /**
@@ -253,34 +258,7 @@ public class OptimizationExecutor {
     }
 
     /**
-     * 应用修改
-     */
-    private void applyModification(OptimizationAction action) {
-        switch (action.getTargetType()) {
-            case CHARACTER:
-                applyCharacterModification(action);
-                break;
-            case WORKSPACE:
-                applyWorkspaceModification(action);
-                break;
-        }
-    }
-
-    /**
-     * 应用 Workspace 修改
-     */
-    private void applyWorkspaceModification(OptimizationAction action) {
-        // TODO: Organization 已移除，需要实现 Workspace 的优化逻辑
-        log.warn("[OptimizationExecutor] Workspace modification not implemented yet");
-    }
-
-    /**
      * 使用 LLM 生成的建议执行优化
-     * 这是 Observer 优化功能的核心方法，通过 LLM 分析任务执行数据，
-     * 生成优化建议，然后应用到 Character 或 Workspace
-     *
-     * @param action 优化动作
-     * @return 执行后的动作
      */
     public OptimizationAction executeWithLLM(OptimizationAction action) {
         if (!action.canExecute()) {
@@ -290,9 +268,15 @@ public class OptimizationExecutor {
             return action;
         }
 
+        OptimizationTargetApplier applier = getApplier(action.getTargetType());
+        if (applier == null) {
+            log.warn("[OptimizationExecutor] No applier found for target type: {}", action.getTargetType());
+            action.markRejected("No applier for target type: " + action.getTargetType());
+            optimizationActionStore.save(action);
+            return action;
+        }
+
         try {
-            // 1. 通过 LLM 生成优化建议
-            // TODO: 需要从 action 或 context 中获取 workspace 和 organizationId
             String workspace = (String) action.getParameters().get("workspace");
             String organizationId = (String) action.getParameters().get("organizationId");
 
@@ -301,7 +285,7 @@ public class OptimizationExecutor {
                     organizationId,
                     action.getTargetType(),
                     action.getTargetId(),
-                    10); // 考虑最近10个任务
+                    10);
 
             if (suggestions.isEmpty()) {
                 log.info("[OptimizationExecutor] No suggestions generated, skipping optimization");
@@ -310,23 +294,22 @@ public class OptimizationExecutor {
                 return action;
             }
 
-            // 2. 保存修改前的快照
-            String beforeSnapshot = captureSnapshot(action.getTargetType(), action.getTargetId());
+            // 保存修改前的快照
+            String beforeSnapshot = applier.captureSnapshot(action.getTargetId());
 
-            // 3. 根据目标类型应用 LLM 增强
-            switch (action.getTargetType()) {
-                case CHARACTER:
-                    applyCharacterModificationWithLLM(action.getTargetId(), suggestions);
-                    break;
-                case WORKSPACE:
-                    applyOrganizationModificationWithLLM(action.getTargetId(), suggestions);
-                    break;
+            // 直接通过 applier 应用（以 UPDATE_MIND 形式）
+            action.getParameters().put("suggestions", suggestions);
+            OptimizationTargetApplier.ApplyResult result = applier.apply(action);
+
+            if (!result.isSuccess()) {
+                action.markRejected(result.getError());
+                optimizationActionStore.save(action);
+                return action;
             }
 
-            // 4. 保存修改后的快照
-            String afterSnapshot = captureSnapshot(action.getTargetType(), action.getTargetId());
+            // 保存修改后的快照
+            String afterSnapshot = applier.captureSnapshot(action.getTargetId());
 
-            // 5. 记录修改日志
             ModificationLog modLog = ModificationLog.builder()
                     .id(UUID.randomUUID().toString())
                     .targetType(ModificationLog.TargetType.valueOf(action.getTargetType().name()))
@@ -341,7 +324,6 @@ public class OptimizationExecutor {
                     .build();
             modificationLogStore.save(modLog);
 
-            // 6. 标记为已执行
             action.markExecuted("LLM-driven optimization executed with " + suggestions.size() + " suggestions");
             action.getParameters().put("suggestions", suggestions);
             optimizationActionStore.save(action);
@@ -356,139 +338,6 @@ public class OptimizationExecutor {
         }
 
         return action;
-    }
-
-    /**
-     * 使用 LLM 建议修改 Character
-     */
-    private void applyCharacterModificationWithLLM(String characterId, List<String> suggestions) {
-        Character character = characterRegistry.get(characterId)
-                .orElseThrow(() -> new IllegalArgumentException("Character not found: " + characterId));
-
-        Mind mind = character.getMind();
-        if (mind == null) {
-            throw new IllegalStateException("Character mind is not initialized");
-        }
-
-        // 1. 通过 LLM 增强 personality
-        PersonalityDescriptor updatedDescriptor = mind.enhanceByLLM(suggestions);
-        if (updatedDescriptor != null) {
-            mind.updatePersonality(updatedDescriptor);
-            log.info("[OptimizationExecutor] Updated Character personality via LLM: {}", characterId);
-        }
-
-        // 2. 通过 LLM 增强 tags
-        Map<String, Tag> tagUpdates = mind.enhanceTagsByLLM(suggestions);
-        if (tagUpdates != null && !tagUpdates.isEmpty()) {
-            // 应用 tag 更新
-            for (Map.Entry<String, Tag> entry : tagUpdates.entrySet()) {
-                String targetCharacterId = entry.getKey();
-                Tag tag = entry.getValue();
-                if (mind.getTagRepository() != null) {
-                    mind.getTagRepository().addTag(targetCharacterId, tag);
-                }
-            }
-            log.info("[OptimizationExecutor] Updated {} tags via LLM for Character: {}", tagUpdates.size(), characterId);
-        }
-
-        characterRegistry.update(character);
-    }
-
-    /**
-     * 使用 LLM 建议修改 Organization
-     */
-    private void applyOrganizationModificationWithLLM(String orgId, List<String> suggestions) {
-        // TODO: Organization 已移除，需要实现 Workspace 的 LLM 优化逻辑
-        log.warn("[OptimizationExecutor] Organization LLM modification not implemented yet");
-    }
-
-    /**
-     * 应用 Character 修改
-     */
-    private void applyCharacterModification(OptimizationAction action) {
-        Character character = characterRegistry.get(action.getTargetId())
-                .orElseThrow(() -> new IllegalArgumentException("Character not found: " + action.getTargetId()));
-
-        Mind mind = character.getMind();
-        if (mind == null) {
-            throw new IllegalStateException("Character mind is not initialized");
-        }
-
-        switch (action.getActionType()) {
-            case UPDATE_MIND:
-            case UPDATE_PERSONALITY:
-                // 更新 personality
-                if (action.getParameters().containsKey("personality")) {
-                    PersonalityDescriptor descriptor = (PersonalityDescriptor) action.getParameters().get("personality");
-                    mind.updatePersonality(descriptor);
-                }
-                break;
-            case UPDATE_TAG:
-                // 更新标签
-                if (action.getParameters().containsKey("tags")) {
-                    // TODO: 实现标签更新
-                }
-                break;
-            case ADD_SKILL:
-                // 添加技能
-                if (action.getParameters().containsKey("skill")) {
-                    // TODO: 实现技能添加
-                }
-                break;
-            default:
-                log.warn("[OptimizationExecutor] Unsupported action type for Character: {}", action.getActionType());
-        }
-
-        characterRegistry.update(character);
-    }
-
-    /**
-     * 应用 Organization 修改
-     */
-    @SuppressWarnings("unused")
-    private void applyOrganizationModification(OptimizationAction action) {
-        // TODO: Organization 已移除，需要实现 Workspace 的优化逻辑
-        log.warn("[OptimizationExecutor] Organization modification not implemented yet");
-    }
-
-    /**
-     * 捕获快照
-     */
-    private String captureSnapshot(OptimizationAction.TargetType targetType, String targetId) {
-        switch (targetType) {
-            case CHARACTER:
-                return captureCharacterSnapshot(targetId);
-            case WORKSPACE:
-                return captureOrganizationSnapshot(targetId);
-            default:
-                return "{}";
-        }
-    }
-
-    private String captureCharacterSnapshot(String characterId) {
-        return characterRegistry.get(characterId)
-                .map(c -> {
-                    Mind mind = c.getMind();
-                    if (mind != null && mind.getPersonality() != null) {
-                        return mind.getPersonality().toString();
-                    }
-                    return "{}";
-                })
-                .orElse("{}");
-    }
-
-    private String captureOrganizationSnapshot(String orgId) {
-        // TODO: Organization 已移除，需要实现 Workspace 的快照逻辑
-        return "{}";
-    }
-
-    /**
-     * 从快照恢复
-     */
-    private void restoreFromSnapshot(OptimizationAction.TargetType targetType, String targetId, String snapshot) {
-        // 简化实现：直接重新执行反向操作
-        // 实际实现需要解析快照并恢复
-        log.info("[OptimizationExecutor] Restoring from snapshot for {}: {}", targetType, targetId);
     }
 
     /**

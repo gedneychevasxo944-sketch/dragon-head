@@ -103,4 +103,21 @@ public class MemoryTaskStore implements TaskStore {
     public boolean exists(String id) {
         return store.containsKey(id);
     }
+
+    @Override
+    public List<Task> findRunnableChildTasks(String parentTaskId) {
+        return store.values().stream()
+                .filter(task -> parentTaskId.equals(task.getParentTaskId()))
+                .filter(task -> task.getStatus() == TaskStatus.PENDING)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Task> findWaitingTasksByDependencyTaskId(String dependencyTaskId) {
+        return store.values().stream()
+                .filter(task -> task.getStatus() == TaskStatus.WAITING_DEPENDENCY)
+                .filter(task -> task.getDependencyTaskIds() != null)
+                .filter(task -> task.getDependencyTaskIds().contains(dependencyTaskId))
+                .collect(Collectors.toList());
+    }
 }

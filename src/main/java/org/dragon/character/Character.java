@@ -12,8 +12,10 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActContext;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.react.ReActResult;
+import org.dragon.agent.workflow.Workflow;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowResult;
+import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.mind.Mind;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.PromptManager;
@@ -55,6 +57,12 @@ public class Character {
      * 由外部注入，负责实际执行 Workflow
      */
     private WorkflowExecutor workflowExecutor;
+
+    /**
+     * Workflow 存储
+     * 由外部注入，负责存储工作流定义
+     */
+    private WorkflowStore workflowStore;
 
     /**
      * 模型注册中心
@@ -373,14 +381,31 @@ public class Character {
         if (workflowExecutor == null) {
             throw new IllegalStateException("WorkflowExecutor not initialized");
         }
+        if (workflowStore == null) {
+            throw new IllegalStateException("WorkflowStore not initialized");
+        }
 
-        // TODO: 需要 WorkflowRegistry 来获取 Workflow 对象
-        // 暂时返回未实现的状态
-        return WorkflowResult.builder()
-                .workflowId(workflowId)
-                .status(org.dragon.agent.workflow.WorkflowState.State.FAILED)
-                .errorMessage("Workflow execution not fully implemented yet")
-                .build();
+        // 从 store 获取工作流定义
+        Workflow workflow = workflowStore.findById(workflowId)
+                .orElse(null);
+
+        if (workflow == null) {
+            return WorkflowResult.builder()
+                    .workflowId(workflowId)
+                    .status(org.dragon.agent.workflow.WorkflowState.State.FAILED)
+                    .errorMessage("Workflow not found: " + workflowId)
+                    .build();
+        }
+
+        // 构建输入上下文
+        java.util.Map<String, Object> input = new java.util.HashMap<>();
+        input.put("characterId", this.id);
+        if (workspaceIds != null && !workspaceIds.isEmpty()) {
+            input.put("workspaceId", workspaceIds.get(0));
+        }
+
+        // 执行工作流
+        return workflowExecutor.execute(workflow, input);
     }
 
     /**

@@ -61,6 +61,9 @@ public class WorkspaceTaskArrangementService {
     private final TaskStore taskStore;
     private final WorkspaceTaskExecutionService taskExecutionService;
     private final Gson gson = new Gson();
+    private final TaskDecomposer taskDecomposer;
+    private final ChildTaskFactory childTaskFactory;
+    private final CollaborationSessionCoordinator sessionCoordinator;
 
     /**
      * 任务执行模式枚举
@@ -172,8 +175,8 @@ public class WorkspaceTaskArrangementService {
      * AUTO 模式：任务分解后直接获取 characterId
      */
     private void handleAutoMode(Task task, Workspace workspace, List<WorkspaceMember> members) {
-        // 1. 任务分解 - 通过 ProjectManager Character
-        TaskDecompositionResult decompositionResult = decomposeTaskWithCharacter(task, workspace, members);
+        // 1. 任务分解 - 委托给 TaskDecomposer
+        TaskDecompositionResult decompositionResult = taskDecomposer.decompose(task, workspace, members);
 
         if (decompositionResult == null || decompositionResult.getChildTasks() == null || decompositionResult.getChildTasks().isEmpty()) {
             log.warn("[WorkspaceTaskArrangementService] Task decomposition failed for task {}", task.getId());
@@ -183,8 +186,8 @@ public class WorkspaceTaskArrangementService {
             return;
         }
 
-        // 2. 解析分解结果为子任务列表
-        List<Task> childTasks = parseDecomposedTasks(decompositionResult, task);
+        // 2. 创建子任务 - 委托给 ChildTaskFactory
+        List<Task> childTasks = childTaskFactory.createChildTasks(decompositionResult, task);
 
         if (childTasks.isEmpty()) {
             log.warn("[WorkspaceTaskArrangementService] Failed to parse child tasks for task {}", task.getId());
@@ -196,25 +199,14 @@ public class WorkspaceTaskArrangementService {
 
         // 保存子任务到 Store
         for (Task childTask : childTasks) {
-            childTask.setParentTaskId(task.getId());
             taskStore.save(childTask);
         }
         task.setChildTaskIds(childTasks.stream().map(Task::getId).toList());
         task.setStatus(TaskStatus.RUNNING);
         taskStore.update(task);
 
-        // 3. 创建协作会话（参与方为所有子任务的执行者）
-        List<String> participantIds = childTasks.stream()
-                .map(Task::getCharacterId)
-                .filter(id -> id != null && !id.isEmpty())
-                .distinct()
-                .collect(Collectors.toList());
-        if (!participantIds.isEmpty()) {
-            ChatSession session = chatRoom.createSession(
-                    task.getWorkspaceId(), participantIds, task.getId());
-            task.setCollaborationSessionId(session.getId());
-            taskStore.update(task);
-        }
+        // 3. 创建协作会话并绑定 - 委托给 CollaborationSessionCoordinator
+        sessionCoordinator.createAndBindSession(task, childTasks);
 
         // 4. 执行子任务（委托给 WorkspaceTaskExecutionService）
         taskExecutionService.executeChildTasks(childTasks, task);
@@ -444,6 +436,10 @@ public class WorkspaceTaskArrangementService {
 
     /**
      * 将 TaskDecompositionResult 转换为 List<Task>
+     * 三阶段：
+     * 1. 为每个 ChildTaskPlan 创建真实 Task
+     * 2. 建立 planTaskId -> taskId 映射
+     * 3. 把 dependencyPlanTaskIds 转成真实 dependencyTaskIds
      */
     private List<Task> parseDecomposedTasks(TaskDecompositionResult result, Task parentTask) {
         if (result == null || result.getChildTasks() == null || result.getChildTasks().isEmpty()) {
@@ -451,9 +447,11 @@ public class WorkspaceTaskArrangementService {
             return Collections.emptyList();
         }
 
-        List<Task> childTasks = new ArrayList<>();
+        List<ChildTaskPlan> plans = result.getChildTasks();
 
-        for (ChildTaskPlan plan : result.getChildTasks()) {
+        // 阶段1：创建所有 Task（此时 dependencyTaskIds 还是 LLM 输出的 planTaskId）
+        List<Task> childTasks = new ArrayList<>();
+        for (ChildTaskPlan plan : plans) {
             Task childTask = Task.builder()
                     .id(UUID.randomUUID().toString())
                     .parentTaskId(parentTask.getId())
@@ -463,15 +461,53 @@ public class WorkspaceTaskArrangementService {
                     .characterId(plan.getCharacterId())
                     .input(parentTask.getInput())
                     .status(TaskStatus.PENDING)
-                    .dependencyTaskIds(plan.getDependencyTaskIds() != null ? plan.getDependencyTaskIds() : new ArrayList<>())
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
-
             childTasks.add(childTask);
         }
 
+        // 阶段2：建立 planTaskId -> taskId 映射
+        Map<String, String> planIdMapping = buildPlanTaskIdMapping(plans, childTasks);
+
+        // 阶段3：解析依赖 planTaskIds 为真实 taskIds
+        resolveDependencyTaskIds(plans, childTasks, planIdMapping);
+
         return childTasks;
+    }
+
+    /**
+     * 建立 planTaskId -> taskId 的映射
+     */
+    private Map<String, String> buildPlanTaskIdMapping(List<ChildTaskPlan> plans, List<Task> tasks) {
+        Map<String, String> mapping = new java.util.HashMap<>();
+        for (int i = 0; i < plans.size(); i++) {
+            String planId = plans.get(i).getPlanTaskId();
+            if (planId != null && !planId.isEmpty()) {
+                mapping.put(planId, tasks.get(i).getId());
+            }
+        }
+        return mapping;
+    }
+
+    /**
+     * 将 dependencyPlanTaskIds 解析为真实的 dependencyTaskIds
+     */
+    private void resolveDependencyTaskIds(List<ChildTaskPlan> plans, List<Task> tasks, Map<String, String> planIdMapping) {
+        for (int i = 0; i < plans.size(); i++) {
+            List<String> planDeps = plans.get(i).getDependencyPlanTaskIds();
+            if (planDeps == null || planDeps.isEmpty()) {
+                continue;
+            }
+            List<String> resolvedDeps = new ArrayList<>();
+            for (String planDepId : planDeps) {
+                String resolvedId = planIdMapping.get(planDepId);
+                if (resolvedId != null) {
+                    resolvedDeps.add(resolvedId);
+                }
+            }
+            tasks.get(i).setDependencyTaskIds(resolvedDeps);
+        }
     }
 
     /**

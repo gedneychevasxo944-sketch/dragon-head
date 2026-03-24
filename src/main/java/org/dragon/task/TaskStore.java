@@ -103,4 +103,20 @@ public interface TaskStore {
      * @return 是否存在
      */
     boolean exists(String id);
+
+    /**
+     * 查询可执行的子任务（处于 PENDING 状态且依赖已满足）
+     *
+     * @param parentTaskId 父任务 ID
+     * @return 可执行的子任务列表
+     */
+    List<Task> findRunnableChildTasks(String parentTaskId);
+
+    /**
+     * 查询等待特定依赖任务 ID 的任务列表
+     *
+     * @param dependencyTaskId 依赖的任务 ID
+     * @return 等待该依赖的任务列表
+     */
+    List<Task> findWaitingTasksByDependencyTaskId(String dependencyTaskId);
 }

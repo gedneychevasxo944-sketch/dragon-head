@@ -54,6 +54,8 @@ public class TaskContinuationResolver {
     public static class ContinuationResult {
         private ContinuationDecision decision;
         private String taskId;
+        private String targetTaskId;    // 实际要恢复执行的任务 ID（可能是子任务）
+        private String targetTaskType;  // PARENT / CHILD
         private String reason;
     }
 
@@ -65,51 +67,51 @@ public class TaskContinuationResolver {
      * @return 续跑解析结果
      */
     public ContinuationResult resolve(String workspaceId, NormalizedMessage message) {
-        // 1. 检查是否引用了原消息（通过 quoteMessageId）
-        if (message.getMessageId() != null && !message.getMessageId().isEmpty()) {
-            Optional<Task> referencedTask = findTaskBySourceMessageId(workspaceId, message.getMessageId());
+        // 1. 优先级：quoteMessageId 命中旧任务
+        if (message.getQuoteMessageId() != null && !message.getQuoteMessageId().isEmpty()) {
+            Optional<Task> referencedTask = findTaskByQuotedMessageId(workspaceId, message.getQuoteMessageId());
             if (referencedTask.isPresent()) {
-                log.info("[TaskContinuationResolver] Message {} references task {}, continuing",
-                        message.getMessageId(), referencedTask.get().getId());
-                return ContinuationResult.builder()
-                        .decision(ContinuationDecision.CONTINUE_EXISTING_TASK)
-                        .taskId(referencedTask.get().getId())
-                        .reason("Message references existing task")
-                        .build();
-            }
-        }
-
-        // 2. 检查 chat/thread/chatId 是否匹配挂起的任务
-        if (message.getChatId() != null) {
-            Optional<Task> waitingTask = findWaitingTaskByChatId(workspaceId, message.getChatId());
-            if (waitingTask.isPresent()) {
-                log.info("[TaskContinuationResolver] Found waiting task {} for chatId {}",
-                        waitingTask.get().getId(), message.getChatId());
-                return ContinuationResult.builder()
-                        .decision(ContinuationDecision.CONTINUE_EXISTING_TASK)
-                        .taskId(waitingTask.get().getId())
-                        .reason("Matching chatId with waiting task")
-                        .build();
-            }
-        }
-
-        // 3. 检查是否有 WAITING_USER_INPUT 状态的任务
-        Optional<Task> waitingUserInputTask = findWaitingUserInputTask(workspaceId);
-        if (waitingUserInputTask.isPresent()) {
-            // 检查消息是否是对上一个问题的回复
-            Task task = waitingUserInputTask.get();
-            if (isLikelyResponseToQuestion(message, task)) {
-                log.info("[TaskContinuationResolver] Message appears to be response to question from task {}",
+                Task task = referencedTask.get();
+                log.info("[TaskContinuationResolver] Message quotes task {}, continuing",
                         task.getId());
-                return ContinuationResult.builder()
-                        .decision(ContinuationDecision.CONTINUE_EXISTING_TASK)
-                        .taskId(task.getId())
-                        .reason("User response to waiting question")
-                        .build();
+                return buildContinuationResult(task, "Message quotes existing task");
             }
         }
 
-        // 4. 默认开启新任务
+        // 2. 优先级：threadId 命中旧任务
+        if (message.getThreadId() != null && !message.getThreadId().isEmpty()) {
+            Optional<Task> waitingTask = findWaitingTaskByThreadId(workspaceId, message.getThreadId());
+            if (waitingTask.isPresent()) {
+                Task task = waitingTask.get();
+                log.info("[TaskContinuationResolver] Found waiting task {} for threadId {}",
+                        task.getId(), message.getThreadId());
+                return buildContinuationResult(task, "Matching threadId with waiting task");
+            }
+        }
+
+        // 3. 优先级：chatId + WAITING_USER_INPUT
+        if (message.getChatId() != null) {
+            Optional<Task> waitingTask = findWaitingUserInputTaskByChatId(workspaceId, message.getChatId());
+            if (waitingTask.isPresent()) {
+                Task task = waitingTask.get();
+                log.info("[TaskContinuationResolver] Found WAITING_USER_INPUT task {} for chatId {}",
+                        task.getId(), message.getChatId());
+                return buildContinuationResult(task, "Matching chatId with waiting user input task");
+            }
+        }
+
+        // 4. 优先级：chatId + 最近挂起任务
+        if (message.getChatId() != null) {
+            Optional<Task> waitingTask = findLatestWaitingTaskByChatId(workspaceId, message.getChatId());
+            if (waitingTask.isPresent()) {
+                Task task = waitingTask.get();
+                log.info("[TaskContinuationResolver] Found latest waiting task {} for chatId {}",
+                        task.getId(), message.getChatId());
+                return buildContinuationResult(task, "Matching chatId with latest waiting task");
+            }
+        }
+
+        // 5. 默认开启新任务
         log.info("[TaskContinuationResolver] No matching continuation, starting new task");
         return ContinuationResult.builder()
                 .decision(ContinuationDecision.START_NEW_TASK)
@@ -118,22 +120,44 @@ public class TaskContinuationResolver {
     }
 
     /**
-     * 通过源消息 ID 查找任务
+     * 构建续跑结果，包含目标任务类型判定
      */
-    private Optional<Task> findTaskBySourceMessageId(String workspaceId, String sourceMessageId) {
+    private ContinuationResult buildContinuationResult(Task task, String reason) {
+        // 判断任务是父任务还是子任务
+        String targetTaskId = task.getId();
+        String targetTaskType = "PARENT";
+
+        // 如果有 parentTaskId，说明这是子任务
+        if (task.getParentTaskId() != null && !task.getParentTaskId().isEmpty()) {
+            targetTaskType = "CHILD";
+        }
+
+        return ContinuationResult.builder()
+                .decision(ContinuationDecision.CONTINUE_EXISTING_TASK)
+                .taskId(task.getId())
+                .targetTaskId(targetTaskId)
+                .targetTaskType(targetTaskType)
+                .reason(reason)
+                .build();
+    }
+
+    /**
+     * 通过被引用消息 ID 查找任务
+     */
+    private Optional<Task> findTaskByQuotedMessageId(String workspaceId, String quoteMessageId) {
         List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
         return tasks.stream()
-                .filter(task -> sourceMessageId.equals(task.getSourceMessageId()))
+                .filter(task -> quoteMessageId.equals(task.getSourceMessageId()))
                 .findFirst();
     }
 
     /**
-     * 通过 chatId 查找等待中的任务
+     * 通过线程 ID 查找等待中的任务
      */
-    private Optional<Task> findWaitingTaskByChatId(String workspaceId, String chatId) {
+    private Optional<Task> findWaitingTaskByThreadId(String workspaceId, String threadId) {
         List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
         return tasks.stream()
-                .filter(task -> chatId.equals(task.getSourceChatId()))
+                .filter(task -> threadId.equals(task.getSourceChatId())) // 暂用 sourceChatId 存储 threadId
                 .filter(task -> task.getStatus() == TaskStatus.SUSPENDED
                         || task.getStatus() == TaskStatus.WAITING_USER_INPUT
                         || task.getStatus() == TaskStatus.WAITING_DEPENDENCY)
@@ -141,28 +165,26 @@ public class TaskContinuationResolver {
     }
 
     /**
-     * 查找等待用户输入的任务
+     * 通过 chatId 查找 WAITING_USER_INPUT 状态的任务
      */
-    private Optional<Task> findWaitingUserInputTask(String workspaceId) {
+    private Optional<Task> findWaitingUserInputTaskByChatId(String workspaceId, String chatId) {
         List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
         return tasks.stream()
-                .filter(task -> task.getWorkspaceId().equals(workspaceId))
+                .filter(task -> chatId.equals(task.getSourceChatId()))
                 .filter(task -> task.getStatus() == TaskStatus.WAITING_USER_INPUT)
                 .findFirst();
     }
 
     /**
-     * 判断消息是否像是对问题的回复
+     * 通过 chatId 查找最近挂起的任务
      */
-    private boolean isLikelyResponseToQuestion(NormalizedMessage message, Task task) {
-        // 如果有 lastQuestion，说明这个任务之前问过用户问题
-        if (task.getLastQuestion() != null && !task.getLastQuestion().isEmpty()) {
-            // 简单判断：如果消息不是问句，更可能是回复
-            String text = message.getTextContent();
-            if (text != null && !text.trim().endsWith("?")) {
-                return true;
-            }
-        }
-        return false;
+    private Optional<Task> findLatestWaitingTaskByChatId(String workspaceId, String chatId) {
+        List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
+        return tasks.stream()
+                .filter(task -> chatId.equals(task.getSourceChatId()))
+                .filter(task -> task.getStatus() == TaskStatus.SUSPENDED
+                        || task.getStatus() == TaskStatus.WAITING_USER_INPUT
+                        || task.getStatus() == TaskStatus.WAITING_DEPENDENCY)
+                .reduce((first, second) -> second); // 获取最后一个（最新的）
     }
 }

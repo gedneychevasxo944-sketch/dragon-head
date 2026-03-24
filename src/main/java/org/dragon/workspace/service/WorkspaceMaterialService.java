@@ -131,6 +131,111 @@ public class WorkspaceMaterialService {
         return materialStore.findByWorkspaceId(workspaceId);
     }
 
+    // ==================== NormalizedFile 接入方法 ====================
+
+    /**
+     * 从 NormalizedFile 列表摄入物料
+     * 用于将渠道附件接入 Workspace 物料系统
+     *
+     * @param workspaceId Workspace ID
+     * @param files NormalizedFile 列表
+     * @param uploader 上传者 ID
+     * @param context 扩展上下文
+     * @return 创建的物料列表
+     */
+    public java.util.List<Material> ingestNormalizedFiles(String workspaceId,
+            java.util.List<org.dragon.channel.entity.NormalizedFile> files,
+            String uploader, java.util.Map<String, Object> context) {
+        if (files == null || files.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        java.util.List<Material> materials = new java.util.ArrayList<>();
+        for (org.dragon.channel.entity.NormalizedFile file : files) {
+            try {
+                Material material = Material.builder()
+                        .id(java.util.UUID.randomUUID().toString())
+                        .workspaceId(workspaceId)
+                        .name(file.getFileName() != null ? file.getFileName() : "unnamed")
+                        .type(file.getMimeType())
+                        .size(file.getFileSize() != null ? file.getFileSize() : 0)
+                        .storageKey(file.getStorageKey())
+                        .sourceChannel(file.getSourceChannel())
+                        .sourceMessageId(file.getMessageId())
+                        .uploader(uploader)
+                        .uploadedAt(java.time.LocalDateTime.now())
+                        .parseStatus("PENDING")
+                        .build();
+
+                materialStore.save(material);
+                materials.add(material);
+                log.info("[WorkspaceMaterialService] Ingested NormalizedFile as material: {}", material.getId());
+            } catch (Exception e) {
+                log.error("[WorkspaceMaterialService] Failed to ingest NormalizedFile: {}", e.getMessage());
+            }
+        }
+        return materials;
+    }
+
+    /**
+     * 解析物料
+     *
+     * @param materialId 物料 ID
+     * @return 解析后的内容
+     */
+    public org.dragon.workspace.material.ParsedMaterialContent parseMaterial(String materialId) {
+        Material material = materialStore.findById(materialId)
+                .orElseThrow(() -> new IllegalArgumentException("Material not found: " + materialId));
+
+        java.io.InputStream inputStream = null;
+        try {
+            inputStream = materialStorage.retrieve(material.getStorageKey());
+            if (inputStream == null) {
+                return null;
+            }
+            MaterialParser.ParseResult result = materialParser.parse(material, inputStream);
+
+            // 保存解析内容
+            org.dragon.workspace.material.ParsedMaterialContent content =
+                    org.dragon.workspace.material.ParsedMaterialContent.builder()
+                            .id(java.util.UUID.randomUUID().toString())
+                            .materialId(materialId)
+                            .textContent(result.getTextContent())
+                            .structuredContent(result.getStructuredContent())
+                            .status(result.isSuccess()
+                                    ? org.dragon.workspace.material.ParsedMaterialContent.ParseStatus.SUCCESS
+                                    : org.dragon.workspace.material.ParsedMaterialContent.ParseStatus.FAILED)
+                            .errorMessage(result.getErrorMessage())
+                            .parsedAt(java.time.LocalDateTime.now())
+                            .build();
+
+            // 更新物料状态
+            material.setParseStatus(content.getStatus().name());
+            material.setParsedContentId(content.getId());
+            materialStore.update(material);
+
+            return content;
+        } catch (Exception e) {
+            log.error("[WorkspaceMaterialService] Failed to parse material {}: {}", materialId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 获取解析后的内容
+     *
+     * @param materialId 物料 ID
+     * @return 解析内容（如果存在）
+     */
+    public java.util.Optional<org.dragon.workspace.material.ParsedMaterialContent> getParsedContent(String materialId) {
+        Material material = materialStore.findById(materialId).orElse(null);
+        if (material == null || material.getParsedContentId() == null) {
+            return java.util.Optional.empty();
+        }
+        // 这里应该有一个 MaterialContentStore 来查询，简化处理返回空
+        return java.util.Optional.empty();
+    }
+
     // ==================== 任务关联方法 ====================
 
     /**

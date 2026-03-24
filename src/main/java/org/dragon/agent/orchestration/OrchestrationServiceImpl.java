@@ -40,13 +40,16 @@ public class OrchestrationServiceImpl implements OrchestrationService {
             Mode mode = request.getMode();
             String workflowId = request.getWorkflowId();
 
-            // 如果没有指定模式，由 Character 配置决定
-            if (mode == null) {
-                mode = decideMode(character);
-            }
-
-            // 如果是 WORKFLOW 模式但没有指定 workflowId，从 Character 配置获取
-            if (mode == Mode.WORKFLOW && (workflowId == null || workflowId.isEmpty())) {
+            // 如果没有指定模式或 workflowId，由 decideMode 决策
+            if (mode == null || mode == Mode.REACT) {
+                Mode resolvedMode = decideMode(request, character);
+                if (resolvedMode == Mode.WORKFLOW) {
+                    mode = Mode.WORKFLOW;
+                    workflowId = getDefaultWorkflowId(character);
+                } else {
+                    mode = Mode.REACT;
+                }
+            } else if (mode == Mode.WORKFLOW && (workflowId == null || workflowId.isEmpty())) {
                 workflowId = getDefaultWorkflowId(character);
             }
 
@@ -73,14 +76,29 @@ public class OrchestrationServiceImpl implements OrchestrationService {
 
     /**
      * 决定执行模式
-     * 根据 Character 的配置决定使用 WORKFLOW 还是 REACT
+     * 规则：
+     * 1. request.workflowId != null -> WORKFLOW
+     * 2. request.mode == WORKFLOW && workflowId 可解析 -> WORKFLOW
+     * 3. 其余一律 REACT
      */
-    private Mode decideMode(Character character) {
-        if (character.getAgentEngineConfig() != null
-                && character.getAgentEngineConfig().getWorkflowConfig() != null
-                && character.getAgentEngineConfig().getWorkflowConfig().getDefaultWorkflowId() != null) {
+    private Mode decideMode(OrchestrationRequest request, Character character) {
+        // 1. 显式指定 workflowId
+        if (request.getWorkflowId() != null && !request.getWorkflowId().isEmpty()) {
             return Mode.WORKFLOW;
         }
+
+        // 2. 显式指定 WORKFLOW 模式且可获取 workflowId
+        if (request.getMode() == Mode.WORKFLOW) {
+            String workflowId = getDefaultWorkflowId(character);
+            if (workflowId != null && !workflowId.isEmpty()) {
+                return Mode.WORKFLOW;
+            }
+            // WORKFLOW 请求但无有效 workflowId，降级 REACT
+            log.warn("[Orchestration] WORKFLOW mode requested but no valid workflowId, falling back to REACT");
+            return Mode.REACT;
+        }
+
+        // 3. 默认 REACT
         return Mode.REACT;
     }
 
