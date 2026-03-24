@@ -4,6 +4,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.skill.model.Skill;
+import org.dragon.skill.model.SkillEntry;
+import org.dragon.skill.model.SkillInvocationPolicy;
+import org.dragon.skill.model.SkillMetadata;
+import org.dragon.skill.model.SkillRequires;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,7 +114,7 @@ public class SkillFrontmatterParser {
      * @param frontmatter 解析后的 frontmatter 映射
      * @return 解析后的元数据，如果不存在则返回 null
      */
-    public static SkillTypes.SkillMetadata resolveMetadata(Map<String, String> frontmatter) {
+    public static SkillMetadata resolveMetadata(Map<String, String> frontmatter) {
         String raw = frontmatter.get("metadata");
         if (raw == null || raw.trim().isEmpty())
             return null;
@@ -125,7 +130,7 @@ public class SkillFrontmatterParser {
                 return null;
 
             JsonObject metaObj = meta.getAsJsonObject();
-            return new SkillTypes.SkillMetadata(
+            return new SkillMetadata(
                     hasAndTrue(metaObj, "always") ? true : null,
                     textOrNull(metaObj, "skillKey"),
                     textOrNull(metaObj, "primaryEnv"),
@@ -152,18 +157,18 @@ public class SkillFrontmatterParser {
     /**
      * 从 frontmatter 解析调用策略。
      */
-    public static SkillTypes.SkillInvocationPolicy resolveInvocationPolicy(
+    public static SkillInvocationPolicy resolveInvocationPolicy(
             Map<String, String> frontmatter) {
         boolean userInvocable = parseBool(frontmatter.get("user-invocable"), true);
         boolean disableModelInvocation = parseBool(
                 frontmatter.get("disable-model-invocation"), false);
-        return new SkillTypes.SkillInvocationPolicy(userInvocable, disableModelInvocation);
+        return new SkillInvocationPolicy(userInvocable, disableModelInvocation);
     }
 
     /**
      * 从技能名称和条目中解析技能键（标识符）。
      */
-    public static String resolveSkillKey(SkillTypes.Skill skill, SkillTypes.SkillEntry entry) {
+    public static String resolveSkillKey(Skill skill, SkillEntry entry) {
         if (entry != null && entry.getMetadata() != null
                 && entry.getMetadata().getSkillKey() != null) {
             return entry.getMetadata().getSkillKey();
@@ -215,13 +220,13 @@ public class SkillFrontmatterParser {
         return Collections.emptyList();
     }
 
-    private static SkillTypes.SkillRequires resolveRequires(JsonObject meta) {
+    private static SkillRequires resolveRequires(JsonObject meta) {
         if (!meta.has("requires")) return null;
         JsonElement req = meta.get("requires");
         if (req == null || !req.isJsonObject())
             return null;
         JsonObject reqObj = req.getAsJsonObject();
-        return new SkillTypes.SkillRequires(
+        return new SkillRequires(
                 stringList(reqObj, "bins"),
                 stringList(reqObj, "anyBins"),
                 stringList(reqObj, "env"),
