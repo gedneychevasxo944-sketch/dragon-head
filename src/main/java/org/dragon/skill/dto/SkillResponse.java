@@ -28,7 +28,22 @@ public class SkillResponse {
     private Integer version;
     private List<String> tags;
     private String description;
-    private String skillDir;
+
+    /**
+     * 存储后端路径标识。
+     */
+    private String storagePath;
+
+    /**
+     * 来自 SKILL.md frontmatter 的 description。
+     */
+    private String skillDescription;
+
+    /**
+     * SKILL.md frontmatter 之后的正文内容。
+     */
+    private String skillContent;
+
     private Boolean enabled;
     private Long workspaceId;
     private LocalDateTime createdAt;

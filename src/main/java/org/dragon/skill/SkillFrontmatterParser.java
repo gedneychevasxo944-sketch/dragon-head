@@ -3,13 +3,22 @@ package org.dragon.skill;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.skill.model.Skill;
 import org.dragon.skill.model.SkillEntry;
+import org.dragon.skill.model.SkillInstallSpec;
 import org.dragon.skill.model.SkillInvocationPolicy;
 import org.dragon.skill.model.SkillMetadata;
 import org.dragon.skill.model.SkillRequires;
+import org.yaml.snakeyaml.Yaml;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +37,121 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class SkillFrontmatterParser {
+
+    /**
+     * 解析结果封装（用于上传阶段，不含运行时信息）。
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SkillParseResult {
+        /** frontmatter 中的 name */
+        private String name;
+        /** frontmatter 中的 description（供 LLM 使用） */
+        private String skillDescription;
+        /** frontmatter 之后的正文内容 */
+        private String skillContent;
+        /** 解析后的依赖要求 */
+        private SkillRequires requires;
+        /** 解析后的安装规范列表 */
+        private List<SkillInstallSpec> installSpecs;
+        /** frontmatter 原始 YAML 字符串 */
+        private String frontmatterRaw;
+    }
+
+    /**
+     * 从输入流解析 SKILL.md 内容。
+     * 在 ZIP 上传阶段调用，解析结果持久化到数据库。
+     * 不再依赖本地文件路径。
+     *
+     * @param inputStream SKILL.md 文件的输入流
+     * @return 解析结果（包含 frontmatter、content、metadata）
+     */
+    public static SkillParseResult parseFromStream(InputStream inputStream) {
+        String rawContent;
+        try {
+            rawContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new org.dragon.skill.exception.SkillLoadException("读取 SKILL.md 内容失败", e);
+        }
+        return parseFromString(rawContent);
+    }
+
+    /**
+     * 从字符串解析 SKILL.md 内容。
+     * 在 ZIP 上传阶段调用，解析结果持久化到数据库。
+     *
+     * @param rawContent SKILL.md 完整原始内容
+     * @return 解析结果（包含 frontmatter、content、metadata）
+     */
+    public static SkillParseResult parseFromString(String rawContent) {
+        Map<String, String> frontmatter = parseFrontmatter(rawContent);
+        String body = extractBody(rawContent);
+
+        // 获取 frontmatter 原始 YAML
+        String frontmatterRaw = "";
+        if (rawContent.startsWith("---")) {
+            int endIndex = rawContent.indexOf("\n---", 3);
+            if (endIndex != -1) {
+                frontmatterRaw = rawContent.substring(4, endIndex).trim();
+            }
+        }
+
+        // 解析 requires 和 install
+        SkillRequires requires = null;
+        List<SkillInstallSpec> installSpecs = null;
+
+        String metadataRaw = frontmatter.get("metadata");
+        if (metadataRaw != null && !metadataRaw.isBlank()) {
+            try {
+                JsonElement root = JsonParser.parseString(metadataRaw);
+                if (root != null && root.isJsonObject()) {
+                    JsonObject metaObj = root.getAsJsonObject();
+                    // 查找 dragonhead 节点
+                    if (metaObj.has("dragonhead")) {
+                        JsonElement dragonhead = metaObj.get("dragonhead");
+                        if (dragonhead != null && dragonhead.isJsonObject()) {
+                            JsonObject dhObj = dragonhead.getAsJsonObject();
+                            requires = parseRequires(dhObj);
+                            installSpecs = parseInstallSpecs(dhObj);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析 metadata 失败: {}", e.getMessage());
+            }
+        }
+
+        return SkillParseResult.builder()
+                .name(frontmatter.get("name"))
+                .skillDescription(frontmatter.get("description"))
+                .skillContent(body)
+                .requires(requires)
+                .installSpecs(installSpecs)
+                .frontmatterRaw(frontmatterRaw)
+                .build();
+    }
+
+    private static SkillRequires parseRequires(JsonObject meta) {
+        if (!meta.has("requires")) return null;
+        JsonElement req = meta.get("requires");
+        if (req == null || !req.isJsonObject()) return null;
+        JsonObject reqObj = req.getAsJsonObject();
+        return new SkillRequires(
+                stringList(reqObj, "bins"),
+                stringList(reqObj, "anyBins"),
+                stringList(reqObj, "env"),
+                stringList(reqObj, "config"));
+    }
+
+    private static List<SkillInstallSpec> parseInstallSpecs(JsonObject meta) {
+        if (!meta.has("install")) return null;
+        JsonElement install = meta.get("install");
+        if (install == null || !install.isJsonArray()) return null;
+        // TODO: 完善 installSpecs 解析
+        return null;
+    }
 
 
     /**

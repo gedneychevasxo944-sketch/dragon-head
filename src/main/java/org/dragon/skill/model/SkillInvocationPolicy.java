@@ -1,13 +1,19 @@
 package org.dragon.skill.model;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 控制技能如何/是否可以被调用。
  *
  * @since 1.0
  */
-@Value
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SkillInvocationPolicy {
     /** 用户是否可以直接调用此技能 */
     boolean userInvocable;

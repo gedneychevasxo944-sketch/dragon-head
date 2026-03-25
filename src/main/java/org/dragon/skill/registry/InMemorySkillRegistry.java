@@ -71,7 +71,6 @@ public class InMemorySkillRegistry implements SkillRegistry {
     @Override
     public Collection<SkillRuntimeEntry> findAllActiveByWorkspace(long workspaceId) {
         return nameIndex.values().stream()
-                .filter(e -> e.getState() == SkillRuntimeState.ACTIVE)
                 .filter(e -> e.getWorkspaceId() == 0L || e.getWorkspaceId() == workspaceId)
                 .collect(Collectors.toUnmodifiableList());
     }
@@ -84,23 +83,20 @@ public class InMemorySkillRegistry implements SkillRegistry {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("## Available Skills\n\n");
-        sb.append("You have access to the following skills. ");
-        sb.append("Use them when appropriate based on the user's request.\n\n");
 
         entries.stream()
                 .sorted(Comparator.comparing(e -> e.getSkillEntry().getSkill().getName()))
                 .forEach(runtimeEntry -> {
                     Skill skill = runtimeEntry.getSkillEntry().getSkill();
-                    sb.append("### ").append(skill.getName()).append("\n\n");
-                    sb.append("**Description**: ").append(skill.getDescription()).append("\n\n");
-                    if (skill.getContent() != null && !skill.getContent().isBlank()) {
-                        sb.append(skill.getContent()).append("\n\n");
+                    String content = skill.getContent();
+                    if (content != null && !content.isBlank()) {
+                        sb.append("\n<skill name=\"").append(skill.getName()).append("\">\n");
+                        sb.append(content.trim());
+                        sb.append("\n</skill>\n");
                     }
-                    sb.append("---\n\n");
                 });
 
-        return sb.toString();
+        return sb.toString().trim();
     }
 
     @Override

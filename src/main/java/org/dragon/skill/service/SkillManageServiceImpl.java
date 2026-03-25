@@ -5,30 +5,26 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.skill.SkillFrontmatterParser;
 import org.dragon.skill.dto.*;
 import org.dragon.skill.entity.SkillEntity;
-import org.dragon.skill.enums.SkillCategory;
 import org.dragon.skill.event.SkillEventPublisher;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillValidationException;
 import org.dragon.skill.model.SkillSource;
-import org.dragon.skill.registry.SkillRuntimeEntry;
 import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.registry.SkillRegistry;
+import org.dragon.skill.storage.SkillStorageBackend;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.validator.SkillZipValidator;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
-import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 /**
  * Skill 管理服务实现。
@@ -45,53 +41,66 @@ public class SkillManageServiceImpl implements SkillManageService {
     private final SkillLoaderService loaderService;
     private final SkillEventPublisher eventPublisher;
     private final SkillRegistry skillRegistry;
+    private final SkillStorageBackend storageBackend;
     private final ObjectMapper objectMapper;
-
-    @Value("${skill.storage.root-dir:/data/skills}")
-    private String storageRootDir;
 
     @Override
     public SkillResponse createSkill(MultipartFile file, SkillCreateRequest request) {
-        // 1. 校验 ZIP 包，提取 skill name
-        String skillName = zipValidator.validateAndExtractName(file);
+        // 步骤1：校验 ZIP 包，同时提取 SKILL.md 原始内容
+        SkillZipValidator.ZipValidationResult validationResult =
+                zipValidator.validateAndExtract(file);
+        String skillName = validationResult.getSkillName();
 
-        // 2. 检查名称唯一性
+        // 步骤2：检查名称唯一性
         if (skillStore.existsByName(skillName)) {
             throw new SkillValidationException("Skill 名称已存在: " + skillName);
         }
 
-        // 3. 校验 workspaceId
-        Long workspaceId = request.getWorkspaceId();
-        if (request.getSource() == SkillSource.WORKSPACE && (workspaceId == null || workspaceId == 0L)) {
+        // 步骤3：解析 SKILL.md 内容（从内存字符串解析，无需读文件）
+        SkillFrontmatterParser.SkillParseResult parseResult =
+                SkillFrontmatterParser.parseFromString(validationResult.getSkillMdRawContent());
+
+        // 步骤4：确定版本号（新建固定为 1）
+        int version = 1;
+
+        // 步骤5：上传文件到存储后端
+        long workspaceId = request.getWorkspaceId() != null ? request.getWorkspaceId() : 0L;
+        if (request.getSource() == SkillSource.WORKSPACE && workspaceId == 0L) {
             throw new SkillValidationException("WORKSPACE 来源的 Skill 必须指定有效的 workspaceId");
         }
-        if (workspaceId == null) {
-            workspaceId = 0L;
+        String storagePath;
+        try {
+            storagePath = storageBackend.store(
+                    workspaceId, skillName, version, file.getInputStream());
+        } catch (java.io.IOException e) {
+            throw new SkillValidationException("文件存储失败: " + e.getMessage(), e);
         }
 
-        // 4. 解压 ZIP 到存储目录
-        String skillDir = resolveSkillDir(request.getSource().name().toLowerCase(), skillName);
-        extractZip(file, skillDir);
-
-        // 5. 保存数据库记录
+        // 步骤6：将解析结果持久化到数据库
         SkillEntity entity = SkillEntity.builder()
                 .name(skillName)
                 .source(request.getSource())
                 .category(request.getCategory())
-                .version(1)
+                .version(version)
                 .tags(serializeTags(request.getTags()))
                 .description(request.getDescription())
-                .skillDir(skillDir)
+                .storagePath(storagePath)
+                // 直接存入解析结果，无需运行时再解析文件
+                .skillDescription(parseResult.getSkillDescription())
+                .skillContent(parseResult.getSkillContent())
+                .requiresConfig(serializeObject(parseResult.getRequires()))
+                .installConfig(serializeObject(parseResult.getInstallSpecs()))
+                .frontmatterRaw(parseResult.getFrontmatterRaw())
                 .enabled(true)
                 .workspaceId(workspaceId)
                 .build();
 
         entity = skillStore.save(entity);
 
-        // 6. 触发加载
+        // 步骤7：触发运行时加载（直接从数据库字段构建，无需读文件）
         loaderService.loadSkill(entity);
 
-        // 7. 发布创建事件
+        // 步骤8：发布事件
         eventPublisher.publishCreated(entity);
 
         log.info("Skill 创建成功: id={}, name={}", entity.getId(), entity.getName());
@@ -107,22 +116,46 @@ public class SkillManageServiceImpl implements SkillManageService {
         // 1. 若上传了新 ZIP 包，处理文件更新
         if (file != null && !file.isEmpty()) {
             // 校验 ZIP 包
-            String skillName = zipValidator.validateAndExtractName(file);
+            SkillZipValidator.ZipValidationResult validationResult =
+                    zipValidator.validateAndExtract(file);
 
             // 校验 name 一致性
-            if (!entity.getName().equals(skillName)) {
+            if (!entity.getName().equals(validationResult.getSkillName())) {
                 throw new SkillValidationException(
                         String.format("更新时 ZIP 包中的 name '%s' 必须与当前 Skill name '%s' 一致",
-                                skillName, entity.getName()));
+                                validationResult.getSkillName(), entity.getName()));
             }
 
-            // 清空旧目录，解压新文件
-            String skillDir = entity.getSkillDir();
-            clearDirectory(skillDir);
-            extractZip(file, skillDir);
+            // 解析新版本 SKILL.md
+            SkillFrontmatterParser.SkillParseResult parseResult =
+                    SkillFrontmatterParser.parseFromString(validationResult.getSkillMdRawContent());
 
-            // 版本号递增
-            entity.setVersion(entity.getVersion() + 1);
+            int newVersion = entity.getVersion() + 1;
+
+            // 上传新版本到存储后端（新版本独立目录，旧版本删除）
+            long workspaceId = entity.getWorkspaceId();
+            String newStoragePath;
+            try {
+                newStoragePath = storageBackend.store(
+                        workspaceId, entity.getName(), newVersion, file.getInputStream());
+            } catch (java.io.IOException e) {
+                throw new SkillValidationException("文件存储失败: " + e.getMessage(), e);
+            }
+
+            // 删除旧版本文件
+            if (entity.getStoragePath() != null) {
+                storageBackend.delete(entity.getStoragePath());
+            }
+
+            // 更新数据库字段
+            entity.setVersion(newVersion);
+            entity.setStoragePath(newStoragePath);
+            entity.setSkillDescription(parseResult.getSkillDescription());
+            entity.setSkillContent(parseResult.getSkillContent());
+            entity.setRequiresConfig(serializeObject(parseResult.getRequires()));
+            entity.setInstallConfig(serializeObject(parseResult.getInstallSpecs()));
+            entity.setFrontmatterRaw(parseResult.getFrontmatterRaw());
+
             fileUpdated = true;
         }
 
@@ -159,10 +192,15 @@ public class SkillManageServiceImpl implements SkillManageService {
         // 1. 注销运行时
         loaderService.unloadSkill(skillId, entity.getName());
 
-        // 2. 发布删除事件
+        // 2. 删除存储后端文件
+        if (entity.getStoragePath() != null) {
+            storageBackend.delete(entity.getStoragePath());
+        }
+
+        // 3. 发布删除事件
         eventPublisher.publishDeleted(entity);
 
-        // 3. 软删除数据库记录
+        // 4. 软删除数据库记录
         skillStore.softDelete(skillId);
 
         log.info("Skill 已删除: id={}, name={}", skillId, entity.getName());
@@ -179,7 +217,7 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .filter(e -> request.getSource() == null || e.getSource() == request.getSource())
                 .filter(e -> request.getCategory() == null || e.getCategory() == request.getCategory())
                 .filter(e -> request.getEnabled() == null ||
-                        Boolean.equals(e.getEnabled(), request.getEnabled()))
+                        Objects.equals(e.getEnabled(), request.getEnabled()))
                 .filter(e -> request.getTag() == null ||
                         (e.getTags() != null && e.getTags().contains(request.getTag())))
                 .filter(e -> request.getWorkspaceId() == null ||
@@ -286,55 +324,6 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .orElseThrow(() -> new SkillNotFoundException("Skill 不存在: id=" + skillId));
     }
 
-    private String resolveSkillDir(String source, String skillName) {
-        return Paths.get(storageRootDir, source, skillName).toAbsolutePath().toString();
-    }
-
-    private void extractZip(MultipartFile file, String targetDir) {
-        Path targetPath = Paths.get(targetDir);
-        try {
-            Files.createDirectories(targetPath);
-
-            try (ZipInputStream zis = new ZipInputStream(
-                    new BufferedInputStream(file.getInputStream()))) {
-                ZipEntry entry;
-                while ((entry = zis.getNextEntry()) != null) {
-                    Path entryPath = targetPath.resolve(entry.getName()).normalize();
-
-                    // 安全检查：防止 Zip Slip 攻击
-                    if (!entryPath.startsWith(targetPath)) {
-                        throw new SkillValidationException("ZIP 包含非法路径: " + entry.getName());
-                    }
-
-                    if (entry.isDirectory()) {
-                        Files.createDirectories(entryPath);
-                    } else {
-                        Files.createDirectories(entryPath.getParent());
-                        Files.copy(zis, entryPath, StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    zis.closeEntry();
-                }
-            }
-        } catch (IOException e) {
-            throw new SkillValidationException("ZIP 解压失败: " + e.getMessage(), e);
-        }
-    }
-
-    private void clearDirectory(String dirPath) {
-        Path path = Paths.get(dirPath);
-        if (!Files.exists(path)) return;
-        try {
-            Files.walk(path)
-                    .sorted(java.util.Comparator.reverseOrder())
-                    .filter(p -> !p.equals(path))
-                    .forEach(p -> {
-                        try { Files.delete(p); } catch (IOException ignored) {}
-                    });
-        } catch (IOException e) {
-            log.warn("清空目录失败: {}", dirPath, e);
-        }
-    }
-
     private String serializeTags(List<String> tags) {
         if (tags == null || tags.isEmpty()) return "[]";
         try {
@@ -353,6 +342,15 @@ public class SkillManageServiceImpl implements SkillManageService {
         }
     }
 
+    private String serializeObject(Object obj) {
+        if (obj == null) return null;
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
     private SkillResponse toResponse(SkillEntity entity) {
         SkillResponse response = SkillResponse.builder()
                 .id(entity.getId())
@@ -362,7 +360,9 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .version(entity.getVersion())
                 .tags(deserializeTags(entity.getTags()))
                 .description(entity.getDescription())
-                .skillDir(entity.getSkillDir())
+                .storagePath(entity.getStoragePath())
+                .skillDescription(entity.getSkillDescription())
+                .skillContent(entity.getSkillContent())
                 .enabled(entity.getEnabled())
                 .workspaceId(entity.getWorkspaceId())
                 .createdAt(entity.getCreatedAt())

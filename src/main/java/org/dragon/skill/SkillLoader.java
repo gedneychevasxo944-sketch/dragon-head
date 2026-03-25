@@ -78,7 +78,6 @@ public class SkillLoader {
                             .name(name)
                             .description(description)
                             .source(source)
-                            .filePath(skillFile.toAbsolutePath().toString())
                             .baseDir(child.toAbsolutePath().toString())
                             .content(body)
                             .build());
@@ -143,10 +142,10 @@ public class SkillLoader {
     private static void loadAndAppend(List<SkillEntry> entries, Path dir, SkillSource source) {
         List<Skill> skills = loadSkillsFromDir(dir, source);
         for (Skill skill : skills) {
-            String content = readSkillContent(skill.getFilePath());
-            Map<String, String> frontmatter = SkillFrontmatterParser.parseFrontmatter(content);
+            String content = skill.getContent();
+            Map<String, String> frontmatter = SkillFrontmatterParser.parseFrontmatter("---\nname: " + skill.getName() + "\ndescription: " + skill.getDescription() + "\n---");
             SkillMetadata metadata = SkillFrontmatterParser.resolveMetadata(frontmatter);
-            SkillInvocationPolicy invocation = SkillFrontmatterParser.resolveInvocationPolicy(frontmatter);
+            SkillInvocationPolicy invocation = SkillInvocationPolicy.DEFAULT;
             entries.add(new SkillEntry(skill, frontmatter, metadata, invocation));
         }
     }

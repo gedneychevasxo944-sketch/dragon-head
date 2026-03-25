@@ -1,24 +1,22 @@
 package org.dragon.skill.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.skill.SkillFrontmatterParser;
 import org.dragon.skill.entity.SkillEntity;
-import org.dragon.skill.exception.SkillLoadException;
 import org.dragon.skill.model.Skill;
 import org.dragon.skill.model.SkillEntry;
+import org.dragon.skill.model.SkillInstallSpec;
 import org.dragon.skill.model.SkillMetadata;
 import org.dragon.skill.model.SkillRequires;
 import org.dragon.skill.registry.SkillRuntimeEntry;
 import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.store.SkillStore;
-import org.dragon.skill.SkillFrontmatterParser;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +34,7 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
 
     private final SkillStore skillStore;
     private final SkillRegistry skillRegistry;
-
-    private static final String SKILL_FILE = "SKILL.md";
+    private final ObjectMapper objectMapper;
 
     @Override
     public void loadAll() {
@@ -80,70 +77,57 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
         String skillName = entity.getName();
         Long skillId = entity.getId();
 
-        log.info("开始加载 Skill: id={}, name={}, version={}", skillId, skillName, entity.getVersion());
+        log.info("从数据库加载 Skill: id={}, name={}, version={}", skillId, skillName, entity.getVersion());
 
         try {
-            // 1. 定位 SKILL.md 文件
-            Path skillDir = Paths.get(entity.getSkillDir());
-            Path skillMdPath = skillDir.resolve(SKILL_FILE);
-
-            if (!Files.exists(skillMdPath)) {
-                throw new SkillLoadException("SKILL.md 文件不存在: " + skillMdPath);
-            }
-
-            // 2. 解析 SKILL.md
-            String content = new String(Files.readAllBytes(skillMdPath));
-            Map<String, String> frontmatter = SkillFrontmatterParser.parseFrontmatter(content);
-            String description = frontmatter.getOrDefault("description", "");
-            String body = SkillFrontmatterParser.extractBody(content);
-
-            // 3. 构建 Skill 对象
+            // ✅ 直接从数据库字段构建 SkillEntry，无需读取文件
             Skill skill = Skill.builder()
                     .id(skillId)
                     .version(entity.getVersion())
                     .name(skillName)
-                    .description(description)
+                    .description(entity.getSkillDescription())   // 来自数据库
                     .source(entity.getSource())
-                    .filePath(skillMdPath.toAbsolutePath().toString())
-                    .baseDir(skillDir.toAbsolutePath().toString())
-                    .content(body)
+                    .storagePath(entity.getStoragePath())        // 存储路径（替代原 filePath）
+                    .content(entity.getSkillContent())           // 来自数据库
                     .build();
 
-            // 4. 解析元数据
-            SkillMetadata metadata = SkillFrontmatterParser.resolveMetadata(frontmatter);
+            // 反序列化 requires 和 install
+            SkillRequires requires = deserializeObject(entity.getRequiresConfig(), SkillRequires.class);
+            List<SkillInstallSpec> installSpecs = deserializeList(entity.getInstallConfig(),
+                    new TypeReference<List<SkillInstallSpec>>() {});
 
-            // 5. 构建 SkillEntry
-            SkillEntry entry = new SkillEntry(skill, frontmatter, metadata,
-                    SkillFrontmatterParser.resolveInvocationPolicy(frontmatter));
+            SkillMetadata metadata = SkillMetadata.builder()
+                    .requires(requires)
+                    .install(installSpecs)
+                    .build();
 
-            // 6. 依赖检查
+            // frontmatter 从原始 YAML 反序列化
+            Map<String, String> frontmatter = parseFrontmatterRaw(entity.getFrontmatterRaw());
+
+            SkillEntry entry = SkillEntry.builder()
+                    .skill(skill)
+                    .frontmatter(frontmatter)
+                    .metadata(metadata)
+                    .build();
+
+            // 依赖检查（仍然需要，检查运行环境）
             Optional<String> requiresError = checkRequires(entry);
 
-            // 7. 构建 SkillRuntimeEntry
             SkillRuntimeEntry runtimeEntry = SkillRuntimeEntry.builder()
                     .skillEntry(entry)
                     .workspaceId(entity.getWorkspaceId())
                     .stateChangedAt(LocalDateTime.now())
+                    .state(requiresError.isPresent() ? SkillRuntimeState.FAILED : SkillRuntimeState.ACTIVE)
+                    .errorMessage(requiresError.orElse(null))
                     .build();
 
-            if (requiresError.isPresent()) {
-                String errorMsg = "依赖检查失败: " + requiresError.get();
-                log.warn("Skill [{}] 依赖检查失败: {}", skillName, requiresError.get());
-                runtimeEntry.setState(SkillRuntimeState.FAILED);
-                runtimeEntry.setErrorMessage(errorMsg);
-                skillRegistry.register(runtimeEntry);
-                return Optional.empty();
-            }
-
-            runtimeEntry.setState(SkillRuntimeState.ACTIVE);
             skillRegistry.register(runtimeEntry);
 
-            log.info("Skill [{}] 加载成功，已激活", skillName);
+            log.info("Skill [{}] 加载完成，状态: {}", skillName, runtimeEntry.getState());
             return Optional.of(runtimeEntry);
 
         } catch (Exception e) {
-            String errorMsg = e.getMessage();
-            log.error("Skill [{}] 加载失败: {}", skillName, errorMsg, e);
+            log.error("Skill [{}] 加载失败: {}", skillName, e.getMessage(), e);
             return Optional.empty();
         }
     }
@@ -210,6 +194,47 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     }
 
     /**
+     * 从 frontmatter 原始 YAML 解析为 Map。
+     */
+    private Map<String, String> parseFrontmatterRaw(String frontmatterRaw) {
+        if (frontmatterRaw == null || frontmatterRaw.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return SkillFrontmatterParser.parseFrontmatter("---\n" + frontmatterRaw + "\n---");
+        } catch (Exception e) {
+            log.warn("解析 frontmatterRaw 失败: {}", e.getMessage());
+            return Map.of();
+        }
+    }
+
+    /**
+     * 反序列化 JSON 字符串为对象。
+     */
+    private <T> T deserializeObject(String json, Class<T> clazz) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            return objectMapper.readValue(json, clazz);
+        } catch (Exception e) {
+            log.warn("反序列化失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 反序列化 JSON 字符串为 List。
+     */
+    private <T> T deserializeList(String json, TypeReference<T> typeRef) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            return objectMapper.readValue(json, typeRef);
+        } catch (Exception e) {
+            log.warn("反序列化失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * 检查可执行文件是否存在。
      */
     private boolean isBinAvailable(String bin) {
@@ -231,7 +256,7 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                 "/opt/homebrew/bin/" + bin
         };
         for (String path : commonPaths) {
-            if (new File(path).exists()) return true;
+            if (new java.io.File(path).exists()) return true;
         }
 
         return false;
