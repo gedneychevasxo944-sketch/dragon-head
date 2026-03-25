@@ -90,6 +90,57 @@ public class SkillSandboxSupportService {
     }
 
     /**
+     * 将单个 Skill 的指定版本文件同步到 sandbox。
+     * 版本化路径由 storagePath 规则推导。
+     *
+     * @param skillName     Skill 名称
+     * @param skillsDir     sandbox 中的 skills 目录
+     * @param targetVersion 目标版本号
+     */
+    public void syncSingleSkillToSandbox(String skillName, Path skillsDir, Integer targetVersion) {
+        skillRegistry.findByName(skillName).ifPresent(entry -> {
+            // 根据目标版本构建存储路径
+            String latestStoragePath = entry.getSkillEntry().getSkill().getStoragePath();
+            String versionedPath = rebuildVersionedPath(latestStoragePath, targetVersion);
+
+            Path skillTarget = skillsDir.resolve(skillName);
+            try {
+                if (java.nio.file.Files.exists(skillTarget)) {
+                    deleteDirectory(skillTarget);
+                }
+                storageBackend.download(versionedPath, skillTarget);
+                log.info("Skill 文件版本同步完成: skillName={}, version={}", skillName, targetVersion);
+            } catch (Exception e) {
+                log.error("Skill 文件版本同步失败: skillName={}, version={}", skillName, targetVersion, e);
+            }
+        });
+    }
+
+    /**
+     * 从 sandbox 中移除指定 Skill 的文件目录。
+     */
+    public void removeSkillFromSandbox(String skillName, Path skillsDir) {
+        Path skillTarget = skillsDir.resolve(skillName);
+        try {
+            if (java.nio.file.Files.exists(skillTarget)) {
+                deleteDirectory(skillTarget);
+                log.info("Skill 文件已从 sandbox 移除: skillName={}", skillName);
+            }
+        } catch (Exception e) {
+            log.error("Skill 文件移除失败: skillName={}", skillName, e);
+        }
+    }
+
+    /**
+     * 根据最新版本路径推导指定版本的路径。
+     * 路径格式：{root}/{creatorId}/{skillName}/{version}
+     */
+    private String rebuildVersionedPath(String latestStoragePath, Integer targetVersion) {
+        int lastSlash = latestStoragePath.lastIndexOf('/');
+        return latestStoragePath.substring(0, lastSlash + 1) + targetVersion;
+    }
+
+    /**
      * 收集指定 workspace 下所有 Skill 声明的环境变量。
      * 从系统环境变量中读取对应的值，供 sandbox 环境变量构建使用。
      *

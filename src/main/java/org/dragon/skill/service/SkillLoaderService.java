@@ -36,6 +36,22 @@ public interface SkillLoaderService {
     Optional<SkillRuntimeEntry> loadSkill(SkillEntity entity);
 
     /**
+     * 为指定 workspace 加载某个 Skill 的指定版本。
+     *
+     * @param skill       skill 实体
+     * @param workspaceId 目标 workspace ID
+     * @param version     要加载的版本号
+     */
+    void loadSkillForWorkspace(SkillEntity skill, Long workspaceId, int version);
+
+    /**
+     * 加载指定 workspace 的所有已圈选 Skill。
+     *
+     * @param workspaceId workspace ID
+     */
+    void loadAllForWorkspace(Long workspaceId);
+
+    /**
      * 按 Skill ID 重新加载。
      *
      * @param skillId Skill ID

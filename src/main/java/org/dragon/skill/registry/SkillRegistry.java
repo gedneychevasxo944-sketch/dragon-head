@@ -27,6 +27,30 @@ public interface SkillRegistry {
     void unregister(String skillName);
 
     /**
+     * 注册 Skill 到指定 workspace。
+     *
+     * @param workspaceId workspace ID
+     * @param runtimeEntry 运行时条目
+     */
+    void registerForWorkspace(long workspaceId, SkillRuntimeEntry runtimeEntry);
+
+    /**
+     * 从指定 workspace 注销某个 Skill。
+     *
+     * @param skillName Skill 名称
+     * @param workspaceId workspace ID
+     */
+    void unregisterForWorkspace(String skillName, long workspaceId);
+
+    /**
+     * 查询指定 workspace 下某个 Skill 的运行时条目。
+     *
+     * @param workspaceId workspace ID
+     * @param skillName Skill 名称
+     */
+    Optional<SkillRuntimeEntry> findByWorkspaceAndName(long workspaceId, String skillName);
+
+    /**
      * 按名称查找运行时条目。
      */
     Optional<SkillRuntimeEntry> findByName(String skillName);

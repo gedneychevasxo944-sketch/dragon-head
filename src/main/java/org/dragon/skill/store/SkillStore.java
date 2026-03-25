@@ -2,7 +2,6 @@ package org.dragon.skill.store;
 
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.model.SkillSource;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,11 +44,6 @@ public interface SkillStore {
     List<SkillEntity> findAll();
 
     /**
-     * 按来源查询。
-     */
-    List<SkillEntity> findBySource(SkillSource source);
-
-    /**
      * 按分类查询。
      */
     List<SkillEntity> findByCategory(SkillCategory category);
@@ -75,25 +69,7 @@ public interface SkillStore {
     List<SkillEntity> findAllEnabled();
 
     /**
-     * 查询指定工作空间下所有启用的 Skill。
-     * 同时包含内置 Skill（workspaceId=0）。
-     *
-     * @param workspaceId 工作空间 ID
-     */
-    List<SkillEntity> findAllEnabledByWorkspace(Long workspaceId);
-
-    /**
-     * 查询所有内置 Skill（workspaceId=0，启用状态）。
-     */
-    List<SkillEntity> findAllBuiltin();
-
-    /**
      * 按启用状态查询。
      */
     List<SkillEntity> findByEnabled(Boolean enabled);
-
-    /**
-     * 按工作空间 ID 查询。
-     */
-    List<SkillEntity> findByWorkspaceId(Long workspaceId);
 }

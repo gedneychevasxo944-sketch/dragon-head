@@ -35,6 +35,7 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     private final SkillStore skillStore;
     private final SkillRegistry skillRegistry;
     private final ObjectMapper objectMapper;
+    private final org.dragon.skill.store.WorkspaceSkillStore workspaceSkillStore;
 
     @Override
     public void loadAll() {
@@ -86,7 +87,6 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                     .version(entity.getVersion())
                     .name(skillName)
                     .description(entity.getSkillDescription())   // 来自数据库
-                    .source(entity.getSource())
                     .storagePath(entity.getStoragePath())        // 存储路径（替代原 filePath）
                     .content(entity.getSkillContent())           // 来自数据库
                     .build();
@@ -115,7 +115,7 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
 
             SkillRuntimeEntry runtimeEntry = SkillRuntimeEntry.builder()
                     .skillEntry(entry)
-                    .workspaceId(entity.getWorkspaceId())
+                    .workspaceId(null)  // 系统级别加载，不关联特定 workspace
                     .stateChangedAt(LocalDateTime.now())
                     .state(requiresError.isPresent() ? SkillRuntimeState.FAILED : SkillRuntimeState.ACTIVE)
                     .errorMessage(requiresError.orElse(null))
@@ -149,6 +149,84 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     public void unloadSkill(Long skillId, String skillName) {
         skillRegistry.unregister(skillName);
         log.info("Skill [{}] 已从运行时注册表注销", skillName);
+    }
+
+    @Override
+    public void loadSkillForWorkspace(SkillEntity skill, Long workspaceId, int version) {
+        log.info("为 workspace 加载 Skill: workspaceId={}, skillName={}, version={}",
+                workspaceId, skill.getName(), version);
+
+        try {
+            // 构建版本化的 storagePath
+            String basePath = skill.getStoragePath();
+            int lastSlash = basePath.lastIndexOf('/');
+            String versionedStoragePath = basePath.substring(0, lastSlash + 1) + version;
+
+            // 从数据库字段构建 SkillEntry
+            Skill skillDomain = Skill.builder()
+                    .id(skill.getId())
+                    .version(version)
+                    .name(skill.getName())
+                    .description(skill.getSkillDescription())
+                    .storagePath(versionedStoragePath)
+                    .content(skill.getSkillContent())
+                    .build();
+
+            SkillRequires requires = deserializeObject(skill.getRequiresConfig(), SkillRequires.class);
+            List<SkillInstallSpec> installSpecs = deserializeList(skill.getInstallConfig(),
+                    new TypeReference<List<SkillInstallSpec>>() {});
+
+            SkillMetadata metadata = SkillMetadata.builder()
+                    .requires(requires)
+                    .install(installSpecs)
+                    .build();
+
+            Map<String, String> frontmatter = parseFrontmatterRaw(skill.getFrontmatterRaw());
+
+            SkillEntry entry = SkillEntry.builder()
+                    .skill(skillDomain)
+                    .frontmatter(frontmatter)
+                    .metadata(metadata)
+                    .build();
+
+            Optional<String> requiresError = checkRequires(entry);
+
+            SkillRuntimeEntry runtimeEntry = SkillRuntimeEntry.builder()
+                    .skillEntry(entry)
+                    .workspaceId(workspaceId)
+                    .stateChangedAt(LocalDateTime.now())
+                    .state(requiresError.isPresent() ? SkillRuntimeState.FAILED : SkillRuntimeState.ACTIVE)
+                    .errorMessage(requiresError.orElse(null))
+                    .build();
+
+            // 注册到 workspace 分区
+            skillRegistry.registerForWorkspace(workspaceId, runtimeEntry);
+
+            log.info("Workspace Skill 加载完成: workspaceId={}, skillName={}, version={}",
+                    workspaceId, skill.getName(), version);
+
+        } catch (Exception e) {
+            log.error("Workspace Skill 加载失败: workspaceId={}, skillName={}, error={}",
+                    workspaceId, skill.getName(), e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void loadAllForWorkspace(Long workspaceId) {
+        log.info("加载 workspace 圈选的 Skill: workspaceId={}", workspaceId);
+        List<org.dragon.skill.entity.WorkspaceSkillEntity> bindings =
+                workspaceSkillStore.findAllEnabledByWorkspace(workspaceId);
+
+        log.info("加载 workspace 圈选的 Skill: workspaceId={}, count={}",
+                workspaceId, bindings.size());
+
+        for (org.dragon.skill.entity.WorkspaceSkillEntity binding : bindings) {
+            loadSkillForWorkspace(
+                    binding.getSkill(),
+                    workspaceId,
+                    binding.getPinnedVersion()
+            );
+        }
     }
 
     @Override

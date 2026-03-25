@@ -3,7 +3,6 @@ package org.dragon.skill.store;
 import io.ebean.Database;
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.model.SkillSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -74,15 +73,6 @@ public class MySqlSkillStore implements SkillStore {
     }
 
     @Override
-    public List<SkillEntity> findBySource(SkillSource source) {
-        return db.find(SkillEntity.class)
-                .where()
-                .eq("source", source.name())
-                .isNull("deletedAt")
-                .findList();
-    }
-
-    @Override
     public List<SkillEntity> findByCategory(SkillCategory category) {
         return db.find(SkillEntity.class)
                 .where()
@@ -126,43 +116,10 @@ public class MySqlSkillStore implements SkillStore {
     }
 
     @Override
-    public List<SkillEntity> findAllEnabledByWorkspace(Long workspaceId) {
-        return db.find(SkillEntity.class)
-                .where()
-                .eq("enabled", true)
-                .isNull("deletedAt")
-                .and()
-                .eq("workspaceId", workspaceId)
-                .or()
-                .eq("workspaceId", 0L)
-                .endAnd()
-                .findList();
-    }
-
-    @Override
-    public List<SkillEntity> findAllBuiltin() {
-        return db.find(SkillEntity.class)
-                .where()
-                .eq("enabled", true)
-                .eq("workspaceId", 0L)
-                .isNull("deletedAt")
-                .findList();
-    }
-
-    @Override
     public List<SkillEntity> findByEnabled(Boolean enabled) {
         return db.find(SkillEntity.class)
                 .where()
                 .eq("enabled", enabled)
-                .isNull("deletedAt")
-                .findList();
-    }
-
-    @Override
-    public List<SkillEntity> findByWorkspaceId(Long workspaceId) {
-        return db.find(SkillEntity.class)
-                .where()
-                .eq("workspaceId", workspaceId)
                 .isNull("deletedAt")
                 .findList();
     }

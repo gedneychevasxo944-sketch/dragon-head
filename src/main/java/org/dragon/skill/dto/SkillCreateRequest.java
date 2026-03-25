@@ -5,7 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.model.SkillSource;
+import org.dragon.skill.enums.SkillCreatorType;
+import org.dragon.skill.enums.SkillVisibility;
 
 import java.util.List;
 
@@ -19,9 +20,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SkillCreateRequest {
-    /** 来源，默认 WORKSPACE */
-    @Builder.Default
-    SkillSource source = SkillSource.WORKSPACE;
 
     @Builder.Default
     SkillCategory category = SkillCategory.GENERAL;
@@ -33,9 +31,19 @@ public class SkillCreateRequest {
     String description;
 
     /**
-     * 归属的工作空间 ID。
-     * WORKSPACE 来源的 Skill 必须指定（不能为 0）。
-     * BUILTIN 来源的 Skill 固定为 0，前端无需传入。
+     * 可见性，默认 PUBLIC（广场公开）。
      */
-    Long workspaceId;
+    @Builder.Default
+    SkillVisibility visibility = SkillVisibility.PUBLIC;
+
+    /**
+     * 创建人 ID（从登录上下文中获取，前端无需传入）。
+     */
+    Long creatorId;
+
+    /**
+     * 创建人类型（从登录上下文判断，前端无需传入）。
+     */
+    @Builder.Default
+    SkillCreatorType creatorType = SkillCreatorType.PERSONAL;
 }

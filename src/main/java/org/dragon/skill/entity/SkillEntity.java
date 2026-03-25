@@ -6,7 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.model.SkillSource;
+import org.dragon.skill.enums.SkillCreatorType;
+import org.dragon.skill.enums.SkillVisibility;
 
 import java.time.LocalDateTime;
 
@@ -30,10 +31,6 @@ public class SkillEntity {
 
     @Column(nullable = false, length = 128, unique = true)
     private String name;
-
-    @Column(nullable = false, length = 32)
-    @Enumerated(EnumType.STRING)
-    private SkillSource source;
 
     @Column(nullable = false, length = 64)
     @Enumerated(EnumType.STRING)
@@ -105,13 +102,29 @@ public class SkillEntity {
     Boolean enabled = true;
 
     /**
-     * 归属的工作空间 ID。
-     * 0L = 系统内置 Skill，对所有工作空间可见。
-     * 非 0 = 归属于特定工作空间，仅在该工作空间的 Agent 中加载。
+     * Skill 可见性。
+     * PUBLIC=广场公开可见；PRIVATE=仅创建人可见。
+     */
+    @Column(nullable = false, length = 16)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private SkillVisibility visibility = SkillVisibility.PUBLIC;
+
+    /**
+     * 创建人 ID（对应用户系统的 userId）。
+     * 0 表示系统/官方创建。
      */
     @Column(nullable = false)
     @Builder.Default
-    Long workspaceId = 0L;
+    private Long creatorId = 0L;
+
+    /**
+     * 创建人类型：OFFICIAL（官方）或 PERSONAL（个人）。
+     */
+    @Column(nullable = false, length = 16)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private SkillCreatorType creatorType = SkillCreatorType.OFFICIAL;
 
     @Column(nullable = false)
     @Builder.Default

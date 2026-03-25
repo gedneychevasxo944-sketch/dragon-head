@@ -11,7 +11,6 @@ import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.event.SkillEventPublisher;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillValidationException;
-import org.dragon.skill.model.SkillSource;
 import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.storage.SkillStorageBackend;
@@ -64,14 +63,11 @@ public class SkillManageServiceImpl implements SkillManageService {
         int version = 1;
 
         // 步骤5：上传文件到存储后端
-        long workspaceId = request.getWorkspaceId() != null ? request.getWorkspaceId() : 0L;
-        if (request.getSource() == SkillSource.WORKSPACE && workspaceId == 0L) {
-            throw new SkillValidationException("WORKSPACE 来源的 Skill 必须指定有效的 workspaceId");
-        }
+        long creatorId = request.getCreatorId() != null ? request.getCreatorId() : 0L;
         String storagePath;
         try {
             storagePath = storageBackend.store(
-                    workspaceId, skillName, version, file.getInputStream());
+                    creatorId, skillName, version, file.getInputStream());
         } catch (java.io.IOException e) {
             throw new SkillValidationException("文件存储失败: " + e.getMessage(), e);
         }
@@ -79,7 +75,6 @@ public class SkillManageServiceImpl implements SkillManageService {
         // 步骤6：将解析结果持久化到数据库
         SkillEntity entity = SkillEntity.builder()
                 .name(skillName)
-                .source(request.getSource())
                 .category(request.getCategory())
                 .version(version)
                 .tags(serializeTags(request.getTags()))
@@ -92,7 +87,9 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .installConfig(serializeObject(parseResult.getInstallSpecs()))
                 .frontmatterRaw(parseResult.getFrontmatterRaw())
                 .enabled(true)
-                .workspaceId(workspaceId)
+                .visibility(request.getVisibility())
+                .creatorId(creatorId)
+                .creatorType(request.getCreatorType())
                 .build();
 
         entity = skillStore.save(entity);
@@ -133,11 +130,11 @@ public class SkillManageServiceImpl implements SkillManageService {
             int newVersion = entity.getVersion() + 1;
 
             // 上传新版本到存储后端（新版本独立目录，旧版本删除）
-            long workspaceId = entity.getWorkspaceId();
+            long creatorId = entity.getCreatorId();
             String newStoragePath;
             try {
                 newStoragePath = storageBackend.store(
-                        workspaceId, entity.getName(), newVersion, file.getInputStream());
+                        creatorId, entity.getName(), newVersion, file.getInputStream());
             } catch (java.io.IOException e) {
                 throw new SkillValidationException("文件存储失败: " + e.getMessage(), e);
             }
@@ -214,14 +211,14 @@ public class SkillManageServiceImpl implements SkillManageService {
         entities = entities.stream()
                 .filter(e -> request.getName() == null ||
                         e.getName().toLowerCase().contains(request.getName().toLowerCase()))
-                .filter(e -> request.getSource() == null || e.getSource() == request.getSource())
                 .filter(e -> request.getCategory() == null || e.getCategory() == request.getCategory())
+                .filter(e -> request.getVisibility() == null || e.getVisibility() == request.getVisibility())
+                .filter(e -> request.getCreatorType() == null || e.getCreatorType() == request.getCreatorType())
+                .filter(e -> request.getCreatorId() == null || e.getCreatorId().equals(request.getCreatorId()))
                 .filter(e -> request.getEnabled() == null ||
                         Objects.equals(e.getEnabled(), request.getEnabled()))
                 .filter(e -> request.getTag() == null ||
                         (e.getTags() != null && e.getTags().contains(request.getTag())))
-                .filter(e -> request.getWorkspaceId() == null ||
-                        e.getWorkspaceId().equals(request.getWorkspaceId()))
                 .collect(Collectors.toList());
 
         // 分页
@@ -355,7 +352,6 @@ public class SkillManageServiceImpl implements SkillManageService {
         SkillResponse response = SkillResponse.builder()
                 .id(entity.getId())
                 .name(entity.getName())
-                .source(entity.getSource())
                 .category(entity.getCategory())
                 .version(entity.getVersion())
                 .tags(deserializeTags(entity.getTags()))
@@ -364,7 +360,9 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .skillDescription(entity.getSkillDescription())
                 .skillContent(entity.getSkillContent())
                 .enabled(entity.getEnabled())
-                .workspaceId(entity.getWorkspaceId())
+                .visibility(entity.getVisibility())
+                .creatorId(entity.getCreatorId())
+                .creatorType(entity.getCreatorType())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

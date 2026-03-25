@@ -10,6 +10,11 @@ import java.time.LocalDateTime;
  * Skill 变更事件。
  * 当 Skill 发生变更（创建、更新、删除、禁用、激活）时发布此事件。
  *
+ * 注意：Skill 是公共资源，不归属任何 workspace。
+ * 此事件只标识"哪个 skill 发生了变更"，不包含 workspace 信息。
+ * 由 SkillChangeListener 查询 workspace_skill 关联表确定影响范围后，
+ * 再发布 WorkspaceSkillChangedEvent。
+ *
  * @since 1.0
  */
 @Getter
@@ -39,9 +44,6 @@ public class SkillChangedEvent extends ApplicationEvent {
     /** Skill 名称 */
     private final String skillName;
 
-    /** 归属的 workspace ID */
-    private final Long workspaceId;
-
     /** 变更类型 */
     private final ChangeType changeType;
 
@@ -51,12 +53,11 @@ public class SkillChangedEvent extends ApplicationEvent {
     /** 事件发生时间 */
     private final LocalDateTime occurredAt;
 
-    public SkillChangedEvent(Object source, Long skillId, String skillName, Long workspaceId,
-                              ChangeType changeType, Integer version) {
+    public SkillChangedEvent(Object source, Long skillId, String skillName,
+                             ChangeType changeType, Integer version) {
         super(source);
         this.skillId = skillId;
         this.skillName = skillName;
-        this.workspaceId = workspaceId;
         this.changeType = changeType;
         this.version = version;
         this.occurredAt = LocalDateTime.now();
@@ -70,7 +71,6 @@ public class SkillChangedEvent extends ApplicationEvent {
                 source,
                 entity.getId(),
                 entity.getName(),
-                entity.getWorkspaceId(),
                 changeType,
                 entity.getVersion()
         );
