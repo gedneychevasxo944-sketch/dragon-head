@@ -6,6 +6,7 @@ import org.dragon.skill.dto.SkillCreateRequest;
 import org.dragon.skill.dto.SkillQueryRequest;
 import org.dragon.skill.dto.SkillResponse;
 import org.dragon.skill.dto.SkillUpdateRequest;
+import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.service.SkillManageService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -88,10 +89,10 @@ public class SkillController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "获取所有 Skill 生命周期状态快照")
-    @GetMapping("/lifecycle")
-    public ResponseEntity<Map<String, String>> getLifecycleSnapshot() {
-        return ResponseEntity.ok(skillManageService.getLifecycleSnapshot());
+    @Operation(summary = "获取所有 Skill 运行时状态快照")
+    @GetMapping("/runtime-state")
+    public ResponseEntity<Map<String, SkillRuntimeState>> getRuntimeStateSnapshot() {
+        return ResponseEntity.ok(skillManageService.getRuntimeStateSnapshot());
     }
 
     @Operation(summary = "重试所有 FAILED 状态的 Skill")
@@ -110,7 +111,8 @@ public class SkillController {
 
     @Operation(summary = "获取当前 System Prompt Fragment")
     @GetMapping("/system-prompt")
-    public ResponseEntity<String> getSystemPromptFragment() {
-        return ResponseEntity.ok(skillManageService.getSystemPromptFragment());
+    public ResponseEntity<String> getSystemPromptFragment(
+            @RequestParam(defaultValue = "0") long workspaceId) {
+        return ResponseEntity.ok(skillManageService.getSystemPromptFragment(workspaceId));
     }
 }

@@ -49,4 +49,19 @@ public class SkillEventPublisher {
                 entity.getId(), entity.getName(), changeType, entity.getVersion());
         eventPublisher.publishEvent(event);
     }
+
+    /**
+     * 发布 workspace 维度的 skill 变更事件。
+     * 由 SkillChangeListener 在确定影响范围后调用。
+     */
+    public void publishWorkspaceSkillChanged(Long workspaceId, Long skillId,
+                                              String skillName,
+                                              WorkspaceSkillChangedEvent.ActionType actionType,
+                                              Integer targetVersion) {
+        WorkspaceSkillChangedEvent event = new WorkspaceSkillChangedEvent(
+                this, workspaceId, skillId, skillName, actionType, targetVersion);
+        log.info("发布 WorkspaceSkill 变更事件: workspaceId={}, skillName={}, action={}",
+                workspaceId, skillName, actionType);
+        eventPublisher.publishEvent(event);
+    }
 }

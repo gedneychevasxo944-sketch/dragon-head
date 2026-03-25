@@ -2,8 +2,6 @@ package org.dragon.skill.store;
 
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillLifecycleState;
-import org.dragon.skill.model.SkillSource;
 
 import java.util.List;
 import java.util.Optional;
@@ -46,19 +44,9 @@ public interface SkillStore {
     List<SkillEntity> findAll();
 
     /**
-     * 按来源查询。
-     */
-    List<SkillEntity> findBySource(SkillSource source);
-
-    /**
      * 按分类查询。
      */
     List<SkillEntity> findByCategory(SkillCategory category);
-
-    /**
-     * 按生命周期状态查询。
-     */
-    List<SkillEntity> findByLifecycleState(SkillLifecycleState state);
 
     /**
      * 检查名称是否已存在（排除软删除）。
@@ -71,12 +59,17 @@ public interface SkillStore {
     boolean existsByNameExcludeId(String name, Long excludeId);
 
     /**
-     * 更新生命周期状态。
-     */
-    void updateLifecycleState(Long id, SkillLifecycleState state, String error);
-
-    /**
      * 软删除。
      */
     void softDelete(Long id);
+
+    /**
+     * 查询所有启用的 Skill（全量加载，用于系统启动）。
+     */
+    List<SkillEntity> findAllEnabled();
+
+    /**
+     * 按启用状态查询。
+     */
+    List<SkillEntity> findByEnabled(Boolean enabled);
 }

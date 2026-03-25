@@ -1,5 +1,7 @@
 package org.dragon.skill.validator;
 
+import lombok.Builder;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.skill.exception.SkillValidationException;
 import org.springframework.stereotype.Component;
@@ -25,12 +27,25 @@ public class SkillZipValidator {
     private static final long MAX_ZIP_SIZE = 50 * 1024 * 1024; // 50MB
 
     /**
-     * 校验 ZIP 包并提取 frontmatter 中的 name。
+     * ZIP 校验结果封装。
+     */
+    @Data
+    @Builder
+    public static class ZipValidationResult {
+        /** 校验通过后提取的 skill name */
+        private String skillName;
+        /** SKILL.md 完整原始内容（供后续解析使用，避免重复读取 ZIP） */
+        private String skillMdRawContent;
+    }
+
+    /**
+     * 校验 ZIP 包并提取 SKILL.md 原始内容。
+     * 将校验和内容提取合并为一次 ZIP 读取，避免重复 IO。
      *
      * @param file 上传的 ZIP 文件
-     * @return 校验通过后提取的 skill name
+     * @return 校验结果（包含 skillName 和 SKILL.md 原始内容）
      */
-    public String validateAndExtractName(MultipartFile file) {
+    public ZipValidationResult validateAndExtract(MultipartFile file) {
         // 1. 基础校验
         if (file == null || file.isEmpty()) {
             throw new SkillValidationException("上传文件不能为空");
@@ -54,7 +69,21 @@ public class SkillZipValidator {
         String skillName = validateFrontmatter(skillMdContent, zipBaseName);
 
         log.info("ZIP 包校验通过，skill name: {}, zip 文件: {}", skillName, originalFilename);
-        return skillName;
+
+        return ZipValidationResult.builder()
+                .skillName(skillName)
+                .skillMdRawContent(skillMdContent)
+                .build();
+    }
+
+    /**
+     * 校验 ZIP 包并提取 frontmatter 中的 name（兼容旧接口）。
+     *
+     * @param file 上传的 ZIP 文件
+     * @return 校验通过后提取的 skill name
+     */
+    public String validateAndExtractName(MultipartFile file) {
+        return validateAndExtract(file).getSkillName();
     }
 
     /**

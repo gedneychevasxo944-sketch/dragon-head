@@ -1,6 +1,9 @@
 package org.dragon.skill.model;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -10,7 +13,10 @@ import java.util.List;
  *
  * @since 1.0
  */
-@Value
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SkillMetadata {
     /** 是否始终激活（忽略依赖检查） */
     Boolean always;

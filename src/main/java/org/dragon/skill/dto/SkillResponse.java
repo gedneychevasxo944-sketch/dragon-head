@@ -5,8 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillLifecycleState;
-import org.dragon.skill.model.SkillSource;
+import org.dragon.skill.enums.SkillCreatorType;
+import org.dragon.skill.enums.SkillVisibility;
+import org.dragon.skill.registry.SkillRuntimeState;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,14 +24,42 @@ import java.util.List;
 public class SkillResponse {
     private Long id;
     private String name;
-    private SkillSource source;
     private SkillCategory category;
     private Integer version;
     private List<String> tags;
     private String description;
-    private String skillDir;
-    private SkillLifecycleState lifecycleState;
-    private String loadError;
+
+    /**
+     * 存储后端路径标识。
+     */
+    private String storagePath;
+
+    /**
+     * 来自 SKILL.md frontmatter 的 description。
+     */
+    private String skillDescription;
+
+    /**
+     * SKILL.md frontmatter 之后的正文内容。
+     */
+    private String skillContent;
+
+    /** 广场相关字段 */
+    private SkillVisibility visibility;
+    private Long creatorId;
+    private SkillCreatorType creatorType;
+
+    private Boolean enabled;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * 运行时状态（来自 SkillRegistry，非数据库字段）。
+     */
+    private SkillRuntimeState runtimeState;
+
+    /**
+     * 运行时错误信息（来自 SkillRegistry，非数据库字段）。
+     */
+    private String runtimeError;
 }

@@ -1,6 +1,9 @@
 package org.dragon.skill.model;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
@@ -9,7 +12,10 @@ import java.util.Map;
  *
  * @since 1.0
  */
-@Value
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SkillEntry {
     Skill skill;
     Map<String, String> frontmatter;

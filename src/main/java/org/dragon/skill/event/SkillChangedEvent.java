@@ -2,7 +2,6 @@ package org.dragon.skill.event;
 
 import lombok.Getter;
 import org.dragon.skill.entity.SkillEntity;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.springframework.context.ApplicationEvent;
 
 import java.time.LocalDateTime;
@@ -10,6 +9,11 @@ import java.time.LocalDateTime;
 /**
  * Skill 变更事件。
  * 当 Skill 发生变更（创建、更新、删除、禁用、激活）时发布此事件。
+ *
+ * 注意：Skill 是公共资源，不归属任何 workspace。
+ * 此事件只标识"哪个 skill 发生了变更"，不包含 workspace 信息。
+ * 由 SkillChangeListener 查询 workspace_skill 关联表确定影响范围后，
+ * 再发布 WorkspaceSkillChangedEvent。
  *
  * @since 1.0
  */
@@ -46,21 +50,16 @@ public class SkillChangedEvent extends ApplicationEvent {
     /** 变更后的版本号 */
     private final Integer version;
 
-    /** 变更后的生命周期状态 */
-    private final SkillLifecycleState lifecycleState;
-
     /** 事件发生时间 */
     private final LocalDateTime occurredAt;
 
     public SkillChangedEvent(Object source, Long skillId, String skillName,
-                              ChangeType changeType, Integer version,
-                              SkillLifecycleState lifecycleState) {
+                             ChangeType changeType, Integer version) {
         super(source);
         this.skillId = skillId;
         this.skillName = skillName;
         this.changeType = changeType;
         this.version = version;
-        this.lifecycleState = lifecycleState;
         this.occurredAt = LocalDateTime.now();
     }
 
@@ -73,8 +72,7 @@ public class SkillChangedEvent extends ApplicationEvent {
                 entity.getId(),
                 entity.getName(),
                 changeType,
-                entity.getVersion(),
-                entity.getLifecycleState()
+                entity.getVersion()
         );
     }
 }
