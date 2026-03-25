@@ -44,18 +44,18 @@ public class MemorySearchManagerBasedMemoryAccess implements MemoryAccess {
     public List<Memory> semanticSearch(String query, int topK) {
         SearchOptions searchOptions = new SearchOptions();
         searchOptions.setMaxResults(topK);
-        MemorySearchResult searchResult = memorySearchManager.search(query, searchOptions);
+        List<MemorySearchResult> searchResults = memorySearchManager.search(query, searchOptions);
 
         // 将 MemorySearchResult 转换为 Memory 对象
         // 这里只是一个简单的转换实现，实际项目中可能需要更复杂的映射
-        return Collections.singletonList(
-                Memory.builder()
-                        .id("dummy-memory-id")
+        return searchResults.stream()
+                .map(result -> Memory.builder()
+                        .id("dummy-memory-id-" + result.getPath())
                         .type(Memory.MemoryType.SYSTEM)
-                        .content(searchResult.getSnippet())
+                        .content(result.getSnippet())
                         .timestamp(LocalDateTime.now())
-                        .build()
-        );
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @Override

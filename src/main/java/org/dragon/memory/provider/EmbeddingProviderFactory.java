@@ -10,6 +10,12 @@ public class EmbeddingProviderFactory {
 
     private final Map<String, EmbeddingProvider> providerCache = new HashMap<>();
 
+    public static EmbeddingProvider create(String providerName, String model) {
+        // 简单实现：目前只支持 dummy 提供者
+        // 实际应用中需要根据 providerName 和 model 创建不同的提供者
+        return new DummyEmbeddingProvider();
+    }
+
     public EmbeddingProvider getProvider(String providerName, String model) {
         String cacheKey = providerName + ":" + model;
         if (providerCache.containsKey(cacheKey)) {

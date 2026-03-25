@@ -8,6 +8,10 @@ import org.dragon.memory.models.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MemoryIndexManager implements MemorySearchManager {
 
@@ -16,6 +20,8 @@ public class MemoryIndexManager implements MemorySearchManager {
     private final MemorySyncCoordinator syncCoordinator;
     private final MemoryEmbeddingIndexer embeddingIndexer;
     private final SessionTranscriptAdapter sessionTranscriptAdapter;
+    private final MemorySchemaManager schemaManager;
+    private final ExecutorService executorService;
 
     public MemoryIndexManager(ResolvedMemorySearchConfig searchConfig) {
         this.searchConfig = searchConfig;
@@ -23,11 +29,32 @@ public class MemoryIndexManager implements MemorySearchManager {
         this.syncCoordinator = new MemorySyncCoordinator(searchConfig);
         this.embeddingIndexer = new MemoryEmbeddingIndexer(searchConfig);
         this.sessionTranscriptAdapter = new SessionTranscriptAdapter();
+        this.schemaManager = new MemorySchemaManager(searchConfig);
+        this.executorService = Executors.newFixedThreadPool(2); // 用于异步预热和同步
+
+        // 初始化数据库 schema
+        schemaManager.createTables();
     }
 
     @Override
-    public MemorySearchResult search(String query, SearchOptions opts) {
-        return queryEngine.search(query, opts);
+    public List<MemorySearchResult> search(String query, SearchOptions opts) {
+        String trimmedQuery = query.trim();
+        if (trimmedQuery.isEmpty()) {
+            return List.of();
+        }
+
+        // 若配置开启 onSessionStart，异步触发会话预热
+        if (searchConfig.isOnSessionStartEnabled()) {
+            executorService.submit(() -> warmSession(opts.getSessionKey()));
+        }
+
+        // 若配置 sync.onSearch=true 且有脏标记，异步触发同步
+        if (searchConfig.isSyncOnSearchEnabled() && (hasDirtyFiles() || hasDirtySessions())) {
+            executorService.submit(() -> sync(new SyncRequest().withReason("search")));
+        }
+
+        // 执行搜索（不阻塞）
+        return queryEngine.search(trimmedQuery, opts);
     }
 
     @Override
@@ -62,7 +89,10 @@ public class MemoryIndexManager implements MemorySearchManager {
         status.setProvider(searchConfig.getProvider());
         status.setModel(searchConfig.getModel());
         status.setRequestedProvider(searchConfig.getFallback());
-        // TODO: 补充其他状态信息
+        status.setDirty(hasDirtyFiles());
+        status.setSessionsDirty(hasDirtySessions());
+        status.setProviderUnavailableReason(getProviderUnavailableReason());
+        status.setFallbackReason(getFallbackReason());
         return status;
     }
 
@@ -74,7 +104,6 @@ public class MemoryIndexManager implements MemorySearchManager {
     @Override
     public MemoryEmbeddingProbeResult probeEmbeddingAvailability() {
         try {
-            // 简单实现：检查 embedding provider 是否可用
             if (searchConfig.getProvider() == null || searchConfig.getProvider().isEmpty()) {
                 return new MemoryEmbeddingProbeResult(false, "No embedding provider configured");
             }
@@ -90,7 +119,41 @@ public class MemoryIndexManager implements MemorySearchManager {
     }
 
     @Override
+    public void warmSession(String sessionKey) {
+        if (sessionKey == null || sessionKey.isEmpty()) {
+            return;
+        }
+        // 异步触发会话预热
+        executorService.submit(() -> syncCoordinator.warmSession(sessionKey));
+    }
+
+    @Override
     public void close() {
-        // TODO: 关闭资源
+        try {
+            executorService.shutdown();
+            // 清理资源
+        } catch (Exception e) {
+            System.err.println("Error closing MemoryIndexManager: " + e.getMessage());
+        }
+    }
+
+    // 内部状态检查方法
+    private boolean hasDirtyFiles() {
+        return syncCoordinator.hasDirtyFiles();
+    }
+
+    private boolean hasDirtySessions() {
+        return syncCoordinator.hasDirtySessions();
+    }
+
+    private String getProviderUnavailableReason() {
+        if (searchConfig.getProvider() == null || searchConfig.getProvider().isEmpty()) {
+            return "No embedding provider configured";
+        }
+        return null;
+    }
+
+    private String getFallbackReason() {
+        return null; // TODO: 实现 fallback 原因判断
     }
 }

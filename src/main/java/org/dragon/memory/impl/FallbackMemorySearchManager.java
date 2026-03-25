@@ -3,6 +3,8 @@ package org.dragon.memory.impl;
 import org.dragon.memory.MemorySearchManager;
 import org.dragon.memory.models.*;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class FallbackMemorySearchManager implements MemorySearchManager {
@@ -20,7 +22,7 @@ public class FallbackMemorySearchManager implements MemorySearchManager {
     }
 
     @Override
-    public MemorySearchResult search(String query, SearchOptions opts) {
+    public List<MemorySearchResult> search(String query, SearchOptions opts) {
         if (!primaryFailed) {
             try {
                 return primary.search(query, opts);
@@ -113,6 +115,21 @@ public class FallbackMemorySearchManager implements MemorySearchManager {
             }
         }
         return fallback.probeVectorAvailability();
+    }
+
+    @Override
+    public void warmSession(String sessionKey) {
+        if (!primaryFailed) {
+            try {
+                primary.warmSession(sessionKey);
+                return;
+            } catch (Exception e) {
+                primaryFailed = true;
+                failureReason = e.getMessage();
+                System.err.println("Primary warmSession failed, falling back: " + failureReason);
+            }
+        }
+        fallback.warmSession(sessionKey);
     }
 
     @Override

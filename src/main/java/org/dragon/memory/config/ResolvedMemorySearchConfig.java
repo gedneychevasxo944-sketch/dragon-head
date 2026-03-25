@@ -12,6 +12,7 @@ public class ResolvedMemorySearchConfig {
     private String fallback;
     private String storePath;
     private boolean storeVectorEnabled;
+    private boolean ftsEnabled; // 添加 FTS 启用标志
     private int chunkingTokens;
     private int chunkingOverlap;
     private boolean syncOnSearch;
@@ -29,6 +30,7 @@ public class ResolvedMemorySearchConfig {
     private List<String> qmdSessions;
     private boolean qmdUpdate;
     private boolean qmdMcporter;
+    private boolean onSessionStartEnabled; // 添加会话启动时的同步标志
 
     public ResolvedMemorySearchConfig() {
     }
@@ -224,5 +226,39 @@ public class ResolvedMemorySearchConfig {
 
     public void setQmdMcporter(boolean qmdMcporter) {
         this.qmdMcporter = qmdMcporter;
+    }
+
+    // 新增属性的 getters 和 setters
+    public boolean isFtsEnabled() {
+        return ftsEnabled;
+    }
+
+    public void setFtsEnabled(boolean ftsEnabled) {
+        this.ftsEnabled = ftsEnabled;
+    }
+
+    public boolean isOnSessionStartEnabled() {
+        return onSessionStartEnabled;
+    }
+
+    public void setOnSessionStartEnabled(boolean onSessionStartEnabled) {
+        this.onSessionStartEnabled = onSessionStartEnabled;
+    }
+
+    // 便捷方法
+    public double getMinScore() {
+        return queryMinScore;
+    }
+
+    public int getMaxResults() {
+        return queryMaxResults;
+    }
+
+    public boolean isSyncOnSearchEnabled() {
+        return syncOnSearch;
+    }
+
+    public void setSyncOnSearchEnabled(boolean syncOnSearchEnabled) {
+        this.syncOnSearch = syncOnSearchEnabled;
     }
 }

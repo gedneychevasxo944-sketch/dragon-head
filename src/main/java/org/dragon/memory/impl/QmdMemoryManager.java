@@ -5,6 +5,8 @@ import org.dragon.memory.config.ResolvedMemorySearchConfig;
 import org.dragon.memory.models.*;
 import org.dragon.memory.qmd.*;
 
+import java.util.List;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -32,25 +34,27 @@ public class QmdMemoryManager implements MemorySearchManager {
     }
 
     @Override
-    public MemorySearchResult search(String query, SearchOptions opts) {
+    public List<MemorySearchResult> search(String query, SearchOptions opts) {
         String[] searchArgs = {"search", query};
         String searchOutput = qmdCliClient.executeCommand("qmd", searchArgs);
         return parseSearchResult(searchOutput);
     }
 
-    private MemorySearchResult parseSearchResult(String output) {
-        MemorySearchResult result = new MemorySearchResult();
+    private List<MemorySearchResult> parseSearchResult(String output) {
+        List<MemorySearchResult> results = new java.util.ArrayList<>();
         // 简单实现：解析 qmd 搜索输出并转换为 MemorySearchResult
         // 实际应用中需要根据 qmd 的输出格式进行更详细的解析
         if (!output.isEmpty()) {
             String[] lines = output.split("\n");
             if (lines.length > 0) {
+                MemorySearchResult result = new MemorySearchResult();
                 result.setSnippet(lines[0]);
                 result.setPath("dummy/path.md");
                 result.setScore(0.9);
+                results.add(result);
             }
         }
-        return result;
+        return results;
     }
 
     @Override
@@ -110,6 +114,14 @@ public class QmdMemoryManager implements MemorySearchManager {
     @Override
     public boolean probeVectorAvailability() {
         return searchConfig.isStoreVectorEnabled();
+    }
+
+    @Override
+    public void warmSession(String sessionKey) {
+        // 简单实现：异步触发会话同步
+        new Thread(() -> {
+            qmdUpdateCoordinator.sync(SyncRequest.targetedSessionSync(sessionKey));
+        }).start();
     }
 
     @Override

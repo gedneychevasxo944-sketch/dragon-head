@@ -6,6 +6,7 @@ public class MemorySyncProgressUpdate {
     private int processedFiles;
     private int totalChunks;
     private int processedChunks;
+    private int queuedFiles;
     private String currentFile;
     private String status;
     private String error;
@@ -44,6 +45,14 @@ public class MemorySyncProgressUpdate {
 
     public void setProcessedChunks(int processedChunks) {
         this.processedChunks = processedChunks;
+    }
+
+    public int getQueuedFiles() {
+        return queuedFiles;
+    }
+
+    public void setQueuedFiles(int queuedFiles) {
+        this.queuedFiles = queuedFiles;
     }
 
     public String getCurrentFile() {

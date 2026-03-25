@@ -12,8 +12,12 @@ public class MemoryProviderStatus {
     private int files;
     private int chunks;
     private boolean dirty;
+    private boolean sessionsDirty;
     private String workspaceDir;
     private String dbPath;
+
+    private String providerUnavailableReason;
+    private String fallbackReason;
 
     private Map<String, Object> cache;
     private Map<String, Object> fts;
@@ -142,5 +146,30 @@ public class MemoryProviderStatus {
 
     public void setCustom(Map<String, Object> custom) {
         this.custom = custom;
+    }
+
+    // 新增属性的 getters 和 setters
+    public boolean isSessionsDirty() {
+        return sessionsDirty;
+    }
+
+    public void setSessionsDirty(boolean sessionsDirty) {
+        this.sessionsDirty = sessionsDirty;
+    }
+
+    public String getProviderUnavailableReason() {
+        return providerUnavailableReason;
+    }
+
+    public void setProviderUnavailableReason(String providerUnavailableReason) {
+        this.providerUnavailableReason = providerUnavailableReason;
+    }
+
+    public String getFallbackReason() {
+        return fallbackReason;
+    }
+
+    public void setFallbackReason(String fallbackReason) {
+        this.fallbackReason = fallbackReason;
     }
 }
