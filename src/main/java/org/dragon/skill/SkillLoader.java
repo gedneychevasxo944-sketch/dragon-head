@@ -14,6 +14,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.dragon.config.config.ConfigProperties;
+import org.dragon.skill.model.Skill;
+import org.dragon.skill.model.SkillEntry;
+import org.dragon.skill.model.SkillInvocationPolicy;
+import org.dragon.skill.model.SkillMetadata;
+import org.dragon.skill.model.SkillSnapshot;
+import org.dragon.skill.model.SkillSource;
+import org.dragon.skill.model.SkillSummary;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,12 +51,12 @@ public class SkillLoader {
      * @param source 这些技能的来源
      * @return 已加载的技能列表（绝不为 null）
      */
-    public static List<SkillTypes.Skill> loadSkillsFromDir(Path dir, SkillTypes.SkillSource source) {
+    public static List<Skill> loadSkillsFromDir(Path dir, SkillSource source) {
         if (dir == null || !Files.isDirectory(dir)) {
             return Collections.emptyList();
         }
 
-        List<SkillTypes.Skill> skills = new ArrayList<>();
+        List<Skill> skills = new ArrayList<>();
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path child : stream) {
@@ -67,13 +74,14 @@ public class SkillLoader {
                     String description = frontmatter.getOrDefault("description", "");
                     String body = SkillFrontmatterParser.extractBody(content);
 
-                    skills.add(new SkillTypes.Skill(
-                            name,
-                            description,
-                            source,
-                            skillFile.toAbsolutePath().toString(),
-                            child.toAbsolutePath().toString(),
-                            body));
+                    skills.add(Skill.builder()
+                            .name(name)
+                            .description(description)
+                            .source(source)
+                            .filePath(skillFile.toAbsolutePath().toString())
+                            .baseDir(child.toAbsolutePath().toString())
+                            .content(body)
+                            .build());
                 } catch (IOException e) {
                     log.warn("读取技能文件失败 {}: {}", skillFile, e.getMessage());
                 }
@@ -83,7 +91,7 @@ public class SkillLoader {
         }
 
         // 按名称排序以保证确定性顺序
-        skills.sort(Comparator.comparing(SkillTypes.Skill::getName));
+        skills.sort(Comparator.comparing(Skill::getName));
         return skills;
     }
 
@@ -99,27 +107,27 @@ public class SkillLoader {
      * @param managedSkillsDir 可选的托管技能路径
      * @return 聚合的技能条目列表
      */
-    public static List<SkillTypes.SkillEntry> loadSkillEntries(
+    public static List<SkillEntry> loadSkillEntries(
             String workspaceDir,
             String bundledSkillsDir,
             String managedSkillsDir) {
 
-        List<SkillTypes.SkillEntry> entries = new ArrayList<>();
+        List<SkillEntry> entries = new ArrayList<>();
 
         // 1. 内置技能
         if (bundledSkillsDir != null) {
-            loadAndAppend(entries, Paths.get(bundledSkillsDir), SkillTypes.SkillSource.BUNDLED);
+            loadAndAppend(entries, Paths.get(bundledSkillsDir), SkillSource.BUNDLED);
         }
 
         // 2. 托管技能
         if (managedSkillsDir != null) {
-            loadAndAppend(entries, Paths.get(managedSkillsDir), SkillTypes.SkillSource.MANAGED);
+            loadAndAppend(entries, Paths.get(managedSkillsDir), SkillSource.MANAGED);
         }
 
         // 3. 工作区技能
         if (workspaceDir != null) {
             Path wsSkills = Paths.get(workspaceDir, WORKSPACE_SKILLS_DIR);
-            loadAndAppend(entries, wsSkills, SkillTypes.SkillSource.WORKSPACE);
+            loadAndAppend(entries, wsSkills, SkillSource.WORKSPACE);
         }
 
         return entries;
@@ -128,18 +136,18 @@ public class SkillLoader {
     /**
      * 便捷重载：仅使用工作区目录加载。
      */
-    public static List<SkillTypes.SkillEntry> loadSkillEntries(String workspaceDir) {
+    public static List<SkillEntry> loadSkillEntries(String workspaceDir) {
         return loadSkillEntries(workspaceDir, null, null);
     }
 
-    private static void loadAndAppend(List<SkillTypes.SkillEntry> entries, Path dir, SkillTypes.SkillSource source) {
-        List<SkillTypes.Skill> skills = loadSkillsFromDir(dir, source);
-        for (SkillTypes.Skill skill : skills) {
+    private static void loadAndAppend(List<SkillEntry> entries, Path dir, SkillSource source) {
+        List<Skill> skills = loadSkillsFromDir(dir, source);
+        for (Skill skill : skills) {
             String content = readSkillContent(skill.getFilePath());
             Map<String, String> frontmatter = SkillFrontmatterParser.parseFrontmatter(content);
-            SkillTypes.SkillMetadata metadata = SkillFrontmatterParser.resolveMetadata(frontmatter);
-            SkillTypes.SkillInvocationPolicy invocation = SkillFrontmatterParser.resolveInvocationPolicy(frontmatter);
-            entries.add(new SkillTypes.SkillEntry(skill, frontmatter, metadata, invocation));
+            SkillMetadata metadata = SkillFrontmatterParser.resolveMetadata(frontmatter);
+            SkillInvocationPolicy invocation = SkillFrontmatterParser.resolveInvocationPolicy(frontmatter);
+            entries.add(new SkillEntry(skill, frontmatter, metadata, invocation));
         }
     }
 
@@ -155,8 +163,8 @@ public class SkillLoader {
      * @param skillFilter 可选的名称过滤器（仅包含这些名称）
      * @return 过滤后的条目
      */
-    public static List<SkillTypes.SkillEntry> filterSkillEntries(
-            List<SkillTypes.SkillEntry> entries,
+    public static List<SkillEntry> filterSkillEntries(
+            List<SkillEntry> entries,
             ConfigProperties config,
             List<String> skillFilter) {
 
@@ -175,7 +183,7 @@ public class SkillLoader {
                     }
 
                     // 操作系统过滤
-                    SkillTypes.SkillMetadata meta = entry.getMetadata();
+                    SkillMetadata meta = entry.getMetadata();
                     if (meta != null && meta.getOs() != null && !meta.getOs().isEmpty()) {
                         boolean osMatch = meta.getOs().stream().anyMatch(os -> osName.contains(os.toLowerCase()));
                         if (!osMatch) {
@@ -193,8 +201,8 @@ public class SkillLoader {
     /**
      * 不使用名称过滤器的过滤。
      */
-    public static List<SkillTypes.SkillEntry> filterSkillEntries(
-            List<SkillTypes.SkillEntry> entries, ConfigProperties config) {
+    public static List<SkillEntry> filterSkillEntries(
+            List<SkillEntry> entries, ConfigProperties config) {
         return filterSkillEntries(entries, config, null);
     }
 
@@ -208,13 +216,13 @@ public class SkillLoader {
      * @param entries 过滤后的技能条目
      * @return 格式化后的技能提示词
      */
-    public static String buildSkillsPrompt(List<SkillTypes.SkillEntry> entries) {
+    public static String buildSkillsPrompt(List<SkillEntry> entries) {
         if (entries == null || entries.isEmpty())
             return "";
 
         StringBuilder sb = new StringBuilder();
-        for (SkillTypes.SkillEntry entry : entries) {
-            SkillTypes.Skill skill = entry.getSkill();
+        for (SkillEntry entry : entries) {
+            Skill skill = entry.getSkill();
             String content = skill.getContent();
 
             if (content == null || content.trim().isEmpty())
@@ -231,15 +239,15 @@ public class SkillLoader {
     /**
      * 构建用于缓存的技能快照。
      */
-    public static SkillTypes.SkillSnapshot buildSkillSnapshot(List<SkillTypes.SkillEntry> entries) {
+    public static SkillSnapshot buildSkillSnapshot(List<SkillEntry> entries) {
         String prompt = buildSkillsPrompt(entries);
-        List<SkillTypes.SkillSummary> summaries = entries.stream()
-                .map(e -> new SkillTypes.SkillSummary(
+        List<SkillSummary> summaries = entries.stream()
+                .map(e -> new SkillSummary(
                         e.getSkill().getName(),
                         e.getMetadata() != null ? e.getMetadata().getPrimaryEnv() : null))
                 .collect(Collectors.toList());
-        List<SkillTypes.Skill> resolvedSkills = entries.stream().map(SkillTypes.SkillEntry::getSkill).collect(Collectors.toList());
-        return new SkillTypes.SkillSnapshot(prompt, summaries, resolvedSkills, 1);
+        List<Skill> resolvedSkills = entries.stream().map(SkillEntry::getSkill).collect(Collectors.toList());
+        return new SkillSnapshot(prompt, summaries, resolvedSkills, 1);
     }
 
     // =========================================================================
@@ -256,8 +264,8 @@ public class SkillLoader {
      */
     public static String resolveSkillsPromptForRun(
             String workspaceDir, ConfigProperties config) {
-        List<SkillTypes.SkillEntry> entries = loadSkillEntries(workspaceDir);
-        List<SkillTypes.SkillEntry> filtered = filterSkillEntries(entries, config);
+        List<SkillEntry> entries = loadSkillEntries(workspaceDir);
+        List<SkillEntry> filtered = filterSkillEntries(entries, config);
         return buildSkillsPrompt(filtered);
     }
 

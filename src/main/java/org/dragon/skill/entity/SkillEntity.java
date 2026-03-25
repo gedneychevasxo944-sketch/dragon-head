@@ -1,0 +1,67 @@
+package org.dragon.skill.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.dragon.skill.enums.SkillCategory;
+import org.dragon.skill.enums.SkillLifecycleState;
+import org.dragon.skill.model.SkillSource;
+
+import java.time.LocalDateTime;
+
+/**
+ * Skill 数据库实体。
+ * 用于持久化管理 Skill 元数据。
+ *
+ * @since 1.0
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SkillEntity {
+
+    /** 数据库主键 ID */
+    Long id;
+
+    /** Skill 名称，全局唯一 */
+    String name;
+
+    /** 来源：BUNDLED, MANAGED, WORKSPACE, EXTRA, PLUGIN */
+    SkillSource source;
+
+    /** 分类 */
+    SkillCategory category;
+
+    /** 版本号，每次更新自动递增 */
+    @Builder.Default
+    Integer version = 1;
+
+    /** 标签列表，JSON 字符串存储 */
+    String tags;
+
+    /** 管理页面填写的简介 */
+    String description;
+
+    /** Skill 文件存放目录（绝对路径） */
+    String skillDir;
+
+    /** 运行时生命周期状态 */
+    @Builder.Default
+    SkillLifecycleState lifecycleState = SkillLifecycleState.UNLOADED;
+
+    /** 加载失败时的错误信息 */
+    String loadError;
+
+    /** 创建时间 */
+    @Builder.Default
+    LocalDateTime createdAt = LocalDateTime.now();
+
+    /** 更新时间 */
+    @Builder.Default
+    LocalDateTime updatedAt = LocalDateTime.now();
+
+    /** 软删除时间戳，非 null 表示已删除 */
+    LocalDateTime deletedAt;
+}
