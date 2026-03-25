@@ -7,6 +7,7 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.config.PromptManager;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class CharacterRuntimeBinder {
 
     private final PromptManager promptManager;
@@ -30,6 +30,18 @@ public class CharacterRuntimeBinder {
     private final WorkflowExecutor workflowExecutor;
     private final ModelRegistry modelRegistry;
     private final OrchestrationService orchestrationService;
+
+    public CharacterRuntimeBinder(PromptManager promptManager,
+                                  @Lazy ReActExecutor reActExecutor,
+                                  WorkflowExecutor workflowExecutor,
+                                  ModelRegistry modelRegistry,
+                                  OrchestrationService orchestrationService) {
+        this.promptManager = promptManager;
+        this.reActExecutor = reActExecutor;
+        this.workflowExecutor = workflowExecutor;
+        this.modelRegistry = modelRegistry;
+        this.orchestrationService = orchestrationService;
+    }
 
     /**
      * 绑定 Character 运行时依赖

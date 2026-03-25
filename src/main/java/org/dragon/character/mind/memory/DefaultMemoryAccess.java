@@ -1,6 +1,7 @@
 package org.dragon.character.mind.memory;
 
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Primary;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.List;
  * @version 1.0
  */
 @Component
+@Primary
 public class DefaultMemoryAccess implements MemoryAccess {
 
     private String characterId;

@@ -10,9 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.dragon.agent.model.ModelRegistry;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -24,13 +24,22 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DefaultWorkflowExecutor implements WorkflowExecutor {
 
     private final ModelRegistry modelRegistry;
     private final CharacterRegistry characterRegistry;
     private final CharacterRuntimeBinder characterRuntimeBinder;
     private final WorkflowStore workflowStore;
+
+    public DefaultWorkflowExecutor(ModelRegistry modelRegistry,
+                                    CharacterRegistry characterRegistry,
+                                    @Lazy CharacterRuntimeBinder characterRuntimeBinder,
+                                    WorkflowStore workflowStore) {
+        this.modelRegistry = modelRegistry;
+        this.characterRegistry = characterRegistry;
+        this.characterRuntimeBinder = characterRuntimeBinder;
+        this.workflowStore = workflowStore;
+    }
 
     private final Map<String, WorkflowState> runningWorkflows = new ConcurrentHashMap<>();
 

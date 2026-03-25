@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.springframework.context.annotation.Lazy;
+
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
 import org.dragon.config.PromptManager;
@@ -43,7 +45,7 @@ public class CommonSenseService {
     private final Map<String, CachedPrompt> promptCache = new ConcurrentHashMap<>();
 
     public CommonSenseService(WorkspaceCommonSenseStore store,
-                              CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory,
+                              @Lazy CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory,
                               CharacterCaller characterCaller,
                               PromptManager promptManager,
                               CommonSenseContentParser contentParser) {

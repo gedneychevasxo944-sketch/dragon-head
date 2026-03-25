@@ -14,9 +14,9 @@ import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
 import org.dragon.config.PromptManager;
 import org.dragon.workspace.WorkspaceRegistry;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class PromptWriterCharacterFactory implements CharacterFactory<Character> {
 
     private static final String PROMPT_WRITER_CHARACTER_PREFIX = "prompt_writer_";
@@ -41,6 +40,20 @@ public class PromptWriterCharacterFactory implements CharacterFactory<Character>
     private final PromptWriterCharacterTools promptWriterCharacterTools;
     private final PromptManager promptManager;
     private final CharacterRuntimeBinder characterRuntimeBinder;
+
+    public PromptWriterCharacterFactory(CharacterRegistry characterRegistry,
+                                        WorkspaceRegistry workspaceRegistry,
+                                        ToolRegistry toolRegistry,
+                                        PromptWriterCharacterTools promptWriterCharacterTools,
+                                        PromptManager promptManager,
+                                        @Lazy CharacterRuntimeBinder characterRuntimeBinder) {
+        this.characterRegistry = characterRegistry;
+        this.workspaceRegistry = workspaceRegistry;
+        this.toolRegistry = toolRegistry;
+        this.promptWriterCharacterTools = promptWriterCharacterTools;
+        this.promptManager = promptManager;
+        this.characterRuntimeBinder = characterRuntimeBinder;
+    }
 
     @Override
     public String getCharacterType() {

@@ -9,9 +9,9 @@ import org.dragon.channel.enums.ActionType;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.workspace.service.WorkspaceTaskService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -23,11 +23,16 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DefaultWorkspaceTaskNotifier implements WorkspaceTaskNotifier {
 
     private final ChannelManager channelManager;
     private final WorkspaceTaskService workspaceTaskService;
+
+    public DefaultWorkspaceTaskNotifier(@Lazy ChannelManager channelManager,
+                                        @Lazy WorkspaceTaskService workspaceTaskService) {
+        this.channelManager = channelManager;
+        this.workspaceTaskService = workspaceTaskService;
+    }
 
     @Override
     public void notifyStarted(Task task) {

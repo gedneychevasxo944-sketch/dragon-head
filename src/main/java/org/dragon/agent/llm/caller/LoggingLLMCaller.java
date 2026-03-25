@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
  * @version 1.0
  */
 @Component
-@Primary
 public class LoggingLLMCaller implements LLMCaller {
 
     private final LLMCaller delegate;

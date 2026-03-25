@@ -30,15 +30,45 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class WorkspaceMaterialService {
 
     private final MaterialStore materialStore;
     private final MaterialStorage materialStorage;
     private final WorkspaceRegistry workspaceRegistry;
     private final TaskStore taskStore;
-    private final MaterialParser materialParser;
+    private final List<MaterialParser> materialParsers;
     private final MaterialContentStore materialContentStore;
+
+    public WorkspaceMaterialService(MaterialStore materialStore,
+                                    MaterialStorage materialStorage,
+                                    WorkspaceRegistry workspaceRegistry,
+                                    TaskStore taskStore,
+                                    List<MaterialParser> materialParsers,
+                                    MaterialContentStore materialContentStore) {
+        this.materialStore = materialStore;
+        this.materialStorage = materialStorage;
+        this.workspaceRegistry = workspaceRegistry;
+        this.taskStore = taskStore;
+        this.materialParsers = materialParsers;
+        this.materialContentStore = materialContentStore;
+    }
+
+    /**
+     * 根据物料类型选择合适的解析器
+     */
+    private MaterialParser selectParser(Material material) {
+        String contentType = material.getType();
+        for (MaterialParser parser : materialParsers) {
+            if (parser.supportedTypes().contains(contentType)) {
+                return parser;
+            }
+        }
+        // 找不到匹配的解析器，返回默认解析器
+        return materialParsers.stream()
+                .filter(parser -> parser instanceof org.dragon.workspace.material.DefaultMaterialParser)
+                .findFirst()
+                .orElse(materialParsers.get(0));
+    }
 
     /**
      * 上传物料
@@ -195,7 +225,7 @@ public class WorkspaceMaterialService {
             if (inputStream == null) {
                 return null;
             }
-            MaterialParser.ParseResult result = materialParser.parse(material, inputStream);
+            MaterialParser.ParseResult result = selectParser(material).parse(material, inputStream);
 
             // 保存解析内容
             org.dragon.workspace.material.ParsedMaterialContent content =
@@ -291,7 +321,7 @@ public class WorkspaceMaterialService {
         // 解析物料并存储结果
         try {
             InputStream inputStream = download(material.getId());
-            MaterialParser.ParseResult parseResult = materialParser.parse(material, inputStream);
+            MaterialParser.ParseResult parseResult = selectParser(material).parse(material, inputStream);
 
             // 将解析结果存储到 task metadata
             if (task.getMetadata() == null) {
