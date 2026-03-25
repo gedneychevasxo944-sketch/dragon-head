@@ -39,6 +39,9 @@ public class SkillChangedEvent extends ApplicationEvent {
     /** Skill 名称 */
     private final String skillName;
 
+    /** 归属的 workspace ID */
+    private final Long workspaceId;
+
     /** 变更类型 */
     private final ChangeType changeType;
 
@@ -48,11 +51,12 @@ public class SkillChangedEvent extends ApplicationEvent {
     /** 事件发生时间 */
     private final LocalDateTime occurredAt;
 
-    public SkillChangedEvent(Object source, Long skillId, String skillName,
+    public SkillChangedEvent(Object source, Long skillId, String skillName, Long workspaceId,
                               ChangeType changeType, Integer version) {
         super(source);
         this.skillId = skillId;
         this.skillName = skillName;
+        this.workspaceId = workspaceId;
         this.changeType = changeType;
         this.version = version;
         this.occurredAt = LocalDateTime.now();
@@ -66,6 +70,7 @@ public class SkillChangedEvent extends ApplicationEvent {
                 source,
                 entity.getId(),
                 entity.getName(),
+                entity.getWorkspaceId(),
                 changeType,
                 entity.getVersion()
         );
