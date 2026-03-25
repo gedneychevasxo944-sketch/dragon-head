@@ -5,8 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.dragon.skill.model.SkillSource;
+import org.dragon.skill.registry.SkillRuntimeState;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,8 +29,20 @@ public class SkillResponse {
     private List<String> tags;
     private String description;
     private String skillDir;
-    private SkillLifecycleState lifecycleState;
-    private String loadError;
+    private Boolean enabled;
+    private Long workspaceId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * 运行时状态（来自 SkillRegistry，非数据库字段）。
+     * 查询列表时按需填充，可能为 null（若未加载）。
+     */
+    private SkillRuntimeState runtimeState;
+
+    /**
+     * 运行时错误信息（来自 SkillRegistry，非数据库字段）。
+     * 仅 runtimeState=FAILED 时有值。
+     */
+    private String runtimeError;
 }

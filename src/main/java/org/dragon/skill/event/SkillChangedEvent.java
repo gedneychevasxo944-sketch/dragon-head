@@ -2,7 +2,6 @@ package org.dragon.skill.event;
 
 import lombok.Getter;
 import org.dragon.skill.entity.SkillEntity;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.springframework.context.ApplicationEvent;
 
 import java.time.LocalDateTime;
@@ -46,21 +45,16 @@ public class SkillChangedEvent extends ApplicationEvent {
     /** 变更后的版本号 */
     private final Integer version;
 
-    /** 变更后的生命周期状态 */
-    private final SkillLifecycleState lifecycleState;
-
     /** 事件发生时间 */
     private final LocalDateTime occurredAt;
 
     public SkillChangedEvent(Object source, Long skillId, String skillName,
-                              ChangeType changeType, Integer version,
-                              SkillLifecycleState lifecycleState) {
+                              ChangeType changeType, Integer version) {
         super(source);
         this.skillId = skillId;
         this.skillName = skillName;
         this.changeType = changeType;
         this.version = version;
-        this.lifecycleState = lifecycleState;
         this.occurredAt = LocalDateTime.now();
     }
 
@@ -73,8 +67,7 @@ public class SkillChangedEvent extends ApplicationEvent {
                 entity.getId(),
                 entity.getName(),
                 changeType,
-                entity.getVersion(),
-                entity.getLifecycleState()
+                entity.getVersion()
         );
     }
 }

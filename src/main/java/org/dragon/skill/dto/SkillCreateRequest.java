@@ -31,4 +31,11 @@ public class SkillCreateRequest {
 
     /** 管理页面填写的简介 */
     String description;
+
+    /**
+     * 归属的工作空间 ID。
+     * WORKSPACE 来源的 Skill 必须指定（不能为 0）。
+     * BUILTIN 来源的 Skill 固定为 0，前端无需传入。
+     */
+    Long workspaceId;
 }

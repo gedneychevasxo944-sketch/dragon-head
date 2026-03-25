@@ -2,7 +2,6 @@ package org.dragon.skill.store;
 
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.dragon.skill.model.SkillSource;
 
 import java.util.List;
@@ -56,11 +55,6 @@ public interface SkillStore {
     List<SkillEntity> findByCategory(SkillCategory category);
 
     /**
-     * 按生命周期状态查询。
-     */
-    List<SkillEntity> findByLifecycleState(SkillLifecycleState state);
-
-    /**
      * 检查名称是否已存在（排除软删除）。
      */
     boolean existsByName(String name);
@@ -71,12 +65,35 @@ public interface SkillStore {
     boolean existsByNameExcludeId(String name, Long excludeId);
 
     /**
-     * 更新生命周期状态。
-     */
-    void updateLifecycleState(Long id, SkillLifecycleState state, String error);
-
-    /**
      * 软删除。
      */
     void softDelete(Long id);
+
+    /**
+     * 查询所有启用的 Skill（全量加载，用于系统启动）。
+     */
+    List<SkillEntity> findAllEnabled();
+
+    /**
+     * 查询指定工作空间下所有启用的 Skill。
+     * 同时包含内置 Skill（workspaceId=0）。
+     *
+     * @param workspaceId 工作空间 ID
+     */
+    List<SkillEntity> findAllEnabledByWorkspace(Long workspaceId);
+
+    /**
+     * 查询所有内置 Skill（workspaceId=0，启用状态）。
+     */
+    List<SkillEntity> findAllBuiltin();
+
+    /**
+     * 按启用状态查询。
+     */
+    List<SkillEntity> findByEnabled(Boolean enabled);
+
+    /**
+     * 按工作空间 ID 查询。
+     */
+    List<SkillEntity> findByWorkspaceId(Long workspaceId);
 }

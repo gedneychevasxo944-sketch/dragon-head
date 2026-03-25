@@ -8,12 +8,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.skill.dto.*;
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.dragon.skill.event.SkillEventPublisher;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillValidationException;
-import org.dragon.skill.model.SkillEntry;
 import org.dragon.skill.model.SkillSource;
+import org.dragon.skill.registry.SkillRuntimeEntry;
+import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.validator.SkillZipValidator;
@@ -60,11 +60,20 @@ public class SkillManageServiceImpl implements SkillManageService {
             throw new SkillValidationException("Skill 名称已存在: " + skillName);
         }
 
-        // 3. 解压 ZIP 到存储目录
+        // 3. 校验 workspaceId
+        Long workspaceId = request.getWorkspaceId();
+        if (request.getSource() == SkillSource.WORKSPACE && (workspaceId == null || workspaceId == 0L)) {
+            throw new SkillValidationException("WORKSPACE 来源的 Skill 必须指定有效的 workspaceId");
+        }
+        if (workspaceId == null) {
+            workspaceId = 0L;
+        }
+
+        // 4. 解压 ZIP 到存储目录
         String skillDir = resolveSkillDir(request.getSource().name().toLowerCase(), skillName);
         extractZip(file, skillDir);
 
-        // 4. 保存数据库记录
+        // 5. 保存数据库记录
         SkillEntity entity = SkillEntity.builder()
                 .name(skillName)
                 .source(request.getSource())
@@ -73,15 +82,16 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .tags(serializeTags(request.getTags()))
                 .description(request.getDescription())
                 .skillDir(skillDir)
-                .lifecycleState(SkillLifecycleState.UNLOADED)
+                .enabled(true)
+                .workspaceId(workspaceId)
                 .build();
 
         entity = skillStore.save(entity);
 
-        // 5. 触发加载
+        // 6. 触发加载
         loaderService.loadSkill(entity);
 
-        // 6. 发布创建事件
+        // 7. 发布创建事件
         eventPublisher.publishCreated(entity);
 
         log.info("Skill 创建成功: id={}, name={}", entity.getId(), entity.getName());
@@ -168,10 +178,12 @@ public class SkillManageServiceImpl implements SkillManageService {
                         e.getName().toLowerCase().contains(request.getName().toLowerCase()))
                 .filter(e -> request.getSource() == null || e.getSource() == request.getSource())
                 .filter(e -> request.getCategory() == null || e.getCategory() == request.getCategory())
-                .filter(e -> request.getLifecycleState() == null ||
-                        e.getLifecycleState() == request.getLifecycleState())
+                .filter(e -> request.getEnabled() == null ||
+                        Boolean.equals(e.getEnabled(), request.getEnabled()))
                 .filter(e -> request.getTag() == null ||
                         (e.getTags() != null && e.getTags().contains(request.getTag())))
+                .filter(e -> request.getWorkspaceId() == null ||
+                        e.getWorkspaceId().equals(request.getWorkspaceId()))
                 .collect(Collectors.toList());
 
         // 分页
@@ -197,8 +209,13 @@ public class SkillManageServiceImpl implements SkillManageService {
     @Override
     public void disableSkill(Long skillId) {
         SkillEntity entity = requireActiveSkill(skillId);
+        if (!entity.getEnabled()) {
+            throw new SkillValidationException("Skill 已经是禁用状态");
+        }
+        // 从运行时注销
         loaderService.unloadSkill(skillId, entity.getName());
-        entity.setLifecycleState(SkillLifecycleState.DISABLED);
+        // 仅更新 enabled 字段
+        entity.setEnabled(false);
         skillStore.update(entity);
         eventPublisher.publishDisabled(entity);
         log.info("Skill 已禁用: id={}, name={}", skillId, entity.getName());
@@ -207,12 +224,16 @@ public class SkillManageServiceImpl implements SkillManageService {
     @Override
     public void enableSkill(Long skillId) {
         SkillEntity entity = requireActiveSkill(skillId);
-        if (entity.getLifecycleState() != SkillLifecycleState.DISABLED) {
-            throw new SkillValidationException("Skill 当前状态不是 DISABLED，无需重新激活");
+        if (entity.getEnabled()) {
+            throw new SkillValidationException("Skill 已经是启用状态");
         }
+        // 先更新 enabled 字段
+        entity.setEnabled(true);
+        entity = skillStore.update(entity);
+        // 触发加载
         loaderService.loadSkill(entity);
-        eventPublisher.publishActivated(skillStore.findById(skillId).orElse(entity));
-        log.info("Skill 已重新激活: id={}, name={}", skillId, entity.getName());
+        eventPublisher.publishActivated(entity);
+        log.info("Skill 已启用: id={}, name={}", skillId, entity.getName());
     }
 
     @Override
@@ -223,21 +244,25 @@ public class SkillManageServiceImpl implements SkillManageService {
     }
 
     @Override
-    public Map<String, String> getLifecycleSnapshot() {
-        return skillStore.findAll().stream()
-                .collect(Collectors.toMap(
-                        SkillEntity::getName,
-                        e -> e.getLifecycleState().name()
-                ));
+    public Map<String, SkillRuntimeState> getRuntimeStateSnapshot() {
+        return skillRegistry.getRuntimeStateSnapshot();
     }
 
     @Override
     public void retryFailedSkills() {
-        List<SkillEntity> failedSkills = skillStore.findByLifecycleState(SkillLifecycleState.FAILED);
-        log.info("开始重试 {} 个 FAILED 状态的 Skill", failedSkills.size());
-        for (SkillEntity entity : failedSkills) {
-            log.info("重试加载 Skill: id={}, name={}", entity.getId(), entity.getName());
-            loaderService.loadSkill(entity);
+        Map<String, SkillRuntimeState> snapshot = skillRegistry.getRuntimeStateSnapshot();
+        List<String> failedNames = snapshot.entrySet().stream()
+                .filter(e -> e.getValue() == SkillRuntimeState.FAILED)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        log.info("开始重试 {} 个 FAILED 状态的 Skill", failedNames.size());
+        for (String name : failedNames) {
+            skillStore.findByName(name).ifPresent(entity -> {
+                log.info("重试加载 Skill: id={}, name={}", entity.getId(), entity.getName());
+                skillRegistry.unregister(name); // 先清除旧的 FAILED 记录
+                loaderService.loadSkill(entity);
+            });
         }
     }
 
@@ -250,8 +275,8 @@ public class SkillManageServiceImpl implements SkillManageService {
     }
 
     @Override
-    public String getSystemPromptFragment() {
-        return skillRegistry.buildSystemPromptFragment();
+    public String getSystemPromptFragment(long workspaceId) {
+        return skillRegistry.buildSystemPromptFragment(workspaceId);
     }
 
     // ==================== 私有工具方法 ====================
@@ -329,7 +354,7 @@ public class SkillManageServiceImpl implements SkillManageService {
     }
 
     private SkillResponse toResponse(SkillEntity entity) {
-        return SkillResponse.builder()
+        SkillResponse response = SkillResponse.builder()
                 .id(entity.getId())
                 .name(entity.getName())
                 .source(entity.getSource())
@@ -338,10 +363,18 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .tags(deserializeTags(entity.getTags()))
                 .description(entity.getDescription())
                 .skillDir(entity.getSkillDir())
-                .lifecycleState(entity.getLifecycleState())
-                .loadError(entity.getLoadError())
+                .enabled(entity.getEnabled())
+                .workspaceId(entity.getWorkspaceId())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
+
+        // 从运行时注册表补充运行时状态
+        skillRegistry.findById(entity.getId()).ifPresent(runtimeEntry -> {
+            response.setRuntimeState(runtimeEntry.getState());
+            response.setRuntimeError(runtimeEntry.getErrorMessage());
+        });
+
+        return response;
     }
 }

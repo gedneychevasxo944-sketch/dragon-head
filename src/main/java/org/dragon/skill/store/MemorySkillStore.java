@@ -3,7 +3,6 @@ package org.dragon.skill.store;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.dragon.skill.model.SkillSource;
 import org.springframework.stereotype.Component;
 
@@ -109,13 +108,6 @@ public class MemorySkillStore implements SkillStore {
     }
 
     @Override
-    public List<SkillEntity> findByLifecycleState(SkillLifecycleState state) {
-        return idIndex.values().stream()
-                .filter(e -> e.getDeletedAt() == null && e.getLifecycleState() == state)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public boolean existsByName(String name) {
         return findByName(name).isPresent();
     }
@@ -127,17 +119,6 @@ public class MemorySkillStore implements SkillStore {
     }
 
     @Override
-    public void updateLifecycleState(Long id, SkillLifecycleState state, String error) {
-        findById(id).ifPresent(entity -> {
-            entity.setLifecycleState(state);
-            entity.setLoadError(error);
-            entity.setUpdatedAt(LocalDateTime.now());
-            idIndex.put(id, entity);
-            log.info("Skill 状态已更新: id={}, name={}, state={}", id, entity.getName(), state);
-        });
-    }
-
-    @Override
     public void softDelete(Long id) {
         findById(id).ifPresent(entity -> {
             entity.setDeletedAt(LocalDateTime.now());
@@ -146,5 +127,45 @@ public class MemorySkillStore implements SkillStore {
             nameIndex.remove(entity.getName());
             log.info("Skill 已软删除: id={}, name={}", id, entity.getName());
         });
+    }
+
+    @Override
+    public List<SkillEntity> findAllEnabled() {
+        return idIndex.values().stream()
+                .filter(e -> e.getDeletedAt() == null && Boolean.TRUE.equals(e.getEnabled()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SkillEntity> findAllEnabledByWorkspace(Long workspaceId) {
+        return idIndex.values().stream()
+                .filter(e -> e.getDeletedAt() == null && Boolean.TRUE.equals(e.getEnabled()))
+                .filter(e -> e.getWorkspaceId() == 0L || Objects.equals(e.getWorkspaceId(), workspaceId))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SkillEntity> findAllBuiltin() {
+        return idIndex.values().stream()
+                .filter(e -> e.getDeletedAt() == null)
+                .filter(e -> Boolean.TRUE.equals(e.getEnabled()))
+                .filter(e -> e.getWorkspaceId() == 0L)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SkillEntity> findByEnabled(Boolean enabled) {
+        return idIndex.values().stream()
+                .filter(e -> e.getDeletedAt() == null)
+                .filter(e -> Objects.equals(e.getEnabled(), enabled))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SkillEntity> findByWorkspaceId(Long workspaceId) {
+        return idIndex.values().stream()
+                .filter(e -> e.getDeletedAt() == null)
+                .filter(e -> Objects.equals(e.getWorkspaceId(), workspaceId))
+                .collect(Collectors.toList());
     }
 }

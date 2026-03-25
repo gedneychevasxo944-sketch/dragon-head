@@ -1,7 +1,7 @@
 package org.dragon.skill.service;
 
 import org.dragon.skill.dto.*;
-import org.dragon.skill.entity.SkillEntity;
+import org.dragon.skill.registry.SkillRuntimeState;
 
 import java.util.List;
 import java.util.Map;
@@ -79,14 +79,14 @@ public interface SkillManageService {
     void reloadSkill(Long skillId);
 
     /**
-     * 获取所有 Skill 的生命周期状态快照。
+     * 获取所有 Skill 的运行时状态快照（来自内存注册表）。
      *
-     * @return 状态快照
+     * @return 运行时状态快照
      */
-    Map<String, String> getLifecycleSnapshot();
+    Map<String, SkillRuntimeState> getRuntimeStateSnapshot();
 
     /**
-     * 重试所有 FAILED 状态的 Skill。
+     * 重试所有运行时状态为 FAILED 的 Skill。
      */
     void retryFailedSkills();
 
@@ -96,9 +96,10 @@ public interface SkillManageService {
     void fullReload();
 
     /**
-     * 获取当前 System Prompt Fragment。
+     * 获取指定工作空间的 System Prompt Fragment。
      *
+     * @param workspaceId 工作空间 ID
      * @return 系统提示词片段
      */
-    String getSystemPromptFragment();
+    String getSystemPromptFragment(long workspaceId);
 }

@@ -3,13 +3,13 @@ package org.dragon.skill.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.skill.entity.SkillEntity;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.dragon.skill.exception.SkillLoadException;
 import org.dragon.skill.model.Skill;
 import org.dragon.skill.model.SkillEntry;
 import org.dragon.skill.model.SkillMetadata;
 import org.dragon.skill.model.SkillRequires;
-import org.dragon.skill.model.SkillSource;
+import org.dragon.skill.registry.SkillRuntimeEntry;
+import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.SkillFrontmatterParser;
@@ -42,19 +42,13 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     @Override
     public void loadAll() {
         log.info("开始全量加载 Skill...");
-        List<SkillEntity> entities = skillStore.findAll();
+        List<SkillEntity> entities = skillStore.findAllEnabled();
 
         int successCount = 0;
         int failCount = 0;
 
         for (SkillEntity entity : entities) {
-            // 跳过已禁用的 Skill
-            if (entity.getLifecycleState() == SkillLifecycleState.DISABLED) {
-                log.info("Skill [{}] 已禁用，跳过加载", entity.getName());
-                continue;
-            }
-
-            Optional<SkillEntry> result = loadSkill(entity);
+            Optional<SkillRuntimeEntry> result = loadSkill(entity);
             if (result.isPresent()) {
                 successCount++;
             } else {
@@ -67,17 +61,29 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     }
 
     @Override
-    public Optional<SkillEntry> loadSkill(SkillEntity entity) {
+    public void loadByWorkspace(Long workspaceId) {
+        log.info("按工作空间加载 Skill: workspaceId={}", workspaceId);
+        List<SkillEntity> entities = skillStore.findAllEnabledByWorkspace(workspaceId);
+        for (SkillEntity entity : entities) {
+            // 若该 Skill 已在注册表中，跳过重复加载
+            if (skillRegistry.findById(entity.getId()).isPresent()) {
+                log.debug("Skill 已在注册表中，跳过重复加载: name={}", entity.getName());
+                continue;
+            }
+            loadSkill(entity);
+        }
+        log.info("工作空间 Skill 加载完成: workspaceId={}", workspaceId);
+    }
+
+    @Override
+    public Optional<SkillRuntimeEntry> loadSkill(SkillEntity entity) {
         String skillName = entity.getName();
         Long skillId = entity.getId();
 
         log.info("开始加载 Skill: id={}, name={}, version={}", skillId, skillName, entity.getVersion());
 
-        // 1. 更新状态为 LOADING
-        skillStore.updateLifecycleState(skillId, SkillLifecycleState.LOADING, null);
-
         try {
-            // 2. 定位 SKILL.md 文件
+            // 1. 定位 SKILL.md 文件
             Path skillDir = Paths.get(entity.getSkillDir());
             Path skillMdPath = skillDir.resolve(SKILL_FILE);
 
@@ -85,13 +91,13 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                 throw new SkillLoadException("SKILL.md 文件不存在: " + skillMdPath);
             }
 
-            // 3. 解析 SKILL.md
+            // 2. 解析 SKILL.md
             String content = new String(Files.readAllBytes(skillMdPath));
             Map<String, String> frontmatter = SkillFrontmatterParser.parseFrontmatter(content);
             String description = frontmatter.getOrDefault("description", "");
             String body = SkillFrontmatterParser.extractBody(content);
 
-            // 4. 构建 Skill 对象
+            // 3. 构建 Skill 对象
             Skill skill = Skill.builder()
                     .id(skillId)
                     .version(entity.getVersion())
@@ -103,29 +109,41 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                     .content(body)
                     .build();
 
-            // 5. 解析元数据
+            // 4. 解析元数据
             SkillMetadata metadata = SkillFrontmatterParser.resolveMetadata(frontmatter);
 
-            // 6. 构建 SkillEntry
+            // 5. 构建 SkillEntry
             SkillEntry entry = new SkillEntry(skill, frontmatter, metadata,
                     SkillFrontmatterParser.resolveInvocationPolicy(frontmatter));
 
-            // 7. 依赖检查（可选）
-            // 暂时跳过依赖检查，直接注册
+            // 6. 依赖检查
+            Optional<String> requiresError = checkRequires(entry);
 
-            // 8. 注册到运行时注册表
-            skillRegistry.register(entry);
+            // 7. 构建 SkillRuntimeEntry
+            SkillRuntimeEntry runtimeEntry = SkillRuntimeEntry.builder()
+                    .skillEntry(entry)
+                    .workspaceId(entity.getWorkspaceId())
+                    .stateChangedAt(LocalDateTime.now())
+                    .build();
 
-            // 9. 更新状态为 ACTIVE
-            skillStore.updateLifecycleState(skillId, SkillLifecycleState.ACTIVE, null);
+            if (requiresError.isPresent()) {
+                String errorMsg = "依赖检查失败: " + requiresError.get();
+                log.warn("Skill [{}] 依赖检查失败: {}", skillName, requiresError.get());
+                runtimeEntry.setState(SkillRuntimeState.FAILED);
+                runtimeEntry.setErrorMessage(errorMsg);
+                skillRegistry.register(runtimeEntry);
+                return Optional.empty();
+            }
+
+            runtimeEntry.setState(SkillRuntimeState.ACTIVE);
+            skillRegistry.register(runtimeEntry);
 
             log.info("Skill [{}] 加载成功，已激活", skillName);
-            return Optional.of(entry);
+            return Optional.of(runtimeEntry);
 
         } catch (Exception e) {
             String errorMsg = e.getMessage();
             log.error("Skill [{}] 加载失败: {}", skillName, errorMsg, e);
-            skillStore.updateLifecycleState(skillId, SkillLifecycleState.FAILED, errorMsg);
             return Optional.empty();
         }
     }
@@ -146,8 +164,7 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     @Override
     public void unloadSkill(Long skillId, String skillName) {
         skillRegistry.unregister(skillName);
-        skillStore.updateLifecycleState(skillId, SkillLifecycleState.UNLOADED, null);
-        log.info("Skill [{}] 已注销", skillName);
+        log.info("Skill [{}] 已从运行时注册表注销", skillName);
     }
 
     @Override

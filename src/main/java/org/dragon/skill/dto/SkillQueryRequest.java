@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.dragon.skill.model.SkillSource;
 
 /**
@@ -24,10 +23,12 @@ public class SkillQueryRequest {
     private SkillSource source;
     /** 按分类过滤 */
     private SkillCategory category;
-    /** 按生命周期状态过滤 */
-    private SkillLifecycleState lifecycleState;
     /** 按标签过滤 */
     private String tag;
+    /** 按工作空间 ID 过滤（传 0 表示查询内置 Skill） */
+    private Long workspaceId;
+    /** 按启用状态过滤（null=不过滤，true=仅启用，false=仅禁用） */
+    private Boolean enabled;
     /** 页码，从 1 开始，默认 1 */
     @Builder.Default
     private int page = 1;

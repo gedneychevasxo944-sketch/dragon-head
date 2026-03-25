@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillLifecycleState;
 import org.dragon.skill.model.SkillSource;
 
 import java.time.LocalDateTime;
@@ -47,12 +46,21 @@ public class SkillEntity {
     /** Skill 文件存放目录（绝对路径） */
     String skillDir;
 
-    /** 运行时生命周期状态 */
+    /**
+     * 人工可控的启用/禁用状态。
+     * true=可用，false=禁用（禁用后不会被加载到运行时注册表）。
+     * 与运行时加载状态解耦：enabled=false 时，即使文件完好也不加载。
+     */
     @Builder.Default
-    SkillLifecycleState lifecycleState = SkillLifecycleState.UNLOADED;
+    Boolean enabled = true;
 
-    /** 加载失败时的错误信息 */
-    String loadError;
+    /**
+     * 归属的工作空间 ID。
+     * 0L = 系统内置 Skill，对所有工作空间可见。
+     * 非 0 = 归属于特定工作空间，仅在该工作空间的 Agent 中加载。
+     */
+    @Builder.Default
+    Long workspaceId = 0L;
 
     /** 创建时间 */
     @Builder.Default
