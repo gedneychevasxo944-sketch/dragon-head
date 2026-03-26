@@ -68,6 +68,9 @@ public class ObserverService {
 
         // 使用评价引擎进行评价
         EvaluationRecord record = evaluationEngine.evaluateByRules(taskData);
+        if (record != null) {
+            record.setObserverId(observerId);
+        }
 
         // 检查是否需要触发优化
         if (record != null && observer.isAutoOptimizationEnabled()) {
@@ -125,6 +128,9 @@ public class ObserverService {
 
         // 执行周期性评价
         EvaluationRecord record = evaluationEngine.evaluatePeriodically(targetType, targetId, startTime, endTime);
+        if (record != null) {
+            record.setObserverId(observerId);
+        }
 
         // 检查是否需要触发优化
         if (record != null && observer.isAutoOptimizationEnabled()) {
@@ -210,13 +216,7 @@ public class ObserverService {
      * @return 生成的优化计划（草稿状态）
      */
     public OptimizationPlan generateOptimizationPlan(String evaluationId) {
-        EvaluationRecord evaluation = evaluationRecordStore.findById(evaluationId)
-                .orElseThrow(() -> new IllegalArgumentException("Evaluation not found: " + evaluationId));
-
-        Observer observer = observerRegistry.get(evaluation.getTargetType().name())
-                .orElseThrow(() -> new IllegalArgumentException("Observer not found for target: " + evaluation.getTargetId()));
-
-        return planningService.generatePlan(evaluationId, observer.getId());
+        return planningService.generatePlan(evaluationId);
     }
 
     /**

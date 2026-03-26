@@ -23,6 +23,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Task {
 
+    // ==================== 核心标识 ====================
+
     /**
      * 任务唯一标识
      */
@@ -58,75 +60,13 @@ public class Task {
      */
     private String description;
 
+    // ==================== 执行状态 ====================
+
     /**
-     * 任务状态
+     * 执行状态
      */
     @Builder.Default
     private TaskStatus status = TaskStatus.PENDING;
-
-    /**
-     * 任务输入
-     */
-    private Object input;
-
-    /**
-     * 任务输出
-     */
-    private Object output;
-
-    /**
-     * 任务结果（String 形式）
-     */
-    private String result;
-
-    /**
-     * 错误信息
-     */
-    private String errorMessage;
-
-    /**
-     * 子任务 ID 列表
-     */
-    @Builder.Default
-    private List<String> childTaskIds = new ArrayList<>();
-
-    /**
-     * 协作会话 ID
-     */
-    private String collaborationSessionId;
-
-    /**
-     * 分配的成员 ID 列表
-     */
-    @Builder.Default
-    private List<String> assignedMemberIds = new ArrayList<>();
-
-    /**
-     * 执行步骤列表
-     */
-    @Builder.Default
-    private List<ExecutionStep> executionSteps = new ArrayList<>();
-
-    /**
-     * 执行消息列表（支持流式）
-     */
-    @Builder.Default
-    private List<ExecutionMessage> executionMessages = new ArrayList<>();
-
-    /**
-     * 当前流式消息（正在输出中）
-     */
-    private String currentStreamingContent;
-
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createdAt;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updatedAt;
 
     /**
      * 开始执行时间
@@ -149,25 +89,38 @@ public class Task {
     private String workflowId;
 
     /**
-     * 依赖任务 ID 列表
-     */
-    @Builder.Default
-    private List<String> dependencyTaskIds = new ArrayList<>();
-
-    /**
      * 等待原因
      */
     private String waitingReason;
 
     /**
-     * 恢复令牌
+     * 任务结果（String 形式）
      */
-    private String resumeToken;
+    private String result;
 
     /**
-     * 恢复上下文
+     * 错误信息
      */
-    private Map<String, Object> resumeContext;
+    private String errorMessage;
+
+    /**
+     * 当前流式消息（正在输出中）
+     */
+    private String currentStreamingContent;
+
+    /**
+     * 执行步骤列表
+     */
+    @Builder.Default
+    private List<ExecutionStep> executionSteps = new ArrayList<>();
+
+    /**
+     * 执行消息列表（支持流式）
+     */
+    @Builder.Default
+    private List<ExecutionMessage> executionMessages = new ArrayList<>();
+
+    // ==================== 来源上下文 ====================
 
     /**
      * 源消息 ID
@@ -184,15 +137,52 @@ public class Task {
      */
     private String sourceChannel;
 
+    // ==================== 协作上下文 ====================
+
     /**
-     * 关联的物料 ID 列表
+     * 协作会话 ID
      */
-    private List<String> materialIds;
+    private String collaborationSessionId;
+
+    /**
+     * 分配的成员 ID 列表
+     */
+    @Builder.Default
+    private List<String> assignedMemberIds = new ArrayList<>();
+
+    /**
+     * 依赖任务 ID 列表
+     */
+    @Builder.Default
+    private List<String> dependencyTaskIds = new ArrayList<>();
 
     /**
      * 最后的问题（用于追问用户）
      */
     private String lastQuestion;
+
+    // ==================== 数据 & 扩展 ====================
+
+    /**
+     * 任务输入
+     */
+    private Object input;
+
+    /**
+     * 任务输出
+     */
+    private Object output;
+
+    /**
+     * 子任务 ID 列表
+     */
+    @Builder.Default
+    private List<String> childTaskIds = new ArrayList<>();
+
+    /**
+     * 关联的物料 ID 列表
+     */
+    private List<String> materialIds;
 
     /**
      * 交互上下文
@@ -208,6 +198,78 @@ public class Task {
      * 任务扩展属性
      */
     private Map<String, Object> extensions;
+
+    // ==================== 生命周期 ====================
+
+    /**
+     * 恢复令牌
+     */
+    private String resumeToken;
+
+    /**
+     * 恢复上下文
+     */
+    private Map<String, Object> resumeContext;
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createdAt;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updatedAt;
+
+    // ==================== 嵌套类 ====================
+
+    /**
+     * 执行状态
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TaskExecutionState {
+        private TaskStatus status;
+        private LocalDateTime startedAt;
+        private LocalDateTime completedAt;
+        private String executionMode;
+        private String workflowId;
+        private String waitingReason;
+        private String result;
+        private String errorMessage;
+        private String currentStreamingContent;
+        private List<ExecutionStep> executionSteps;
+        private List<ExecutionMessage> executionMessages;
+    }
+
+    /**
+     * 来源上下文
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TaskSourceContext {
+        private String sourceMessageId;
+        private String sourceChatId;
+        private String sourceChannel;
+    }
+
+    /**
+     * 协作上下文
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TaskCollaborationContext {
+        private String collaborationSessionId;
+        private List<String> assignedMemberIds;
+        private List<String> dependencyTaskIds;
+        private String lastQuestion;
+    }
 
     /**
      * ExecutionStep 执行步骤

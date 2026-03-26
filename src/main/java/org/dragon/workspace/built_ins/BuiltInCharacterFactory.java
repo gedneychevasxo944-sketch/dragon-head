@@ -7,8 +7,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.dragon.character.Character;
 import org.dragon.character.CharacterFactory;
+import org.dragon.workspace.built_ins.character.commonsense_writer.CommonSenseWriterCharacterFactory;
 import org.dragon.workspace.built_ins.character.hr.HrCharacterFactory;
 import org.dragon.workspace.built_ins.character.member_selector.MemberSelectorCharacterFactory;
+import org.dragon.workspace.built_ins.character.material_summary.MaterialSummaryCharacterFactory;
 import org.dragon.workspace.built_ins.character.project_manager.ProjectManagerCharacterFactory;
 import org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharacterFactory;
 import org.springframework.stereotype.Component;
@@ -25,8 +27,10 @@ public class BuiltInCharacterFactory {
 
     private final HrCharacterFactory hrCharacterFactory;
     private final MemberSelectorCharacterFactory memberSelectorCharacterFactory;
+    private final MaterialSummaryCharacterFactory materialSummaryCharacterFactory;
     private final ProjectManagerCharacterFactory projectManagerCharacterFactory;
     private final PromptWriterCharacterFactory promptWriterCharacterFactory;
+    private final CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory;
 
     /**
      * 内置 Character 工厂映射 (type -> factory)
@@ -35,12 +39,16 @@ public class BuiltInCharacterFactory {
 
     public BuiltInCharacterFactory(HrCharacterFactory hrCharacterFactory,
             MemberSelectorCharacterFactory memberSelectorCharacterFactory,
+            MaterialSummaryCharacterFactory materialSummaryCharacterFactory,
             ProjectManagerCharacterFactory projectManagerCharacterFactory,
-            PromptWriterCharacterFactory promptWriterCharacterFactory) {
+            PromptWriterCharacterFactory promptWriterCharacterFactory,
+            CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory) {
         this.hrCharacterFactory = hrCharacterFactory;
         this.memberSelectorCharacterFactory = memberSelectorCharacterFactory;
+        this.materialSummaryCharacterFactory = materialSummaryCharacterFactory;
         this.projectManagerCharacterFactory = projectManagerCharacterFactory;
         this.promptWriterCharacterFactory = promptWriterCharacterFactory;
+        this.commonSenseWriterCharacterFactory = commonSenseWriterCharacterFactory;
 
         // 初始化注册
         initFactories();
@@ -52,8 +60,10 @@ public class BuiltInCharacterFactory {
     private void initFactories() {
         registerFactory(hrCharacterFactory.getCharacterType(), hrCharacterFactory);
         registerFactory(memberSelectorCharacterFactory.getCharacterType(), memberSelectorCharacterFactory);
+        registerFactory(materialSummaryCharacterFactory.getCharacterType(), materialSummaryCharacterFactory);
         registerFactory(projectManagerCharacterFactory.getCharacterType(), projectManagerCharacterFactory);
         registerFactory(promptWriterCharacterFactory.getCharacterType(), promptWriterCharacterFactory);
+        registerFactory(commonSenseWriterCharacterFactory.getCharacterType(), commonSenseWriterCharacterFactory);
     }
 
     /**
@@ -95,6 +105,15 @@ public class BuiltInCharacterFactory {
     }
 
     /**
+     * 获取 MaterialSummary Character 工厂
+     *
+     * @return MaterialSummary Character 工厂
+     */
+    public MaterialSummaryCharacterFactory getMaterialSummaryCharacterFactory() {
+        return materialSummaryCharacterFactory;
+    }
+
+    /**
      * 获取 ProjectManager Character 工厂
      *
      * @return ProjectManager Character 工厂
@@ -110,6 +129,13 @@ public class BuiltInCharacterFactory {
      */
     public PromptWriterCharacterFactory getPromptWriterCharacterFactory() {
         return promptWriterCharacterFactory;
+    }
+
+    /**
+     * 获取 CommonSenseWriter Character 工厂
+     */
+    public CommonSenseWriterCharacterFactory getCommonSenseWriterCharacterFactory() {
+        return commonSenseWriterCharacterFactory;
     }
 
     /**

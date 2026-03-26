@@ -5,528 +5,223 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
-import org.dragon.agent.model.ModelRegistry;
-import org.dragon.agent.orchestration.OrchestrationService;
-import org.dragon.task.Task;
-import org.dragon.agent.react.ReActContext;
-import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.react.ReActResult;
-import org.dragon.agent.workflow.Workflow;
-import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowResult;
-import org.dragon.agent.workflow.WorkflowStore;
-import org.dragon.character.mind.Mind;
-import org.dragon.config.PromptKeys;
-import org.dragon.config.PromptManager;
-import org.dragon.character.mind.DefaultMind;
+import org.dragon.character.config.CharacterExecutorConfig;
+import org.dragon.character.profile.CharacterProfile;
+import org.dragon.character.runtime.CharacterExecutor;
+import org.dragon.character.runtime.CharacterRuntime;
+import org.dragon.task.Task;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
- * Character 实体
- * AI 数字员工实体，由 Mind 和 Agent Engine 两部分组成
- * 作为主流程入口类，负责执行任务和管理任务队列
+ * Character 聚合根
+ * AI 数字员工实体，作为对外Facade接口
  *
  * @author wyj
  * @version 1.0
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class Character {
 
     /**
-     * ReAct 执行器
-     * 由外部注入，负责实际执行 ReAct 流程
+     * 数据体
      */
-    private ReActExecutor reActExecutor;
-
-    /**
-     * Prompt 管理器
-     * 由外部注入，用于获取层级化的 prompt
-     */
-    private PromptManager promptManager;
-
-    /**
-     * Workflow 执行器
-     * 由外部注入，负责实际执行 Workflow
-     */
-    private WorkflowExecutor workflowExecutor;
-
-    /**
-     * Workflow 存储
-     * 由外部注入，负责存储工作流定义
-     */
-    private WorkflowStore workflowStore;
-
-    /**
-     * 模型注册中心
-     * 由外部注入，用于获取模型信息
-     */
-    private ModelRegistry modelRegistry;
-
-    /**
-     * 编排服务
-     * 由外部注入，负责决策使用哪种执行策略
-     */
-    private org.dragon.agent.orchestration.OrchestrationService orchestrationService;
-
-    /**
-     * Character 全局唯一标识
-     */
-    private String id;
-
-    /**
-     * 所属 Workspace ID
-     * 同一个 Character 可以在多个 Workspace 中工作
-     */
-    private List<String> workspaceIds;
-
-    /**
-     * 所属 Organization ID
-     * 同一个 Character 可以在多个 Organization 中工作
-     */
-    private List<String> organizationIds;
-
-    /**
-     * Character 名称
-     */
-    private String name;
-
-    /**
-     * 版本号，用于版本管理
-     */
-    private int version;
-
-    /**
-     * 描述
-     */
-    private String description;
-
-    /**
-     * 心智模块配置
-     */
-    private MindConfig mindConfig;
-
-    /**
-     * Mind 实例
-     * 根据 mindConfig 创建，负责管理 PersonalityDescriptor、TagRepository、MemoryAccess、SkillAccess
-     */
-    private Mind mind;
+    private CharacterProfile profile;
 
     /**
      * 执行引擎配置
      */
-    private AgentEngineConfig agentEngineConfig;
+    private CharacterExecutorConfig executorConfig;
 
     /**
-     * 扩展属性
+     * 运行时依赖
      */
-    private Map<String, Object> extensions;
+    private CharacterRuntime runtime;
 
     /**
-     * 当前 Character 允许使用的工具名称集合
+     * 执行器（惰性初始化）
      */
-    @Builder.Default
-    private Set<String> allowedTools = new HashSet<>();
+    private transient CharacterExecutor executor;
 
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createdAt;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updatedAt;
-
-    /**
-     * 状态
-     */
-    private Status status;
-
-    /**
-     * Character 状态枚举
-     */
-    public enum Status {
-        /** 未加载 */
-        UNLOADED,
-        /** 已加载 */
-        LOADED,
-        /** 运行中 */
-        RUNNING,
-        /** 暂停 */
-        PAUSED,
-        /** 已销毁 */
-        DESTROYED
+    public Character() {
+        this.profile = new CharacterProfile();
+        this.profile.setExtensions(new java.util.HashMap<>());
+        this.profile.setAllowedTools(new HashSet<>());
+        this.profile.setStatus(CharacterProfile.Status.UNLOADED);
     }
 
-    /**
-     * Mind 配置
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class MindConfig {
-        /** 性格描述文件路径 */
-        private String personalityDescriptorPath;
-        /** 标签存储类型 */
-        private String tagRepositoryType;
-        /** 记忆存储类型 */
-        private String memoryAccessType;
-        /** 技能存储类型 */
-        private String skillAccessType;
+    // ==================== 便捷属性代理 ====================
+
+    public String getId() {
+        return profile.getId();
     }
 
-    /**
-     * Agent Engine 配置
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AgentEngineConfig {
-        /** 默认模型 ID */
-        private String defaultModelId;
-        /** 工作流配置 */
-        private WorkflowConfig workflowConfig;
-        /** ReAct 配置 */
-        private ReActConfig reActConfig;
+    public void setId(String id) {
+        profile.setId(id);
     }
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class WorkflowConfig {
-        private String defaultWorkflowId;
-        private int maxSteps;
-        private String timeout;
+    public List<String> getWorkspaceIds() {
+        return profile.getWorkspaceIds();
     }
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ReActConfig {
-        private int maxIterations;
-        private boolean enableMemorySearch;
-        private boolean enableToolUse;
+    public void setWorkspaceIds(List<String> workspaceIds) {
+        profile.setWorkspaceIds(workspaceIds);
     }
 
-    // ==================== 执行接口 ====================
+    public String getName() {
+        return profile.getName();
+    }
 
-    /**
-     * 执行主入口
-     * 通过 OrchestrationService 决策执行策略，然后执行
-     *
-     * @param userInput 用户输入
-     * @return 执行结果
-     */
+    public void setName(String name) {
+        profile.setName(name);
+    }
+
+    public String getDescription() {
+        return profile.getDescription();
+    }
+
+    public void setDescription(String description) {
+        profile.setDescription(description);
+    }
+
+    public int getVersion() {
+        return profile.getVersion();
+    }
+
+    public void setVersion(int version) {
+        profile.setVersion(version);
+    }
+
+    public CharacterProfile.Status getStatus() {
+        return profile.getStatus();
+    }
+
+    public void setStatus(CharacterProfile.Status status) {
+        profile.setStatus(status);
+    }
+
+    public Set<String> getAllowedTools() {
+        return profile.getAllowedTools();
+    }
+
+    public void setAllowedTools(Set<String> allowedTools) {
+        profile.setAllowedTools(allowedTools);
+    }
+
+    public Map<String, Object> getExtensions() {
+        return profile.getExtensions();
+    }
+
+    public void setExtensions(Map<String, Object> extensions) {
+        profile.setExtensions(extensions);
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return profile.getCreatedAt();
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        profile.setCreatedAt(createdAt);
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return profile.getUpdatedAt();
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        profile.setUpdatedAt(updatedAt);
+    }
+
+    public CharacterProfile.MindConfig getMindConfig() {
+        return profile.getMindConfig();
+    }
+
+    public void setMindConfig(CharacterProfile.MindConfig mindConfig) {
+        profile.setMindConfig(mindConfig);
+    }
+
+    public org.dragon.character.mind.Mind getMind() {
+        return profile.getMind();
+    }
+
+    public void setMind(org.dragon.character.mind.Mind mind) {
+        profile.setMind(mind);
+    }
+
+    public CharacterExecutorConfig getAgentEngineConfig() {
+        return executorConfig;
+    }
+
+    public void setAgentEngineConfig(CharacterExecutorConfig agentEngineConfig) {
+        this.executorConfig = agentEngineConfig;
+    }
+
+    // ==================== 执行代理 ====================
+
     public String run(String userInput) {
-        if (orchestrationService == null) {
-            throw new IllegalStateException("OrchestrationService not initialized");
-        }
-
-        // 1. 调用 OrchestrationService 获取执行策略
-        OrchestrationService.OrchestrationRequest request = new OrchestrationService.OrchestrationRequest(
-                this.id, userInput, null, null);
-        OrchestrationService.OrchestrationResult orchestrationResult = orchestrationService.orchestrate(request);
-
-        if (!orchestrationResult.isSuccess()) {
-            return "Orchestration failed";
-        }
-
-        // 2. 根据决策结果执行
-        OrchestrationService.Mode mode = orchestrationResult.getMode();
-
-        if (mode == OrchestrationService.Mode.WORKFLOW) {
-            // 执行 Workflow
-            String workflowId = orchestrationResult.getWorkflowId();
-            WorkflowResult result = runWorkflow(workflowId);
-            return result.getErrorMessage() != null ? result.getErrorMessage() : "Workflow completed";
-        } else {
-            // 执行 ReAct
-            ReActResult result = runReAct(userInput);
-            return result.getResponse();
-        }
+        return getExecutor().run(userInput);
     }
 
-    /**
-     * 执行主入口（带 Task 透传）
-     * 通过 OrchestrationService 决策执行策略，然后执行
-     *
-     * @param userInput 用户输入
-     * @param task 关联的任务
-     * @return 执行结果
-     */
     public String run(String userInput, Task task) {
-        if (orchestrationService == null) {
-            throw new IllegalStateException("OrchestrationService not initialized");
-        }
-
-        // 1. 调用 OrchestrationService 获取执行策略
-        OrchestrationService.OrchestrationRequest request = new OrchestrationService.OrchestrationRequest(
-                this.id, userInput, null, null);
-        OrchestrationService.OrchestrationResult orchestrationResult = orchestrationService.orchestrate(request);
-
-        if (!orchestrationResult.isSuccess()) {
-            return "Orchestration failed";
-        }
-
-        // 2. 根据决策结果执行
-        OrchestrationService.Mode mode = orchestrationResult.getMode();
-
-        if (mode == OrchestrationService.Mode.WORKFLOW) {
-            // 执行 Workflow
-            String workflowId = orchestrationResult.getWorkflowId();
-            WorkflowResult result = runWorkflow(workflowId);
-            return result.getErrorMessage() != null ? result.getErrorMessage() : "Workflow completed";
-        } else {
-            // 执行 ReAct
-            ReActResult result = runReAct(userInput, false, task);
-            return result.getResponse();
-        }
+        return getExecutor().run(userInput, task);
     }
 
-    /**
-     * 使用 ReAct 模式执行
-     *
-     * @param userInput 用户输入
-     * @return ReAct 执行结果
-     */
     public ReActResult runReAct(String userInput) {
-        if (reActExecutor == null) {
-            throw new IllegalStateException("ReActExecutor not initialized");
-        }
-
-        // 获取配置
-        AgentEngineConfig engineConfig = getAgentEngineConfig();
-        ReActConfig config = engineConfig != null ? engineConfig.getReActConfig() : null;
-        String defaultModelId = engineConfig != null ? engineConfig.getDefaultModelId() : null;
-        int maxIterations = config != null ? config.getMaxIterations() : 10;
-
-        // 如果没有指定模型，尝试从 ModelRegistry 获取默认模型
-        if (defaultModelId == null && modelRegistry != null) {
-            defaultModelId = modelRegistry.getDefault()
-                    .map(m -> m.getId())
-                    .orElse(null);
-        }
-
-        // 构建系统 prompt（优先从 PromptManager 获取，支持 workspace-organization-character 层级）
-        String systemPrompt = "";
-        if (promptManager != null) {
-            // 获取 Character 所在的第一个 Workspace
-            String workspace = workspaceIds != null && !workspaceIds.isEmpty()
-                    ? workspaceIds.get(0) : null;
-            systemPrompt = promptManager.getPrompt(workspace, id, PromptKeys.CHARACTER_SYSTEM);
-        }
-        // 如果 PromptManager 没有获取到，则从 Mind 获取
-        if (systemPrompt == null || systemPrompt.isEmpty()) {
-            Mind currentMind = getMind(); // 确保 Mind 已初始化
-            if (currentMind != null && currentMind.getPersonality() != null) {
-                systemPrompt = currentMind.getPersonality().toPrompt();
-            }
-        }
-
-        // 构建 ReAct 上下文
-        ReActContext context = ReActContext.builder()
-                .executionId(UUID.randomUUID().toString())
-                .characterId(this.id)
-                .defaultModelId(defaultModelId)
-                .currentModelId(defaultModelId)
-                .userInput(userInput)
-                .systemPrompt(systemPrompt)
-                .maxIterations(maxIterations)
-                .streamingEnabled(false)
-                .allowedTools(this.allowedTools)
-                .build();
-
-        return reActExecutor.execute(context);
+        return getExecutor().runReAct(userInput);
     }
 
-    /**
-     * 执行 ReAct（带流式和 Task 支持）
-     *
-     * @param userInput 用户输入
-     * @param streaming 是否启用流式调用
-     * @param task 关联的 Task
-     * @return ReAct 执行结果
-     */
-    public ReActResult runReAct(String userInput, boolean streaming, org.dragon.task.Task task) {
-        return runReAct(userInput, streaming, task, null);
+    public ReActResult runReAct(String userInput, boolean streaming, Task task,
+                                org.dragon.workspace.service.task.execution.TaskBridgeContext bridgeContext) {
+        return getExecutor().runReAct(userInput, streaming, task, bridgeContext);
     }
 
-    /**
-     * 执行 ReAct（带流式、Task 和桥接上下文支持）
-     *
-     * @param userInput 用户输入
-     * @param streaming 是否启用流式调用
-     * @param task 关联的 Task
-     * @param bridgeContext 桥接上下文（可选，包含协作信息）
-     * @return ReAct 执行结果
-     */
-    public ReActResult runReAct(String userInput, boolean streaming, org.dragon.task.Task task, org.dragon.workspace.service.task.execution.TaskBridgeContext bridgeContext) {
-        if (reActExecutor == null) {
-            throw new IllegalStateException("ReActExecutor not initialized");
-        }
-
-        // 获取配置
-        AgentEngineConfig engineConfig = getAgentEngineConfig();
-        ReActConfig config = engineConfig != null ? engineConfig.getReActConfig() : null;
-        String defaultModelId = engineConfig != null ? engineConfig.getDefaultModelId() : null;
-        int maxIterations = config != null ? config.getMaxIterations() : 10;
-
-        // 如果没有指定模型，尝试从 ModelRegistry 获取默认模型
-        if (defaultModelId == null && modelRegistry != null) {
-            defaultModelId = modelRegistry.getDefault()
-                    .map(m -> m.getId())
-                    .orElse(null);
-        }
-
-        // 构建系统 prompt
-        String systemPrompt = "";
-        if (promptManager != null) {
-            String workspace = workspaceIds != null && !workspaceIds.isEmpty()
-                    ? workspaceIds.get(0) : null;
-            systemPrompt = promptManager.getPrompt(workspace, id, PromptKeys.CHARACTER_SYSTEM);
-        }
-        if (systemPrompt == null || systemPrompt.isEmpty()) {
-            Mind currentMind = getMind();
-            if (currentMind != null && currentMind.getPersonality() != null) {
-                systemPrompt = currentMind.getPersonality().toPrompt();
-            }
-        }
-
-        // 构建 ReAct 上下文
-        ReActContext.ReActContextBuilder contextBuilder = ReActContext.builder()
-                .executionId(UUID.randomUUID().toString())
-                .characterId(this.id)
-                .defaultModelId(defaultModelId)
-                .currentModelId(defaultModelId)
-                .userInput(userInput)
-                .systemPrompt(systemPrompt)
-                .maxIterations(maxIterations)
-                .streamingEnabled(streaming)
-                .task(task)
-                .allowedTools(this.allowedTools);
-
-        // 如果提供了 bridgeContext，则加载协作上下文
-        if (bridgeContext != null) {
-            // 判断是否启用协作判断
-            boolean collaborationEnabled = bridgeContext.isCollaborationJudgementEnabled();
-            // 检查 Task.metadata 中是否显式关闭了协作判断
-            if (task != null && task.getMetadata() != null) {
-                Object allowJudgement = task.getMetadata().get("allowCollaborationJudgement");
-                if (allowJudgement != null) {
-                    collaborationEnabled = Boolean.TRUE.equals(allowJudgement);
-                }
-            }
-
-            // 如果启用协作判断且存在协作会话 ID，则加载协作判断 prompt
-            if (collaborationEnabled && bridgeContext.getCollaborationSessionId() != null) {
-                String collaborationPrompt = "";
-                if (promptManager != null) {
-                    String workspace = workspaceIds != null && !workspaceIds.isEmpty()
-                            ? workspaceIds.get(0) : null;
-                    collaborationPrompt = promptManager.getPrompt(workspace, id, PromptKeys.CHARACTER_COLLABORATION_DECISION);
-                }
-                contextBuilder
-                        .collaborationJudgementEnabled(true)
-                        .collaborationDecisionPrompt(collaborationPrompt)
-                        .collaborationSessionId(bridgeContext.getCollaborationSessionId())
-                        .participantStates(bridgeContext.getParticipantStates())
-                        .blockedParticipants(bridgeContext.getBlockedParticipants())
-                        .sessionStatus(bridgeContext.getSessionStatus())
-                        .latestSessionMessages(bridgeContext.getLatestSessionMessages())
-                        .peerCharacterIds(bridgeContext.getPeerCharacterIds())
-                        .dependencyTaskIds(bridgeContext.getDependencyTaskIds());
-            }
-        }
-
-        ReActContext context = contextBuilder.build();
-
-        return reActExecutor.execute(context);
+    public ReActResult runReAct(String userInput, boolean streaming, Task task) {
+        return getExecutor().runReAct(userInput, streaming, task, null);
     }
 
-    /**
-     * 使用 Workflow 模式执行
-     *
-     * @param workflowId 工作流 ID
-     * @return Workflow 执行结果
-     */
     public WorkflowResult runWorkflow(String workflowId) {
-        if (workflowExecutor == null) {
-            throw new IllegalStateException("WorkflowExecutor not initialized");
-        }
-        if (workflowStore == null) {
-            throw new IllegalStateException("WorkflowStore not initialized");
-        }
+        return getExecutor().runWorkflow(workflowId);
+    }
 
-        // 从 store 获取工作流定义
-        Workflow workflow = workflowStore.findById(workflowId)
-                .orElse(null);
+    // ==================== 惰性初始化 ====================
 
-        if (workflow == null) {
-            return WorkflowResult.builder()
-                    .workflowId(workflowId)
-                    .status(org.dragon.agent.workflow.WorkflowState.State.FAILED)
-                    .errorMessage("Workflow not found: " + workflowId)
+    private CharacterExecutor getExecutor() {
+        if (executor == null) {
+            executor = CharacterExecutor.builder()
+                    .profile(profile)
+                    .runtime(runtime)
+                    .config(executorConfig)
                     .build();
         }
-
-        // 构建输入上下文
-        java.util.Map<String, Object> input = new java.util.HashMap<>();
-        input.put("characterId", this.id);
-        if (workspaceIds != null && !workspaceIds.isEmpty()) {
-            input.put("workspaceId", workspaceIds.get(0));
-        }
-
-        // 执行工作流
-        return workflowExecutor.execute(workflow, input);
+        return executor;
     }
 
-    /**
-     * 获取 Mind 实例
-     * 如果 mind 为 null，则根据 mindConfig 创建
-     *
-     * @return Mind 实例
-     */
-    public Mind getMind() {
-        if (mind == null && mindConfig != null) {
-            initMind();
-        }
-        return mind;
+    // ==================== 兼容旧接口 ====================
+
+    public org.dragon.agent.react.ReActExecutor getReActExecutor() {
+        return runtime != null ? runtime.getReActExecutor() : null;
     }
 
-    /**
-     * 初始化 Mind 实例
-     * 根据 mindConfig 创建 Mind 实例
-     */
-    private void initMind() {
-        if (mindConfig == null) {
-            return;
-        }
-
-        // 加载性格描述
-        String personalityPath = mindConfig.getPersonalityDescriptorPath();
-        if (personalityPath != null && !personalityPath.isEmpty()) {
-            DefaultMind defaultMind = new DefaultMind(
-                    this.id,
-                    null, // TagRepository - TODO: 根据 mindConfig.getTagRepositoryType() 创建
-                    null, // MemoryAccess - TODO: 根据 mindConfig.getMemoryAccessType() 创建
-                    null  // SkillAccess - TODO: 根据 mindConfig.getSkillAccessType() 创建
-            );
-            defaultMind.loadPersonality(personalityPath);
-            this.mind = defaultMind;
-        }
+    public org.dragon.config.PromptManager getPromptManager() {
+        return runtime != null ? runtime.getPromptManager() : null;
     }
 
+    public org.dragon.agent.workflow.WorkflowExecutor getWorkflowExecutor() {
+        return runtime != null ? runtime.getWorkflowExecutor() : null;
+    }
+
+    public org.dragon.agent.workflow.WorkflowStore getWorkflowStore() {
+        return runtime != null ? runtime.getWorkflowStore() : null;
+    }
+
+    public org.dragon.agent.model.ModelRegistry getModelRegistry() {
+        return runtime != null ? runtime.getModelRegistry() : null;
+    }
+
+    public org.dragon.agent.orchestration.OrchestrationService getOrchestrationService() {
+        return runtime != null ? runtime.getOrchestrationService() : null;
+    }
 }

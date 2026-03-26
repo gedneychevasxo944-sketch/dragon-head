@@ -47,6 +47,11 @@ public class ParsedMaterialContentEntity {
     private LocalDateTime parsedAt;
 
     /**
+     * AI 生成的摘要
+     */
+    private String summary;
+
+    /**
      * 转换为ParsedMaterialContent
      */
     public ParsedMaterialContent toParsedMaterialContent() {
@@ -59,6 +64,7 @@ public class ParsedMaterialContentEntity {
                 .status(this.status != null ? ParsedMaterialContent.ParseStatus.valueOf(this.status) : null)
                 .errorMessage(this.errorMessage)
                 .parsedAt(this.parsedAt)
+                .summary(this.summary)
                 .build();
     }
 
@@ -75,6 +81,7 @@ public class ParsedMaterialContentEntity {
                 .status(content.getStatus() != null ? content.getStatus().name() : null)
                 .errorMessage(content.getErrorMessage())
                 .parsedAt(content.getParsedAt())
+                .summary(content.getSummary())
                 .build();
     }
 }

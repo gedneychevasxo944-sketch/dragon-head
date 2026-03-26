@@ -9,15 +9,16 @@ import java.util.stream.Collectors;
 
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
-import org.dragon.task.Task;
-import org.dragon.task.TaskStatus;
-import org.dragon.task.TaskStore;
+import org.dragon.character.profile.CharacterProfile;
 import org.dragon.observer.collector.dto.CharacterObservationSnapshot;
 import org.dragon.observer.collector.dto.MemoryObservationSnapshot;
 import org.dragon.observer.collector.dto.ObservationDataset;
 import org.dragon.observer.collector.dto.SkillObservationSnapshot;
 import org.dragon.observer.collector.dto.WorkspaceObservationSnapshot;
 import org.dragon.observer.evaluation.EvaluationEngine;
+import org.dragon.task.Task;
+import org.dragon.task.TaskStatus;
+import org.dragon.task.TaskStore;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.slf4j.Logger;
@@ -213,7 +214,7 @@ public class DataCollector {
                 .average()
                 .orElse(0.0);
 
-        boolean isActive = character.getStatus() == Character.Status.RUNNING;
+        boolean isActive = character.getStatus() == CharacterProfile.Status.RUNNING;
 
         return CharacterObservationSnapshot.builder()
                 .characterId(character.getId())
@@ -266,7 +267,7 @@ public class DataCollector {
             for (var member : members) {
                 if (member.getCharacterId() != null) {
                     var charOpt = characterRegistry.get(member.getCharacterId());
-                    if (charOpt.isPresent() && charOpt.get().getStatus() == Character.Status.RUNNING) {
+                    if (charOpt.isPresent() && charOpt.get().getStatus() == CharacterProfile.Status.RUNNING) {
                         activeCharCount++;
                     }
                 }

@@ -43,4 +43,10 @@ public class MemoryMaterialContentStore implements MaterialContentStore {
         store.remove(id);
         log.debug("[MemoryMaterialContentStore] Deleted parsed content: {}", id);
     }
+
+    @Override
+    public void update(ParsedMaterialContent content) {
+        store.put(content.getId(), content);
+        log.debug("[MemoryMaterialContentStore] Updated parsed content: {}", content.getId());
+    }
 }

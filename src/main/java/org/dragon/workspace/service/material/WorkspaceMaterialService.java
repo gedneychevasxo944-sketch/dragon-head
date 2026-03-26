@@ -14,6 +14,7 @@ import org.dragon.task.TaskStore;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.material.Material;
 import org.dragon.workspace.material.MaterialContentStore;
+import org.dragon.workspace.material.MaterialEventPublisher;
 import org.dragon.workspace.material.MaterialParser;
 import org.dragon.workspace.material.MaterialStore;
 import org.dragon.workspace.material.MaterialStorage;
@@ -38,19 +39,22 @@ public class WorkspaceMaterialService {
     private final TaskStore taskStore;
     private final List<MaterialParser> materialParsers;
     private final MaterialContentStore materialContentStore;
+    private final MaterialEventPublisher materialEventPublisher;
 
     public WorkspaceMaterialService(MaterialStore materialStore,
                                     MaterialStorage materialStorage,
                                     WorkspaceRegistry workspaceRegistry,
                                     TaskStore taskStore,
                                     List<MaterialParser> materialParsers,
-                                    MaterialContentStore materialContentStore) {
+                                    MaterialContentStore materialContentStore,
+                                    MaterialEventPublisher materialEventPublisher) {
         this.materialStore = materialStore;
         this.materialStorage = materialStorage;
         this.workspaceRegistry = workspaceRegistry;
         this.taskStore = taskStore;
         this.materialParsers = materialParsers;
         this.materialContentStore = materialContentStore;
+        this.materialEventPublisher = materialEventPublisher;
     }
 
     /**
@@ -104,6 +108,9 @@ public class WorkspaceMaterialService {
 
         materialStore.save(material);
         log.info("[WorkspaceMaterialService] Uploaded material: {} to workspace: {}", material.getId(), workspaceId);
+
+        // 发布上传事件，触发异步摘要生成
+        materialEventPublisher.publishUploaded(material);
 
         return material;
     }
@@ -200,6 +207,8 @@ public class WorkspaceMaterialService {
                         .build();
 
                 materialStore.save(material);
+                // 发布上传事件，触发异步摘要生成
+                materialEventPublisher.publishUploaded(material);
                 materials.add(material);
                 log.info("[WorkspaceMaterialService] Ingested NormalizedFile as material: {}", material.getId());
             } catch (Exception e) {
@@ -272,6 +281,19 @@ public class WorkspaceMaterialService {
         return materialContentStore.findByMaterialId(materialId);
     }
 
+    /**
+     * 更新解析内容的摘要
+     *
+     * @param contentId 解析内容 ID
+     * @param summary 摘要
+     */
+    public void updateParsedContentSummary(String contentId, String summary) {
+        materialContentStore.findById(contentId).ifPresent(content -> {
+            content.setSummary(summary);
+            materialContentStore.update(content);
+        });
+    }
+
     // ==================== 任务关联方法 ====================
 
     /**
@@ -323,7 +345,7 @@ public class WorkspaceMaterialService {
             InputStream inputStream = download(material.getId());
             MaterialParser.ParseResult parseResult = selectParser(material).parse(material, inputStream);
 
-            // 将解析结果存储到 task metadata
+            // 将解析结果存储到 task metadata（不再追加到 task.input）
             if (task.getMetadata() == null) {
                 task.setMetadata(new HashMap<>());
             }
@@ -334,13 +356,6 @@ public class WorkspaceMaterialService {
                     .getOrDefault("materialResults", new HashMap<String, Object>());
             materialResults.put(material.getId(), parseResult);
             task.getMetadata().put("materialResults", materialResults);
-
-            // 如果解析成功，追加文本内容到 task input
-            if (parseResult.isSuccess() && parseResult.getTextContent() != null) {
-                Object currentInput = task.getInput();
-                String newContent = "\n\n[Material: " + material.getName() + "]\n" + parseResult.getTextContent();
-                task.setInput(currentInput != null ? currentInput.toString() + newContent : newContent);
-            }
 
             taskStore.update(task);
             log.info("[WorkspaceMaterialService] Attached material {} to task {}", material.getId(), taskId);

@@ -335,7 +335,7 @@ public class ObserverController {
         }
 
         // 否则使用默认的基于评价的计划生成
-        OptimizationPlan plan = planningService.generatePlan(request.getEvaluationId(), observerId);
+        OptimizationPlan plan = planningService.generatePlan(request.getEvaluationId());
         return ResponseEntity.status(HttpStatus.CREATED).body(plan);
     }
 

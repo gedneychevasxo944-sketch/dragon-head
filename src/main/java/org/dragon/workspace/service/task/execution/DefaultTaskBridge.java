@@ -162,11 +162,8 @@ public class DefaultTaskBridge implements TaskBridge {
 
         log.info("[DefaultTaskBridge] Task {} resumed", task.getId());
 
-        // 继续执行
-        TaskBridgeContext bridgeContext = TaskBridgeContext.builder()
-                .workspaceId(task.getWorkspaceId())
-                .build();
-        return execute(task, bridgeContext);
+        // 注意：执行由调用方通过 executeChildTask() 显式触发，避免重复执行
+        return task;
     }
 
     @Override

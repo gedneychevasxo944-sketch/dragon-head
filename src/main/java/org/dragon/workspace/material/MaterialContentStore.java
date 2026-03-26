@@ -29,4 +29,9 @@ public interface MaterialContentStore {
      * 删除
      */
     void delete(String id);
+
+    /**
+     * 更新解析内容
+     */
+    void update(ParsedMaterialContent content);
 }

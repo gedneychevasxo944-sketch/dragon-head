@@ -8,6 +8,7 @@ import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
 import org.dragon.task.TaskStatus;
 import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.service.task.execution.TaskBridge;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class WorkspaceTaskService {
 
     private final TaskStore taskStore;
     private final WorkspaceRegistry workspaceRegistry;
-    private final org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService taskExecutionService;
+    private final TaskBridge taskBridge;
 
     /**
      * 获取任务
@@ -196,7 +197,14 @@ public class WorkspaceTaskService {
      * 暂停任务
      */
     public Task suspendTask(String workspaceId, String taskId, String reason) {
-        return taskExecutionService.suspendTask(workspaceId, taskId, reason);
+        Task task = getTask(workspaceId, taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
+
+        TaskBridge.SuspendContext context = TaskBridge.SuspendContext.builder()
+                .reason(reason)
+                .suspendedAt(LocalDateTime.now().toString())
+                .build();
+        return taskBridge.suspend(task, context);
     }
 
     /**
@@ -254,7 +262,14 @@ public class WorkspaceTaskService {
      * 恢复任务
      */
     public Task resumeTask(String workspaceId, String taskId, Object newInput) {
-        return taskExecutionService.resumeTask(workspaceId, taskId, newInput);
+        Task task = getTask(workspaceId, taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
+
+        TaskBridge.ResumeContext context = TaskBridge.ResumeContext.builder()
+                .newInput(newInput)
+                .reason("User resumed")
+                .build();
+        return taskBridge.resume(task, context);
     }
 
     /**

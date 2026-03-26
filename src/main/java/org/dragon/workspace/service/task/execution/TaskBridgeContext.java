@@ -70,4 +70,9 @@ public class TaskBridgeContext {
      * 协作会话状态
      */
     private String sessionStatus;
+
+    /**
+     * 物料上下文（从可见物料构建）
+     */
+    private String materialContext;
 }

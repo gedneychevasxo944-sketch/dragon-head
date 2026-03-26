@@ -16,11 +16,12 @@ import org.dragon.workspace.service.TaskResumeTargetResolver;
 /**
  * WorkspaceApplicationBuilder Workspace 应用构建器
  * 用于构建 WorkspaceApplication 实例，在构建过程中完成 Workspace 的初始化
+ * 仅供 WorkspaceApplicationProvider 内部使用
  *
  * @author wyj
  * @version 1.0
  */
-public class WorkspaceApplicationBuilder {
+class WorkspaceApplicationBuilder {
 
     // 必需属性
     String workspaceId;

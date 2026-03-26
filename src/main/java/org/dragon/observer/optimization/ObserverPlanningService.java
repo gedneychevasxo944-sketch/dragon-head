@@ -42,14 +42,18 @@ public class ObserverPlanningService {
      * 从评价生成优化计划
      *
      * @param evaluationId 评价记录 ID
-     * @param observerId   Observer ID
      * @return 生成的优化计划（草稿状态）
      */
-    public OptimizationPlan generatePlan(String evaluationId, String observerId) {
+    public OptimizationPlan generatePlan(String evaluationId) {
         EvaluationRecord evaluation = evaluationRecordStore.findById(evaluationId)
                 .orElseThrow(() -> new IllegalArgumentException("Evaluation not found: " + evaluationId));
 
-        log.info("[ObserverPlanningService] Generating optimization plan for evaluation: {}", evaluationId);
+        String observerId = evaluation.getObserverId();
+        if (observerId == null) {
+            throw new IllegalStateException("Evaluation record has no observerId: " + evaluationId);
+        }
+
+        log.info("[ObserverPlanningService] Generating optimization plan for evaluation: {} by observer: {}", evaluationId, observerId);
 
         // 构建计划基本信息
         OptimizationPlan plan = OptimizationPlan.builder()

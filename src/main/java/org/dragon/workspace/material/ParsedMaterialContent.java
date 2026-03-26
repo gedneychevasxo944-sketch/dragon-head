@@ -61,6 +61,11 @@ public class ParsedMaterialContent {
     private LocalDateTime parsedAt;
 
     /**
+     * AI 生成的摘要
+     */
+    private String summary;
+
+    /**
      * 解析状态枚举
      */
     public enum ParseStatus {

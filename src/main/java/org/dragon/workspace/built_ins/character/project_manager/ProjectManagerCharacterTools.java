@@ -3,7 +3,8 @@ package org.dragon.workspace.built_ins.character.project_manager;
 import java.util.List;
 
 import org.dragon.agent.tool.ToolConnector;
-import org.dragon.agent.tool.ToolRegistry;
+import org.dragon.tools.ToolConnectorAdapter;
+import org.dragon.tools.ToolRegistry;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,10 +29,10 @@ public class ProjectManagerCharacterTools {
      * @return 工具列表
      */
     public List<ToolConnector> getAvailableTools() {
-        return List.of(
-                toolRegistry.get("decompose_task").orElse(null),
-                toolRegistry.get("assign_subtask").orElse(null),
-                toolRegistry.get("get_task_status").orElse(null)
+        return java.util.Arrays.asList(
+                toolRegistry.get("decompose_task").map(ToolConnectorAdapter::new).orElse(null),
+                toolRegistry.get("assign_subtask").map(ToolConnectorAdapter::new).orElse(null),
+                toolRegistry.get("get_task_status").map(ToolConnectorAdapter::new).orElse(null)
         );
     }
 
@@ -42,6 +43,6 @@ public class ProjectManagerCharacterTools {
      * @return 是否可用
      */
     public boolean isToolAvailable(String toolName) {
-        return toolRegistry.exists(toolName);
+        return toolRegistry.get(toolName).isPresent();
     }
 }

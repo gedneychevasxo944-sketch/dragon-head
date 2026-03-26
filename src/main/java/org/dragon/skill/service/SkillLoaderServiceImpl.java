@@ -61,8 +61,9 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     @Override
     public void loadByWorkspace(Long workspaceId) {
         log.info("按工作空间加载 Skill: workspaceId={}", workspaceId);
-        List<SkillEntity> entities = skillStore.findAllEnabledByWorkspace(workspaceId);
-        for (SkillEntity entity : entities) {
+        List<org.dragon.skill.entity.WorkspaceSkillEntity> entities = workspaceSkillStore.findAllEnabledByWorkspace(workspaceId);
+        for (org.dragon.skill.entity.WorkspaceSkillEntity wsEntity : entities) {
+            SkillEntity entity = wsEntity.getSkill();
             // 若该 Skill 已在注册表中，跳过重复加载
             if (skillRegistry.findById(entity.getId()).isPresent()) {
                 log.debug("Skill 已在注册表中，跳过重复加载: name={}", entity.getName());

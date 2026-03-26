@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
+import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
 import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
 import org.springframework.stereotype.Component;
 
@@ -26,19 +27,16 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class TaskDecomposer {
 
-    private final org.dragon.workspace.built_ins.character.project_manager.ProjectManagerCharacterFactory projectManagerCharacterFactory;
-    private final org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharacterFactory promptWriterCharacterFactory;
+    private final BuiltInCharacterFactory builtInCharacterFactory;
     private final org.dragon.agent.llm.util.CharacterCaller characterCaller;
     private final org.dragon.config.PromptManager promptManager;
     private final Gson gson = new Gson();
 
     public TaskDecomposer(
-            org.dragon.workspace.built_ins.character.project_manager.ProjectManagerCharacterFactory projectManagerCharacterFactory,
-            org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharacterFactory promptWriterCharacterFactory,
+            BuiltInCharacterFactory builtInCharacterFactory,
             org.dragon.agent.llm.util.CharacterCaller characterCaller,
             org.dragon.config.PromptManager promptManager) {
-        this.projectManagerCharacterFactory = projectManagerCharacterFactory;
-        this.promptWriterCharacterFactory = promptWriterCharacterFactory;
+        this.builtInCharacterFactory = builtInCharacterFactory;
         this.characterCaller = characterCaller;
         this.promptManager = promptManager;
     }
@@ -49,7 +47,7 @@ public class TaskDecomposer {
     public TaskDecompositionResult decompose(Task parentTask, Workspace workspace, List<WorkspaceMember> members) {
         try {
             // 获取 PromptWriter Character
-            var promptWriterCharacter = promptWriterCharacterFactory
+            var promptWriterCharacter = builtInCharacterFactory.getPromptWriterCharacterFactory()
                     .getOrCreatePromptWriterCharacter(workspace.getId());
 
             // 获取 prompt 模板
@@ -64,7 +62,7 @@ public class TaskDecomposer {
             String fullPrompt = characterCaller.call(promptWriterCharacter, promptWriterInput);
 
             // 获取 ProjectManager Character
-            var projectManagerCharacter = projectManagerCharacterFactory
+            var projectManagerCharacter = builtInCharacterFactory.getProjectManagerCharacterFactory()
                     .getOrCreateProjectManagerCharacter(workspace.getId());
 
             // 调用 ProjectManager 进行任务分解

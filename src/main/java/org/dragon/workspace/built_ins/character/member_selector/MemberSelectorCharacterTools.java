@@ -3,7 +3,8 @@ package org.dragon.workspace.built_ins.character.member_selector;
 import java.util.List;
 
 import org.dragon.agent.tool.ToolConnector;
-import org.dragon.agent.tool.ToolRegistry;
+import org.dragon.tools.ToolConnectorAdapter;
+import org.dragon.tools.ToolRegistry;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,10 +29,10 @@ public class MemberSelectorCharacterTools {
      * @return 工具列表
      */
     public List<ToolConnector> getAvailableTools() {
-        return List.of(
-                toolRegistry.get("list_workspace_members").orElse(null),
-                toolRegistry.get("get_member_profile").orElse(null),
-                toolRegistry.get("select_member").orElse(null)
+        return java.util.Arrays.asList(
+                toolRegistry.get("list_workspace_members").map(ToolConnectorAdapter::new).orElse(null),
+                toolRegistry.get("get_member_profile").map(ToolConnectorAdapter::new).orElse(null),
+                toolRegistry.get("select_member").map(ToolConnectorAdapter::new).orElse(null)
         );
     }
 
@@ -42,6 +43,6 @@ public class MemberSelectorCharacterTools {
      * @return 是否可用
      */
     public boolean isToolAvailable(String toolName) {
-        return toolRegistry.exists(toolName);
+        return toolRegistry.get(toolName).isPresent();
     }
 }

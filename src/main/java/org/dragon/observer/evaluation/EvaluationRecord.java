@@ -47,6 +47,11 @@ public class EvaluationRecord {
     private String id;
 
     /**
+     * 评价者 Observer ID
+     */
+    private String observerId;
+
+    /**
      * 目标类型
      */
     private TargetType targetType;

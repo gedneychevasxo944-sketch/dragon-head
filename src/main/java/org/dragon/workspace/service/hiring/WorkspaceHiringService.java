@@ -6,11 +6,12 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.dragon.character.Character;
+import org.dragon.character.profile.CharacterProfile;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLogService;
-import org.dragon.workspace.built_ins.character.hr.HrCharacterFactory;
+import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
 import org.dragon.workspace.built_ins.character.hr.HrHiringExecutor;
 import org.dragon.workspace.hiring.HireMode;
 import org.dragon.workspace.member.CharacterDuty;
@@ -38,7 +39,7 @@ public class WorkspaceHiringService {
     private final CharacterRegistry characterRegistry;
     private final CharacterDutyStore characterDutyStore;
     private final ObserverActionLogService actionLogService;
-    private final HrCharacterFactory hrCharacterFactory;
+    private final BuiltInCharacterFactory builtInCharacterFactory;
     private final HrHiringExecutor hrHiringExecutor;
     private final WorkspaceMemberManagementService memberManagementService;
 
@@ -122,8 +123,8 @@ public class WorkspaceHiringService {
      * @return HR Character (如果存在)
      */
     public Optional<Character> getHrCharacter(String workspaceId) {
-        if (hrCharacterFactory.hasHrCharacter(workspaceId)) {
-            return Optional.of(hrCharacterFactory.getOrCreateHrCharacter(workspaceId));
+        if (builtInCharacterFactory.getHrCharacterFactory().hasHrCharacter(workspaceId)) {
+            return Optional.of(builtInCharacterFactory.getHrCharacterFactory().getOrCreateHrCharacter(workspaceId));
         }
         return Optional.empty();
     }
@@ -240,7 +241,7 @@ public class WorkspaceHiringService {
         // 获取所有可用 Character
         List<Character> availableCharacters = characterRegistry.listAll().stream()
                 .filter(c -> !currentMemberIds.contains(c.getId()))
-                .filter(c -> c.getStatus() == Character.Status.RUNNING)
+                .filter(c -> c.getStatus() == CharacterProfile.Status.RUNNING)
                 .toList();
 
         if (availableCharacters.isEmpty()) {

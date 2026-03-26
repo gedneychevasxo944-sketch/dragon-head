@@ -3,7 +3,8 @@ package org.dragon.workspace.built_ins.character.hr;
 import java.util.List;
 
 import org.dragon.agent.tool.ToolConnector;
-import org.dragon.agent.tool.ToolRegistry;
+import org.dragon.tools.ToolConnectorAdapter;
+import org.dragon.tools.ToolRegistry;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,12 +29,12 @@ public class HrCharacterTools {
      * @return 工具列表
      */
     public List<ToolConnector> getAvailableTools() {
-        return List.of(
-                toolRegistry.get("hire_character").orElse(null),
-                toolRegistry.get("fire_character").orElse(null),
-                toolRegistry.get("assign_duty").orElse(null),
-                toolRegistry.get("list_candidates").orElse(null),
-                toolRegistry.get("evaluate_character").orElse(null)
+        return java.util.Arrays.asList(
+                toolRegistry.get("hire_character").map(ToolConnectorAdapter::new).orElse(null),
+                toolRegistry.get("fire_character").map(ToolConnectorAdapter::new).orElse(null),
+                toolRegistry.get("assign_duty").map(ToolConnectorAdapter::new).orElse(null),
+                toolRegistry.get("list_candidates").map(ToolConnectorAdapter::new).orElse(null),
+                toolRegistry.get("evaluate_character").map(ToolConnectorAdapter::new).orElse(null)
         );
     }
 
@@ -44,6 +45,6 @@ public class HrCharacterTools {
      * @return 是否可用
      */
     public boolean isToolAvailable(String toolName) {
-        return toolRegistry.exists(toolName);
+        return toolRegistry.get(toolName).isPresent();
     }
 }

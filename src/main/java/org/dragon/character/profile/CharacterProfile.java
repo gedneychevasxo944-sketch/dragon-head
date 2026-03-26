@@ -1,0 +1,124 @@
+package org.dragon.character.profile;
+
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.dragon.character.mind.Mind;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * Character 数据体
+ * 包含 Character 的静态数据和心智配置
+ *
+ * @author wyj
+ * @version 1.0
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CharacterProfile {
+
+    /**
+     * Character 全局唯一标识
+     */
+    private String id;
+
+    /**
+     * 所属 Workspace ID
+     */
+    private List<String> workspaceIds;
+
+    /**
+     * 所属 Organization ID
+     */
+    private List<String> organizationIds;
+
+    /**
+     * Character 名称
+     */
+    private String name;
+
+    /**
+     * 版本号
+     */
+    private int version;
+
+    /**
+     * 描述
+     */
+    private String description;
+
+    /**
+     * 心智模块配置
+     */
+    private MindConfig mindConfig;
+
+    /**
+     * Mind 实例
+     */
+    private Mind mind;
+
+    /**
+     * 扩展属性
+     */
+    @Builder.Default
+    private Map<String, Object> extensions = Map.of();
+
+    /**
+     * 当前 Character 允许使用的工具名称集合
+     */
+    @Builder.Default
+    private Set<String> allowedTools = new HashSet<>();
+
+    /**
+     * 创建时间
+     */
+    private LocalDateTime createdAt;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updatedAt;
+
+    /**
+     * 状态
+     */
+    private Status status;
+
+    /**
+     * Character 状态枚举
+     */
+    public enum Status {
+        UNLOADED,
+        LOADED,
+        RUNNING,
+        PAUSED,
+        DESTROYED
+    }
+
+    /**
+     * Mind 配置
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MindConfig {
+        /** 性格描述文件路径 */
+        private String personalityDescriptorPath;
+        /** 标签存储类型 */
+        private String tagRepositoryType;
+        /** 记忆存储类型 */
+        private String memoryAccessType;
+        /** 技能存储类型 */
+        private String skillAccessType;
+    }
+}

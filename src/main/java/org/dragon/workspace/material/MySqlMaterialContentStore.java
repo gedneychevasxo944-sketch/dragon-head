@@ -46,4 +46,10 @@ public class MySqlMaterialContentStore implements MaterialContentStore {
     public void delete(String id) {
         mysqlDb.delete(ParsedMaterialContentEntity.class, id);
     }
+
+    @Override
+    public void update(ParsedMaterialContent content) {
+        ParsedMaterialContentEntity entity = ParsedMaterialContentEntity.fromParsedMaterialContent(content);
+        mysqlDb.update(entity);
+    }
 }

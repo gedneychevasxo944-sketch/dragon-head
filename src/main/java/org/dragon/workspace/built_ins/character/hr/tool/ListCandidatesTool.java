@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.dragon.agent.tool.ToolConnector;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
+import org.dragon.character.profile.CharacterProfile;
 import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
 import org.springframework.stereotype.Component;
 
@@ -52,7 +53,7 @@ public class ListCandidatesTool implements ToolConnector {
             // 获取所有可用 Character，排除已在 workspace 中的
             List<Character> availableCharacters = characterRegistry.listAll().stream()
                     .filter(c -> !currentMemberIds.contains(c.getId()))
-                    .filter(c -> c.getStatus() == Character.Status.RUNNING)
+                    .filter(c -> c.getStatus() == CharacterProfile.Status.RUNNING)
                     .collect(Collectors.toList());
 
             StringBuilder content = new StringBuilder();

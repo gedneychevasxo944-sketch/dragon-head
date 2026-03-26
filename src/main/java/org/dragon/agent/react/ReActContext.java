@@ -184,6 +184,11 @@ public class ReActContext {
      */
     private List<String> dependencyTaskIds;
 
+    /**
+     * 物料上下文（独立于 systemPrompt 和 userInput）
+     */
+    private String materialContext;
+
     // ==================== 业务方法 ====================
 
     /**

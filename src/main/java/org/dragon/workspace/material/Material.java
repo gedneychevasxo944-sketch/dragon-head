@@ -22,6 +22,24 @@ import lombok.NoArgsConstructor;
 public class Material {
 
     /**
+     * 可见性范围
+     */
+    public enum VisibilityScope {
+        /**
+         * 仅本次任务可见
+         */
+        TASK_SCOPED,
+        /**
+         * 全 Workspace 可见
+         */
+        WORKSPACE_SCOPED,
+        /**
+         * 仅指定 Character 可见
+         */
+        CHARACTER_SCOPED
+    }
+
+    /**
      * 物料唯一标识
      */
     private String id;
@@ -30,6 +48,17 @@ public class Material {
      * 工作空间 ID
      */
     private String workspaceId;
+
+    /**
+     * 可见性范围
+     */
+    @Builder.Default
+    private VisibilityScope visibility = VisibilityScope.WORKSPACE_SCOPED;
+
+    /**
+     * 可见性目标 ID（根据 visibility 不同指向 taskId 或 characterId）
+     */
+    private String visibilityTargetId;
 
     /**
      * 物料名称

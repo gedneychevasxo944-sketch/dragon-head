@@ -11,9 +11,9 @@ import org.dragon.workspace.member.CharacterDuty;
 import org.dragon.workspace.member.CharacterDutyStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 /**
  * HR 雇佣执行器

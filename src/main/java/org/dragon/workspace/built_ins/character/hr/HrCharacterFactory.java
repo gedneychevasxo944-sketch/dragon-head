@@ -1,19 +1,16 @@
 package org.dragon.workspace.built_ins.character.hr;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.dragon.agent.tool.ToolConnector;
-import org.dragon.agent.tool.ToolRegistry;
 import org.dragon.character.Character;
-import org.dragon.character.CharacterFactory;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
+import org.dragon.tools.ToolRegistry;
 import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.built_ins.character.AbstractWorkspaceCharacterFactory;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -25,16 +22,27 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public class HrCharacterFactory implements CharacterFactory<Character> {
+public class HrCharacterFactory extends AbstractWorkspaceCharacterFactory {
 
     private static final String HR_CHARACTER_PREFIX = "hr_";
     private static final String CHARACTER_TYPE = "hr";
+    private static final String CHARACTER_NAME = "HR Manager";
+    private static final String CHARACTER_DESCRIPTION = "负责 Workspace 的人力资源管理，包括招聘、解雇、职责分配等";
 
-    private final CharacterRegistry characterRegistry;
-    private final WorkspaceRegistry workspaceRegistry;
     private final ToolRegistry toolRegistry;
-    private final CharacterRuntimeBinder characterRuntimeBinder;
+
+    public HrCharacterFactory(CharacterRegistry characterRegistry,
+                              WorkspaceRegistry workspaceRegistry,
+                              CharacterRuntimeBinder characterRuntimeBinder,
+                              ToolRegistry toolRegistry) {
+        super(characterRegistry, workspaceRegistry, characterRuntimeBinder);
+        this.toolRegistry = toolRegistry;
+    }
+
+    @Override
+    protected String getCharacterIdPrefix() {
+        return HR_CHARACTER_PREFIX;
+    }
 
     @Override
     public String getCharacterType() {
@@ -42,75 +50,28 @@ public class HrCharacterFactory implements CharacterFactory<Character> {
     }
 
     @Override
-    public Character createCharacter(String workspaceId) {
-        String hrCharacterId = getCharacterId(workspaceId);
-
-        // 验证 Workspace 存在
-        workspaceRegistry.get(workspaceId)
-                .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
-
-        // 创建 HR Character
-        Character hrCharacter = Character.builder()
-                .id(hrCharacterId)
-                .name("HR Manager")
-                .description("负责 Workspace 的人力资源管理，包括招聘、解雇、职责分配等")
-                .status(Character.Status.RUNNING)
-                .workspaceIds(List.of(workspaceId))
-                .version(1)
-                .extensions(new ConcurrentHashMap<>())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        // 绑定运行时依赖
-        characterRuntimeBinder.bind(hrCharacter, workspaceId);
-
-        // 注册到 CharacterRegistry
-        characterRegistry.register(hrCharacter);
-
-        log.info("[HrCharacterFactory] Created HR character {} for workspace {}", hrCharacterId, workspaceId);
-
-        return hrCharacter;
+    protected String getCharacterName() {
+        return CHARACTER_NAME;
     }
 
     @Override
-    public Character getOrCreateCharacter(String workspaceId) {
-        String hrCharacterId = getCharacterId(workspaceId);
-
-        // 检查是否已存在
-        return characterRegistry.get(hrCharacterId)
-                .orElseGet(() -> createCharacter(workspaceId));
-    }
-
-    @Override
-    public boolean hasCharacter(String workspaceId) {
-        String hrCharacterId = getCharacterId(workspaceId);
-        return characterRegistry.exists(hrCharacterId);
+    protected String getCharacterDescription() {
+        return CHARACTER_DESCRIPTION;
     }
 
     @Override
     public List<ToolConnector> getAvailableTools() {
-        return List.of(
-                toolRegistry.get("hire_character").orElse(null),
-                toolRegistry.get("fire_character").orElse(null),
-                toolRegistry.get("assign_duty").orElse(null),
-                toolRegistry.get("list_candidates").orElse(null),
-                toolRegistry.get("evaluate_character").orElse(null)
+        return java.util.Arrays.asList(
+                toolRegistry.get("hire_character").map(agentTool -> new org.dragon.tools.ToolConnectorAdapter(agentTool)).orElse(null),
+                toolRegistry.get("fire_character").map(agentTool -> new org.dragon.tools.ToolConnectorAdapter(agentTool)).orElse(null),
+                toolRegistry.get("assign_duty").map(agentTool -> new org.dragon.tools.ToolConnectorAdapter(agentTool)).orElse(null),
+                toolRegistry.get("list_candidates").map(agentTool -> new org.dragon.tools.ToolConnectorAdapter(agentTool)).orElse(null),
+                toolRegistry.get("evaluate_character").map(agentTool -> new org.dragon.tools.ToolConnectorAdapter(agentTool)).orElse(null)
         );
     }
 
     /**
-     * 获取 HR Character ID
-     */
-    public String getCharacterId(String workspaceId) {
-        return HR_CHARACTER_PREFIX + workspaceId;
-    }
-
-    /**
      * 获取 Workspace 的 HR Character (兼容旧接口)
-     *
-     * @param workspaceId Workspace ID
-     * @return HR Character 实例
      */
     public Character getOrCreateHrCharacter(String workspaceId) {
         return getOrCreateCharacter(workspaceId);

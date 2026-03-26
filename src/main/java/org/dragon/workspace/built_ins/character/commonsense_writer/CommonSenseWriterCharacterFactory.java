@@ -1,16 +1,14 @@
 package org.dragon.workspace.built_ins.character.commonsense_writer;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.dragon.agent.tool.ToolConnector;
-import org.dragon.agent.tool.ToolRegistry;
 import org.dragon.character.Character;
-import org.dragon.character.CharacterFactory;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
+import org.dragon.tools.ToolRegistry;
 import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.built_ins.character.AbstractWorkspaceCharacterFactory;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -26,17 +24,27 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public class CommonSenseWriterCharacterFactory implements CharacterFactory<Character> {
+public class CommonSenseWriterCharacterFactory extends AbstractWorkspaceCharacterFactory {
 
     private static final String COMMON_SENSE_WRITER_CHARACTER_PREFIX = "commonsense_writer_";
     private static final String CHARACTER_TYPE = "commonsense_writer";
+    private static final String CHARACTER_NAME = "Common Sense Writer";
+    private static final String CHARACTER_DESCRIPTION = "负责将 CommonSense 常识转换成 prompt 格式";
 
-    private final CharacterRegistry characterRegistry;
-    private final WorkspaceRegistry workspaceRegistry;
-    private final ToolRegistry toolRegistry;
     private final CommonSenseWriterCharacterTools commonSenseWriterCharacterTools;
-    private final CharacterRuntimeBinder characterRuntimeBinder;
+
+    public CommonSenseWriterCharacterFactory(CharacterRegistry characterRegistry,
+                                             WorkspaceRegistry workspaceRegistry,
+                                             CharacterRuntimeBinder characterRuntimeBinder,
+                                             CommonSenseWriterCharacterTools commonSenseWriterCharacterTools) {
+        super(characterRegistry, workspaceRegistry, characterRuntimeBinder);
+        this.commonSenseWriterCharacterTools = commonSenseWriterCharacterTools;
+    }
+
+    @Override
+    protected String getCharacterIdPrefix() {
+        return COMMON_SENSE_WRITER_CHARACTER_PREFIX;
+    }
 
     @Override
     public String getCharacterType() {
@@ -44,50 +52,13 @@ public class CommonSenseWriterCharacterFactory implements CharacterFactory<Chara
     }
 
     @Override
-    public Character createCharacter(String workspaceId) {
-        String characterId = getCharacterId(workspaceId);
-
-        // 验证 Workspace 存在
-        workspaceRegistry.get(workspaceId)
-                .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
-
-        // 创建 CommonSenseWriter Character
-        Character character = Character.builder()
-                .id(characterId)
-                .name("Common Sense Writer")
-                .description("负责将 CommonSense 常识转换成 prompt 格式")
-                .status(Character.Status.RUNNING)
-                .workspaceIds(List.of(workspaceId))
-                .version(1)
-                .extensions(new ConcurrentHashMap<>())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        // 绑定运行时依赖
-        characterRuntimeBinder.bind(character, workspaceId);
-
-        // 注册到 CharacterRegistry
-        characterRegistry.register(character);
-
-        log.info("[CommonSenseWriterCharacterFactory] Created CommonSenseWriter character {} for workspace {}", characterId, workspaceId);
-
-        return character;
+    protected String getCharacterName() {
+        return CHARACTER_NAME;
     }
 
     @Override
-    public Character getOrCreateCharacter(String workspaceId) {
-        String characterId = getCharacterId(workspaceId);
-
-        // 检查是否已存在
-        return characterRegistry.get(characterId)
-                .orElseGet(() -> createCharacter(workspaceId));
-    }
-
-    @Override
-    public boolean hasCharacter(String workspaceId) {
-        String characterId = getCharacterId(workspaceId);
-        return characterRegistry.exists(characterId);
+    protected String getCharacterDescription() {
+        return CHARACTER_DESCRIPTION;
     }
 
     @Override
@@ -96,20 +67,7 @@ public class CommonSenseWriterCharacterFactory implements CharacterFactory<Chara
     }
 
     /**
-     * 获取 CommonSenseWriter Character ID
-     *
-     * @param workspaceId Workspace ID
-     * @return Character ID
-     */
-    public String getCharacterId(String workspaceId) {
-        return COMMON_SENSE_WRITER_CHARACTER_PREFIX + workspaceId;
-    }
-
-    /**
      * 获取 Workspace 的 CommonSenseWriter Character
-     *
-     * @param workspaceId Workspace ID
-     * @return CommonSenseWriter Character 实例
      */
     public Character getOrCreateCommonSenseWriterCharacter(String workspaceId) {
         return getOrCreateCharacter(workspaceId);
@@ -117,9 +75,6 @@ public class CommonSenseWriterCharacterFactory implements CharacterFactory<Chara
 
     /**
      * 检查 Workspace 是否有 CommonSenseWriter Character
-     *
-     * @param workspaceId Workspace ID
-     * @return 是否存在
      */
     public boolean hasCommonSenseWriterCharacter(String workspaceId) {
         return hasCharacter(workspaceId);

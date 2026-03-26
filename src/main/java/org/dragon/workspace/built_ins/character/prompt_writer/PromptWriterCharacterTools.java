@@ -1,9 +1,11 @@
 package org.dragon.workspace.built_ins.character.prompt_writer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.dragon.agent.tool.ToolConnector;
-import org.dragon.agent.tool.ToolRegistry;
+import org.dragon.tools.AgentTool;
+import org.dragon.tools.ToolConnectorAdapter;
 import org.dragon.workspace.built_ins.character.commonsense_writer.CommonSenseWriterCharacterTools;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class PromptWriterCharacterTools {
 
     private final CommonSenseWriterCharacterTools commonSenseWriterCharacterTools;
-    private final ToolRegistry toolRegistry;
+    private final org.dragon.tools.ToolRegistry toolRegistry;
 
     /**
      * 获取可用的工具列表
@@ -30,7 +32,12 @@ public class PromptWriterCharacterTools {
      */
     public List<ToolConnector> getAvailableTools() {
         return toolRegistry.get("get_workspace_common_sense")
-                .map(List::of)
+                .map(agentTool -> {
+                    ToolConnectorAdapter adapter = new ToolConnectorAdapter(agentTool);
+                    List<ToolConnector> result = new ArrayList<>();
+                    result.add(adapter);
+                    return result;
+                })
                 .orElse(List.of());
     }
 

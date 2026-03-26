@@ -1,16 +1,24 @@
-package org.dragon.skill.controller;
+package org.dragon.api.controller;
+
+import java.util.List;
+import java.util.Map;
 
 import org.dragon.skill.dto.WorkspaceSkillBindRequest;
 import org.dragon.skill.dto.WorkspaceSkillResponse;
 import org.dragon.skill.dto.WorkspaceSkillUpdateRequest;
 import org.dragon.skill.service.WorkspaceSkillService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Workspace Skill 关联管理接口。

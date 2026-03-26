@@ -1,5 +1,6 @@
 package org.dragon.character;
 
+import org.dragon.character.profile.CharacterProfile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -144,7 +145,7 @@ public class CharacterRegistry {
      */
     public void load(String characterId) {
         get(characterId).ifPresent(character -> {
-            character.setStatus(Character.Status.LOADED);
+            character.setStatus(CharacterProfile.Status.LOADED);
             character.setUpdatedAt(LocalDateTime.now());
             log.info("[CharacterRegistry] Loaded character: {}", characterId);
         });
@@ -157,7 +158,7 @@ public class CharacterRegistry {
      */
     public void start(String characterId) {
         get(characterId).ifPresent(character -> {
-            character.setStatus(Character.Status.RUNNING);
+            character.setStatus(CharacterProfile.Status.RUNNING);
             character.setUpdatedAt(LocalDateTime.now());
             log.info("[CharacterRegistry] Started character: {}", characterId);
         });
@@ -170,7 +171,7 @@ public class CharacterRegistry {
      */
     public void pause(String characterId) {
         get(characterId).ifPresent(character -> {
-            character.setStatus(Character.Status.PAUSED);
+            character.setStatus(CharacterProfile.Status.PAUSED);
             character.setUpdatedAt(LocalDateTime.now());
             log.info("[CharacterRegistry] Paused character: {}", characterId);
         });
@@ -183,7 +184,7 @@ public class CharacterRegistry {
      */
     public void destroy(String characterId) {
         get(characterId).ifPresent(character -> {
-            character.setStatus(Character.Status.DESTROYED);
+            character.setStatus(CharacterProfile.Status.DESTROYED);
             character.setUpdatedAt(LocalDateTime.now());
             log.info("[CharacterRegistry] Destroyed character: {}", characterId);
         });

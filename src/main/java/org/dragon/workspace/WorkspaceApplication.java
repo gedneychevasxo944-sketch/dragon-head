@@ -20,6 +20,8 @@ import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.service.task.arrangement.WorkspaceTaskArrangementService;
+import org.dragon.workspace.service.task.arrangement.WorkspaceTaskArrangementService.TaskExecutionMode;
+import org.dragon.workspace.service.task.arrangement.dto.TaskCreationCommand;
 import org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService;
 import org.dragon.workspace.service.WorkspaceTaskService;
 import org.dragon.workspace.service.TaskContinuationResolver;
@@ -178,33 +180,6 @@ public class WorkspaceApplication {
     // ==================== 任务分发执行 ====================
 
     /**
-     * 执行任务（通过 TaskArrangement 进行智能编排）
-     * 1. 通过 MemberSelector 选择合适的 Character
-     * 2. 通过 ProjectManager 拆分任务为子任务
-     * 3. 分派子任务给合适的 Character 执行
-     *
-     * @param taskName 任务名称
-     * @param taskDescription 任务描述
-     * @param input 任务输入
-     * @param creatorId 创建者 ID
-     * @return 工作空间任务
-     */
-    public Task executeTask(String taskName, String taskDescription, Object input, String creatorId) {
-        return workspaceTaskArrangementService.submitTask(
-                workspaceId, taskName, taskDescription, input, creatorId);
-    }
-
-    /**
-     * 执行任务（带 metadata 和来源信息）
-     */
-    public Task executeTask(String taskName, String taskDescription, Object input, String creatorId,
-            java.util.Map<String, Object> metadata, String sourceChatId, String sourceMessageId, String sourceChannel) {
-        return workspaceTaskArrangementService.submitTask(
-                workspaceId, taskName, taskDescription, input, creatorId,
-                null, null, metadata, sourceChatId, sourceMessageId, sourceChannel);
-    }
-
-    /**
      * 执行任务（处理 NormalizedMessage，支持任务续跑）
      * 当消息应该继续已有任务时，直接恢复该任务
      * 当消息应该开启新任务时，创建新任务
@@ -235,7 +210,7 @@ public class WorkspaceApplication {
                             .orElse(matchedTask)
                     : matchedTask;
 
-            // 恢复任务（追加用户输入）
+            // 恢复任务（追加用户输入，不自动执行）
             executableTask = workspaceTaskService.resumeTask(workspaceId, executableTask.getId(), message.getTextContent());
 
             // 继续执行（传递正确的父子关系）
@@ -243,18 +218,30 @@ public class WorkspaceApplication {
 
             return matchedTask;
         } else {
-            // 开启新任务 - 透传 metadata 和来源信息
-            return executeTask(
-                    "用户请求",
-                    message.getTextContent(),
-                    message,
-                    creatorId,
-                    message.getMetadata(),
-                    message.getChannel(),    // sourceChannel
-                    message.getMessageId(),  // sourceMessageId
-                    message.getChatId()      // sourceChatId
-            );
+            // 开启新任务
+            TaskCreationCommand command = TaskCreationCommand.builder()
+                    .taskName("用户请求")
+                    .taskDescription(message.getTextContent())
+                    .input(message)
+                    .creatorId(creatorId)
+                    .metadata(message.getMetadata())
+                    .sourceChannel(message.getChannel())
+                    .sourceMessageId(message.getMessageId())
+                    .sourceChatId(message.getChatId())
+                    .build();
+            return executeTask(command);
         }
+    }
+
+    /**
+     * 执行任务（通过 TaskCreationCommand 提交新任务）
+     *
+     * @param command 任务创建命令
+     * @return 工作空间任务
+     */
+    public Task executeTask(TaskCreationCommand command) {
+        return workspaceTaskArrangementService.submitTask(
+                workspaceId, command, TaskExecutionMode.AUTO, null);
     }
 
     // ==================== 物料管理委托 ====================

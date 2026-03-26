@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Lazy;
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
 import org.dragon.config.PromptManager;
-import org.dragon.workspace.built_ins.character.commonsense_writer.CommonSenseWriterCharacterFactory;
+import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
 import org.dragon.workspace.commons.content.CommonSenseContent;
 import org.dragon.workspace.commons.content.CommonSenseContentParser;
 import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CommonSenseService {
 
     private final WorkspaceCommonSenseStore store;
-    private final CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory;
+    private final BuiltInCharacterFactory builtInCharacterFactory;
     private final CharacterCaller characterCaller;
     private final PromptManager promptManager;
     private final CommonSenseContentParser contentParser;
@@ -45,12 +45,12 @@ public class CommonSenseService {
     private final Map<String, CachedPrompt> promptCache = new ConcurrentHashMap<>();
 
     public CommonSenseService(WorkspaceCommonSenseStore store,
-                              @Lazy CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory,
+                              @Lazy BuiltInCharacterFactory builtInCharacterFactory,
                               CharacterCaller characterCaller,
                               PromptManager promptManager,
                               CommonSenseContentParser contentParser) {
         this.store = store;
-        this.commonSenseWriterCharacterFactory = commonSenseWriterCharacterFactory;
+        this.builtInCharacterFactory = builtInCharacterFactory;
         this.characterCaller = characterCaller;
         this.promptManager = promptManager;
         this.contentParser = contentParser;
@@ -247,7 +247,7 @@ public class CommonSenseService {
 
         try {
             // 获取 CommonSenseWriter Character
-            Character commonSenseWriter = commonSenseWriterCharacterFactory
+            Character commonSenseWriter = builtInCharacterFactory.getCommonSenseWriterCharacterFactory()
                     .getOrCreateCommonSenseWriterCharacter(workspaceId);
 
             // 调用 Character 生成 prompt

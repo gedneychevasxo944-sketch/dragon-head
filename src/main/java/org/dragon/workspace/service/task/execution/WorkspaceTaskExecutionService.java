@@ -12,6 +12,8 @@ import org.dragon.task.TaskStore;
 import org.dragon.workspace.chat.ChatMessage;
 import org.dragon.workspace.chat.ChatRoom;
 import org.dragon.workspace.chat.ChatSession;
+import org.dragon.workspace.material.Material;
+import org.dragon.workspace.service.material.WorkspaceMaterialService;
 import org.dragon.workspace.task.notify.WorkspaceTaskNotifier;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +36,7 @@ public class WorkspaceTaskExecutionService {
     private final TaskBridge taskBridge;
     private final WorkspaceTaskNotifier taskNotifier;
     private final ChatRoom chatRoom;
+    private final WorkspaceMaterialService materialService;
 
     /**
      * 执行单个子任务
@@ -90,6 +93,10 @@ public class WorkspaceTaskExecutionService {
         if (result.getStatus() == TaskStatus.COMPLETED) {
             log.info("[TaskExecutionService] ChildTask {} completed successfully", childTask.getId());
             taskNotifier.notifyCompleted(result);
+            // 通知依赖已解决，触发等待此任务的依赖任务重调度
+            notifyDependencyResolved(childTask.getId());
+            // 同步拉起同一父任务下其他可执行的子任务
+            executeRunnableChildTasks(parentTask.getId(), parentTask);
             // 通知依赖已解决
             if (result.getCollaborationSessionId() != null) {
                 chatRoom.markParticipantReady(result.getCollaborationSessionId(), result.getCharacterId());
@@ -160,7 +167,51 @@ public class WorkspaceTaskExecutionService {
                 .participantStates(participantStates)
                 .blockedParticipants(blockedParticipants)
                 .sessionStatus(sessionStatus)
+                .materialContext(buildMaterialContext(childTask, parentTask.getWorkspaceId()))
                 .build();
+    }
+
+    /**
+     * 根据任务和可见性构建物料上下文
+     */
+    private String buildMaterialContext(Task task, String workspaceId) {
+        if (task.getMaterialIds() == null || task.getMaterialIds().isEmpty()) {
+            return null;
+        }
+
+        StringBuilder context = new StringBuilder();
+        for (String materialId : task.getMaterialIds()) {
+            Optional<Material> materialOpt = materialService.get(materialId);
+            if (materialOpt.isEmpty()) {
+                continue;
+            }
+            Material material = materialOpt.get();
+
+            // 检查可见性
+            if (material.getVisibility() == Material.VisibilityScope.CHARACTER_SCOPED) {
+                // 需要匹配当前 character
+                if (task.getCharacterId() == null
+                        || !task.getCharacterId().equals(material.getVisibilityTargetId())) {
+                    continue;
+                }
+            } else if (material.getVisibility() == Material.VisibilityScope.TASK_SCOPED) {
+                // 需要匹配当前任务
+                if (!task.getId().equals(material.getVisibilityTargetId())) {
+                    continue;
+                }
+            }
+            // WORKSPACE_SCOPED 默认可访问
+
+            // 获取解析内容
+            Optional<org.dragon.workspace.material.ParsedMaterialContent> contentOpt =
+                    materialService.getParsedContent(materialId);
+            if (contentOpt.isPresent() && contentOpt.get().getTextContent() != null) {
+                context.append(String.format("[%s]: %s\n",
+                        material.getName(), contentOpt.get().getTextContent()));
+            }
+        }
+
+        return context.length() > 0 ? context.toString() : null;
     }
 
     /**
@@ -258,84 +309,6 @@ public class WorkspaceTaskExecutionService {
             parentTask.setStatus(TaskStatus.RUNNING); // 保持运行状态
             taskStore.update(parentTask);
         }
-    }
-
-    /**
-     * 暂停任务
-     */
-    public Task suspendTask(String workspaceId, String taskId, String reason) {
-        Task task = taskStore.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
-
-        TaskBridge.SuspendContext context = TaskBridge.SuspendContext.builder()
-                .reason(reason)
-                .suspendedAt(LocalDateTime.now().toString())
-                .build();
-        return taskBridge.suspend(task, context);
-    }
-
-    /**
-     * 恢复任务
-     */
-    public Task resumeTask(String workspaceId, String taskId, Object newInput) {
-        Task task = taskStore.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
-
-        TaskBridge.ResumeContext context = TaskBridge.ResumeContext.builder()
-                .newInput(newInput)
-                .reason("User resumed")
-                .build();
-        return taskBridge.resume(task, context);
-    }
-
-    /**
-     * 标记任务等待用户输入
-     */
-    public Task markWaitingUserInput(String workspaceId, String taskId, String question) {
-        Task task = taskStore.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
-
-        task.setStatus(TaskStatus.WAITING_USER_INPUT);
-        task.setErrorMessage(question); // 存储最后的问题
-        task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
-
-        log.info("[TaskExecutionService] Task {} waiting for user input: {}", taskId, question);
-        taskNotifier.notifyQuestion(task, question);
-        return task;
-    }
-
-    /**
-     * 标记任务等待依赖
-     */
-    public Task markWaitingDependency(String workspaceId, String taskId, String dependencyTaskId) {
-        Task task = taskStore.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
-
-        // 添加依赖
-        List<String> deps = task.getDependencyTaskIds();
-        if (deps == null) {
-            deps = new ArrayList<>();
-            task.setDependencyTaskIds(deps);
-        }
-        if (!deps.contains(dependencyTaskId)) {
-            deps.add(dependencyTaskId);
-        }
-
-        task.setStatus(TaskStatus.WAITING_DEPENDENCY);
-        task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
-
-        log.info("[TaskExecutionService] Task {} waiting for dependency: {}", taskId, dependencyTaskId);
-        taskNotifier.notifyWaiting(task, "Waiting for dependency: " + dependencyTaskId);
-
-        // 同步更新 ChatRoom 参与者状态
-        String sessionId = task.getCollaborationSessionId();
-        if (sessionId != null && task.getCharacterId() != null) {
-            chatRoom.markParticipantWaiting(sessionId, task.getCharacterId(), "Waiting for dependency: " + dependencyTaskId);
-        }
-
-        return task;
     }
 
     /**

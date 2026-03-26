@@ -1,19 +1,15 @@
 package org.dragon.workspace.built_ins.character.project_manager;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.dragon.agent.tool.ToolConnector;
-import org.dragon.agent.tool.ToolRegistry;
 import org.dragon.character.Character;
-import org.dragon.character.CharacterFactory;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
 import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.built_ins.character.AbstractWorkspaceCharacterFactory;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -25,17 +21,27 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public class ProjectManagerCharacterFactory implements CharacterFactory<Character> {
+public class ProjectManagerCharacterFactory extends AbstractWorkspaceCharacterFactory {
 
     private static final String PROJECT_MANAGER_CHARACTER_PREFIX = "project_manager_";
     private static final String CHARACTER_TYPE = "project_manager";
+    private static final String CHARACTER_NAME = "Project Manager";
+    private static final String CHARACTER_DESCRIPTION = "负责将复杂任务拆解为可执行的子任务，并管理任务执行进度";
 
-    private final CharacterRegistry characterRegistry;
-    private final WorkspaceRegistry workspaceRegistry;
-    private final ToolRegistry toolRegistry;
     private final ProjectManagerCharacterTools projectManagerCharacterTools;
-    private final CharacterRuntimeBinder characterRuntimeBinder;
+
+    public ProjectManagerCharacterFactory(CharacterRegistry characterRegistry,
+                                          WorkspaceRegistry workspaceRegistry,
+                                          CharacterRuntimeBinder characterRuntimeBinder,
+                                          ProjectManagerCharacterTools projectManagerCharacterTools) {
+        super(characterRegistry, workspaceRegistry, characterRuntimeBinder);
+        this.projectManagerCharacterTools = projectManagerCharacterTools;
+    }
+
+    @Override
+    protected String getCharacterIdPrefix() {
+        return PROJECT_MANAGER_CHARACTER_PREFIX;
+    }
 
     @Override
     public String getCharacterType() {
@@ -43,50 +49,13 @@ public class ProjectManagerCharacterFactory implements CharacterFactory<Characte
     }
 
     @Override
-    public Character createCharacter(String workspaceId) {
-        String characterId = getCharacterId(workspaceId);
-
-        // 验证 Workspace 存在
-        workspaceRegistry.get(workspaceId)
-                .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
-
-        // 创建 ProjectManager Character
-        Character character = Character.builder()
-                .id(characterId)
-                .name("Project Manager")
-                .description("负责将复杂任务拆解为可执行的子任务，并管理任务执行进度")
-                .status(Character.Status.RUNNING)
-                .workspaceIds(List.of(workspaceId))
-                .version(1)
-                .extensions(new ConcurrentHashMap<>())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        // 绑定运行时依赖
-        characterRuntimeBinder.bind(character, workspaceId);
-
-        // 注册到 CharacterRegistry
-        characterRegistry.register(character);
-
-        log.info("[ProjectManagerCharacterFactory] Created ProjectManager character {} for workspace {}", characterId, workspaceId);
-
-        return character;
+    protected String getCharacterName() {
+        return CHARACTER_NAME;
     }
 
     @Override
-    public Character getOrCreateCharacter(String workspaceId) {
-        String characterId = getCharacterId(workspaceId);
-
-        // 检查是否已存在
-        return characterRegistry.get(characterId)
-                .orElseGet(() -> createCharacter(workspaceId));
-    }
-
-    @Override
-    public boolean hasCharacter(String workspaceId) {
-        String characterId = getCharacterId(workspaceId);
-        return characterRegistry.exists(characterId);
+    protected String getCharacterDescription() {
+        return CHARACTER_DESCRIPTION;
     }
 
     @Override
@@ -95,20 +64,7 @@ public class ProjectManagerCharacterFactory implements CharacterFactory<Characte
     }
 
     /**
-     * 获取 ProjectManager Character ID
-     *
-     * @param workspaceId Workspace ID
-     * @return Character ID
-     */
-    public String getCharacterId(String workspaceId) {
-        return PROJECT_MANAGER_CHARACTER_PREFIX + workspaceId;
-    }
-
-    /**
      * 获取 Workspace 的 ProjectManager Character
-     *
-     * @param workspaceId Workspace ID
-     * @return ProjectManager Character 实例
      */
     public Character getOrCreateProjectManagerCharacter(String workspaceId) {
         return getOrCreateCharacter(workspaceId);
@@ -116,9 +72,6 @@ public class ProjectManagerCharacterFactory implements CharacterFactory<Characte
 
     /**
      * 检查 Workspace 是否有 ProjectManager Character
-     *
-     * @param workspaceId Workspace ID
-     * @return 是否存在
      */
     public boolean hasProjectManagerCharacter(String workspaceId) {
         return hasCharacter(workspaceId);

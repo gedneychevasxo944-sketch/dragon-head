@@ -12,6 +12,7 @@ import org.dragon.workspace.service.task.arrangement.WorkspaceTaskArrangementSer
 import org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService;
 import org.dragon.workspace.service.WorkspaceTaskService;
 import org.dragon.workspace.service.TaskContinuationResolver;
+import org.dragon.workspace.service.TaskResumeTargetResolver;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -43,6 +44,7 @@ public class WorkspaceApplicationProvider {
     private final TaskStore taskStore;
     private final CharacterRegistry characterRegistry;
     private final TaskContinuationResolver taskContinuationResolver;
+    private final TaskResumeTargetResolver taskResumeTargetResolver;
     private final WorkspaceTaskExecutionService taskExecutionService;
 
     /**
@@ -71,6 +73,7 @@ public class WorkspaceApplicationProvider {
                 .taskStore(taskStore)
                 .characterRegistry(characterRegistry)
                 .taskContinuationResolver(taskContinuationResolver)
+                .taskResumeTargetResolver(taskResumeTargetResolver)
                 .taskExecutionService(taskExecutionService)
                 .build());
     }
