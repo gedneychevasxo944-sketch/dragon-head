@@ -1,4 +1,7 @@
-package org.dragon.observer.optimization;
+package org.dragon.observer.optimization.applier;
+
+import org.dragon.observer.optimization.plan.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
 
 /**
  * OptimizationTargetApplier 优化目标应用器策略接口

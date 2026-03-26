@@ -1,6 +1,8 @@
-package org.dragon.observer.optimization;
+package org.dragon.observer.optimization.plan;
 
 import java.time.LocalDateTime;
+
+import org.dragon.observer.optimization.plan.OptimizationAction.ActionType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

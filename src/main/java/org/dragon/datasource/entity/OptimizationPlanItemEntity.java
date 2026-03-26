@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-import org.dragon.observer.optimization.OptimizationPlanItem;
-import org.dragon.observer.optimization.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationPlanItem;
 
 /**
  * OptimizationPlanItemEntity 优化计划项目实体

@@ -1,7 +1,10 @@
-package org.dragon.observer.optimization;
+package org.dragon.observer.optimization.store;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.OptimizationActionEntity;
+import org.dragon.observer.optimization.plan.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationAction.Status;
+import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 

@@ -1,4 +1,4 @@
-package org.dragon.observer.optimization;
+package org.dragon.observer.optimization.plan;
 
 import java.time.LocalDateTime;
 import java.util.Map;

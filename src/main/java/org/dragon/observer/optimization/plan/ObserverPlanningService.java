@@ -1,4 +1,4 @@
-package org.dragon.observer.optimization;
+package org.dragon.observer.optimization.plan;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -8,6 +8,12 @@ import java.util.UUID;
 
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
+import org.dragon.observer.optimization.LLMSuggestionGenerator;
+import org.dragon.observer.optimization.OptimizationExecutor;
+import org.dragon.observer.optimization.plan.OptimizationAction.ActionType;
+import org.dragon.observer.optimization.plan.OptimizationAction.Status;
+import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
+import org.dragon.observer.optimization.store.OptimizationPlanStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package org.dragon.observer.optimization;
+package org.dragon.observer.optimization.store;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,6 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+import org.dragon.observer.optimization.plan.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationAction.Status;
+import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
 import org.springframework.stereotype.Component;
 
 /**

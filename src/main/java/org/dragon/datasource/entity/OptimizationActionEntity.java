@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import org.dragon.observer.optimization.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationAction;
+
 import java.util.Map;
 
 /**

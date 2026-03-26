@@ -1,7 +1,9 @@
-package org.dragon.observer.optimization;
+package org.dragon.observer.optimization.applier;
 
 import java.util.Map;
 
+import org.dragon.observer.optimization.plan.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

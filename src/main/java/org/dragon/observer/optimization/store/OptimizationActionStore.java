@@ -1,7 +1,11 @@
-package org.dragon.observer.optimization;
+package org.dragon.observer.optimization.store;
 
 import java.util.List;
 import java.util.Optional;
+
+import org.dragon.observer.optimization.plan.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationAction.Status;
+import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
 
 /**
  * OptimizationAction 优化动作存储接口
