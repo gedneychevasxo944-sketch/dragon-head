@@ -8,10 +8,13 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.dragon.agent.llm.util.CharacterCaller;
+import org.dragon.character.Character;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.PersonalityDescriptor;
 import org.dragon.character.mind.tag.Tag;
 import org.dragon.workspace.commons.CommonSenseValidator;
+import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
 import org.dragon.observer.log.ModificationLog;
@@ -43,7 +46,8 @@ public class OptimizationExecutor {
     private final CommonSenseValidator commonSenseValidator;
     private final EvaluationRecordStore evaluationRecordStore;
     private final List<OptimizationTargetApplier> appliers;
-    private final LLMSuggestionGenerator suggestionGenerator;
+    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final CharacterCaller characterCaller;
 
     /**
      * 获取指定目标类型的 applier
@@ -281,14 +285,23 @@ public class OptimizationExecutor {
 
         try {
             String workspace = (String) action.getParameters().get("workspace");
-            String organizationId = (String) action.getParameters().get("organizationId");
 
-            List<String> suggestions = suggestionGenerator.generateSuggestions(
-                    workspace,
-                    organizationId,
-                    action.getTargetType(),
-                    action.getTargetId(),
-                    10);
+            // 使用 ObserverAdvisorCharacter 生成建议
+            Character observerAdvisor = builtInCharacterFactory.getObserverAdvisorCharacterFactory()
+                    .getOrCreateForWorkspace(workspace);
+
+            String userPrompt = buildSuggestionPrompt(action);
+
+            String response = characterCaller.call(observerAdvisor, userPrompt);
+
+            List<String> suggestions = parseSuggestions(response);
+
+            if (suggestions.isEmpty()) {
+                log.info("[OptimizationExecutor] No suggestions generated, skipping optimization");
+                action.markExecuted("No suggestions generated");
+                optimizationActionStore.save(action);
+                return action;
+            }
 
             if (suggestions.isEmpty()) {
                 log.info("[OptimizationExecutor] No suggestions generated, skipping optimization");
@@ -349,5 +362,59 @@ public class OptimizationExecutor {
     private String generateReason(OptimizationAction action) {
         return String.format("Optimization triggered by evaluation %s, action type: %s",
                 action.getEvaluationId(), action.getActionType());
+    }
+
+    /**
+     * 构建建议请求的 prompt
+     */
+    private String buildSuggestionPrompt(OptimizationAction action) {
+        StringBuilder prompt = new StringBuilder();
+
+        prompt.append("请为以下目标生成优化建议：\n\n");
+        prompt.append("目标类型: ").append(action.getTargetType()).append("\n");
+        prompt.append("目标ID: ").append(action.getTargetId()).append("\n\n");
+        prompt.append("请生成 3-5 条具体、可执行的优化建议，以 JSON 数组格式输出。");
+        prompt.append("\n建议示例：[\"建议1\", \"建议2\", \"建议3\"]");
+
+        return prompt.toString();
+    }
+
+    /**
+     * 解析 Character 返回的建议
+     */
+    private List<String> parseSuggestions(String response) {
+        List<String> suggestions = new ArrayList<>();
+
+        if (response == null || response.isEmpty()) {
+            return suggestions;
+        }
+
+        // 尝试提取 JSON 数组
+        try {
+            int start = response.indexOf('[');
+            int end = response.lastIndexOf(']');
+            if (start >= 0 && end > start) {
+                String jsonArray = response.substring(start, end + 1);
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                suggestions = gson.fromJson(jsonArray, List.class);
+                return suggestions;
+            }
+        } catch (Exception e) {
+            log.warn("[OptimizationExecutor] Failed to parse suggestions as JSON: {}", e.getMessage());
+        }
+
+        // 回退：按行解析
+        String[] lines = response.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.startsWith("-") || line.matches("^\\d+\\..*")) {
+                String suggestion = line.replaceFirst("^[-\\d.]+\\s*", "").trim();
+                if (!suggestion.isEmpty() && suggestion.length() > 10) {
+                    suggestions.add(suggestion);
+                }
+            }
+        }
+
+        return suggestions;
     }
 }

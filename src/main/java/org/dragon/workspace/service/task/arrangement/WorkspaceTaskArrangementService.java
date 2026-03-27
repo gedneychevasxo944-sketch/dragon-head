@@ -40,6 +40,7 @@ public class WorkspaceTaskArrangementService {
     private final TaskStore taskStore;
     private final org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService taskExecutionService;
     private final TaskDecomposer taskDecomposer;
+    private final TaskAssignmentResolver taskAssignmentResolver;
     private final ChildTaskFactory childTaskFactory;
     private final org.dragon.workspace.service.task.execution.CollaborationSessionCoordinator sessionCoordinator;
 
@@ -137,7 +138,7 @@ public class WorkspaceTaskArrangementService {
      * AUTO 模式：任务分解后直接获取 characterId
      */
     private void handleAutoMode(Task task, Workspace workspace, List<WorkspaceMember> members) {
-        // 1. 任务分解 - 委托给 TaskDecomposer
+        // 1. 任务分解 - 委托给 TaskDecomposer（只分解结构，不分配角色）
         TaskDecompositionResult decompositionResult = taskDecomposer.decompose(task, workspace, members);
 
         if (decompositionResult == null || decompositionResult.getChildTasks() == null || decompositionResult.getChildTasks().isEmpty()) {
@@ -148,8 +149,11 @@ public class WorkspaceTaskArrangementService {
             return;
         }
 
-        // 2. 创建子任务 - 委托给 ChildTaskFactory
-        List<Task> childTasks = childTaskFactory.createChildTasks(decompositionResult, task);
+        // 2. 成员分配 - 委托给 TaskAssignmentResolver（通过 member_selector 选择执行者）
+        TaskDecompositionResult assignedResult = taskAssignmentResolver.resolveAssignments(decompositionResult, workspace, members);
+
+        // 3. 创建子任务 - 委托给 ChildTaskFactory（使用已分配的角色创建任务）
+        List<Task> childTasks = childTaskFactory.createChildTasks(assignedResult, task);
 
         if (childTasks.isEmpty()) {
             log.warn("[TaskArrangementService] Failed to parse child tasks for task {}", task.getId());

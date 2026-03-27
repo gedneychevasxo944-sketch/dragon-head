@@ -6,10 +6,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.dragon.agent.llm.util.CharacterCaller;
+import org.dragon.character.Character;
+import org.dragon.character.CharacterRegistry;
+import org.dragon.config.PromptKeys;
+import org.dragon.config.PromptManager;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
-import org.dragon.observer.optimization.LLMSuggestionGenerator;
 import org.dragon.observer.optimization.OptimizationExecutor;
+import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
 import org.dragon.observer.optimization.plan.OptimizationAction.ActionType;
 import org.dragon.observer.optimization.plan.OptimizationAction.Status;
 import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
@@ -41,7 +46,9 @@ public class ObserverPlanningService {
     private final OptimizationPlanStore planStore;
     private final OptimizationExecutor optimizationExecutor;
     private final EvaluationRecordStore evaluationRecordStore;
-    private final LLMSuggestionGenerator suggestionGenerator;
+    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final CharacterCaller characterCaller;
+    private final PromptManager promptManager;
     private final Gson gson = new Gson();
 
     /**
@@ -106,17 +113,23 @@ public class ObserverPlanningService {
 
     /**
      * 生成计划项目列表
-     * 通过 LLM 分析评价数据，生成结构化的优化项目
+     * 通过 ObserverAdvisorCharacter 分析评价数据，生成结构化的优化项目
      */
     private List<OptimizationPlanItem> generatePlanItems(OptimizationPlan plan, EvaluationRecord evaluation) {
         List<OptimizationPlanItem> items = new ArrayList<>();
 
-        // 方式1：基于评价建议生成（使用现有的 LLM suggestion 生成器）
-        String workspace = ""; // TODO: 需要从 evaluation 或 context 中获取
-        List<String> suggestions = suggestionGenerator.generateSuggestions(
-                workspace, null,
-                plan.getTargetType(), plan.getTargetId(),
-                10);
+        // 获取 ObserverAdvisorCharacter
+        Character observerAdvisor = builtInCharacterFactory.getObserverAdvisorCharacterFactory()
+                .getOrCreateForWorkspace(getWorkspaceId(evaluation));
+
+        // 构建请求 prompt
+        String userPrompt = buildSuggestionPrompt(plan, evaluation);
+
+        // 调用 Character 生成建议
+        String response = characterCaller.call(observerAdvisor, userPrompt);
+
+        // 解析建议
+        List<String> suggestions = parseSuggestions(response);
 
         int sequence = 1;
         for (String suggestion : suggestions) {
@@ -152,6 +165,116 @@ public class ObserverPlanningService {
         }
 
         return items;
+    }
+
+    /**
+     * 获取 Workspace ID
+     */
+    private String getWorkspaceId(EvaluationRecord evaluation) {
+        // 优先从 evaluation 的 extensions 中获取 workspaceId
+        if (evaluation.getExtensions() != null && evaluation.getExtensions().containsKey("workspaceId")) {
+            return (String) evaluation.getExtensions().get("workspaceId");
+        }
+        // 如果没有，尝试从 targetId 推断（对于 CHARACTER 类型，targetId 可能包含 workspace 前缀）
+        if (evaluation.getTargetType() == EvaluationRecord.TargetType.CHARACTER) {
+            return extractWorkspaceIdFromCharacterId(evaluation.getTargetId());
+        }
+        return null;
+    }
+
+    /**
+     * 从 Character ID 中提取 Workspace ID
+     * 假设 Character ID 格式为 {type}_{workspaceId}_{...}
+     */
+    private String extractWorkspaceIdFromCharacterId(String characterId) {
+        if (characterId == null || characterId.isEmpty()) {
+            return null;
+        }
+        // 简单实现：尝试找到下划线分隔的部分
+        int firstUnderscore = characterId.indexOf('_');
+        int secondUnderscore = characterId.indexOf('_', firstUnderscore + 1);
+        if (firstUnderscore > 0 && secondUnderscore > firstUnderscore) {
+            return characterId.substring(firstUnderscore + 1, secondUnderscore);
+        }
+        return null;
+    }
+
+    /**
+     * 构建建议请求的 prompt
+     */
+    private String buildSuggestionPrompt(OptimizationPlan plan, EvaluationRecord evaluation) {
+        StringBuilder prompt = new StringBuilder();
+
+        prompt.append("请为以下目标生成优化建议：\n\n");
+        prompt.append("目标类型: ").append(plan.getTargetType()).append("\n");
+        prompt.append("目标ID: ").append(plan.getTargetId()).append("\n\n");
+
+        // 添加评价信息
+        prompt.append("评价信息：\n");
+        if (evaluation.getOverallScore() != null) {
+            prompt.append("- 综合评分: ").append(String.format("%.2f", evaluation.getOverallScore())).append("\n");
+        }
+        if (evaluation.getTaskCompletionScore() != null) {
+            prompt.append("- 任务完成度: ").append(String.format("%.2f", evaluation.getTaskCompletionScore())).append("\n");
+        }
+        if (evaluation.getEfficiencyScore() != null) {
+            prompt.append("- 效率: ").append(String.format("%.2f", evaluation.getEfficiencyScore())).append("\n");
+        }
+        if (evaluation.getFindings() != null && !evaluation.getFindings().isEmpty()) {
+            prompt.append("- 发现的问题:\n");
+            for (var finding : evaluation.getFindings()) {
+                prompt.append("  * ").append(finding.getSummary()).append("\n");
+            }
+        }
+        if (evaluation.getSuggestions() != null && !evaluation.getSuggestions().isEmpty()) {
+            prompt.append("- 已有建议:\n");
+            for (String suggestion : evaluation.getSuggestions()) {
+                prompt.append("  * ").append(suggestion).append("\n");
+            }
+        }
+
+        prompt.append("\n请生成 3-5 条具体、可执行的优化建议，以 JSON 数组格式输出。");
+        prompt.append("\n建议示例：[\"建议1\", \"建议2\", \"建议3\"]");
+
+        return prompt.toString();
+    }
+
+    /**
+     * 解析 Character 返回的建议
+     */
+    private List<String> parseSuggestions(String response) {
+        List<String> suggestions = new ArrayList<>();
+
+        if (response == null || response.isEmpty()) {
+            return suggestions;
+        }
+
+        // 尝试提取 JSON 数组
+        try {
+            int start = response.indexOf('[');
+            int end = response.lastIndexOf(']');
+            if (start >= 0 && end > start) {
+                String jsonArray = response.substring(start, end + 1);
+                suggestions = gson.fromJson(jsonArray, List.class);
+                return suggestions;
+            }
+        } catch (Exception e) {
+            log.warn("[ObserverPlanningService] Failed to parse suggestions as JSON: {}", e.getMessage());
+        }
+
+        // 回退：按行解析
+        String[] lines = response.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.startsWith("-") || line.matches("^\\d+\\..*")) {
+                String suggestion = line.replaceFirst("^[-\\d.]+\\s*", "").trim();
+                if (!suggestion.isEmpty() && suggestion.length() > 10) {
+                    suggestions.add(suggestion);
+                }
+            }
+        }
+
+        return suggestions;
     }
 
     /**

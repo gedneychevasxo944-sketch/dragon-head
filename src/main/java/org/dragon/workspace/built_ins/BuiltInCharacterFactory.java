@@ -11,6 +11,7 @@ import org.dragon.workspace.built_ins.character.commonsense_writer.CommonSenseWr
 import org.dragon.workspace.built_ins.character.hr.HrCharacterFactory;
 import org.dragon.workspace.built_ins.character.member_selector.MemberSelectorCharacterFactory;
 import org.dragon.workspace.built_ins.character.material_summary.MaterialSummaryCharacterFactory;
+import org.dragon.workspace.built_ins.character.observer_advisor.ObserverAdvisorCharacterFactory;
 import org.dragon.workspace.built_ins.character.project_manager.ProjectManagerCharacterFactory;
 import org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharacterFactory;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ public class BuiltInCharacterFactory {
     private final ProjectManagerCharacterFactory projectManagerCharacterFactory;
     private final PromptWriterCharacterFactory promptWriterCharacterFactory;
     private final CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory;
+    private final ObserverAdvisorCharacterFactory observerAdvisorCharacterFactory;
 
     /**
      * 内置 Character 工厂映射 (type -> factory)
@@ -42,13 +44,15 @@ public class BuiltInCharacterFactory {
             MaterialSummaryCharacterFactory materialSummaryCharacterFactory,
             ProjectManagerCharacterFactory projectManagerCharacterFactory,
             PromptWriterCharacterFactory promptWriterCharacterFactory,
-            CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory) {
+            CommonSenseWriterCharacterFactory commonSenseWriterCharacterFactory,
+            ObserverAdvisorCharacterFactory observerAdvisorCharacterFactory) {
         this.hrCharacterFactory = hrCharacterFactory;
         this.memberSelectorCharacterFactory = memberSelectorCharacterFactory;
         this.materialSummaryCharacterFactory = materialSummaryCharacterFactory;
         this.projectManagerCharacterFactory = projectManagerCharacterFactory;
         this.promptWriterCharacterFactory = promptWriterCharacterFactory;
         this.commonSenseWriterCharacterFactory = commonSenseWriterCharacterFactory;
+        this.observerAdvisorCharacterFactory = observerAdvisorCharacterFactory;
 
         // 初始化注册
         initFactories();
@@ -64,6 +68,7 @@ public class BuiltInCharacterFactory {
         registerFactory(projectManagerCharacterFactory.getCharacterType(), projectManagerCharacterFactory);
         registerFactory(promptWriterCharacterFactory.getCharacterType(), promptWriterCharacterFactory);
         registerFactory(commonSenseWriterCharacterFactory.getCharacterType(), commonSenseWriterCharacterFactory);
+        registerFactory(observerAdvisorCharacterFactory.getCharacterType(), observerAdvisorCharacterFactory);
     }
 
     /**
@@ -136,6 +141,13 @@ public class BuiltInCharacterFactory {
      */
     public CommonSenseWriterCharacterFactory getCommonSenseWriterCharacterFactory() {
         return commonSenseWriterCharacterFactory;
+    }
+
+    /**
+     * 获取 ObserverAdvisor Character 工厂
+     */
+    public ObserverAdvisorCharacterFactory getObserverAdvisorCharacterFactory() {
+        return observerAdvisorCharacterFactory;
     }
 
     /**

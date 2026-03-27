@@ -3,10 +3,15 @@
     "allow": [
       "Bash(mvn compile:*)",
       "Bash(git fetch:*)",
-      "Bash(./mvnw compile:*)"
+      "Bash(./mvnw compile:*)",
+      "Bash(mvn clean:*)",
+      "Bash(mvn test:*)"
     ],
     "additionalDirectories": [
       "/Users/yijunwang/.claude/plans"
     ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": false
   }
 }
