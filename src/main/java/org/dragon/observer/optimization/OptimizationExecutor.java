@@ -14,7 +14,7 @@ import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.PersonalityDescriptor;
 import org.dragon.character.mind.tag.Tag;
 import org.dragon.workspace.commons.CommonSenseValidator;
-import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
 import org.dragon.observer.log.ModificationLog;
@@ -287,8 +287,7 @@ public class OptimizationExecutor {
             String workspace = (String) action.getParameters().get("workspace");
 
             // 使用 ObserverAdvisorCharacter 生成建议
-            Character observerAdvisor = builtInCharacterFactory.getObserverAdvisorCharacterFactory()
-                    .getOrCreateForWorkspace(workspace);
+            Character observerAdvisor = builtInCharacterFactory.getOrCreateObserverAdvisorForWorkspace(workspace);
 
             String userPrompt = buildSuggestionPrompt(action);
 

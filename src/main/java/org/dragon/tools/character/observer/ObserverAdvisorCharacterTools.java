@@ -1,4 +1,4 @@
-package org.dragon.workspace.built_ins.character.observer_advisor.tool;
+package org.dragon.tools.character.observer;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

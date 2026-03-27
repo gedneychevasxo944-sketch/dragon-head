@@ -11,8 +11,8 @@ import org.dragon.character.CharacterRegistry;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLogService;
-import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
-import org.dragon.workspace.built_ins.character.hr.HrHiringExecutor;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.workspace.service.hiring.HrHiringExecutor;
 import org.dragon.workspace.hiring.HireMode;
 import org.dragon.workspace.member.CharacterDuty;
 import org.dragon.workspace.member.CharacterDutyStore;
@@ -123,8 +123,8 @@ public class WorkspaceHiringService {
      * @return HR Character (如果存在)
      */
     public Optional<Character> getHrCharacter(String workspaceId) {
-        if (builtInCharacterFactory.getHrCharacterFactory().hasHrCharacter(workspaceId)) {
-            return Optional.of(builtInCharacterFactory.getHrCharacterFactory().getOrCreateHrCharacter(workspaceId));
+        if (builtInCharacterFactory.hasForWorkspace("hr", workspaceId)) {
+            return Optional.of(builtInCharacterFactory.getOrCreateHrCharacter(workspaceId));
         }
         return Optional.empty();
     }

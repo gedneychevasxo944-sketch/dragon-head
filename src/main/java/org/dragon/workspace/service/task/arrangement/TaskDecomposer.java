@@ -8,7 +8,8 @@ import java.util.stream.Collectors;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.workspace.service.task.arrangement.dto.PromptWriterInput;
 import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
 import org.springframework.stereotype.Component;
 
@@ -47,8 +48,7 @@ public class TaskDecomposer {
     public TaskDecompositionResult decompose(Task parentTask, Workspace workspace, List<WorkspaceMember> members) {
         try {
             // 获取 PromptWriter Character
-            var promptWriterCharacter = builtInCharacterFactory.getPromptWriterCharacterFactory()
-                    .getOrCreatePromptWriterCharacter(workspace.getId());
+            var promptWriterCharacter = builtInCharacterFactory.getOrCreatePromptWriterCharacter(workspace.getId());
 
             // 获取 prompt 模板
             String promptTemplate = promptManager.getGlobalPrompt(
@@ -62,8 +62,7 @@ public class TaskDecomposer {
             String fullPrompt = characterCaller.call(promptWriterCharacter, promptWriterInput);
 
             // 获取 ProjectManager Character
-            var projectManagerCharacter = builtInCharacterFactory.getProjectManagerCharacterFactory()
-                    .getOrCreateProjectManagerCharacter(workspace.getId());
+            var projectManagerCharacter = builtInCharacterFactory.getOrCreateProjectManagerCharacter(workspace.getId());
 
             // 调用 ProjectManager 进行任务分解
             String result = characterCaller.call(projectManagerCharacter, fullPrompt);
@@ -87,7 +86,7 @@ public class TaskDecomposer {
                             ? String.join(", ", m.getTags())
                             : null;
                     String description = buildMemberDescription(m);
-                    return org.dragon.workspace.built_ins.character.prompt_writer.dto.PromptWriterInput.MemberInfo.builder()
+                    return PromptWriterInput.MemberInfo.builder()
                             .characterId(m.getCharacterId())
                             .role(m.getRole())
                             .layer(m.getLayer() != null ? m.getLayer().toString() : null)
@@ -118,11 +117,11 @@ public class TaskDecomposer {
                 "collaborationConstraint", "子任务间应保持独立性，按依赖关系顺序执行"
         );
 
-        var input = org.dragon.workspace.built_ins.character.prompt_writer.dto.PromptWriterInput.builder()
+        var input = PromptWriterInput.builder()
                 .workspaceId(task.getWorkspaceId())
                 .promptType(promptType)
                 .promptTemplate(promptTemplate)
-                .task(org.dragon.workspace.built_ins.character.prompt_writer.dto.PromptWriterInput.TaskInfo.builder()
+                .task(PromptWriterInput.TaskInfo.builder()
                         .id(task.getId())
                         .name(task.getName())
                         .description(task.getDescription())

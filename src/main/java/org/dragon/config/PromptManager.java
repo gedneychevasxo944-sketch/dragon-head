@@ -44,7 +44,8 @@ public class PromptManager {
     }
 
     /**
-     * 获取 prompt - 支持 workspace-Character 层级查找
+     * 获取 prompt - 支持 4 级层级查找
+     * 优先级: workspace+character > character > workspace > global
      *
      * @param workspace   工作空间ID (可为空)
      * @param characterId 角色ID (可为空)
@@ -52,31 +53,41 @@ public class PromptManager {
      * @return 找到的prompt或null
      */
     public String getPrompt(String workspace, String characterId, String promptKey) {
-        // 1. 优先查找 Character 的 prompt
-        if (characterId != null) {
+        // 1. 最高优先级: workspace+character 级别
+        if (workspace != null && characterId != null) {
             String key = buildKey(workspace, characterId, promptKey);
             Optional<Object> value = configStore.get(ConfigKey.of(key));
             if (value.isPresent()) {
-                log.debug("[PromptManager] Found prompt at Character level: {}", key);
+                log.debug("[PromptManager] Found prompt at workspace+character level: {}", key);
                 return value.get().toString();
             }
         }
 
-        // 2. 查找 Workspace 级别的 prompt
+        // 2. character 级别 (独立于 workspace)
+        if (characterId != null) {
+            String key = "char:" + characterId + "/" + PROMPT_PREFIX + promptKey;
+            Optional<Object> value = configStore.get(ConfigKey.of(key));
+            if (value.isPresent()) {
+                log.debug("[PromptManager] Found prompt at character level: {}", key);
+                return value.get().toString();
+            }
+        }
+
+        // 3. workspace 级别
         if (workspace != null) {
             String key = buildKey(workspace, null, promptKey);
             Optional<Object> value = configStore.get(ConfigKey.of(key));
             if (value.isPresent()) {
-                log.debug("[PromptManager] Found prompt at Workspace level: {}", key);
+                log.debug("[PromptManager] Found prompt at workspace level: {}", key);
                 return value.get().toString();
             }
         }
 
-        // 3. 查找 Global 级别的 prompt
+        // 4. global 级别 (最低优先级)
         String globalKey = PROMPT_PREFIX + promptKey;
         Optional<Object> value = configStore.get(ConfigKey.of(globalKey));
         if (value.isPresent()) {
-            log.debug("[PromptManager] Found prompt at Global level: {}", globalKey);
+            log.debug("[PromptManager] Found prompt at global level: {}", globalKey);
             return value.get().toString();
         }
 
@@ -121,13 +132,22 @@ public class PromptManager {
     }
 
     /**
-     * 设置 Character 的 prompt (最高优先级)
+     * 设置 workspace+character 级别的 prompt (最高优先级)
      */
-    public void setCharacterPrompt(String workspace, String characterId, String promptKey, String content) {
+    public void setWorkspaceCharacterPrompt(String workspace, String characterId, String promptKey, String content) {
         String key = buildKey(workspace, characterId, promptKey);
         configStore.set(ConfigKey.of(key), content);
-        log.info("[PromptManager] Set Character prompt: workspace={}, char={}, key={}",
+        log.info("[PromptManager] Set Workspace+Character prompt: workspace={}, char={}, key={}",
                 workspace, characterId, promptKey);
+    }
+
+    /**
+     * 设置 character 级别的 prompt (独立于 workspace)
+     */
+    public void setCharacterPrompt(String characterId, String promptKey, String content) {
+        String key = "char:" + characterId + "/" + PROMPT_PREFIX + promptKey;
+        configStore.set(ConfigKey.of(key), content);
+        log.info("[PromptManager] Set Character prompt: char={}, key={}", characterId, promptKey);
     }
 
     /**
@@ -149,10 +169,18 @@ public class PromptManager {
     }
 
     /**
-     * 删除 Character 的 prompt
+     * 删除 workspace+character 级别的 prompt
      */
-    public void deleteCharacterPrompt(String workspace, String characterId, String promptKey) {
+    public void deleteWorkspaceCharacterPrompt(String workspace, String characterId, String promptKey) {
         String key = buildKey(workspace, characterId, promptKey);
+        configStore.delete(ConfigKey.of(key));
+    }
+
+    /**
+     * 删除 character 级别的 prompt (独立于 workspace)
+     */
+    public void deleteCharacterPrompt(String characterId, String promptKey) {
+        String key = "char:" + characterId + "/" + PROMPT_PREFIX + promptKey;
         configStore.delete(ConfigKey.of(key));
     }
 
@@ -182,6 +210,7 @@ public class PromptManager {
 
     /**
      * 构建编码后的 key
+     * 格式: workspace:{ws}/char:{char}/prompt/{key} 或 workspace:{ws}/prompt/{key}
      */
     private String buildKey(String workspace, String characterId, String promptKey) {
         StringBuilder sb = new StringBuilder();

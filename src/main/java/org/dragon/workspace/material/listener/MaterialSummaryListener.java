@@ -2,11 +2,14 @@ package org.dragon.workspace.material.listener;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.dragon.agent.llm.util.CharacterCaller;
+import org.dragon.config.PromptKeys;
+import org.dragon.config.PromptManager;
 import org.dragon.workspace.material.Material;
 import org.dragon.workspace.material.MaterialSummaryEvent;
 import org.dragon.workspace.material.ParsedMaterialContent;
 import org.dragon.workspace.service.material.WorkspaceMaterialService;
-import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.character.Character;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -29,6 +32,8 @@ public class MaterialSummaryListener {
 
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final WorkspaceMaterialService workspaceMaterialService;
+    private final CharacterCaller characterCaller;
+    private final PromptManager promptManager;
 
     /**
      * 监听物料上传事件，异步生成摘要
@@ -54,7 +59,6 @@ public class MaterialSummaryListener {
             // 获取 MaterialSummary Character
             String workspaceId = material.getWorkspaceId();
             Character summaryChar = builtInCharacterFactory
-                    .getMaterialSummaryCharacterFactory()
                     .getOrCreateMaterialSummaryCharacter(workspaceId);
 
             // 获取原始解析内容（如果已有）
@@ -75,13 +79,11 @@ public class MaterialSummaryListener {
                 return;
             }
 
-            // 获取摘要 prompt
-            String summaryPrompt = builtInCharacterFactory
-                    .getMaterialSummaryCharacterFactory()
-                    .getSummaryPrompt(workspaceId);
-
+            // 获取摘要 prompt（使用 PromptManager 动态获取）
+            String prompt= promptManager.getPrompt(workspaceId, summaryChar.getId(), PromptKeys.MATERIAL_SUMMARY);
+      
             // 调用 Character 生成摘要
-            String summarizedContent = summaryChar.run(contentToSummarize);
+            String summarizedContent = characterCaller.call(summaryChar, prompt);
 
             // 将摘要存回 ParsedMaterialContent
             if (contentOpt.isPresent()) {

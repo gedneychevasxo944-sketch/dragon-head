@@ -14,7 +14,7 @@ import org.dragon.config.PromptManager;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
 import org.dragon.observer.optimization.OptimizationExecutor;
-import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.observer.optimization.plan.OptimizationAction.ActionType;
 import org.dragon.observer.optimization.plan.OptimizationAction.Status;
 import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
@@ -119,8 +119,7 @@ public class ObserverPlanningService {
         List<OptimizationPlanItem> items = new ArrayList<>();
 
         // 获取 ObserverAdvisorCharacter
-        Character observerAdvisor = builtInCharacterFactory.getObserverAdvisorCharacterFactory()
-                .getOrCreateForWorkspace(getWorkspaceId(evaluation));
+        Character observerAdvisor = builtInCharacterFactory.getOrCreateObserverAdvisorForWorkspace(getWorkspaceId(evaluation));
 
         // 构建请求 prompt
         String userPrompt = buildSuggestionPrompt(plan, evaluation);

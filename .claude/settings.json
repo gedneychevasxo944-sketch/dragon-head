@@ -5,7 +5,11 @@
       "Bash(git fetch:*)",
       "Bash(./mvnw compile:*)",
       "Bash(mvn clean:*)",
-      "Bash(mvn test:*)"
+      "Bash(mvn test:*)",
+      "Bash(rm -f src/main/java/org/dragon/workspace/built_ins/character/hr/tool/*.java)",
+      "Bash(rm -f src/main/java/org/dragon/workspace/built_ins/character/prompt_writer/tool/*.java)",
+      "Bash(rm -f src/main/java/org/dragon/workspace/built_ins/character/observer_advisor/tool/*.java)",
+      "Bash(git rm:*)"
     ],
     "additionalDirectories": [
       "/Users/yijunwang/.claude/plans"

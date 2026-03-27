@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 import org.dragon.character.Character;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
-import org.dragon.workspace.built_ins.character.prompt_writer.dto.PromptWriterInput;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.workspace.service.task.arrangement.dto.PromptWriterInput;
 import org.dragon.workspace.service.task.arrangement.dto.AssignmentDecision;
 import org.dragon.workspace.service.task.arrangement.dto.ChildTaskPlan;
 import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
@@ -63,13 +63,10 @@ public class TaskAssignmentResolver {
         }
 
         // 获取 PromptWriter Character 用于生成选择提示
-        Character promptWriter = builtInCharacterFactory.getPromptWriterCharacterFactory()
-                .getOrCreatePromptWriterCharacter(workspace.getId());
+        Character promptWriter = builtInCharacterFactory.getOrCreatePromptWriterCharacter(workspace.getId());
 
         // 获取 MemberSelector Character 用于执行选择
-        Character memberSelector = builtInCharacterFactory
-                .getMemberSelectorCharacterFactory()
-                .getOrCreateMemberSelectorCharacter(workspace.getId());
+        Character memberSelector = builtInCharacterFactory.getOrCreateMemberSelectorCharacter(workspace.getId());
 
         // 获取选择提示模板
         String promptTemplate = promptManager.getGlobalPrompt(

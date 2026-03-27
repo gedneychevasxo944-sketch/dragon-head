@@ -122,6 +122,13 @@ public class PromptKeys {
      */
     public static final String TASK_RESUME_SUMMARY = "task.resumeSummary";
 
+    // ==================== Material 模块 ====================
+
+    /**
+     * Material 摘要生成 prompt
+     */
+    public static final String MATERIAL_SUMMARY = "material.summary";
+
     // ==================== 便捷方法 ====================
 
     /**

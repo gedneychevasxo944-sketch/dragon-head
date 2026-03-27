@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Lazy;
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
 import org.dragon.config.PromptManager;
-import org.dragon.workspace.built_ins.BuiltInCharacterFactory;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.workspace.commons.content.CommonSenseContent;
 import org.dragon.workspace.commons.content.CommonSenseContentParser;
 import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
@@ -247,8 +247,7 @@ public class CommonSenseService {
 
         try {
             // 获取 CommonSenseWriter Character
-            Character commonSenseWriter = builtInCharacterFactory.getCommonSenseWriterCharacterFactory()
-                    .getOrCreateCommonSenseWriterCharacter(workspaceId);
+            Character commonSenseWriter = builtInCharacterFactory.getOrCreateCommonSenseWriterCharacter(workspaceId);
 
             // 调用 Character 生成 prompt
             String generatedPrompt = characterCaller.call(commonSenseWriter, input);

@@ -12,8 +12,8 @@ import org.dragon.character.Character;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.PromptManager;
 import org.dragon.task.Task;
-import org.dragon.workspace.built_ins.character.prompt_writer.PromptWriterCharacterFactory;
-import org.dragon.workspace.built_ins.character.prompt_writer.dto.PromptWriterInput;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.workspace.service.task.arrangement.dto.PromptWriterInput;
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -38,7 +38,7 @@ public class ReActExecutor {
     private final LLMCaller llmCaller;
     private final Gson gson;
     private final PromptManager promptManager;
-    private final PromptWriterCharacterFactory promptWriterCharacterFactory;
+    private final BuiltInCharacterFactory builtInCharacterFactory;
     private final CharacterCaller characterCaller;
     private final ThoughtPromptAssembler thoughtPromptAssembler;
     private final ActionParser actionParser;
@@ -47,7 +47,7 @@ public class ReActExecutor {
 
     public ReActExecutor(LLMCaller llmCaller,
                          PromptManager promptManager,
-                         ObjectProvider<PromptWriterCharacterFactory> promptWriterCharacterFactoryProvider,
+                         ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider,
                          ObjectProvider<CharacterCaller> characterCallerProvider,
                          ThoughtPromptAssembler thoughtPromptAssembler,
                          ActionParser actionParser,
@@ -55,7 +55,7 @@ public class ReActExecutor {
                          ObservationEvaluator observationEvaluator) {
         this.llmCaller = llmCaller;
         this.promptManager = promptManager;
-        this.promptWriterCharacterFactory = promptWriterCharacterFactoryProvider.getIfAvailable();
+        this.builtInCharacterFactory = builtInCharacterFactoryProvider.getIfAvailable();
         this.characterCaller = characterCallerProvider.getIfAvailable();
         this.gson = new Gson();
         this.thoughtPromptAssembler = thoughtPromptAssembler;
@@ -256,7 +256,7 @@ public class ReActExecutor {
      * 尝试通过 PromptWriter 动态装配 Prompt
      */
     private String tryBuildDynamicThoughtPrompt(ReActContext context) {
-        if (promptManager == null || promptWriterCharacterFactory == null || characterCaller == null) {
+        if (promptManager == null || builtInCharacterFactory == null || characterCaller == null) {
             return null;
         }
 
@@ -267,7 +267,7 @@ public class ReActExecutor {
             }
 
             // 获取 PromptWriter Character
-            Character promptWriterChar = promptWriterCharacterFactory.getOrCreatePromptWriterCharacter(workspaceId);
+            Character promptWriterChar = builtInCharacterFactory.getOrCreatePromptWriterCharacter(workspaceId);
             if (promptWriterChar == null) {
                 return null;
             }
