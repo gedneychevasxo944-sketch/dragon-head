@@ -32,9 +32,14 @@ public class StoreRegistry {
             // 找到该 Bean 实现的 Store 接口
             for (Class<?> iface : beanClass.getInterfaces()) {
                 if (Store.class.isAssignableFrom(iface)) {
-                    storeFactory.register(iface.asSubclass(Store.class), type, Store.class.cast(bean));
+                    registerStore(iface, type, bean);
                 }
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Store> void registerStore(Class<?> iface, StoreType type, Object bean) {
+        storeFactory.register((Class<T>) iface, type, (T) bean);
     }
 }
