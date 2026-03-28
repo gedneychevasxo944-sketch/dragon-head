@@ -96,12 +96,26 @@ private XxxStore store = new MemoryXxxStore();
 
 ## 新增实体存储步骤
 
-1. 在对应模块的 `store` 包下创建 `XxxStore` 接口，继承 `Store`
-2. 创建 `MemoryXxxStore` 实现，标注 `@StoreTypeAnn(StoreType.MEMORY)`
-3. 创建 `MySqlXxxStore` 实现，标注 `@StoreTypeAnn(StoreType.MYSQL)`
-4. 如有需要，创建 `FileXxxStore` 实现，标注 `@StoreTypeAnn(StoreType.FILE)`
-5. 如需数据库表，创建 Flyway migration SQL 文件
-6. 使用 `storeFactory.get(XxxStore.class)` 获取实例
+1. 在 `org.dragon.datasource.entity` 包下创建 `XxxEntity` 实体类（JPA/Ebean 注解标注）
+2. 在对应模块的 `store` 包下创建 `XxxStore` 接口，继承 `Store`
+3. 创建 `MemoryXxxStore` 实现，标注 `@StoreTypeAnn(StoreType.MEMORY)`
+4. 创建 `MySqlXxxStore` 实现，标注 `@StoreTypeAnn(StoreType.MYSQL)`
+5. 如有需要，创建 `FileXxxStore` 实现，标注 `@StoreTypeAnn(StoreType.FILE)`
+6. 如需数据库表，创建 Flyway migration SQL 文件
+7. 使用 `storeFactory.get(XxxStore.class)` 获取实例
+
+## Entity 放置规范
+
+**所有 Store 实现使用的 Entity 必须统一放在 `org.dragon.datasource.entity` 包下**，禁止在各模块目录下分散创建 Entity 类。
+
+```
+org.dragon.datasource.entity/
+├── ConfigEntity.java          # ConfigStore 对应
+├── ObserverActionLogEntity.java  # ActionLogStore 对应
+├── XxxEntity.java            # 其他 Store 对应
+```
+
+Entity 与 Store 接口的对应关系通过模块约定：Entity 类放在 `datasource.entity`，Store 接口放在 `{module}.store`。
 
 ## 已有示例
 
