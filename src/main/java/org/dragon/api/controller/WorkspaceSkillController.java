@@ -8,6 +8,7 @@ import org.dragon.skill.dto.WorkspaceSkillResponse;
 import org.dragon.skill.dto.WorkspaceSkillUpdateRequest;
 import org.dragon.skill.service.WorkspaceSkillService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/workspaces/{workspaceId}/skills")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class WorkspaceSkillController {
 
     private final WorkspaceSkillService workspaceSkillService;

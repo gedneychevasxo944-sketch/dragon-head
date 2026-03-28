@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-//@Component
+@Component
 public class MemoryBackendSelector {
 
     public ResolvedMemoryBackendConfig selectBackend(Map<String, Object> rawConfig) {

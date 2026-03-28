@@ -11,7 +11,7 @@ import javax.sql.DataSource;
 
 /**
  * Ebean Database 配置
- * 支持 MySQL 和 H2 多个数据源
+ * 支持 MySQL
  */
 @Configuration
 public class EbeanDatabaseConfig {
@@ -24,20 +24,8 @@ public class EbeanDatabaseConfig {
         DatabaseConfig config = new DatabaseConfig();
         config.setDataSource(mysqlDataSource);
         config.addPackage("org.dragon.datasource.entity");
+        config.addPackage("org.dragon.user.entity");
         config.setName("mysql");
-        config.setDefaultServer(false);
-        return DatabaseFactory.create(config);
-    }
-
-    /**
-     * H2 Ebean Database - 默认数据源
-     */
-    @Bean("h2EbeanDatabase")
-    public Database h2EbeanDatabase(@Qualifier("h2DataSource") DataSource h2DataSource) {
-        DatabaseConfig config = new DatabaseConfig();
-        config.setDataSource(h2DataSource);
-        config.addPackage("org.dragon.datasource.entity");
-        config.setName("h2");
         config.setDefaultServer(true);
         return DatabaseFactory.create(config);
     }

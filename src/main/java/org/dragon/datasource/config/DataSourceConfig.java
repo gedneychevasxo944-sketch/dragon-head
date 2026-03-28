@@ -1,8 +1,9 @@
 package org.dragon.datasource.config;
 
 import com.zaxxer.hikari.HikariDataSource;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -10,48 +11,43 @@ import org.springframework.context.annotation.Primary;
 import javax.sql.DataSource;
 
 /**
- * 多数据源配置
- * H2 - 默认数据源(用于开发)
- * MySQL - ChatMessage存储
+ * MySQL 数据源配置
  */
 @Configuration
 public class DataSourceConfig {
 
-    /**
-     * H2 数据源配置
-     */
-    @Bean
-    @Primary
-    @ConfigurationProperties("spring.datasource.h2")
-    public DataSourceProperties h2DataSourceProperties() {
-        return new DataSourceProperties();
-    }
+    @Value("${spring.datasource.url}")
+    private String jdbcUrl;
+
+    @Value("${spring.datasource.username}")
+    private String username;
+
+    @Value("${spring.datasource.password}")
+    private String password;
+
+    @Value("${spring.datasource.driver-class-name}")
+    private String driverClassName;
 
     @Bean
     @Primary
-    @ConfigurationProperties("spring.datasource.h2.hikari")
-    public DataSource h2DataSource() {
-        return h2DataSourceProperties()
-                .initializeDataSourceBuilder()
-                .type(HikariDataSource.class)
-                .build();
-    }
-
-    /**
-     * MySQL 数据源配置
-     */
-    @Bean
-    @ConfigurationProperties("spring.datasource.mysql")
-    public DataSourceProperties mysqlDataSourceProperties() {
-        return new DataSourceProperties();
-    }
-
-    @Bean
-    @ConfigurationProperties("spring.datasource.mysql.hikari")
     public DataSource mysqlDataSource() {
-        return mysqlDataSourceProperties()
-                .initializeDataSourceBuilder()
+        DataSource dataSource = DataSourceBuilder.create()
                 .type(HikariDataSource.class)
+                .url(jdbcUrl)
+                .username(username)
+                .password(password)
+                .driverClassName(driverClassName)
                 .build();
+        // 启动 flyway 做库表迁移
+        // 运行 Flyway 迁移
+        Flyway flyway = Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .baselineOnMigrate(true)
+                .cleanDisabled(false)
+                .load();
+        flyway.clean();
+        flyway.migrate();
+        return dataSource;
     }
 }

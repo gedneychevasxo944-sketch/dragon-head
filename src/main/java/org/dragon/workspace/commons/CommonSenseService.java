@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.dragon.store.StoreFactory;
 import org.springframework.context.annotation.Lazy;
 
 import org.dragon.agent.llm.util.CharacterCaller;
@@ -44,12 +45,11 @@ public class CommonSenseService {
      */
     private final Map<String, CachedPrompt> promptCache = new ConcurrentHashMap<>();
 
-    public CommonSenseService(WorkspaceCommonSenseStore store,
-                              @Lazy BuiltInCharacterFactory builtInCharacterFactory,
+    public CommonSenseService(StoreFactory storeFactory, @Lazy BuiltInCharacterFactory builtInCharacterFactory,
                               CharacterCaller characterCaller,
                               PromptManager promptManager,
                               CommonSenseContentParser contentParser) {
-        this.store = store;
+        this.store = storeFactory.get(WorkspaceCommonSenseStore.class);
         this.builtInCharacterFactory = builtInCharacterFactory;
         this.characterCaller = characterCaller;
         this.promptManager = promptManager;
