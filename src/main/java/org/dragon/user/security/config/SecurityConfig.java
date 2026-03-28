@@ -61,7 +61,9 @@ public class SecurityConfig {
                                 "/api/user/refresh-token",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/api-docs/swagger-config",
+                                "/api-docs"
                         ).permitAll()
                         // 所有其他请求需要认证
                         .anyRequest().authenticated())
