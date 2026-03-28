@@ -1,12 +1,15 @@
 package org.dragon.agent.react;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
-import org.dragon.agent.tool.ToolConnector;
 import org.dragon.character.mind.memory.MemoryAccess;
-import org.dragon.tools.ToolConnectorAdapter;
+import org.dragon.tools.AgentTool;
 import org.dragon.tools.ToolRegistry;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +46,21 @@ public class ActionExecutor {
                     log.warn("[ActionExecutor] Tool {} not allowed for this character", toolName);
                     return "Tool not allowed: " + toolName;
                 }
-                Optional<ToolConnector> connector = toolRegistry.get(toolName)
-                        .map(agentTool -> new ToolConnectorAdapter(agentTool));
-                if (connector != null && connector.isPresent()) {
-                    return connector.get().execute(action.getParameters()).getContent();
+                Optional<AgentTool> toolOpt = toolRegistry.get(toolName);
+                if (toolOpt.isPresent()) {
+                    AgentTool tool = toolOpt.get();
+                    JsonNode paramsNode = new ObjectMapper().valueToTree(action.getParameters());
+                    AgentTool.ToolContext toolContext = AgentTool.ToolContext.builder()
+                            .parameters(paramsNode)
+                            .build();
+                    try {
+                        AgentTool.ToolResult result = tool.execute(toolContext)
+                                .toCompletableFuture()
+                                .get(30, TimeUnit.SECONDS);
+                        return result.isSuccess() ? result.getOutput() : "Tool error: " + result.getError();
+                    } catch (Exception e) {
+                        return "Tool execution failed: " + e.getMessage();
+                    }
                 }
                 return "Tool not found: " + toolName;
             }

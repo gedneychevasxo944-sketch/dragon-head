@@ -3,17 +3,17 @@ package org.dragon.character.builtin;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.dragon.agent.tool.ToolConnector;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterFactory;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
 import org.dragon.character.config.BuiltInCharacterDefinition;
 import org.dragon.character.profile.CharacterProfile;
-import org.dragon.tools.ToolConnectorAdapter;
+import org.dragon.tools.AgentTool;
 import org.dragon.tools.ToolRegistry;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.springframework.stereotype.Component;
@@ -66,7 +66,7 @@ public class BuiltInCharacterFactory implements CharacterFactory<Character> {
     }
 
     @Override
-    public List<ToolConnector> getAvailableTools() {
+    public List<AgentTool> getAvailableTools() {
         // 统一工厂返回空，具体工具由各 scoped 工厂提供
         return List.of();
     }
@@ -254,14 +254,14 @@ public class BuiltInCharacterFactory implements CharacterFactory<Character> {
     /**
      * 获取指定类型的可用工具列表
      */
-    public List<ToolConnector> getAvailableToolsForType(String type) {
+    public List<AgentTool> getAvailableToolsForType(String type) {
         BuiltInCharacterDefinition definition = BuiltInCharacterRegistry.getDefinition(type)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown character type: " + type));
 
         return definition.toolNames().stream()
                 .map(toolRegistry::get)
-                .filter(java.util.Optional::isPresent)
-                .map(opt -> (ToolConnector) new ToolConnectorAdapter(opt.get()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .toList();
     }
 

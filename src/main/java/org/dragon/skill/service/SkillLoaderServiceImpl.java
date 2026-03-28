@@ -236,6 +236,74 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     }
 
     @Override
+    public void loadSkillForCharacter(String characterId, Long workspaceId, SkillEntity skill, int version) {
+        log.info("为 character 加载 Skill: characterId={}, workspaceId={}, skillName={}, version={}",
+                characterId, workspaceId, skill.getName(), version);
+
+        try {
+            // 构建版本化的 storagePath
+            String basePath = skill.getStoragePath();
+            int lastSlash = basePath.lastIndexOf('/');
+            String versionedStoragePath = basePath.substring(0, lastSlash + 1) + version;
+
+            // 从数据库字段构建 SkillEntry
+            Skill skillDomain = Skill.builder()
+                    .id(skill.getId())
+                    .version(version)
+                    .name(skill.getName())
+                    .description(skill.getSkillDescription())
+                    .storagePath(versionedStoragePath)
+                    .content(skill.getSkillContent())
+                    .build();
+
+            SkillRequires requires = deserializeObject(skill.getRequiresConfig(), SkillRequires.class);
+            List<SkillInstallSpec> installSpecs = deserializeList(skill.getInstallConfig(),
+                    new TypeReference<List<SkillInstallSpec>>() {});
+
+            SkillMetadata metadata = SkillMetadata.builder()
+                    .requires(requires)
+                    .install(installSpecs)
+                    .build();
+
+            Map<String, String> frontmatter = parseFrontmatterRaw(skill.getFrontmatterRaw());
+
+            SkillEntry entry = SkillEntry.builder()
+                    .skill(skillDomain)
+                    .frontmatter(frontmatter)
+                    .metadata(metadata)
+                    .build();
+
+            Optional<String> requiresError = checkRequires(entry);
+
+            SkillRuntimeEntry runtimeEntry = SkillRuntimeEntry.builder()
+                    .skillEntry(entry)
+                    .workspaceId(workspaceId)
+                    .characterId(characterId)
+                    .stateChangedAt(LocalDateTime.now())
+                    .state(requiresError.isPresent() ? SkillRuntimeState.FAILED : SkillRuntimeState.ACTIVE)
+                    .errorMessage(requiresError.orElse(null))
+                    .build();
+
+            // 注册到 character 分区
+            skillRegistry.registerForCharacter(characterId, workspaceId, runtimeEntry);
+
+            log.info("Character Skill 加载完成: characterId={}, workspaceId={}, skillName={}, version={}",
+                    characterId, workspaceId, skill.getName(), version);
+
+        } catch (Exception e) {
+            log.error("Character Skill 加载失败: characterId={}, workspaceId={}, skillName={}, error={}",
+                    characterId, workspaceId, skill.getName(), e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void loadAllForCharacter(String characterId, Long workspaceId) {
+        log.info("加载 character 绑定的 Skill: characterId={}, workspaceId={}", characterId, workspaceId);
+        // TODO: 从 SkillBindStore 获取 character 绑定的 skills
+        // 需要在 SkillBindStore 完成后调用
+    }
+
+    @Override
     public Optional<String> checkRequires(SkillEntry entry) {
         SkillMetadata metadata = entry.getMetadata();
         if (metadata == null || metadata.getRequires() == null) {

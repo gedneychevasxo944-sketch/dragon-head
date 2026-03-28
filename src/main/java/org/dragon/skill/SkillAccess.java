@@ -1,5 +1,7 @@
 package org.dragon.skill;
 
+import org.dragon.skill.model.SkillMetadata;
+
 import java.util.List;
 
 /**
@@ -52,7 +54,7 @@ public interface SkillAccess {
      * @param skillId 技能 ID
      * @return 元数据
      */
-    Skill.SkillMetadata getMetadata(String skillId);
+    SkillMetadata getMetadata(String skillId);
 
     // ================= 批量操作 (Batch Operations) =================
 

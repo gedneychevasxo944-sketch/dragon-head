@@ -26,6 +26,9 @@ public class InMemorySkillRegistry implements SkillRegistry {
     /** Workspace 索引：workspaceId -> (skillName -> SkillRuntimeEntry) */
     private final ConcurrentHashMap<Long, ConcurrentHashMap<String, SkillRuntimeEntry>> workspaceIndex = new ConcurrentHashMap<>();
 
+    /** Character 索引：characterId -> (skillName -> SkillRuntimeEntry) */
+    private final ConcurrentHashMap<String, ConcurrentHashMap<String, SkillRuntimeEntry>> characterIndex = new ConcurrentHashMap<>();
+
     @Override
     public void register(SkillRuntimeEntry runtimeEntry) {
         Skill skill = runtimeEntry.getSkillEntry().getSkill();
@@ -71,6 +74,66 @@ public class InMemorySkillRegistry implements SkillRegistry {
             wsMap.remove(skillName);
             log.info("Skill 已从 workspace 注册表注销: workspaceId={}, skillName={}", workspaceId, skillName);
         }
+    }
+
+    @Override
+    public void registerForCharacter(String characterId, Long workspaceId, SkillRuntimeEntry runtimeEntry) {
+        String skillName = runtimeEntry.getSkillEntry().getSkill().getName();
+        String key = buildCharacterKey(characterId, workspaceId);
+        characterIndex
+                .computeIfAbsent(key, k -> new ConcurrentHashMap<>())
+                .put(skillName, runtimeEntry);
+        log.info("Skill 已注册到 character 注册表: characterId={}, workspaceId={}, skillName={}, version={}",
+                characterId, workspaceId, skillName, runtimeEntry.getSkillEntry().getSkill().getVersion());
+    }
+
+    @Override
+    public void unregisterForCharacter(String characterId, String skillName, Long workspaceId) {
+        String key = buildCharacterKey(characterId, workspaceId);
+        ConcurrentHashMap<String, SkillRuntimeEntry> charMap = characterIndex.get(key);
+        if (charMap != null) {
+            charMap.remove(skillName);
+            log.info("Skill 已从 character 注册表注销: characterId={}, workspaceId={}, skillName={}",
+                    characterId, workspaceId, skillName);
+        }
+    }
+
+    @Override
+    public Collection<SkillRuntimeEntry> findAllActiveByCharacter(String characterId, Long workspaceId) {
+        // 获取所有相关索引中的有效技能
+        Map<String, SkillRuntimeEntry> skillMap = new LinkedHashMap<>();
+
+        // 1. workspace 级别技能
+        ConcurrentHashMap<String, SkillRuntimeEntry> wsMap = workspaceIndex.get(workspaceId);
+        if (wsMap != null) {
+            wsMap.values().stream()
+                    .filter(e -> e.getState() == SkillRuntimeState.ACTIVE)
+                    .forEach(e -> skillMap.put(e.getSkillEntry().getSkill().getName(), e));
+        }
+
+        // 2. character 全局技能（覆盖 workspace）
+        String globalKey = buildCharacterKey(characterId, null);
+        ConcurrentHashMap<String, SkillRuntimeEntry> charGlobalMap = characterIndex.get(globalKey);
+        if (charGlobalMap != null) {
+            charGlobalMap.values().stream()
+                    .filter(e -> e.getState() == SkillRuntimeState.ACTIVE)
+                    .forEach(e -> skillMap.put(e.getSkillEntry().getSkill().getName(), e));
+        }
+
+        // 3. character + workspace 技能（最高优先级）
+        String wsKey = buildCharacterKey(characterId, workspaceId);
+        ConcurrentHashMap<String, SkillRuntimeEntry> charWsMap = characterIndex.get(wsKey);
+        if (charWsMap != null) {
+            charWsMap.values().stream()
+                    .filter(e -> e.getState() == SkillRuntimeState.ACTIVE)
+                    .forEach(e -> skillMap.put(e.getSkillEntry().getSkill().getName(), e));
+        }
+
+        return skillMap.values();
+    }
+
+    private String buildCharacterKey(String characterId, Long workspaceId) {
+        return workspaceId != null ? characterId + ":" + workspaceId : characterId;
     }
 
     @Override
@@ -145,6 +208,10 @@ public class InMemorySkillRegistry implements SkillRegistry {
         workspaceIndex.forEach((wsId, wsMap) ->
                 wsMap.forEach((name, entry) ->
                         snapshot.put("ws-" + wsId + "/" + name, entry.getState())));
+        // 合并 character 索引
+        characterIndex.forEach((key, charMap) ->
+                charMap.forEach((name, entry) ->
+                        snapshot.put("char-" + key + "/" + name, entry.getState())));
         return Collections.unmodifiableMap(snapshot);
     }
 
@@ -153,6 +220,7 @@ public class InMemorySkillRegistry implements SkillRegistry {
         nameIndex.clear();
         idIndex.clear();
         workspaceIndex.clear();
+        characterIndex.clear();
         log.info("Skill 运行时注册表已清空");
     }
 

@@ -1,16 +1,21 @@
 package org.dragon.skill.service;
 
+import org.dragon.skill.dto.CharacterSkillBindRequest;
+import org.dragon.skill.dto.CharacterSkillResponse;
+import org.dragon.skill.dto.CharacterSkillUpdateRequest;
 import org.dragon.skill.dto.WorkspaceSkillBindRequest;
 import org.dragon.skill.dto.WorkspaceSkillResponse;
 import org.dragon.skill.dto.WorkspaceSkillUpdateRequest;
+import org.dragon.skill.entity.SkillBindEntity;
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.entity.WorkspaceSkillEntity;
+import org.dragon.skill.enums.BindType;
 import org.dragon.skill.enums.SkillVisibility;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillValidationException;
+import org.dragon.skill.store.SkillBindStore;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.store.WorkspaceSkillStore;
-import org.dragon.store.StoreFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,21 +39,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WorkspaceSkillService {
 
+    private final WorkspaceSkillStore workspaceSkillStore;
+    private final SkillBindStore skillBindStore;
+    private final SkillStore skillStore;
     private final SkillLoaderService loaderService;
     private final org.dragon.skill.registry.SkillRegistry skillRegistry;
-    private final StoreFactory storeFactory;
-    private final WorkspaceSkillStore workspaceSkillStore;
-
-    private SkillStore getSkillStore() {
-        return storeFactory.get(SkillStore.class);
-    }
 
     /**
      * Workspace 圈选一个 Skill。
      */
     public WorkspaceSkillResponse bindSkill(Long workspaceId, WorkspaceSkillBindRequest request) {
         // 1. 检查 skill 是否存在且公开
-        SkillEntity skill = getSkillStore().findById(request.getSkillId())
+        SkillEntity skill = skillStore.findById(request.getSkillId())
                 .orElseThrow(() -> new SkillNotFoundException(
                         "Skill 不存在: id=" + request.getSkillId()));
 
@@ -207,7 +209,7 @@ public class WorkspaceSkillService {
                 skillId, newVersion, followers.size());
 
         // 3. 逐个触发热更新
-        SkillEntity skill = getSkillStore().findById(skillId).orElse(null);
+        SkillEntity skill = skillStore.findById(skillId).orElse(null);
         if (skill == null) return;
 
         for (WorkspaceSkillEntity ws : followers) {
@@ -226,6 +228,239 @@ public class WorkspaceSkillService {
      */
     public List<Long> getAffectedWorkspaces(Long skillId) {
         return workspaceSkillStore.findWorkspaceIdsBySkillId(skillId);
+    }
+
+    // ==================== Character 绑定管理 ====================
+
+    /**
+     * Character 绑定一个 Skill。
+     * 支持 CHARACTER（全workspace）或 CHARACTER_WORKSPACE（指定workspace）两种类型。
+     */
+    public CharacterSkillResponse bindCharacterSkill(String characterId, Long workspaceId,
+                                                    CharacterSkillBindRequest request) {
+        // 1. 检查 skill 是否存在且公开
+        SkillEntity skill = skillStore.findById(request.getSkillId())
+                .orElseThrow(() -> new SkillNotFoundException(
+                        "Skill 不存在: id=" + request.getSkillId()));
+
+        if (skill.getVisibility() == SkillVisibility.PRIVATE) {
+            throw new SkillValidationException("私有 Skill 不可被 character 绑定");
+        }
+        if (!skill.getEnabled()) {
+            throw new SkillValidationException("该 Skill 当前已被全局禁用，无法绑定");
+        }
+
+        // 2. 确定绑定类型
+        BindType bindType = request.getWorkspaceId() != null
+                ? BindType.CHARACTER_WORKSPACE
+                : BindType.CHARACTER;
+
+        // 3. 检查是否已绑定
+        if (skillBindStore.existsByCharacterAndSkill(characterId, request.getWorkspaceId(),
+                request.getSkillId())) {
+            throw new SkillValidationException("该 Skill 已在当前 character 中绑定");
+        }
+
+        // 4. 确定锁定版本
+        int pinnedVersion;
+        if (Boolean.TRUE.equals(request.getUseLatest())) {
+            pinnedVersion = skill.getVersion();
+        } else {
+            if (request.getPinnedVersion() == null) {
+                throw new SkillValidationException(
+                        "useLatest=false 时必须指定 pinnedVersion");
+            }
+            if (request.getPinnedVersion() > skill.getVersion()) {
+                throw new SkillValidationException(
+                        "指定版本 " + request.getPinnedVersion()
+                        + " 超过当前最新版本 " + skill.getVersion());
+            }
+            pinnedVersion = request.getPinnedVersion();
+        }
+
+        // 5. 保存关联记录
+        SkillBindEntity entity = SkillBindEntity.builder()
+                .skill(skill)
+                .bindType(bindType)
+                .characterId(characterId)
+                .workspaceId(request.getWorkspaceId())
+                .pinnedVersion(pinnedVersion)
+                .useLatest(request.getUseLatest())
+                .enabled(true)
+                .build();
+        entity = skillBindStore.save(entity);
+
+        // 6. 触发该 character 的 skill 加载
+        try {
+            loaderService.loadSkillForCharacter(characterId, workspaceId, skill, pinnedVersion);
+        } catch (Exception e) {
+            log.warn("Character Skill 加载失败: characterId={}, skillId={}", characterId, skill.getId());
+        }
+
+        log.info("Character 绑定 Skill 成功: characterId={}, workspaceId={}, skillId={}, version={}, useLatest={}",
+                characterId, workspaceId, skill.getId(), pinnedVersion, request.getUseLatest());
+
+        return toCharacterResponse(entity, skill);
+    }
+
+    /**
+     * Character 取消绑定一个 Skill。
+     */
+    public void unbindCharacterSkill(String characterId, Long workspaceId, Long skillId) {
+        SkillBindEntity entity = workspaceId != null
+                ? skillBindStore.findByCharacterAndSkill(characterId, workspaceId, skillId)
+                        .orElseThrow(() -> new SkillNotFoundException(
+                                "该 Skill 未在当前 character+workspace 下绑定"))
+                : skillBindStore.findByCharacterAndSkillGlobal(characterId, skillId)
+                        .orElseThrow(() -> new SkillNotFoundException(
+                                "该 Skill 未在当前 character 全局绑定下"));
+
+        skillBindStore.delete(entity.getId());
+
+        // 从注册表中注销
+        skillRegistry.unregisterForCharacter(characterId, entity.getSkill().getName(), workspaceId);
+
+        log.info("Character 取消绑定 Skill: characterId={}, workspaceId={}, skillId={}",
+                characterId, workspaceId, skillId);
+    }
+
+    /**
+     * 更新 Character Skill 关联配置。
+     */
+    public CharacterSkillResponse updateCharacterBinding(String characterId, Long workspaceId,
+                                                        Long skillId, CharacterSkillUpdateRequest request) {
+        SkillBindEntity entity = workspaceId != null
+                ? skillBindStore.findByCharacterAndSkill(characterId, workspaceId, skillId)
+                        .orElseThrow(() -> new SkillNotFoundException(
+                                "该 Skill 未在当前 character+workspace 下绑定"))
+                : skillBindStore.findByCharacterAndSkillGlobal(characterId, skillId)
+                        .orElseThrow(() -> new SkillNotFoundException(
+                                "该 Skill 未在当前 character 全局绑定下"));
+
+        SkillEntity skill = entity.getSkill();
+        boolean needReload = false;
+
+        // 更新版本策略
+        if (request.getUseLatest() != null) {
+            entity.setUseLatest(request.getUseLatest());
+            if (Boolean.TRUE.equals(request.getUseLatest())) {
+                entity.setPinnedVersion(skill.getVersion());
+                needReload = true;
+            }
+        }
+
+        if (request.getPinnedVersion() != null
+                && Boolean.FALSE.equals(entity.getUseLatest())) {
+            if (request.getPinnedVersion() > skill.getVersion()) {
+                throw new SkillValidationException(
+                        "指定版本超过当前最新版本 " + skill.getVersion());
+            }
+            entity.setPinnedVersion(request.getPinnedVersion());
+            needReload = true;
+        }
+
+        if (request.getEnabled() != null) {
+            boolean wasEnabled = entity.getEnabled();
+            entity.setEnabled(request.getEnabled());
+            if (!wasEnabled && request.getEnabled()) {
+                needReload = true;
+            } else if (wasEnabled && !request.getEnabled()) {
+                skillRegistry.unregisterForCharacter(characterId, skill.getName(), workspaceId);
+            }
+        }
+
+        entity = skillBindStore.update(entity);
+
+        if (needReload) {
+            try {
+                loaderService.loadSkillForCharacter(characterId, workspaceId, skill,
+                        entity.getPinnedVersion());
+            } catch (Exception e) {
+                log.error("Character Skill 重新加载失败: characterId={}, skillId={}", characterId, skillId);
+            }
+        }
+
+        return toCharacterResponse(entity, skill);
+    }
+
+    /**
+     * 查询 character 绑定的所有 Skill。
+     */
+    public List<CharacterSkillResponse> listCharacterSkills(String characterId) {
+        return skillBindStore.findAllEnabledByCharacter(characterId)
+                .stream()
+                .map(bind -> toCharacterResponse(bind, bind.getSkill()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取 character 在特定 workspace 下的有效技能（合并优先级）。
+     * 用于加载到运行时。
+     */
+    public List<CharacterSkillResponse> getEffectiveSkills(String characterId, Long workspaceId) {
+        return skillBindStore.resolveEffectiveBinds(characterId, workspaceId)
+                .stream()
+                .map(bind -> toCharacterResponse(bind, bind.getSkill()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Skill 发布新版本后，更新所有 useLatest=true 的 character 关联记录。
+     */
+    public void onSkillVersionUpdatedForCharacter(Long skillId, Integer newVersion) {
+        // 1. 更新 pinnedVersion
+        skillBindStore.updatePinnedVersionForLatestFollowers(skillId, newVersion);
+
+        // 2. 找出所有需要热更新的 character
+        List<SkillBindEntity> followers = skillBindStore.findAllUseLatestBySkillId(skillId);
+
+        if (followers.isEmpty()) {
+            log.info("Skill [{}] 无 useLatest=true 的 character 订阅，跳过热更新", skillId);
+            return;
+        }
+
+        log.info("Skill [{}] 新版本 {} 触发 character 热更新，影响 {} 个绑定",
+                skillId, newVersion, followers.size());
+
+        // 3. 逐个触发热更新
+        SkillEntity skill = skillStore.findById(skillId).orElse(null);
+        if (skill == null) return;
+
+        for (SkillBindEntity bind : followers) {
+            try {
+                loaderService.loadSkillForCharacter(
+                        bind.getCharacterId(),
+                        bind.getWorkspaceId(),
+                        skill,
+                        newVersion);
+                log.info("Character [{}] Skill 热更新完成", bind.getCharacterId());
+            } catch (Exception e) {
+                log.error("Character [{}] Skill 热更新失败: {}",
+                        bind.getCharacterId(), e.getMessage());
+            }
+        }
+    }
+
+    private CharacterSkillResponse toCharacterResponse(SkillBindEntity entity, SkillEntity skill) {
+        boolean hasNewVersion = !entity.getUseLatest()
+                && skill.getVersion() > entity.getPinnedVersion();
+
+        return CharacterSkillResponse.builder()
+                .id(entity.getId())
+                .characterId(entity.getCharacterId())
+                .workspaceId(entity.getWorkspaceId())
+                .skillId(skill.getId())
+                .skillName(skill.getName())
+                .skillDescription(skill.getSkillDescription())
+                .category(skill.getCategory() != null ? skill.getCategory().name() : null)
+                .pinnedVersion(entity.getPinnedVersion())
+                .useLatest(entity.getUseLatest())
+                .latestVersion(skill.getVersion())
+                .hasNewVersion(hasNewVersion)
+                .enabled(entity.getEnabled())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
     }
 
     private WorkspaceSkillResponse toResponse(WorkspaceSkillEntity entity, SkillEntity skill) {

@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import org.dragon.agent.model.ModelRegistry;
 import org.dragon.agent.orchestration.OrchestrationService;
-import org.dragon.character.profile.CharacterProfile;
 import org.dragon.agent.react.ReActContext;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.react.ReActResult;
@@ -13,9 +12,13 @@ import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowResult;
 import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.config.CharacterExecutorConfig;
+import org.dragon.character.mind.DefaultMind;
 import org.dragon.character.mind.Mind;
+import org.dragon.character.profile.CharacterProfile;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.PromptManager;
+import org.dragon.skill.SkillAccess;
+import org.dragon.skill.SkillAccessImpl;
 import org.dragon.task.Task;
 
 import lombok.Builder;
@@ -249,8 +252,16 @@ public class CharacterExecutor {
         if (profile.getMindConfig() == null) {
             return null;
         }
-        org.dragon.character.mind.DefaultMind defaultMind = new org.dragon.character.mind.DefaultMind(
-                profile.getId(), null, null, null);
+        // 创建 SkillAccess（如果 skillRegistry 可用）
+        SkillAccess skillAccess = null;
+        if (runtime.getSkillRegistry() != null) {
+            skillAccess = new SkillAccessImpl(
+                    profile.getId(),
+                    runtime.getWorkspaceId(),
+                    runtime.getSkillRegistry());
+        }
+        DefaultMind defaultMind = new DefaultMind(
+                profile.getId(), null, null, skillAccess);
         String personalityPath = profile.getMindConfig().getPersonalityDescriptorPath();
         if (personalityPath != null && !personalityPath.isEmpty()) {
             defaultMind.loadPersonality(personalityPath);

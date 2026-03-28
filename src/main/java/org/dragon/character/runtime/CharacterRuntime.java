@@ -7,6 +7,7 @@ import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.mind.Mind;
 import org.dragon.config.PromptManager;
+import org.dragon.skill.registry.SkillRegistry;
 
 import lombok.Builder;
 import lombok.Data;
@@ -56,4 +57,15 @@ public class CharacterRuntime {
      * Mind 实例
      */
     private Mind mind;
+
+    /**
+     * 工作空间 ID
+     */
+    @Builder.Default
+    private Long workspaceId = null;
+
+    /**
+     * Skill 注册中心
+     */
+    private SkillRegistry skillRegistry;
 }

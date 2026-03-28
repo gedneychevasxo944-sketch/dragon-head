@@ -43,6 +43,43 @@ public interface SkillRegistry {
     void unregisterForWorkspace(String skillName, long workspaceId);
 
     /**
+     * 注册 Skill 到指定 character。
+     *
+     * @param characterId character ID
+     * @param workspaceId workspace ID（可以为 null）
+     * @param runtimeEntry 运行时条目
+     */
+    void registerForCharacter(String characterId, Long workspaceId, SkillRuntimeEntry runtimeEntry);
+
+    /**
+     * 从指定 character 注销某个 Skill。
+     *
+     * @param characterId character ID
+     * @param skillName Skill 名称
+     * @param workspaceId workspace ID（可以为 null）
+     */
+    void unregisterForCharacter(String characterId, String skillName, Long workspaceId);
+
+    /**
+     * 按工作空间 ID 获取所有 ACTIVE 状态的运行时条目。
+     * workspaceId=0L 时返回所有内置 Skill。
+     *
+     * @param workspaceId 工作空间 ID
+     * @return 该工作空间下所有可用的 SkillRuntimeEntry
+     */
+    Collection<SkillRuntimeEntry> findAllActiveByWorkspace(long workspaceId);
+
+    /**
+     * 按 character ID 和 workspace ID 获取所有 ACTIVE 状态的运行时条目。
+     * 返回该 character 在该 workspace 下的有效技能（含优先级合并）。
+     *
+     * @param characterId character ID
+     * @param workspaceId 工作空间 ID
+     * @return 该 character 在该工作空间下所有可用的 SkillRuntimeEntry
+     */
+    Collection<SkillRuntimeEntry> findAllActiveByCharacter(String characterId, Long workspaceId);
+
+    /**
      * 查询指定 workspace 下某个 Skill 的运行时条目。
      *
      * @param workspaceId workspace ID
@@ -64,15 +101,6 @@ public interface SkillRegistry {
      * 获取所有已注册的运行时条目。
      */
     Collection<SkillRuntimeEntry> findAll();
-
-    /**
-     * 按工作空间 ID 获取所有 ACTIVE 状态的运行时条目。
-     * workspaceId=0L 时返回所有内置 Skill。
-     *
-     * @param workspaceId 工作空间 ID
-     * @return 该工作空间下所有可用的 SkillRuntimeEntry
-     */
-    Collection<SkillRuntimeEntry> findAllActiveByWorkspace(long workspaceId);
 
     /**
      * 获取指定工作空间的 System Prompt Fragment。

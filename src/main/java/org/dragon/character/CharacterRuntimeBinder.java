@@ -7,12 +7,12 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
-import org.dragon.character.mind.DefaultMind;
 import org.dragon.character.mind.Mind;
 import org.dragon.store.StoreFactory;
 import org.dragon.character.runtime.CharacterRuntime;
 import org.dragon.config.PromptManager;
-import org.springframework.beans.factory.ObjectProvider;
+import org.dragon.skill.registry.SkillRegistry;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -31,12 +31,13 @@ import lombok.extern.slf4j.Slf4j;
 public class CharacterRuntimeBinder {
 
     private final PromptManager promptManager;
-    private final ObjectProvider<ReActExecutor> reActExecutorProvider;
+    private final @Lazy ReActExecutor reActExecutor;
     private final WorkflowExecutor workflowExecutor;
+    private final WorkflowStore workflowStore;
     private final ModelRegistry modelRegistry;
     private final OrchestrationService orchestrationService;
     private final Mind mind;
-    private final StoreFactory storeFactory;
+    private final SkillRegistry skillRegistry;
 
     /**
      * 绑定 Character 运行时依赖
@@ -45,15 +46,18 @@ public class CharacterRuntimeBinder {
         if (character == null) {
             throw new IllegalArgumentException("Character cannot be null");
         }
+
         // 构建运行时依赖
         CharacterRuntime runtime = CharacterRuntime.builder()
                 .promptManager(promptManager)
-                .reActExecutor(reActExecutorProvider.getObject())
+                .reActExecutor(reActExecutor)
                 .workflowExecutor(workflowExecutor)
-                .workflowStore(getWorkflowStore())
+                .workflowStore(workflowStore)
                 .modelRegistry(modelRegistry)
                 .orchestrationService(orchestrationService)
                 .mind(mind)
+                .workspaceId(workspaceId != null ? Long.parseLong(workspaceId.toString()) : null)
+                .skillRegistry(skillRegistry)
                 .build();
 
         character.setRuntime(runtime);
@@ -65,9 +69,5 @@ public class CharacterRuntimeBinder {
 
         log.info("[CharacterRuntimeBinder] Bound runtime dependencies for character {} in workspace {}",
                 character.getId(), workspaceId);
-    }
-
-    private WorkflowStore getWorkflowStore() {
-        return storeFactory.get(WorkflowStore.class);
     }
 }
