@@ -227,7 +227,7 @@
                         <id>main</id>
                         <phase>process-classes</phase>
                         <configuration>
-                            <package>org.dragon.workspace.chat</package>
+                            <package>org.dragon.datasource.entity</package>
                         </configuration>
                         <goals>
                             <goal>enhance</goal>
@@ -237,7 +237,7 @@
                         <id>test</id>
                         <phase>process-test-classes</phase>
                         <configuration>
-                            <package>org.dragon.workspace.chat</package>
+                            <package>org.dragon.datasource.entity</package>
                         </configuration>
                         <goals>
                             <goal>enhance</goal>
