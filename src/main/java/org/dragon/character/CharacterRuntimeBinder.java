@@ -35,7 +35,6 @@ public class CharacterRuntimeBinder {
     private final WorkflowExecutor workflowExecutor;
     private final ModelRegistry modelRegistry;
     private final OrchestrationService orchestrationService;
-    private final Mind mind;
     private final StoreFactory storeFactory;
 
     /**
@@ -53,7 +52,7 @@ public class CharacterRuntimeBinder {
                 .workflowStore(getWorkflowStore())
                 .modelRegistry(modelRegistry)
                 .orchestrationService(orchestrationService)
-                .mind(mind)
+                .mind(null)
                 .build();
 
         character.setRuntime(runtime);

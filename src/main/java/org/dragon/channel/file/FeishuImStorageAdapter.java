@@ -25,12 +25,27 @@ import lombok.extern.slf4j.Slf4j;
 public class FeishuImStorageAdapter implements FileStorageAdapter {
 
     private final ChannelConfigStore channelConfigStore;
-    private Client apiClient;
-    private String currentConfigId;
+    private volatile Client apiClient;
+    private volatile String currentConfigId;
+    private volatile boolean initialized = false;
 
     public FeishuImStorageAdapter(StoreFactory storeFactory) {
         this.channelConfigStore = storeFactory.get(ChannelConfigStore.class);
-        initializeApiClient();
+        // 延迟初始化，不在构造函数中调用数据库查询
+    }
+
+    /**
+     * 确保 API 客户端已初始化
+     */
+    private void ensureInitialized() {
+        if (!initialized) {
+            synchronized (this) {
+                if (!initialized) {
+                    initializeApiClient();
+                    initialized = true;
+                }
+            }
+        }
     }
 
     /**
@@ -38,41 +53,45 @@ public class FeishuImStorageAdapter implements FileStorageAdapter {
      * 从 ChannelConfigStore 获取飞书配置
      */
     private void initializeApiClient() {
-        // 查询飞书渠道配置
-        var configs = channelConfigStore.findByChannelType("Feishu");
-        if (configs == null || configs.isEmpty()) {
-            log.warn("[FeishuImStorageAdapter] No Feishu config found, will retry on first use");
-            return;
+        try {
+            // 查询飞书渠道配置
+            var configs = channelConfigStore.findByChannelType("Feishu");
+            if (configs == null || configs.isEmpty()) {
+                log.warn("[FeishuImStorageAdapter] No Feishu config found, will retry on first use");
+                return;
+            }
+
+            // 使用第一个启用的配置
+            ChannelConfig config = configs.stream()
+                    .filter(ChannelConfig::isEnabled)
+                    .findFirst()
+                    .orElse(null);
+
+            if (config == null) {
+                log.warn("[FeishuImStorageAdapter] No enabled Feishu config found");
+                return;
+            }
+
+            var credentials = config.getCredentials();
+            if (credentials == null) {
+                log.warn("[FeishuImStorageAdapter] Feishu config has no credentials");
+                return;
+            }
+
+            String appId = (String) credentials.get("appId");
+            String appSecret = (String) credentials.get("appSecret");
+
+            if (appId == null || appSecret == null) {
+                log.warn("[FeishuImStorageAdapter] Feishu credentials incomplete");
+                return;
+            }
+
+            this.apiClient = Client.newBuilder(appId, appSecret).build();
+            this.currentConfigId = config.getId();
+            log.info("[FeishuImStorageAdapter] Initialized with config: {}", currentConfigId);
+        } catch (Exception e) {
+            log.warn("[FeishuImStorageAdapter] Failed to initialize: {}, will retry on first use", e.getMessage());
         }
-
-        // 使用第一个启用的配置
-        ChannelConfig config = configs.stream()
-                .filter(ChannelConfig::isEnabled)
-                .findFirst()
-                .orElse(null);
-
-        if (config == null) {
-            log.warn("[FeishuImStorageAdapter] No enabled Feishu config found");
-            return;
-        }
-
-        var credentials = config.getCredentials();
-        if (credentials == null) {
-            log.warn("[FeishuImStorageAdapter] Feishu config has no credentials");
-            return;
-        }
-
-        String appId = (String) credentials.get("appId");
-        String appSecret = (String) credentials.get("appSecret");
-
-        if (appId == null || appSecret == null) {
-            log.warn("[FeishuImStorageAdapter] Feishu credentials incomplete");
-            return;
-        }
-
-        this.apiClient = Client.newBuilder(appId, appSecret).build();
-        this.currentConfigId = config.getId();
-        log.info("[FeishuImStorageAdapter] Initialized with config: {}", currentConfigId);
     }
 
     @Override
@@ -82,12 +101,10 @@ public class FeishuImStorageAdapter implements FileStorageAdapter {
 
     @Override
     public NormalizedFile download(NormalizedFile fileMeta) throws Exception {
-        // 如果客户端未初始化，尝试重新初始化
+        // 确保客户端已初始化
+        ensureInitialized();
         if (apiClient == null) {
-            initializeApiClient();
-            if (apiClient == null) {
-                throw new IllegalStateException("Feishu API client not initialized");
-            }
+            throw new IllegalStateException("Feishu API client not initialized");
         }
 
         // 创建请求对象
