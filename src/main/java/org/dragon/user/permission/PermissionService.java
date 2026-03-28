@@ -3,6 +3,7 @@ package org.dragon.user.permission;
 import org.dragon.character.Character;
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillVisibility;
+import org.dragon.store.StoreFactory;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.store.WorkspaceStore;
@@ -22,10 +23,9 @@ public class PermissionService {
     private final WorkspaceStore workspaceStore;
     private final WorkspaceMemberStore workspaceMemberStore;
 
-    public PermissionService(WorkspaceStore workspaceStore,
-                           WorkspaceMemberStore workspaceMemberStore) {
-        this.workspaceStore = workspaceStore;
-        this.workspaceMemberStore = workspaceMemberStore;
+    public PermissionService(StoreFactory storeFactory) {
+        this.workspaceStore = storeFactory.get(WorkspaceStore.class);
+        this.workspaceMemberStore = storeFactory.get(WorkspaceMemberStore.class);
     }
 
     /**

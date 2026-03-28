@@ -1,13 +1,14 @@
 package org.dragon.user.store;
 
-import org.dragon.user.entity.UserEntity;
+import org.dragon.datasource.entity.UserEntity;
+import org.dragon.store.Store;
 
 import java.util.Optional;
 
 /**
  * UserStore 用户存储接口
  */
-public interface UserStore {
+public interface UserStore extends Store {
 
     /**
      * 保存用户

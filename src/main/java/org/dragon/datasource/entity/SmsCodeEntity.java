@@ -1,4 +1,4 @@
-package org.dragon.user.entity;
+package org.dragon.datasource.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

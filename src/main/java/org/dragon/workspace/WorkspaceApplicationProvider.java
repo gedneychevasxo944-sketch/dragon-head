@@ -3,6 +3,7 @@ package org.dragon.workspace;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.observer.actionlog.ObserverActionLogService;
+import org.dragon.store.StoreFactory;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.service.hiring.WorkspaceHiringService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
@@ -41,7 +42,7 @@ public class WorkspaceApplicationProvider {
     private final WorkspaceMaterialService materialService;
     private final WorkspaceTaskService workspaceTaskService;
     private final WorkspaceTaskArrangementService workspaceTaskArrangementService;
-    private final TaskStore taskStore;
+    private final StoreFactory storeFactory;
     private final CharacterRegistry characterRegistry;
     private final TaskContinuationResolver taskContinuationResolver;
     private final TaskResumeTargetResolver taskResumeTargetResolver;
@@ -70,7 +71,7 @@ public class WorkspaceApplicationProvider {
                 .materialService(materialService)
                 .workspaceTaskService(workspaceTaskService)
                 .workspaceTaskArrangementService(workspaceTaskArrangementService)
-                .taskStore(taskStore)
+                .taskStore(storeFactory.get(TaskStore.class))
                 .characterRegistry(characterRegistry)
                 .taskContinuationResolver(taskContinuationResolver)
                 .taskResumeTargetResolver(taskResumeTargetResolver)

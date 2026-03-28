@@ -1,8 +1,9 @@
 package org.dragon.user.service;
 
+import org.dragon.store.StoreFactory;
 import org.dragon.user.dto.*;
-import org.dragon.user.entity.UserEntity;
-import org.dragon.user.entity.UserTokenEntity;
+import org.dragon.datasource.entity.UserEntity;
+import org.dragon.datasource.entity.UserTokenEntity;
 import org.dragon.user.security.service.JwtService;
 import org.dragon.user.store.TokenStore;
 import org.dragon.user.store.UserStore;
@@ -27,10 +28,9 @@ public class UserService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserStore userStore, TokenStore tokenStore,
-                      JwtService jwtService, PasswordEncoder passwordEncoder) {
-        this.userStore = userStore;
-        this.tokenStore = tokenStore;
+    public UserService(StoreFactory storeFactory, JwtService jwtService, PasswordEncoder passwordEncoder) {
+        this.userStore = storeFactory.get(UserStore.class);
+        this.tokenStore = storeFactory.get(TokenStore.class);
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
     }

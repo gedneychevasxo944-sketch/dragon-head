@@ -8,6 +8,7 @@ import org.dragon.schedule.entity.ValidationResult;
 import org.dragon.schedule.parser.CronExpression;
 import org.dragon.schedule.store.CronStore;
 import org.dragon.store.StoreFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +19,7 @@ import java.util.UUID;
  * 提供 Cron 任务的业务逻辑层服务
  */
 @Slf4j
+@Service
 @RequiredArgsConstructor
 public class CronService {
 

@@ -12,6 +12,7 @@ import org.dragon.store.StoreFactory;
 import org.dragon.character.runtime.CharacterRuntime;
 import org.dragon.config.PromptManager;
 import org.dragon.skill.registry.SkillRegistry;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -31,12 +32,11 @@ import lombok.extern.slf4j.Slf4j;
 public class CharacterRuntimeBinder {
 
     private final PromptManager promptManager;
-    private final @Lazy ReActExecutor reActExecutor;
+    private final ObjectProvider<ReActExecutor> reActExecutorProvider;
     private final WorkflowExecutor workflowExecutor;
-    private final WorkflowStore workflowStore;
     private final ModelRegistry modelRegistry;
     private final OrchestrationService orchestrationService;
-    private final Mind mind;
+    private final StoreFactory storeFactory;
     private final SkillRegistry skillRegistry;
 
     /**
@@ -50,12 +50,12 @@ public class CharacterRuntimeBinder {
         // 构建运行时依赖
         CharacterRuntime runtime = CharacterRuntime.builder()
                 .promptManager(promptManager)
-                .reActExecutor(reActExecutor)
+                .reActExecutor(reActExecutorProvider.getObject())
                 .workflowExecutor(workflowExecutor)
-                .workflowStore(workflowStore)
+                .workflowStore(getWorkflowStore())
                 .modelRegistry(modelRegistry)
                 .orchestrationService(orchestrationService)
-                .mind(mind)
+                .mind(null)
                 .workspaceId(workspaceId != null ? Long.parseLong(workspaceId.toString()) : null)
                 .skillRegistry(skillRegistry)
                 .build();
@@ -69,5 +69,9 @@ public class CharacterRuntimeBinder {
 
         log.info("[CharacterRuntimeBinder] Bound runtime dependencies for character {} in workspace {}",
                 character.getId(), workspaceId);
+    }
+
+    private WorkflowStore getWorkflowStore() {
+        return storeFactory.get(WorkflowStore.class);
     }
 }

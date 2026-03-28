@@ -1,7 +1,9 @@
 package org.dragon.user.store;
 
 import io.ebean.Database;
-import org.dragon.user.entity.UserTokenEntity;
+import org.dragon.datasource.entity.UserTokenEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +14,7 @@ import java.util.Optional;
  * MySqlTokenStore Token MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlTokenStore implements TokenStore {
 
     private final Database mysqlDb;

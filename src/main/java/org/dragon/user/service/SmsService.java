@@ -1,12 +1,13 @@
 package org.dragon.user.service;
 
+import org.dragon.store.StoreFactory;
 import org.dragon.user.dto.LoginResponse;
 import org.dragon.user.dto.SmsSendRequest;
 import org.dragon.user.dto.SmsVerifyRequest;
 import org.dragon.user.dto.UserInfo;
-import org.dragon.user.entity.SmsCodeEntity;
-import org.dragon.user.entity.UserEntity;
-import org.dragon.user.entity.UserTokenEntity;
+import org.dragon.datasource.entity.SmsCodeEntity;
+import org.dragon.datasource.entity.UserEntity;
+import org.dragon.datasource.entity.UserTokenEntity;
 import org.dragon.user.security.service.JwtService;
 import org.dragon.user.store.SmsCodeStore;
 import org.dragon.user.store.TokenStore;
@@ -39,11 +40,10 @@ public class SmsService {
     @Value("${sms.aliyun.access-secret:}")
     private String aliyunAccessSecret;
 
-    public SmsService(SmsCodeStore smsCodeStore, UserStore userStore,
-                     TokenStore tokenStore, JwtService jwtService) {
-        this.smsCodeStore = smsCodeStore;
-        this.userStore = userStore;
-        this.tokenStore = tokenStore;
+    public SmsService(StoreFactory storeFactory, JwtService jwtService) {
+        this.smsCodeStore = storeFactory.get(SmsCodeStore.class);
+        this.userStore = storeFactory.get(UserStore.class);
+        this.tokenStore = storeFactory.get(TokenStore.class);
         this.jwtService = jwtService;
     }
 

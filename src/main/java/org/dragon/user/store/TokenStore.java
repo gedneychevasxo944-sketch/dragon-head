@@ -1,6 +1,7 @@
 package org.dragon.user.store;
 
-import org.dragon.user.entity.UserTokenEntity;
+import org.dragon.datasource.entity.UserTokenEntity;
+import org.dragon.store.Store;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -8,7 +9,7 @@ import java.util.Optional;
 /**
  * TokenStore Token存储接口
  */
-public interface TokenStore {
+public interface TokenStore extends Store {
 
     /**
      * 保存Token

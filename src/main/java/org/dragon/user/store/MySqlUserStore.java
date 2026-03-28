@@ -1,7 +1,9 @@
 package org.dragon.user.store;
 
 import io.ebean.Database;
-import org.dragon.user.entity.UserEntity;
+import org.dragon.datasource.entity.UserEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +13,7 @@ import java.util.Optional;
  * MySqlUserStore 用户MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlUserStore implements UserStore {
 
     private final Database mysqlDb;

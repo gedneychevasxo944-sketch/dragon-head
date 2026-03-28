@@ -81,15 +81,6 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-h2console</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
@@ -257,7 +248,7 @@
                         <id>main</id>
                         <phase>process-classes</phase>
                         <configuration>
-                            <package>org.dragon.workspace.chat</package>
+                            <package>org.dragon.datasource.entity</package>
                         </configuration>
                         <goals>
                             <goal>enhance</goal>
@@ -267,7 +258,7 @@
                         <id>test</id>
                         <phase>process-test-classes</phase>
                         <configuration>
-                            <package>org.dragon.workspace.chat</package>
+                            <package>org.dragon.datasource.entity</package>
                         </configuration>
                         <goals>
                             <goal>enhance</goal>

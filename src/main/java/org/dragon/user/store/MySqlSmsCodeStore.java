@@ -1,7 +1,9 @@
 package org.dragon.user.store;
 
 import io.ebean.Database;
-import org.dragon.user.entity.SmsCodeEntity;
+import org.dragon.datasource.entity.SmsCodeEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +14,7 @@ import java.util.Optional;
  * MySqlSmsCodeStore 短信验证码MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlSmsCodeStore implements SmsCodeStore {
 
     private final Database mysqlDb;

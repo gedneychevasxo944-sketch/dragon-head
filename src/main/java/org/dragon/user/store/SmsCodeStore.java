@@ -1,6 +1,7 @@
 package org.dragon.user.store;
 
-import org.dragon.user.entity.SmsCodeEntity;
+import org.dragon.datasource.entity.SmsCodeEntity;
+import org.dragon.store.Store;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -8,7 +9,7 @@ import java.util.Optional;
 /**
  * SmsCodeStore 短信验证码存储接口
  */
-public interface SmsCodeStore {
+public interface SmsCodeStore extends Store {
 
     /**
      * 保存验证码

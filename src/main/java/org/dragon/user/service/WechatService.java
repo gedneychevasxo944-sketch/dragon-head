@@ -1,9 +1,10 @@
 package org.dragon.user.service;
 
+import org.dragon.store.StoreFactory;
 import org.dragon.user.dto.LoginResponse;
 import org.dragon.user.dto.UserInfo;
-import org.dragon.user.entity.UserEntity;
-import org.dragon.user.entity.UserTokenEntity;
+import org.dragon.datasource.entity.UserEntity;
+import org.dragon.datasource.entity.UserTokenEntity;
 import org.dragon.user.security.service.JwtService;
 import org.dragon.user.store.TokenStore;
 import org.dragon.user.store.UserStore;
@@ -32,9 +33,9 @@ public class WechatService {
     @Value("${wechat.app-secret:}")
     private String appSecret;
 
-    public WechatService(UserStore userStore, TokenStore tokenStore, JwtService jwtService) {
-        this.userStore = userStore;
-        this.tokenStore = tokenStore;
+    public WechatService(StoreFactory storeFactory, JwtService jwtService) {
+        this.userStore = storeFactory.get(UserStore.class);
+        this.tokenStore = storeFactory.get(TokenStore.class);
         this.jwtService = jwtService;
     }
 

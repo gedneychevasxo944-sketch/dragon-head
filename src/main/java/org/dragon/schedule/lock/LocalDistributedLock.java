@@ -1,6 +1,7 @@
 package org.dragon.schedule.lock;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 适用于单节点部署或开发环境
  */
 @Slf4j
+@Component
 public class LocalDistributedLock implements DistributedLock {
 
     private final Map<String, LockHolder> locks = new ConcurrentHashMap<>();
