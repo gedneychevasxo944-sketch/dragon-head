@@ -2,13 +2,11 @@ package org.dragon.workspace;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
+import org.dragon.store.StoreFactory;
+import org.dragon.workspace.store.WorkspaceStore;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
@@ -24,15 +22,16 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class WorkspaceRegistry {
 
-    /**
-     * Workspace 注册表
-     */
-    private final Map<String, Workspace> registry = new ConcurrentHashMap<>();
+    private final WorkspaceStore workspaceStore;
 
     /**
      * 默认 Workspace ID
      */
     private volatile String defaultWorkspaceId;
+
+    public WorkspaceRegistry(StoreFactory storeFactory) {
+        this.workspaceStore = storeFactory.get(WorkspaceStore.class);
+    }
 
     /**
      * 注册 Workspace
@@ -57,11 +56,11 @@ public class WorkspaceRegistry {
         workspace.setUpdatedAt(LocalDateTime.now());
 
         // 如果是第一个 Workspace，设为默认
-        if (registry.isEmpty()) {
+        if (workspaceStore.count() == 0) {
             defaultWorkspaceId = workspace.getId();
         }
 
-        registry.put(workspace.getId(), workspace);
+        workspaceStore.save(workspace);
         log.info("[WorkspaceRegistry] Registered workspace: {}", workspace.getId());
 
         return workspace;
@@ -73,15 +72,15 @@ public class WorkspaceRegistry {
      * @param workspaceId Workspace ID
      */
     public void unregister(String workspaceId) {
-        Workspace removed = registry.remove(workspaceId);
-        if (removed != null) {
-            log.info("[WorkspaceRegistry] Unregistered workspace: {}", workspaceId);
+        workspaceStore.delete(workspaceId);
 
-            // 如果删除的是默认 Workspace，选择下一个
-            if (defaultWorkspaceId != null && defaultWorkspaceId.equals(workspaceId)) {
-                defaultWorkspaceId = registry.isEmpty() ? null : registry.keySet().iterator().next();
-            }
+        // 如果删除的是默认 Workspace，选择下一个
+        if (defaultWorkspaceId != null && defaultWorkspaceId.equals(workspaceId)) {
+            List<Workspace> all = workspaceStore.findAll();
+            defaultWorkspaceId = all.isEmpty() ? null : all.get(0).getId();
         }
+
+        log.info("[WorkspaceRegistry] Unregistered workspace: {}", workspaceId);
     }
 
     /**
@@ -91,7 +90,7 @@ public class WorkspaceRegistry {
      * @return Optional Workspace
      */
     public Optional<Workspace> get(String workspaceId) {
-        return Optional.ofNullable(registry.get(workspaceId));
+        return workspaceStore.findById(workspaceId);
     }
 
     /**
@@ -112,7 +111,7 @@ public class WorkspaceRegistry {
      * @return Workspace 列表
      */
     public List<Workspace> listAll() {
-        return new CopyOnWriteArrayList<>(registry.values());
+        return workspaceStore.findAll();
     }
 
     /**
@@ -122,9 +121,7 @@ public class WorkspaceRegistry {
      * @return Workspace 列表
      */
     public List<Workspace> listByStatus(Workspace.Status status) {
-        return registry.values().stream()
-                .filter(ws -> ws.getStatus() == status)
-                .collect(Collectors.toList());
+        return workspaceStore.findByStatus(status);
     }
 
     /**
@@ -134,9 +131,7 @@ public class WorkspaceRegistry {
      * @return Workspace 列表
      */
     public List<Workspace> listByOwner(String owner) {
-        return registry.values().stream()
-                .filter(ws -> owner.equals(ws.getOwner()))
-                .collect(Collectors.toList());
+        return workspaceStore.findByOwner(owner);
     }
 
     /**
@@ -149,12 +144,12 @@ public class WorkspaceRegistry {
             throw new IllegalArgumentException("Workspace or Workspace id cannot be null");
         }
 
-        if (!registry.containsKey(workspace.getId())) {
+        if (!workspaceStore.exists(workspace.getId())) {
             throw new IllegalArgumentException("Workspace not found: " + workspace.getId());
         }
 
         workspace.setUpdatedAt(LocalDateTime.now());
-        registry.put(workspace.getId(), workspace);
+        workspaceStore.update(workspace);
         log.info("[WorkspaceRegistry] Updated workspace: {}", workspace.getId());
     }
 
@@ -164,7 +159,7 @@ public class WorkspaceRegistry {
      * @param workspaceId Workspace ID
      */
     public void setDefaultWorkspace(String workspaceId) {
-        if (!registry.containsKey(workspaceId)) {
+        if (!workspaceStore.exists(workspaceId)) {
             throw new IllegalArgumentException("Workspace not found: " + workspaceId);
         }
         defaultWorkspaceId = workspaceId;
@@ -180,6 +175,7 @@ public class WorkspaceRegistry {
         get(workspaceId).ifPresent(workspace -> {
             workspace.setStatus(Workspace.Status.ACTIVE);
             workspace.setUpdatedAt(LocalDateTime.now());
+            workspaceStore.update(workspace);
             log.info("[WorkspaceRegistry] Activated workspace: {}", workspaceId);
         });
     }
@@ -193,6 +189,7 @@ public class WorkspaceRegistry {
         get(workspaceId).ifPresent(workspace -> {
             workspace.setStatus(Workspace.Status.INACTIVE);
             workspace.setUpdatedAt(LocalDateTime.now());
+            workspaceStore.update(workspace);
             log.info("[WorkspaceRegistry] Deactivated workspace: {}", workspaceId);
         });
     }
@@ -206,6 +203,7 @@ public class WorkspaceRegistry {
         get(workspaceId).ifPresent(workspace -> {
             workspace.setStatus(Workspace.Status.ARCHIVED);
             workspace.setUpdatedAt(LocalDateTime.now());
+            workspaceStore.update(workspace);
             log.info("[WorkspaceRegistry] Archived workspace: {}", workspaceId);
         });
     }
@@ -216,7 +214,7 @@ public class WorkspaceRegistry {
      * @return 注册的 Workspace 数量
      */
     public int size() {
-        return registry.size();
+        return workspaceStore.count();
     }
 
     /**
@@ -226,6 +224,6 @@ public class WorkspaceRegistry {
      * @return 是否存在
      */
     public boolean exists(String workspaceId) {
-        return registry.containsKey(workspaceId);
+        return workspaceStore.exists(workspaceId);
     }
 }
