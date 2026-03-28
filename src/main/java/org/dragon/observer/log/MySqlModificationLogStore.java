@@ -2,6 +2,8 @@ package org.dragon.observer.log;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.ModificationLogEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
  * MySqlModificationLogStore 修改日志MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlModificationLogStore implements ModificationLogStore {
 
     private final Database mysqlDb;

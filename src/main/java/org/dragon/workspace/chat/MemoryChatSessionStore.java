@@ -1,11 +1,13 @@
 package org.dragon.workspace.chat;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
+import org.springframework.stereotype.Component;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Component;
 
 /**
  * MemoryChatSessionStore 聊天会话内存存储实现
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
  * @version 1.0
  */
 @Component
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryChatSessionStore implements ChatSessionStore {
 
     private final Map<String, ChatSession> sessions = new ConcurrentHashMap<>();

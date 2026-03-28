@@ -18,6 +18,7 @@ import org.dragon.workspace.material.MaterialEventPublisher;
 import org.dragon.workspace.material.MaterialParser;
 import org.dragon.workspace.material.MaterialStore;
 import org.dragon.workspace.material.MaterialStorage;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -31,30 +32,25 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class WorkspaceMaterialService {
 
-    private final MaterialStore materialStore;
     private final MaterialStorage materialStorage;
     private final WorkspaceRegistry workspaceRegistry;
-    private final TaskStore taskStore;
     private final List<MaterialParser> materialParsers;
-    private final MaterialContentStore materialContentStore;
     private final MaterialEventPublisher materialEventPublisher;
+    private final StoreFactory storeFactory;
 
-    public WorkspaceMaterialService(MaterialStore materialStore,
-                                    MaterialStorage materialStorage,
-                                    WorkspaceRegistry workspaceRegistry,
-                                    TaskStore taskStore,
-                                    List<MaterialParser> materialParsers,
-                                    MaterialContentStore materialContentStore,
-                                    MaterialEventPublisher materialEventPublisher) {
-        this.materialStore = materialStore;
-        this.materialStorage = materialStorage;
-        this.workspaceRegistry = workspaceRegistry;
-        this.taskStore = taskStore;
-        this.materialParsers = materialParsers;
-        this.materialContentStore = materialContentStore;
-        this.materialEventPublisher = materialEventPublisher;
+    private MaterialStore getMaterialStore() {
+        return storeFactory.get(MaterialStore.class);
+    }
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
+
+    private MaterialContentStore getMaterialContentStore() {
+        return storeFactory.get(MaterialContentStore.class);
     }
 
     /**
@@ -106,7 +102,7 @@ public class WorkspaceMaterialService {
                 .uploadedAt(LocalDateTime.now())
                 .build();
 
-        materialStore.save(material);
+        getMaterialStore().save(material);
         log.info("[WorkspaceMaterialService] Uploaded material: {} to workspace: {}", material.getId(), workspaceId);
 
         // 发布上传事件，触发异步摘要生成
@@ -122,7 +118,7 @@ public class WorkspaceMaterialService {
      * @return 输入流
      */
     public InputStream download(String materialId) {
-        Material material = materialStore.findById(materialId)
+        Material material = getMaterialStore().findById(materialId)
                 .orElseThrow(() -> new IllegalArgumentException("Material not found: " + materialId));
 
         InputStream inputStream = materialStorage.retrieve(material.getStorageKey());
@@ -140,7 +136,7 @@ public class WorkspaceMaterialService {
      * @return 物料
      */
     public Optional<Material> get(String materialId) {
-        return materialStore.findById(materialId);
+        return getMaterialStore().findById(materialId);
     }
 
     /**
@@ -149,14 +145,14 @@ public class WorkspaceMaterialService {
      * @param materialId 物料 ID
      */
     public void delete(String materialId) {
-        Material material = materialStore.findById(materialId)
+        Material material = getMaterialStore().findById(materialId)
                 .orElseThrow(() -> new IllegalArgumentException("Material not found: " + materialId));
 
         // 删除存储的内容
         materialStorage.delete(material.getStorageKey());
 
         // 删除元数据
-        materialStore.delete(materialId);
+        getMaterialStore().delete(materialId);
         log.info("[WorkspaceMaterialService] Deleted material: {}", materialId);
     }
 
@@ -167,7 +163,7 @@ public class WorkspaceMaterialService {
      * @return 物料列表
      */
     public java.util.List<Material> listByWorkspace(String workspaceId) {
-        return materialStore.findByWorkspaceId(workspaceId);
+        return getMaterialStore().findByWorkspaceId(workspaceId);
     }
 
     // ==================== NormalizedFile 接入方法 ====================
@@ -206,7 +202,7 @@ public class WorkspaceMaterialService {
                         .parseStatus("PENDING")
                         .build();
 
-                materialStore.save(material);
+                getMaterialStore().save(material);
                 // 发布上传事件，触发异步摘要生成
                 materialEventPublisher.publishUploaded(material);
                 materials.add(material);
@@ -225,7 +221,7 @@ public class WorkspaceMaterialService {
      * @return 解析后的内容
      */
     public org.dragon.workspace.material.ParsedMaterialContent parseMaterial(String materialId) {
-        Material material = materialStore.findById(materialId)
+        Material material = getMaterialStore().findById(materialId)
                 .orElseThrow(() -> new IllegalArgumentException("Material not found: " + materialId));
 
         java.io.InputStream inputStream = null;
@@ -252,12 +248,12 @@ public class WorkspaceMaterialService {
                             .build();
 
             // 通过 MaterialContentStore 保存解析内容
-            materialContentStore.saveParsedContent(content);
+            getMaterialContentStore().saveParsedContent(content);
 
             // 更新物料状态
             material.setParseStatus(content.getStatus().name());
             material.setParsedContentId(content.getId());
-            materialStore.update(material);
+            getMaterialStore().update(material);
 
             return content;
         } catch (Exception e) {
@@ -273,12 +269,12 @@ public class WorkspaceMaterialService {
      * @return 解析内容（如果存在）
      */
     public java.util.Optional<org.dragon.workspace.material.ParsedMaterialContent> getParsedContent(String materialId) {
-        Material material = materialStore.findById(materialId).orElse(null);
+        Material material = getMaterialStore().findById(materialId).orElse(null);
         if (material == null || material.getParsedContentId() == null) {
             return java.util.Optional.empty();
         }
         // 通过 MaterialContentStore 查询解析内容
-        return materialContentStore.findByMaterialId(materialId);
+        return getMaterialContentStore().findByMaterialId(materialId);
     }
 
     /**
@@ -288,9 +284,9 @@ public class WorkspaceMaterialService {
      * @param summary 摘要
      */
     public void updateParsedContentSummary(String contentId, String summary) {
-        materialContentStore.findById(contentId).ifPresent(content -> {
+        getMaterialContentStore().findById(contentId).ifPresent(content -> {
             content.setSummary(summary);
-            materialContentStore.update(content);
+            getMaterialContentStore().update(content);
         });
     }
 
@@ -328,7 +324,7 @@ public class WorkspaceMaterialService {
      * @param material 物料
      */
     public void attachToTask(String taskId, Material material) {
-        Task task = taskStore.findById(taskId)
+        Task task = getTaskStore().findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
         // 添加物料 ID
@@ -337,7 +333,7 @@ public class WorkspaceMaterialService {
         }
         if (!task.getMaterialIds().contains(material.getId())) {
             task.getMaterialIds().add(material.getId());
-            taskStore.update(task);
+            getTaskStore().update(task);
         }
 
         // 解析物料并存储结果
@@ -357,7 +353,7 @@ public class WorkspaceMaterialService {
             materialResults.put(material.getId(), parseResult);
             task.getMetadata().put("materialResults", materialResults);
 
-            taskStore.update(task);
+            getTaskStore().update(task);
             log.info("[WorkspaceMaterialService] Attached material {} to task {}", material.getId(), taskId);
 
         } catch (Exception e) {
@@ -373,7 +369,7 @@ public class WorkspaceMaterialService {
      * @param materialIds 物料 ID 列表
      */
     public void attachMaterialsToTask(String taskId, List<String> materialIds) {
-        Task task = taskStore.findById(taskId)
+        Task task = getTaskStore().findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
         for (String materialId : materialIds) {
@@ -391,7 +387,7 @@ public class WorkspaceMaterialService {
      * @return 物料列表
      */
     public List<Material> getTaskMaterials(String taskId) {
-        Task task = taskStore.findById(taskId)
+        Task task = getTaskStore().findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
         if (task.getMaterialIds() == null || task.getMaterialIds().isEmpty()) {
@@ -399,7 +395,7 @@ public class WorkspaceMaterialService {
         }
 
         return task.getMaterialIds().stream()
-                .map(materialStore::findById)
+                .map(getMaterialStore()::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
@@ -412,7 +408,7 @@ public class WorkspaceMaterialService {
      * @return 解析结果映射
      */
     public Map<String, MaterialParser.ParseResult> parseTaskMaterials(String taskId) {
-        Task task = taskStore.findById(taskId)
+        Task task = getTaskStore().findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
         if (task.getMetadata() == null || !task.getMetadata().containsKey("materialResults")) {

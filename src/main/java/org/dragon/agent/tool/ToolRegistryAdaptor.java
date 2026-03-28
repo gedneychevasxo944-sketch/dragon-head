@@ -19,11 +19,11 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class ToolRegistry {
+public class ToolRegistryAdaptor {
 
     private final org.dragon.tools.ToolRegistry delegate;
 
-    public ToolRegistry(org.dragon.tools.ToolRegistry delegate) {
+    public ToolRegistryAdaptor(org.dragon.tools.ToolRegistry delegate) {
         this.delegate = delegate;
     }
 

@@ -1,12 +1,7 @@
 package org.dragon.workspace.commons.store;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.dragon.workspace.commons.CommonSense;
 import org.dragon.workspace.commons.CommonSenseFolder;
 import org.dragon.workspace.commons.content.CommonSenseContent;
@@ -16,6 +11,13 @@ import org.dragon.workspace.commons.content.ContentType;
 import org.dragon.workspace.commons.content.ForbiddenContent;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 /**
  * MemoryWorkspaceCommonSenseStore 工作空间常识内存存储实现
  *
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Component;
  * @version 1.0
  */
 @Component
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryWorkspaceCommonSenseStore implements WorkspaceCommonSenseStore {
 
     /**

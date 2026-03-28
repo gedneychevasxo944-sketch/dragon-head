@@ -1,5 +1,7 @@
 package org.dragon.observer.actionlog;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
  * @version 1.0
  */
 @Component
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryActionLogStore implements ActionLogStore {
 
     private static final Logger log = LoggerFactory.getLogger(MemoryActionLogStore.class);

@@ -7,6 +7,7 @@ import org.dragon.schedule.entity.CronStatus;
 import org.dragon.schedule.entity.ValidationResult;
 import org.dragon.schedule.parser.CronExpression;
 import org.dragon.schedule.store.CronStore;
+import org.dragon.store.StoreFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +22,11 @@ import java.util.UUID;
 public class CronService {
 
     private final CronScheduler scheduler;
-    private final CronStore cronStore;
+    private final StoreFactory storeFactory;
+
+    private CronStore getCronStore() {
+        return storeFactory.get(CronStore.class);
+    }
 
     /**
      * 创建 Cron 任务
@@ -57,7 +62,7 @@ public class CronService {
         }
 
         // 保存到存储
-        cronStore.save(definition);
+        getCronStore().save(definition);
 
         // 如果状态为启用，注册到调度器
         if (definition.getStatus() == CronStatus.ENABLED && scheduler.isRunning()) {
@@ -90,7 +95,7 @@ public class CronService {
         validateCronExpression(definition.getCronExpression());
 
         // 检查是否存在
-        Optional<CronDefinition> existing = cronStore.findById(definition.getId());
+        Optional<CronDefinition> existing = getCronStore().findById(definition.getId());
         if (existing.isEmpty()) {
             throw new IllegalArgumentException("Cron not found: " + definition.getId());
         }
@@ -100,7 +105,7 @@ public class CronService {
         definition.setCreatedAt(existing.get().getCreatedAt()); // 保持创建时间不变
 
         // 保存到存储
-        cronStore.update(definition);
+        getCronStore().update(definition);
 
         // 更新调度器
         scheduler.updateCron(definition);
@@ -120,7 +125,7 @@ public class CronService {
         }
 
         // 检查是否存在
-        Optional<CronDefinition> existing = cronStore.findById(cronId);
+        Optional<CronDefinition> existing = getCronStore().findById(cronId);
         if (existing.isEmpty()) {
             throw new IllegalArgumentException("Cron not found: " + cronId);
         }
@@ -129,7 +134,7 @@ public class CronService {
         scheduler.unregisterCron(cronId);
 
         // 从存储删除
-        cronStore.delete(cronId);
+        getCronStore().delete(cronId);
 
         log.info("Deleted cron job: id={}", cronId);
     }
@@ -145,7 +150,7 @@ public class CronService {
         }
 
         // 检查是否存在
-        Optional<CronDefinition> existing = cronStore.findById(cronId);
+        Optional<CronDefinition> existing = getCronStore().findById(cronId);
         if (existing.isEmpty()) {
             throw new IllegalArgumentException("Cron not found: " + cronId);
         }
@@ -159,7 +164,7 @@ public class CronService {
 
         // 更新状态
         definition.updateStatus(CronStatus.PAUSED);
-        cronStore.update(definition);
+        getCronStore().update(definition);
 
         // 暂停调度器
         scheduler.pauseCron(cronId);
@@ -178,7 +183,7 @@ public class CronService {
         }
 
         // 检查是否存在
-        Optional<CronDefinition> existing = cronStore.findById(cronId);
+        Optional<CronDefinition> existing = getCronStore().findById(cronId);
         if (existing.isEmpty()) {
             throw new IllegalArgumentException("Cron not found: " + cronId);
         }
@@ -192,7 +197,7 @@ public class CronService {
 
         // 更新状态
         definition.updateStatus(CronStatus.ENABLED);
-        cronStore.update(definition);
+        getCronStore().update(definition);
 
         // 恢复调度器
         scheduler.resumeCron(cronId);
@@ -211,7 +216,7 @@ public class CronService {
         }
 
         // 检查是否存在
-        Optional<CronDefinition> existing = cronStore.findById(cronId);
+        Optional<CronDefinition> existing = getCronStore().findById(cronId);
         if (existing.isEmpty()) {
             throw new IllegalArgumentException("Cron not found: " + cronId);
         }
@@ -228,7 +233,7 @@ public class CronService {
      * @return Optional<CronDefinition>
      */
     public Optional<CronDefinition> getCron(String cronId) {
-        return cronStore.findById(cronId);
+        return getCronStore().findById(cronId);
     }
 
     /**
@@ -237,7 +242,7 @@ public class CronService {
      * @return List<CronDefinition>
      */
     public List<CronDefinition> listCrons() {
-        return cronStore.findAll();
+        return getCronStore().findAll();
     }
 
     /**
@@ -247,7 +252,7 @@ public class CronService {
      * @return List<CronDefinition>
      */
     public List<CronDefinition> listCronsByStatus(CronStatus status) {
-        return cronStore.findByStatus(status);
+        return getCronStore().findByStatus(status);
     }
 
     /**

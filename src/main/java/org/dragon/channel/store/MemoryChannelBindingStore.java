@@ -1,5 +1,7 @@
 package org.dragon.channel.store;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.channel.entity.ChannelBinding;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryChannelBindingStore implements ChannelBindingStore {
 
     /**

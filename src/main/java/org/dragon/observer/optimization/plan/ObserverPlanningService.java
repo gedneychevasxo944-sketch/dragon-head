@@ -19,6 +19,7 @@ import org.dragon.observer.optimization.plan.OptimizationAction.ActionType;
 import org.dragon.observer.optimization.plan.OptimizationAction.Status;
 import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
 import org.dragon.observer.optimization.store.OptimizationPlanStore;
+import org.dragon.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -43,13 +44,20 @@ public class ObserverPlanningService {
 
     private static final Logger log = LoggerFactory.getLogger(ObserverPlanningService.class);
 
-    private final OptimizationPlanStore planStore;
     private final OptimizationExecutor optimizationExecutor;
-    private final EvaluationRecordStore evaluationRecordStore;
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final CharacterCaller characterCaller;
     private final PromptManager promptManager;
+    private final StoreFactory storeFactory;
     private final Gson gson = new Gson();
+
+    private OptimizationPlanStore getPlanStore() {
+        return storeFactory.get(OptimizationPlanStore.class);
+    }
+
+    private EvaluationRecordStore getEvaluationRecordStore() {
+        return storeFactory.get(EvaluationRecordStore.class);
+    }
 
     /**
      * 从评价生成优化计划
@@ -58,7 +66,7 @@ public class ObserverPlanningService {
      * @return 生成的优化计划（草稿状态）
      */
     public OptimizationPlan generatePlan(String evaluationId) {
-        EvaluationRecord evaluation = evaluationRecordStore.findById(evaluationId)
+        EvaluationRecord evaluation = getEvaluationRecordStore().findById(evaluationId)
                 .orElseThrow(() -> new IllegalArgumentException("Evaluation not found: " + evaluationId));
 
         String observerId = evaluation.getObserverId();
@@ -102,9 +110,9 @@ public class ObserverPlanningService {
         plan.setSummary(summary.toString());
 
         // 保存计划
-        planStore.save(plan);
+        getPlanStore().save(plan);
         for (OptimizationPlanItem item : items) {
-            planStore.saveItem(item);
+            getPlanStore().saveItem(item);
         }
 
         log.info("[ObserverPlanningService] Generated plan {} with {} items", plan.getId(), items.size());
@@ -306,7 +314,7 @@ public class ObserverPlanningService {
      * @return 审批后的计划
      */
     public OptimizationPlan approvePlan(String planId, String approver, String comment) {
-        OptimizationPlan plan = planStore.findById(planId)
+        OptimizationPlan plan = getPlanStore().findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
 
         if (!plan.canApprove()) {
@@ -314,7 +322,7 @@ public class ObserverPlanningService {
         }
 
         plan.approve(approver, comment);
-        planStore.save(plan);
+        getPlanStore().save(plan);
 
         log.info("[ObserverPlanningService] Plan {} approved by {}", planId, approver);
         return plan;
@@ -328,11 +336,11 @@ public class ObserverPlanningService {
      * @return 拒绝后的计划
      */
     public OptimizationPlan rejectPlan(String planId, String reason) {
-        OptimizationPlan plan = planStore.findById(planId)
+        OptimizationPlan plan = getPlanStore().findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
 
         plan.cancel();
-        planStore.save(plan);
+        getPlanStore().save(plan);
 
         log.info("[ObserverPlanningService] Plan {} rejected: {}", planId, reason);
         return plan;
@@ -346,7 +354,7 @@ public class ObserverPlanningService {
      * @return 执行后的计划
      */
     public OptimizationPlan executePlan(String planId) {
-        OptimizationPlan plan = planStore.findById(planId)
+        OptimizationPlan plan = getPlanStore().findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
 
         if (!plan.canExecute()) {
@@ -354,9 +362,9 @@ public class ObserverPlanningService {
         }
 
         plan.markExecuting();
-        planStore.save(plan);
+        getPlanStore().save(plan);
 
-        List<OptimizationPlanItem> items = planStore.findItemsByPlanId(planId);
+        List<OptimizationPlanItem> items = getPlanStore().findItemsByPlanId(planId);
         int successCount = 0;
         int failCount = 0;
         List<String> results = new ArrayList<>();
@@ -383,14 +391,14 @@ public class ObserverPlanningService {
                     item.markFailed("Execution failed: " + executed.getResult());
                     failCount++;
                 }
-                planStore.saveItem(item);
+                getPlanStore().saveItem(item);
                 results.add(String.format("[%s] %s: %s", item.getActionType(), item.getDescription(),
                         item.getStatus() == OptimizationPlanItem.Status.SUCCESS ? "成功" : "失败"));
 
             } catch (Exception e) {
                 log.error("[ObserverPlanningService] Item execution failed: {}", item.getId(), e);
                 item.markFailed("Exception: " + e.getMessage());
-                planStore.saveItem(item);
+                getPlanStore().saveItem(item);
                 failCount++;
                 results.add(String.format("[%s] %s: 异常-%s", item.getActionType(), item.getDescription(), e.getMessage()));
             }
@@ -404,7 +412,7 @@ public class ObserverPlanningService {
         } else {
             plan.markFailed("全部 " + failCount + " 个项目执行失败");
         }
-        planStore.save(plan);
+        getPlanStore().save(plan);
 
         log.info("[ObserverPlanningService] Plan {} executed: {} success, {} failed", planId, successCount, failCount);
         return plan;
@@ -444,10 +452,10 @@ public class ObserverPlanningService {
      * @return 回滚后的计划
      */
     public OptimizationPlan rollbackPlan(String planId) {
-        OptimizationPlan plan = planStore.findById(planId)
+        OptimizationPlan plan = getPlanStore().findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
 
-        List<OptimizationPlanItem> items = planStore.findItemsByPlanId(planId);
+        List<OptimizationPlanItem> items = getPlanStore().findItemsByPlanId(planId);
         int rollbackCount = 0;
 
         for (OptimizationPlanItem item : items) {
@@ -464,12 +472,12 @@ public class ObserverPlanningService {
                     log.error("[ObserverPlanningService] Rollback failed for item: {}", item.getId(), e);
                     item.markRolledBack("Rollback failed: " + e.getMessage());
                 }
-                planStore.saveItem(item);
+                getPlanStore().saveItem(item);
             }
         }
 
         plan.markFailed("已回滚 " + rollbackCount + " 个项目");
-        planStore.save(plan);
+        getPlanStore().save(plan);
 
         log.info("[ObserverPlanningService] Plan {} rolled back {} items", planId, rollbackCount);
         return plan;
@@ -482,7 +490,7 @@ public class ObserverPlanningService {
      * @return 计划
      */
     public OptimizationPlan getPlan(String planId) {
-        return planStore.findById(planId).orElse(null);
+        return getPlanStore().findById(planId).orElse(null);
     }
 
     /**
@@ -492,7 +500,7 @@ public class ObserverPlanningService {
      * @return 项目列表
      */
     public List<OptimizationPlanItem> getPlanItems(String planId) {
-        return planStore.findItemsByPlanId(planId);
+        return getPlanStore().findItemsByPlanId(planId);
     }
 
     /**
@@ -501,7 +509,7 @@ public class ObserverPlanningService {
      * @return 计划列表
      */
     public List<OptimizationPlan> getPendingApprovalPlans() {
-        return planStore.findPendingApproval();
+        return getPlanStore().findPendingApproval();
     }
 
     /**
@@ -512,7 +520,7 @@ public class ObserverPlanningService {
      * @return 计划列表
      */
     public List<OptimizationPlan> getPlansByTarget(OptimizationAction.TargetType targetType, String targetId) {
-        return planStore.findByTarget(targetType, targetId);
+        return getPlanStore().findByTarget(targetType, targetId);
     }
 
     /**
@@ -526,10 +534,10 @@ public class ObserverPlanningService {
     public ReviewResult reviewPlan(String planId, String reviewer) {
         log.info("[ObserverPlanningService] Reviewing plan {} by {}", planId, reviewer);
 
-        OptimizationPlan plan = planStore.findById(planId)
+        OptimizationPlan plan = getPlanStore().findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
 
-        List<OptimizationPlanItem> items = planStore.findItemsByPlanId(planId);
+        List<OptimizationPlanItem> items = getPlanStore().findItemsByPlanId(planId);
 
         // 构建复核结果
         ReviewResult result = new ReviewResult();
@@ -560,7 +568,7 @@ public class ObserverPlanningService {
         }
 
         // 基于评价记录评估风险
-        EvaluationRecord evaluation = evaluationRecordStore.findById(plan.getEvaluationId()).orElse(null);
+        EvaluationRecord evaluation = getEvaluationRecordStore().findById(plan.getEvaluationId()).orElse(null);
         if (evaluation != null && evaluation.getFindings() != null) {
             for (var finding : evaluation.getFindings()) {
                 if (Boolean.TRUE.equals(finding.isUnsafe())) {
@@ -616,10 +624,10 @@ public class ObserverPlanningService {
      * @return 摘要文本
      */
     public String buildPlanSummary(String planId) {
-        OptimizationPlan plan = planStore.findById(planId)
+        OptimizationPlan plan = getPlanStore().findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
 
-        List<OptimizationPlanItem> items = planStore.findItemsByPlanId(planId);
+        List<OptimizationPlanItem> items = getPlanStore().findItemsByPlanId(planId);
 
         StringBuilder summary = new StringBuilder();
         summary.append("# 优化计划摘要\n\n");
@@ -630,7 +638,7 @@ public class ObserverPlanningService {
         summary.append(String.format("**创建时间**: %s\n\n", plan.getCreatedAt()));
 
         // 评价信息
-        EvaluationRecord evaluation = evaluationRecordStore.findById(plan.getEvaluationId()).orElse(null);
+        EvaluationRecord evaluation = getEvaluationRecordStore().findById(plan.getEvaluationId()).orElse(null);
         if (evaluation != null) {
             summary.append("## 评价信息\n\n");
             summary.append(String.format("- 综合评分: %.2f\n", evaluation.getOverallScore() != null ? evaluation.getOverallScore() : 0));

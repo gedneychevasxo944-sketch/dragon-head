@@ -3,6 +3,8 @@ package org.dragon.channel.store;
 import io.ebean.Database;
 import org.dragon.datasource.entity.ChannelConfigEntity;
 import org.dragon.channel.entity.ChannelConfig;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
  * MySqlChannelConfigStore 渠道配置MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlChannelConfigStore implements ChannelConfigStore {
 
     private final Database mysqlDb;

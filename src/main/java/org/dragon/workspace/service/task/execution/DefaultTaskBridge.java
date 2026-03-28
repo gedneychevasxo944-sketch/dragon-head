@@ -10,6 +10,7 @@ import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
+import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
@@ -31,8 +32,12 @@ import lombok.extern.slf4j.Slf4j;
 public class DefaultTaskBridge implements TaskBridge {
 
     private final CharacterRegistry characterRegistry;
-    private final TaskStore taskStore;
     private final CharacterRuntimeBinder characterRuntimeBinder;
+    private final StoreFactory storeFactory;
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
 
     @Override
     public Task execute(Task task, TaskBridgeContext context) {
@@ -42,7 +47,7 @@ public class DefaultTaskBridge implements TaskBridge {
             log.error("[DefaultTaskBridge] No characterId assigned to task {}", task.getId());
             task.setStatus(TaskStatus.FAILED);
             task.setErrorMessage("No character assigned");
-            taskStore.update(task);
+            getTaskStore().update(task);
             return task;
         }
 
@@ -56,7 +61,7 @@ public class DefaultTaskBridge implements TaskBridge {
         // 更新任务状态为 RUNNING
         task.setStatus(TaskStatus.RUNNING);
         task.setStartedAt(LocalDateTime.now());
-        taskStore.update(task);
+        getTaskStore().update(task);
 
         try {
             // 将任务输入转为字符串
@@ -81,7 +86,7 @@ public class DefaultTaskBridge implements TaskBridge {
             task.setStatus(TaskStatus.COMPLETED);
             task.setCompletedAt(LocalDateTime.now());
             task.setResult(result.getResponse());
-            taskStore.update(task);
+            getTaskStore().update(task);
 
             log.info("[DefaultTaskBridge] Task {} executed successfully on character {}", task.getId(), characterId);
             return task;
@@ -90,7 +95,7 @@ public class DefaultTaskBridge implements TaskBridge {
             log.error("[DefaultTaskBridge] Task {} execution failed: {}", task.getId(), e.getMessage(), e);
             task.setStatus(TaskStatus.FAILED);
             task.setErrorMessage(e.getMessage());
-            taskStore.update(task);
+            getTaskStore().update(task);
             return task;
         }
     }
@@ -131,7 +136,7 @@ public class DefaultTaskBridge implements TaskBridge {
         }
 
         task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
+        getTaskStore().update(task);
 
         return task;
     }
@@ -141,7 +146,7 @@ public class DefaultTaskBridge implements TaskBridge {
         task.setStatus(TaskStatus.SUSPENDED);
         task.setErrorMessage(context.getReason());
         task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
+        getTaskStore().update(task);
 
         log.info("[DefaultTaskBridge] Task {} suspended: {}", task.getId(), context.getReason());
         return task;
@@ -158,7 +163,7 @@ public class DefaultTaskBridge implements TaskBridge {
         // 恢复为 RUNNING
         task.setStatus(TaskStatus.RUNNING);
         task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
+        getTaskStore().update(task);
 
         log.info("[DefaultTaskBridge] Task {} resumed", task.getId());
 
@@ -169,14 +174,14 @@ public class DefaultTaskBridge implements TaskBridge {
     @Override
     public void notifyDependencyResolved(String taskId, String dependencyTaskId) {
         // 查找所有等待此依赖的任务
-        List<Task> waitingTasks = taskStore.findWaitingTasksByDependencyTaskId(dependencyTaskId);
+        List<Task> waitingTasks = getTaskStore().findWaitingTasksByDependencyTaskId(dependencyTaskId);
         for (Task task : waitingTasks) {
             // 检查所有依赖是否都已完成
             if (areAllDependenciesMet(task)) {
                 log.info("[DefaultTaskBridge] All dependencies resolved for task {}, re-scheduling", task.getId());
                 task.setStatus(TaskStatus.PENDING);
                 task.setUpdatedAt(LocalDateTime.now());
-                taskStore.update(task);
+                getTaskStore().update(task);
             }
         }
         log.info("[DefaultTaskBridge] Dependency {} resolved, checked {} waiting tasks", dependencyTaskId, waitingTasks.size());
@@ -191,7 +196,7 @@ public class DefaultTaskBridge implements TaskBridge {
             return true;
         }
         for (String depId : depIds) {
-            Optional<Task> depTask = taskStore.findById(depId);
+            Optional<Task> depTask = getTaskStore().findById(depId);
             if (depTask.isEmpty() || depTask.get().getStatus() != TaskStatus.COMPLETED) {
                 return false;
             }

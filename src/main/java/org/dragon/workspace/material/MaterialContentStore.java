@@ -1,5 +1,7 @@
 package org.dragon.workspace.material;
 
+import org.dragon.store.Store;
+
 import java.util.Optional;
 
 /**
@@ -8,7 +10,7 @@ import java.util.Optional;
  * @author wyj
  * @version 1.0
  */
-public interface MaterialContentStore {
+public interface MaterialContentStore extends Store {
 
     /**
      * 保存解析后的内容

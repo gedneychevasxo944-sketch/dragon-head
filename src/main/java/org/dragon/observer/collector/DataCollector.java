@@ -18,6 +18,7 @@ import org.dragon.observer.collector.dto.WorkspaceObservationSnapshot;
 import org.dragon.observer.evaluation.EvaluationEngine;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
+import org.dragon.store.StoreFactory;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
@@ -42,7 +43,11 @@ public class DataCollector {
 
     private final WorkspaceRegistry workspaceRegistry;
     private final CharacterRegistry characterRegistry;
-    private final TaskStore taskStore;
+    private final StoreFactory storeFactory;
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
 
     /**
      * 采集任务数据
@@ -60,12 +65,12 @@ public class DataCollector {
 
         List<Task> tasks;
         if (workspaceId != null) {
-            tasks = taskStore.findByWorkspaceId(workspaceId);
+            tasks = getTaskStore().findByWorkspaceId(workspaceId);
         } else {
             // 全局采集：从所有 Character 关联的任务获取
             tasks = new ArrayList<>();
             for (Character character : characterRegistry.listAll()) {
-                tasks.addAll(taskStore.findByCharacterId(character.getId()));
+                tasks.addAll(getTaskStore().findByCharacterId(character.getId()));
             }
         }
 
@@ -92,7 +97,7 @@ public class DataCollector {
     public List<EvaluationEngine.TaskData> collectCharacterTaskData(String characterId, LocalDateTime startTime, LocalDateTime endTime) {
         List<EvaluationEngine.TaskData> taskDataList = new ArrayList<>();
 
-        List<Task> tasks = taskStore.findByCharacterId(characterId);
+        List<Task> tasks = getTaskStore().findByCharacterId(characterId);
         for (Task task : tasks) {
             LocalDateTime taskTime = task.getCreatedAt();
             if (taskTime != null && !taskTime.isBefore(startTime) && !taskTime.isAfter(endTime)) {
@@ -133,7 +138,7 @@ public class DataCollector {
     public List<EvaluationEngine.TaskData> collectWorkspaceTaskData(String workspaceId, LocalDateTime startTime, LocalDateTime endTime) {
         List<EvaluationEngine.TaskData> taskDataList = new ArrayList<>();
 
-        List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
+        List<Task> tasks = getTaskStore().findByWorkspaceId(workspaceId);
         for (Task task : tasks) {
             LocalDateTime taskTime = task.getCreatedAt();
             if (taskTime != null && !taskTime.isBefore(startTime) && !taskTime.isAfter(endTime)) {
@@ -164,8 +169,8 @@ public class DataCollector {
 
         // 统计任务总数和状态分布
         List<Task> tasks = workspaceId != null
-                ? taskStore.findByWorkspaceId(workspaceId)
-                : taskStore.findByStatus(null).stream().collect(Collectors.toList());
+                ? getTaskStore().findByWorkspaceId(workspaceId)
+                : getTaskStore().findByStatus(null).stream().collect(Collectors.toList());
 
         int totalTasks = tasks.size();
         int completedTasks = (int) tasks.stream()
@@ -199,7 +204,7 @@ public class DataCollector {
         }
 
         // 采集该 Character 的任务数据
-        List<Task> tasks = taskStore.findByCharacterId(characterId);
+        List<Task> tasks = getTaskStore().findByCharacterId(characterId);
         int completedCount = (int) tasks.stream()
                 .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
                 .count();
@@ -247,7 +252,7 @@ public class DataCollector {
             return null;
         }
 
-        List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
+        List<Task> tasks = getTaskStore().findByWorkspaceId(workspaceId);
         int completedCount = (int) tasks.stream()
                 .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
                 .count();

@@ -1,5 +1,7 @@
 package org.dragon.workspace.chat;
 
+import org.dragon.store.Store;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -9,7 +11,7 @@ import java.util.List;
  * @author wyj
  * @version 1.0
  */
-public interface ChatMessageStore {
+public interface ChatMessageStore extends Store {
 
     /**
      * 保存消息

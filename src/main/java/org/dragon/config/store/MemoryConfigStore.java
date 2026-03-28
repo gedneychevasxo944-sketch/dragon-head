@@ -1,5 +1,7 @@
 package org.dragon.config.store;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * <p>存储结构：使用组合键 "workspace|entityType|entityId|key" 作为单层 Map 的 key
  */
 @Slf4j
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryConfigStore implements ConfigStore {
 
     /**

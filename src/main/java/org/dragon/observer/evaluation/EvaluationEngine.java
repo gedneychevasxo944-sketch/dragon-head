@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.dragon.observer.collector.dto.ObservationDataset;
+import org.dragon.store.StoreFactory;
 import org.dragon.observer.collector.dto.CharacterObservationSnapshot;
 import org.dragon.observer.collector.dto.WorkspaceObservationSnapshot;
 import org.dragon.observer.collector.dto.MemoryObservationSnapshot;
@@ -75,7 +76,11 @@ public class EvaluationEngine {
         public void setMetadata(Map<String, Object> metadata) { this.metadata = metadata; }
     }
 
-    private final EvaluationRecordStore evaluationRecordStore;
+    private final StoreFactory storeFactory;
+
+    private EvaluationRecordStore getEvaluationRecordStore() {
+        return storeFactory.get(EvaluationRecordStore.class);
+    }
 
     /**
      * 评价配置
@@ -167,7 +172,7 @@ public class EvaluationEngine {
         record.setEvidence(evidence);
 
         // 保存记录
-        evaluationRecordStore.save(record);
+        getEvaluationRecordStore().save(record);
 
         log.info("[EvaluationEngine] Evaluation completed: overallScore={}", record.getOverallScore());
         return record;
@@ -189,7 +194,7 @@ public class EvaluationEngine {
         log.info("[EvaluationEngine] Periodic evaluation for {}: {}", targetType, targetId);
 
         // 获取时间范围内的任务评价记录
-        List<EvaluationRecord> records = evaluationRecordStore.findByTargetAndTimeRange(
+        List<EvaluationRecord> records = getEvaluationRecordStore().findByTargetAndTimeRange(
                 targetType, targetId, startTime, endTime);
 
         if (records.isEmpty()) {
@@ -243,7 +248,7 @@ public class EvaluationEngine {
         evidence.put("recordCount", records.size());
         record.setEvidence(evidence);
 
-        evaluationRecordStore.save(record);
+        getEvaluationRecordStore().save(record);
 
         log.info("[EvaluationEngine] Periodic evaluation completed: overallScore={}", record.getOverallScore());
         return record;
@@ -506,7 +511,7 @@ public class EvaluationEngine {
         record.setSuggestions(generateSuggestions(record));
 
         // 保存记录
-        evaluationRecordStore.save(record);
+        getEvaluationRecordStore().save(record);
 
         log.info("[EvaluationEngine] Multi-dimension evaluation completed: overallScore={}, findings={}",
                 record.getOverallScore(), findings.size());

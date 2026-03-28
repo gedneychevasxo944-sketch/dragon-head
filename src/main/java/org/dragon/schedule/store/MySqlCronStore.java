@@ -4,6 +4,8 @@ import io.ebean.Database;
 import org.dragon.datasource.entity.CronDefinitionEntity;
 import org.dragon.schedule.entity.CronDefinition;
 import org.dragon.schedule.entity.CronStatus;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
  * MySqlCronStore Cron MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlCronStore implements CronStore {
 
     private final Database mysqlDb;

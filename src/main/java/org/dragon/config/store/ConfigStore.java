@@ -1,5 +1,7 @@
 package org.dragon.config.store;
 
+import org.dragon.store.Store;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,7 +24,7 @@ import java.util.Optional;
  * configStore.set(ConfigKey.of("default", "character", "char-1", "feishu.appId"), "xxx");
  * </pre>
  */
-public interface ConfigStore {
+public interface ConfigStore extends Store {
 
     /**
      * 存储配置值

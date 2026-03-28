@@ -1,5 +1,7 @@
 package org.dragon.workspace.member;
 
+import org.dragon.store.Store;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -9,7 +11,7 @@ import java.util.Optional;
  * @author wyj
  * @version 1.0
  */
-public interface WorkspaceMemberStore {
+public interface WorkspaceMemberStore extends Store {
 
     /**
      * 保存成员

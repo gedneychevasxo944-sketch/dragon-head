@@ -2,6 +2,7 @@ package org.dragon.config;
 
 import org.dragon.config.store.ConfigKey;
 import org.dragon.config.store.ConfigStore;
+import org.dragon.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -37,10 +38,14 @@ public class PromptManager {
 
     private static final String PROMPT_PREFIX = "prompt/";
 
-    private final ConfigStore configStore;
+    private final StoreFactory storeFactory;
 
-    public PromptManager(ConfigStore configStore) {
-        this.configStore = configStore;
+    public PromptManager(StoreFactory storeFactory) {
+        this.storeFactory = storeFactory;
+    }
+
+    private ConfigStore getConfigStore() {
+        return storeFactory.get(ConfigStore.class);
     }
 
     /**
@@ -56,7 +61,7 @@ public class PromptManager {
         // 1. 最高优先级: workspace+character 级别
         if (workspace != null && characterId != null) {
             String key = buildKey(workspace, characterId, promptKey);
-            Optional<Object> value = configStore.get(ConfigKey.of(key));
+            Optional<Object> value = getConfigStore().get(ConfigKey.of(key));
             if (value.isPresent()) {
                 log.debug("[PromptManager] Found prompt at workspace+character level: {}", key);
                 return value.get().toString();
@@ -66,7 +71,7 @@ public class PromptManager {
         // 2. character 级别 (独立于 workspace)
         if (characterId != null) {
             String key = "char:" + characterId + "/" + PROMPT_PREFIX + promptKey;
-            Optional<Object> value = configStore.get(ConfigKey.of(key));
+            Optional<Object> value = getConfigStore().get(ConfigKey.of(key));
             if (value.isPresent()) {
                 log.debug("[PromptManager] Found prompt at character level: {}", key);
                 return value.get().toString();
@@ -76,7 +81,7 @@ public class PromptManager {
         // 3. workspace 级别
         if (workspace != null) {
             String key = buildKey(workspace, null, promptKey);
-            Optional<Object> value = configStore.get(ConfigKey.of(key));
+            Optional<Object> value = getConfigStore().get(ConfigKey.of(key));
             if (value.isPresent()) {
                 log.debug("[PromptManager] Found prompt at workspace level: {}", key);
                 return value.get().toString();
@@ -85,7 +90,7 @@ public class PromptManager {
 
         // 4. global 级别 (最低优先级)
         String globalKey = PROMPT_PREFIX + promptKey;
-        Optional<Object> value = configStore.get(ConfigKey.of(globalKey));
+        Optional<Object> value = getConfigStore().get(ConfigKey.of(globalKey));
         if (value.isPresent()) {
             log.debug("[PromptManager] Found prompt at global level: {}", globalKey);
             return value.get().toString();
@@ -136,7 +141,7 @@ public class PromptManager {
      */
     public void setWorkspaceCharacterPrompt(String workspace, String characterId, String promptKey, String content) {
         String key = buildKey(workspace, characterId, promptKey);
-        configStore.set(ConfigKey.of(key), content);
+        getConfigStore().set(ConfigKey.of(key), content);
         log.info("[PromptManager] Set Workspace+Character prompt: workspace={}, char={}, key={}",
                 workspace, characterId, promptKey);
     }
@@ -146,7 +151,7 @@ public class PromptManager {
      */
     public void setCharacterPrompt(String characterId, String promptKey, String content) {
         String key = "char:" + characterId + "/" + PROMPT_PREFIX + promptKey;
-        configStore.set(ConfigKey.of(key), content);
+        getConfigStore().set(ConfigKey.of(key), content);
         log.info("[PromptManager] Set Character prompt: char={}, key={}", characterId, promptKey);
     }
 
@@ -155,7 +160,7 @@ public class PromptManager {
      */
     public void setWorkspacePrompt(String workspace, String promptKey, String content) {
         String key = buildKey(workspace, null, promptKey);
-        configStore.set(ConfigKey.of(key), content);
+        getConfigStore().set(ConfigKey.of(key), content);
         log.info("[PromptManager] Set Workspace prompt: workspace={}, key={}", workspace, promptKey);
     }
 
@@ -164,7 +169,7 @@ public class PromptManager {
      */
     public void setGlobalPrompt(String promptKey, String content) {
         String key = PROMPT_PREFIX + promptKey;
-        configStore.set(ConfigKey.of(key), content);
+        getConfigStore().set(ConfigKey.of(key), content);
         log.info("[PromptManager] Set Global prompt: key={}", promptKey);
     }
 
@@ -173,7 +178,7 @@ public class PromptManager {
      */
     public void deleteWorkspaceCharacterPrompt(String workspace, String characterId, String promptKey) {
         String key = buildKey(workspace, characterId, promptKey);
-        configStore.delete(ConfigKey.of(key));
+        getConfigStore().delete(ConfigKey.of(key));
     }
 
     /**
@@ -181,7 +186,7 @@ public class PromptManager {
      */
     public void deleteCharacterPrompt(String characterId, String promptKey) {
         String key = "char:" + characterId + "/" + PROMPT_PREFIX + promptKey;
-        configStore.delete(ConfigKey.of(key));
+        getConfigStore().delete(ConfigKey.of(key));
     }
 
     /**
@@ -189,7 +194,7 @@ public class PromptManager {
      */
     public void deleteWorkspacePrompt(String workspace, String promptKey) {
         String key = buildKey(workspace, null, promptKey);
-        configStore.delete(ConfigKey.of(key));
+        getConfigStore().delete(ConfigKey.of(key));
     }
 
     /**
@@ -197,7 +202,7 @@ public class PromptManager {
      */
     public void deleteGlobalPrompt(String promptKey) {
         String key = PROMPT_PREFIX + promptKey;
-        configStore.delete(ConfigKey.of(key));
+        getConfigStore().delete(ConfigKey.of(key));
     }
 
     /**
@@ -205,7 +210,7 @@ public class PromptManager {
      */
     public Map<String, Object> getAllWorkspacePrompts(String workspace) {
         String prefix = "workspace:" + workspace + "/prompt/";
-        return configStore.getAll(ConfigKey.of(prefix));
+        return getConfigStore().getAll(ConfigKey.of(prefix));
     }
 
     /**

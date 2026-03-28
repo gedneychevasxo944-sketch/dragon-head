@@ -1,13 +1,15 @@
 package org.dragon.workspace.store;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
+import org.dragon.workspace.Workspace;
+import org.springframework.stereotype.Component;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import org.dragon.workspace.Workspace;
-import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryWorkspaceStore implements WorkspaceStore {
 
     private final Map<String, Workspace> store = new ConcurrentHashMap<>();

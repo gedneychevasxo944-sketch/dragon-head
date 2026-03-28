@@ -9,6 +9,7 @@ import org.dragon.channel.entity.ActionMessage;
 import org.dragon.channel.entity.ChannelConfig;
 import org.dragon.channel.store.ChannelConfigStore;
 import org.dragon.gateway.Gateway;
+import org.dragon.store.StoreFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -47,9 +48,9 @@ public class ChannelManager {
 
     @Autowired
     public ChannelManager(List<ChannelAdapter> adapters, Gateway gateway,
-                          ChannelConfigStore channelConfigStore) {
+                          StoreFactory storeFactory) {
         this.gateway = gateway;
-        this.channelConfigStore = channelConfigStore;
+        this.channelConfigStore = storeFactory.get(ChannelConfigStore.class);
         for (ChannelAdapter adapter : adapters) {
             registry.put(adapter.getChannelName(), adapter);
             log.info("[ChannelManager] 注册渠道插件: {}", adapter.getChannelName());

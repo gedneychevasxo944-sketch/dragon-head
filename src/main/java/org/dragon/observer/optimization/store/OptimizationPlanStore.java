@@ -1,5 +1,7 @@
 package org.dragon.observer.optimization.store;
 
+import org.dragon.store.Store;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -15,7 +17,7 @@ import org.dragon.observer.optimization.plan.OptimizationPlanItem.Status;
  * @author wyj
  * @version 1.0
  */
-public interface OptimizationPlanStore {
+public interface OptimizationPlanStore extends Store {
 
     /**
      * 保存计划

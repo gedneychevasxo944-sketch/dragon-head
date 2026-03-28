@@ -1,16 +1,18 @@
 package org.dragon.observer.optimization.store;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
+import org.dragon.observer.optimization.plan.OptimizationAction;
+import org.dragon.observer.optimization.plan.OptimizationAction.Status;
+import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
+import org.springframework.stereotype.Component;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
-
-import org.dragon.observer.optimization.plan.OptimizationAction;
-import org.dragon.observer.optimization.plan.OptimizationAction.Status;
-import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
-import org.springframework.stereotype.Component;
 
 /**
  * OptimizationAction 内存存储实现
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
  * @version 1.0
  */
 @Component
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryOptimizationActionStore implements OptimizationActionStore {
 
     private final ConcurrentHashMap<String, OptimizationAction> store = new ConcurrentHashMap<>();

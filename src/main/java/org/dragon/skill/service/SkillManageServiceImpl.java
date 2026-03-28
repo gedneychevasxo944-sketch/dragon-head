@@ -16,6 +16,7 @@ import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.storage.SkillStorageBackend;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.validator.SkillZipValidator;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,13 +36,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SkillManageServiceImpl implements SkillManageService {
 
-    private final SkillStore skillStore;
     private final SkillZipValidator zipValidator;
     private final SkillLoaderService loaderService;
     private final SkillEventPublisher eventPublisher;
     private final SkillRegistry skillRegistry;
     private final SkillStorageBackend storageBackend;
     private final ObjectMapper objectMapper;
+    private final StoreFactory storeFactory;
+
+    private SkillStore getSkillStore() {
+        return storeFactory.get(SkillStore.class);
+    }
 
     @Override
     public SkillResponse createSkill(MultipartFile file, SkillCreateRequest request) {
@@ -51,7 +56,7 @@ public class SkillManageServiceImpl implements SkillManageService {
         String skillName = validationResult.getSkillName();
 
         // 步骤2：检查名称唯一性
-        if (skillStore.existsByName(skillName)) {
+        if (getSkillStore().existsByName(skillName)) {
             throw new SkillValidationException("Skill 名称已存在: " + skillName);
         }
 
@@ -92,7 +97,7 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .creatorType(request.getCreatorType())
                 .build();
 
-        entity = skillStore.save(entity);
+        entity = getSkillStore().save(entity);
 
         // 步骤7：触发运行时加载（直接从数据库字段构建，无需读文件）
         loaderService.loadSkill(entity);
@@ -101,7 +106,7 @@ public class SkillManageServiceImpl implements SkillManageService {
         eventPublisher.publishCreated(entity);
 
         log.info("Skill 创建成功: id={}, name={}", entity.getId(), entity.getName());
-        return toResponse(skillStore.findById(entity.getId()).orElse(entity));
+        return toResponse(getSkillStore().findById(entity.getId()).orElse(entity));
     }
 
     @Override
@@ -167,7 +172,7 @@ public class SkillManageServiceImpl implements SkillManageService {
             entity.setDescription(request.getDescription());
         }
 
-        entity = skillStore.update(entity);
+        entity = getSkillStore().update(entity);
 
         // 3. 触发重新加载或发布事件
         if (fileUpdated) {
@@ -179,7 +184,7 @@ public class SkillManageServiceImpl implements SkillManageService {
 
         log.info("Skill 更新成功: id={}, name={}, version={}, fileUpdated={}",
                 entity.getId(), entity.getName(), entity.getVersion(), fileUpdated);
-        return toResponse(skillStore.findById(skillId).orElse(entity));
+        return toResponse(getSkillStore().findById(skillId).orElse(entity));
     }
 
     @Override
@@ -198,14 +203,14 @@ public class SkillManageServiceImpl implements SkillManageService {
         eventPublisher.publishDeleted(entity);
 
         // 4. 软删除数据库记录
-        skillStore.softDelete(skillId);
+        getSkillStore().softDelete(skillId);
 
         log.info("Skill 已删除: id={}, name={}", skillId, entity.getName());
     }
 
     @Override
     public List<SkillResponse> listSkills(SkillQueryRequest request) {
-        List<SkillEntity> entities = skillStore.findAll();
+        List<SkillEntity> entities = getSkillStore().findAll();
 
         // 过滤
         entities = entities.stream()
@@ -251,7 +256,7 @@ public class SkillManageServiceImpl implements SkillManageService {
         loaderService.unloadSkill(skillId, entity.getName());
         // 仅更新 enabled 字段
         entity.setEnabled(false);
-        skillStore.update(entity);
+        getSkillStore().update(entity);
         eventPublisher.publishDisabled(entity);
         log.info("Skill 已禁用: id={}, name={}", skillId, entity.getName());
     }
@@ -264,7 +269,7 @@ public class SkillManageServiceImpl implements SkillManageService {
         }
         // 先更新 enabled 字段
         entity.setEnabled(true);
-        entity = skillStore.update(entity);
+        entity = getSkillStore().update(entity);
         // 触发加载
         loaderService.loadSkill(entity);
         eventPublisher.publishActivated(entity);
@@ -293,7 +298,7 @@ public class SkillManageServiceImpl implements SkillManageService {
 
         log.info("开始重试 {} 个 FAILED 状态的 Skill", failedNames.size());
         for (String name : failedNames) {
-            skillStore.findByName(name).ifPresent(entity -> {
+            getSkillStore().findByName(name).ifPresent(entity -> {
                 log.info("重试加载 Skill: id={}, name={}", entity.getId(), entity.getName());
                 skillRegistry.unregister(name); // 先清除旧的 FAILED 记录
                 loaderService.loadSkill(entity);
@@ -317,7 +322,7 @@ public class SkillManageServiceImpl implements SkillManageService {
     // ==================== 私有工具方法 ====================
 
     private SkillEntity requireActiveSkill(Long skillId) {
-        return skillStore.findById(skillId)
+        return getSkillStore().findById(skillId)
                 .orElseThrow(() -> new SkillNotFoundException("Skill 不存在: id=" + skillId));
     }
 

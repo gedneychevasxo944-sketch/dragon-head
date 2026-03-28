@@ -15,6 +15,7 @@ import org.dragon.workspace.chat.ChatRoom;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.service.task.arrangement.dto.TaskCreationCommand;
 import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import lombok.Getter;
@@ -37,12 +38,16 @@ public class WorkspaceTaskArrangementService {
     private final WorkspaceRegistry workspaceRegistry;
     private final org.dragon.workspace.service.member.WorkspaceMemberManagementService memberService;
     private final ChatRoom chatRoom;
-    private final TaskStore taskStore;
     private final org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService taskExecutionService;
     private final TaskDecomposer taskDecomposer;
     private final TaskAssignmentResolver taskAssignmentResolver;
     private final ChildTaskFactory childTaskFactory;
     private final org.dragon.workspace.service.task.execution.CollaborationSessionCoordinator sessionCoordinator;
+    private final StoreFactory storeFactory;
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
 
     /**
      * 任务执行模式枚举
@@ -96,7 +101,7 @@ public class WorkspaceTaskArrangementService {
                 .build();
 
         // 持久化任务
-        taskStore.save(task);
+        getTaskStore().save(task);
         log.info("[TaskArrangementService] Submitted task {} to workspace {}", task.getId(), workspaceId);
 
         // 自动开始处理任务
@@ -117,7 +122,7 @@ public class WorkspaceTaskArrangementService {
             log.warn("[TaskArrangementService] No members available in workspace {}", task.getWorkspaceId());
             task.setStatus(TaskStatus.FAILED);
             task.setErrorMessage("No members available");
-            taskStore.update(task);
+            getTaskStore().update(task);
             return;
         }
 
@@ -145,7 +150,7 @@ public class WorkspaceTaskArrangementService {
             log.warn("[TaskArrangementService] Task decomposition failed for task {}", task.getId());
             task.setStatus(TaskStatus.FAILED);
             task.setErrorMessage("Task decomposition returned no child tasks");
-            taskStore.update(task);
+            getTaskStore().update(task);
             return;
         }
 
@@ -159,17 +164,17 @@ public class WorkspaceTaskArrangementService {
             log.warn("[TaskArrangementService] Failed to parse child tasks for task {}", task.getId());
             task.setStatus(TaskStatus.FAILED);
             task.setErrorMessage("Failed to parse child tasks");
-            taskStore.update(task);
+            getTaskStore().update(task);
             return;
         }
 
         // 保存子任务到 Store
         for (Task childTask : childTasks) {
-            taskStore.save(childTask);
+            getTaskStore().save(childTask);
         }
         task.setChildTaskIds(childTasks.stream().map(Task::getId).toList());
         task.setStatus(TaskStatus.RUNNING);
-        taskStore.update(task);
+        getTaskStore().update(task);
 
         // 3. 创建协作会话并绑定 - 委托给 CollaborationSessionCoordinator
         sessionCoordinator.createAndBindSession(task, childTasks);
@@ -186,7 +191,7 @@ public class WorkspaceTaskArrangementService {
         if (characterIds.isEmpty()) {
             task.setStatus(TaskStatus.FAILED);
             task.setErrorMessage("No valid specified characters");
-            taskStore.update(task);
+            getTaskStore().update(task);
             return;
         }
 
@@ -200,7 +205,7 @@ public class WorkspaceTaskArrangementService {
         if (members.isEmpty()) {
             task.setStatus(TaskStatus.FAILED);
             task.setErrorMessage("No members available");
-            taskStore.update(task);
+            getTaskStore().update(task);
             return;
         }
 
@@ -225,11 +230,11 @@ public class WorkspaceTaskArrangementService {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        taskStore.save(childTask);
+        getTaskStore().save(childTask);
         parentTask.setChildTaskIds(List.of(childTask.getId()));
         parentTask.setAssignedMemberIds(assignedMemberIds);
         parentTask.setStatus(TaskStatus.RUNNING);
-        taskStore.update(parentTask);
+        getTaskStore().update(parentTask);
 
         taskExecutionService.executeChildTask(childTask, parentTask);
     }

@@ -4,6 +4,8 @@ import io.ebean.Database;
 import org.dragon.datasource.entity.ExecutionHistoryEntity;
 import org.dragon.schedule.entity.ExecutionHistory;
 import org.dragon.schedule.entity.ExecutionStatus;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
  * MySqlExecutionHistoryStore 执行历史MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlExecutionHistoryStore implements ExecutionHistoryStore {
 
     private final Database mysqlDb;

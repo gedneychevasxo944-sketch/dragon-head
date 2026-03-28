@@ -2,6 +2,7 @@ package org.dragon.skill.store;
 
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillCategory;
+import org.dragon.store.Store;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +12,7 @@ import java.util.Optional;
  *
  * @since 1.0
  */
-public interface SkillStore {
+public interface SkillStore extends Store {
 
     /**
      * 保存 Skill 实体。

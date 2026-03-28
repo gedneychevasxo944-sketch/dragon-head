@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import org.dragon.tools.AgentTool;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,8 +30,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class GetEvaluationRecordsTool implements AgentTool {
 
-    private final EvaluationRecordStore evaluationRecordStore;
+    private final StoreFactory storeFactory;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private EvaluationRecordStore getEvaluationRecordStore() {
+        return storeFactory.get(EvaluationRecordStore.class);
+    }
 
     @Override
     public String getName() {
@@ -86,7 +91,7 @@ public class GetEvaluationRecordsTool implements AgentTool {
                         ? EvaluationRecord.TargetType.CHARACTER
                         : EvaluationRecord.TargetType.WORKSPACE;
 
-                List<EvaluationRecord> records = evaluationRecordStore.findByTargetAndTimeRange(
+                List<EvaluationRecord> records = getEvaluationRecordStore().findByTargetAndTimeRange(
                         evalTargetType, targetId, startTime, endTime);
 
                 return AgentTool.ToolResult.ok(

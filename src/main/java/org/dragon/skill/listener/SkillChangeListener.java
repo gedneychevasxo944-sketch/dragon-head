@@ -6,6 +6,7 @@ import org.dragon.skill.event.SkillEventPublisher;
 import org.dragon.skill.event.WorkspaceSkillChangedEvent;
 import org.dragon.skill.service.SkillLoaderService;
 import org.dragon.skill.store.WorkspaceSkillStore;
+import org.dragon.store.StoreFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -33,9 +34,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SkillChangeListener {
 
-    private final WorkspaceSkillStore workspaceSkillStore;
     private final SkillEventPublisher eventPublisher;
     private final SkillLoaderService loaderService;
+    private final WorkspaceSkillStore workspaceSkillStore;
 
     @Async
     @EventListener

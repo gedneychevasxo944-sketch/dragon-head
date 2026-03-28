@@ -1,5 +1,7 @@
 package org.dragon.schedule.store;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.schedule.entity.ExecutionHistory;
 import org.dragon.schedule.entity.ExecutionStatus;
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
  * 内存执行历史存储实现
  */
 @Slf4j
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryExecutionHistoryStore implements ExecutionHistoryStore {
 
     private final Map<String, ExecutionHistory> store = new ConcurrentHashMap<>();

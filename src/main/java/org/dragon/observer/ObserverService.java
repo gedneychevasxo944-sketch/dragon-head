@@ -17,6 +17,7 @@ import org.dragon.observer.optimization.plan.OptimizationPlan;
 import org.dragon.observer.optimization.plan.OptimizationPlanItem;
 import org.dragon.observer.optimization.store.OptimizationActionStore;
 import org.dragon.observer.optimization.store.OptimizationPlanStore;
+import org.dragon.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -37,16 +38,29 @@ public class ObserverService {
     private static final Logger log = LoggerFactory.getLogger(ObserverService.class);
 
     private final ObserverRegistry observerRegistry;
-    private final EvaluationRecordStore evaluationRecordStore;
-    private final OptimizationActionStore optimizationActionStore;
-    private final OptimizationPlanStore optimizationPlanStore;
     private final DataCollector dataCollector;
     private final EvaluationEngine evaluationEngine;
     private final OptimizationExecutor optimizationExecutor;
     private final CommonSenseValidator commonSenseValidator;
-    private final WorkspaceCommonSenseStore commonSenseStore;
     private final CharacterRegistry characterRegistry;
     private final ObserverPlanningService planningService;
+    private final StoreFactory storeFactory;
+
+    private EvaluationRecordStore getEvaluationRecordStore() {
+        return storeFactory.get(EvaluationRecordStore.class);
+    }
+
+    private OptimizationActionStore getOptimizationActionStore() {
+        return storeFactory.get(OptimizationActionStore.class);
+    }
+
+    private OptimizationPlanStore getOptimizationPlanStore() {
+        return storeFactory.get(OptimizationPlanStore.class);
+    }
+
+    private WorkspaceCommonSenseStore getCommonSenseStore() {
+        return storeFactory.get(WorkspaceCommonSenseStore.class);
+    }
 
     /**
      * 评价任务
@@ -166,7 +180,7 @@ public class ObserverService {
             if (!validationResult.isValid()) {
                 log.warn("[ObserverService] Action rejected by common sense: {}", action.getId());
                 action.markRejected("Violated common sense: " + validationResult.getViolations());
-                optimizationActionStore.save(action);
+                getOptimizationActionStore().save(action);
             } else if (observer.isAutoOptimizationEnabled()) {
                 // 执行优化
                 optimizationExecutor.execute(action);
@@ -191,7 +205,7 @@ public class ObserverService {
             return List.of();
         }
 
-        List<OptimizationAction> pendingActions = optimizationActionStore.findPendingOrdered(10);
+        List<OptimizationAction> pendingActions = getOptimizationActionStore().findPendingOrdered(10);
         log.info("[ObserverService] Executing {} pending optimization actions", pendingActions.size());
 
         return optimizationExecutor.executeBatch(pendingActions.stream().map(OptimizationAction::getId).toList());
@@ -313,7 +327,7 @@ public class ObserverService {
      * @return 评价记录
      */
     public EvaluationRecord getEvaluation(String evaluationId) {
-        return evaluationRecordStore.findById(evaluationId).orElse(null);
+        return getEvaluationRecordStore().findById(evaluationId).orElse(null);
     }
 
     /**
@@ -324,7 +338,7 @@ public class ObserverService {
      * @return 评价记录列表
      */
     public List<EvaluationRecord> getEvaluationsByTarget(EvaluationRecord.TargetType targetType, String targetId) {
-        return evaluationRecordStore.findByTarget(targetType, targetId);
+        return getEvaluationRecordStore().findByTarget(targetType, targetId);
     }
 
     /**
@@ -337,7 +351,7 @@ public class ObserverService {
         Observer observer = observerRegistry.get(observerId)
                 .orElseThrow(() -> new IllegalArgumentException("Observer not found: " + observerId));
 
-        return evaluationRecordStore.findBelowThreshold(observer.getOptimizationThreshold());
+        return getEvaluationRecordStore().findBelowThreshold(observer.getOptimizationThreshold());
     }
 
     /**
@@ -347,7 +361,7 @@ public class ObserverService {
      * @return 优化动作
      */
     public OptimizationAction getOptimizationAction(String actionId) {
-        return optimizationActionStore.findById(actionId).orElse(null);
+        return getOptimizationActionStore().findById(actionId).orElse(null);
     }
 
     /**
@@ -361,7 +375,7 @@ public class ObserverService {
         OptimizationAction.TargetType type = targetType == EvaluationRecord.TargetType.CHARACTER
                 ? OptimizationAction.TargetType.CHARACTER
                 : OptimizationAction.TargetType.WORKSPACE;
-        return optimizationActionStore.findByTarget(type, targetId);
+        return getOptimizationActionStore().findByTarget(type, targetId);
     }
 
     /**
@@ -390,10 +404,10 @@ public class ObserverService {
 
         ObserverStats stats = new ObserverStats();
         stats.setObserverId(observerId);
-        stats.setTotalEvaluations(evaluationRecordStore.count());
-        stats.setTotalOptimizations(optimizationActionStore.count());
-        stats.setPendingOptimizations(optimizationActionStore.findPending().size());
-        stats.setCommonSenseCount(commonSenseStore.countByWorkspace(
+        stats.setTotalEvaluations(getEvaluationRecordStore().count());
+        stats.setTotalOptimizations(getOptimizationActionStore().count());
+        stats.setPendingOptimizations(getOptimizationActionStore().findPending().size());
+        stats.setCommonSenseCount(getCommonSenseStore().countByWorkspace(
                 org.dragon.workspace.commons.store.MemoryWorkspaceCommonSenseStore.GLOBAL_WORKSPACE_ID));
         stats.setCharacterCount(characterRegistry.size());
 

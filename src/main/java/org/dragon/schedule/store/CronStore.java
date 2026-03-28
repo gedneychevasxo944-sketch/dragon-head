@@ -2,6 +2,7 @@ package org.dragon.schedule.store;
 
 import org.dragon.schedule.entity.CronDefinition;
 import org.dragon.schedule.entity.CronStatus;
+import org.dragon.store.Store;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +11,7 @@ import java.util.Optional;
  * Cron 存储抽象接口
  * 对应架构文档中的 CronStore
  */
-public interface CronStore {
+public interface CronStore extends Store {
 
     /**
      * 保存 Cron 定义

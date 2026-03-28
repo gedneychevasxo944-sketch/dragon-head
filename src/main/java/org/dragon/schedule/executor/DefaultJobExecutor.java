@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.schedule.config.ScheduleProperties;
 import org.dragon.schedule.entity.*;
 import org.dragon.schedule.store.ExecutionHistoryStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.PostConstruct;
@@ -21,8 +22,8 @@ import java.util.stream.Collectors;
 public class DefaultJobExecutor implements JobExecutor {
 
     private final ScheduleProperties properties;
-    private final ExecutionHistoryStore executionHistoryStore;
     private final ApplicationContext applicationContext;
+    private final StoreFactory storeFactory;
 
     private ExecutorService executorService;
     private final Map<String, ExecutionContext> executingJobs = new ConcurrentHashMap<>();
@@ -31,10 +32,15 @@ public class DefaultJobExecutor implements JobExecutor {
 
     public DefaultJobExecutor(ScheduleProperties properties,
                              ExecutionHistoryStore executionHistoryStore,
-                             ApplicationContext applicationContext) {
+                             ApplicationContext applicationContext,
+                             StoreFactory storeFactory) {
         this.properties = properties;
-        this.executionHistoryStore = executionHistoryStore;
         this.applicationContext = applicationContext;
+        this.storeFactory = storeFactory;
+    }
+
+    private ExecutionHistoryStore getExecutionHistoryStore() {
+        return storeFactory.get(ExecutionHistoryStore.class);
     }
 
     @PostConstruct
@@ -91,7 +97,7 @@ public class DefaultJobExecutor implements JobExecutor {
         
         // 创建执行历史
         ExecutionHistory history = createExecutionHistory(definition, context, executionId);
-        executionHistoryStore.save(history);
+        getExecutionHistoryStore().save(history);
 
         // 执行
         return doExecute(definition, context, history);
@@ -108,7 +114,7 @@ public class DefaultJobExecutor implements JobExecutor {
         
         // 创建执行历史
         ExecutionHistory history = createExecutionHistory(definition, context, executionId);
-        executionHistoryStore.save(history);
+        getExecutionHistoryStore().save(history);
 
         // 执行
         return doExecuteWithHandler(definition, context, history, handler);
@@ -145,7 +151,7 @@ public class DefaultJobExecutor implements JobExecutor {
     @Override
     public List<ExecutionHistory> getExecutingJobs() {
         return executingJobs.values().stream()
-                .map(ctx -> executionHistoryStore.findByExecutionId(ctx.executionId))
+                .map(ctx -> getExecutionHistoryStore().findByExecutionId(ctx.executionId))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
@@ -224,7 +230,7 @@ public class DefaultJobExecutor implements JobExecutor {
         try {
             // 记录开始
             history.markStarted(properties.getNodeId(), execContext.thread.getName());
-            executionHistoryStore.update(history);
+            getExecutionHistoryStore().update(history);
 
             // beforeExecute 回调
             handler.beforeExecute(definition, context);
@@ -253,7 +259,7 @@ public class DefaultJobExecutor implements JobExecutor {
         } finally {
             executingJobs.remove(history.getExecutionId());
             history.setCompleteTime(System.currentTimeMillis());
-            executionHistoryStore.update(history);
+            getExecutionHistoryStore().update(history);
         }
 
         return history;

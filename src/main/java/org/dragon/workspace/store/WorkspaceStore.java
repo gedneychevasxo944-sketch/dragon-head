@@ -1,9 +1,10 @@
 package org.dragon.workspace.store;
 
+import org.dragon.store.Store;
+import org.dragon.workspace.Workspace;
+
 import java.util.List;
 import java.util.Optional;
-
-import org.dragon.workspace.Workspace;
 
 /**
  * WorkspaceStore 工作空间存储接口
@@ -11,7 +12,7 @@ import org.dragon.workspace.Workspace;
  * @author wyj
  * @version 1.0
  */
-public interface WorkspaceStore {
+public interface WorkspaceStore extends Store {
 
     /**
      * 保存工作空间

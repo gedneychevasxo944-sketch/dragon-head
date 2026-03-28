@@ -7,6 +7,7 @@ import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TaskContinuationResolver {
 
-    private final TaskStore taskStore;
+    private final StoreFactory storeFactory;
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
 
     /**
      * 续跑决策结果
@@ -145,7 +150,7 @@ public class TaskContinuationResolver {
      * 通过被引用消息 ID 查找任务
      */
     private Optional<Task> findTaskByQuotedMessageId(String workspaceId, String quoteMessageId) {
-        List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
+        List<Task> tasks = getTaskStore().findByWorkspaceId(workspaceId);
         return tasks.stream()
                 .filter(task -> quoteMessageId.equals(task.getSourceMessageId()))
                 .findFirst();
@@ -155,7 +160,7 @@ public class TaskContinuationResolver {
      * 通过线程 ID 查找等待中的任务
      */
     private Optional<Task> findWaitingTaskByThreadId(String workspaceId, String threadId) {
-        List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
+        List<Task> tasks = getTaskStore().findByWorkspaceId(workspaceId);
         return tasks.stream()
                 .filter(task -> threadId.equals(task.getSourceChatId())) // 暂用 sourceChatId 存储 threadId
                 .filter(task -> task.getStatus() == TaskStatus.SUSPENDED
@@ -168,7 +173,7 @@ public class TaskContinuationResolver {
      * 通过 chatId 查找 WAITING_USER_INPUT 状态的任务
      */
     private Optional<Task> findWaitingUserInputTaskByChatId(String workspaceId, String chatId) {
-        List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
+        List<Task> tasks = getTaskStore().findByWorkspaceId(workspaceId);
         return tasks.stream()
                 .filter(task -> chatId.equals(task.getSourceChatId()))
                 .filter(task -> task.getStatus() == TaskStatus.WAITING_USER_INPUT)
@@ -179,7 +184,7 @@ public class TaskContinuationResolver {
      * 通过 chatId 查找最近挂起的任务
      */
     private Optional<Task> findLatestWaitingTaskByChatId(String workspaceId, String chatId) {
-        List<Task> tasks = taskStore.findByWorkspaceId(workspaceId);
+        List<Task> tasks = getTaskStore().findByWorkspaceId(workspaceId);
         return tasks.stream()
                 .filter(task -> chatId.equals(task.getSourceChatId()))
                 .filter(task -> task.getStatus() == TaskStatus.SUSPENDED

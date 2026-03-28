@@ -7,6 +7,7 @@ import org.dragon.schedule.entity.CronStatus;
 import org.dragon.schedule.entity.ExecutionHistory;
 import org.dragon.schedule.entity.ExecutionStatus;
 import org.dragon.schedule.store.ExecutionHistoryStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -49,7 +50,11 @@ import java.util.Optional;
 public class ScheduleController {
 
     private final CronService cronService;
-    private final ExecutionHistoryStore executionHistoryStore;
+    private final StoreFactory storeFactory;
+
+    private ExecutionHistoryStore getExecutionHistoryStore() {
+        return storeFactory.get(ExecutionHistoryStore.class);
+    }
 
     // ==================== Cron 定义管理 ====================
 
@@ -125,14 +130,14 @@ public class ScheduleController {
     public ResponseEntity<List<ExecutionHistory>> getExecutionHistory(
             @PathVariable String cronId,
             @RequestParam(defaultValue = "20") int limit) {
-        List<ExecutionHistory> history = executionHistoryStore.findByCronId(cronId, limit);
+        List<ExecutionHistory> history = getExecutionHistoryStore().findByCronId(cronId, limit);
         return ResponseEntity.ok(history);
     }
 
     @Operation(summary = "查询当前正在运行的所有任务")
     @GetMapping("/executions/running")
     public ResponseEntity<List<ExecutionHistory>> getRunningJobs() {
-        return ResponseEntity.ok(executionHistoryStore.findRunningJobs());
+        return ResponseEntity.ok(getExecutionHistoryStore().findRunningJobs());
     }
 
     @Operation(summary = "按执行状态查询历史记录")
@@ -140,20 +145,20 @@ public class ScheduleController {
     public ResponseEntity<List<ExecutionHistory>> getExecutionsByStatus(
             @RequestParam ExecutionStatus status,
             @RequestParam(defaultValue = "50") int limit) {
-        return ResponseEntity.ok(executionHistoryStore.findByStatus(status, limit));
+        return ResponseEntity.ok(getExecutionHistoryStore().findByStatus(status, limit));
     }
 
     @Operation(summary = "查询指定执行记录详情（含错误堆栈、结果数据）")
     @GetMapping("/executions/{executionId}")
     public ResponseEntity<ExecutionHistory> getExecution(@PathVariable String executionId) {
-        Optional<ExecutionHistory> history = executionHistoryStore.findByExecutionId(executionId);
+        Optional<ExecutionHistory> history = getExecutionHistoryStore().findByExecutionId(executionId);
         return history.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @Operation(summary = "清理指定时间点之前的历史记录（运维接口）")
     @DeleteMapping("/executions")
     public ResponseEntity<Integer> cleanupHistory(@RequestParam long beforeTime) {
-        int deleted = executionHistoryStore.deleteBefore(beforeTime);
+        int deleted = getExecutionHistoryStore().deleteBefore(beforeTime);
         return ResponseEntity.ok(deleted);
     }
 

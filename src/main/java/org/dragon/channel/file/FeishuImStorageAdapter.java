@@ -8,6 +8,7 @@ import org.dragon.channel.entity.ChannelConfig;
 import org.dragon.channel.entity.NormalizedFile;
 import org.dragon.channel.enums.FileSource;
 import org.dragon.channel.store.ChannelConfigStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +28,8 @@ public class FeishuImStorageAdapter implements FileStorageAdapter {
     private Client apiClient;
     private String currentConfigId;
 
-    public FeishuImStorageAdapter(ChannelConfigStore channelConfigStore) {
-        this.channelConfigStore = channelConfigStore;
+    public FeishuImStorageAdapter(StoreFactory storeFactory) {
+        this.channelConfigStore = storeFactory.get(ChannelConfigStore.class);
         initializeApiClient();
     }
 

@@ -10,6 +10,7 @@ import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillValidationException;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.store.WorkspaceSkillStore;
+import org.dragon.store.StoreFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,17 +34,21 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WorkspaceSkillService {
 
-    private final WorkspaceSkillStore workspaceSkillStore;
-    private final SkillStore skillStore;
     private final SkillLoaderService loaderService;
     private final org.dragon.skill.registry.SkillRegistry skillRegistry;
+    private final StoreFactory storeFactory;
+    private final WorkspaceSkillStore workspaceSkillStore;
+
+    private SkillStore getSkillStore() {
+        return storeFactory.get(SkillStore.class);
+    }
 
     /**
      * Workspace 圈选一个 Skill。
      */
     public WorkspaceSkillResponse bindSkill(Long workspaceId, WorkspaceSkillBindRequest request) {
         // 1. 检查 skill 是否存在且公开
-        SkillEntity skill = skillStore.findById(request.getSkillId())
+        SkillEntity skill = getSkillStore().findById(request.getSkillId())
                 .orElseThrow(() -> new SkillNotFoundException(
                         "Skill 不存在: id=" + request.getSkillId()));
 
@@ -202,7 +207,7 @@ public class WorkspaceSkillService {
                 skillId, newVersion, followers.size());
 
         // 3. 逐个触发热更新
-        SkillEntity skill = skillStore.findById(skillId).orElse(null);
+        SkillEntity skill = getSkillStore().findById(skillId).orElse(null);
         if (skill == null) return;
 
         for (WorkspaceSkillEntity ws : followers) {

@@ -3,6 +3,7 @@ package org.dragon.observer.actionlog;
 import java.util.List;
 import java.util.Map;
 
+import org.dragon.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,8 +22,8 @@ public class ObserverActionLogService {
 
     private final ActionLogStore actionLogStore;
 
-    public ObserverActionLogService(ActionLogStore actionLogStore) {
-        this.actionLogStore = actionLogStore;
+    public ObserverActionLogService(StoreFactory storeFactory) {
+        this.actionLogStore = storeFactory.get(ActionLogStore.class);
     }
 
     /**

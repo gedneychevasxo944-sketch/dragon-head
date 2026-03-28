@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -25,9 +26,16 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ChatRoom implements ChatRoomObserver {
 
-    private final ChatMessageStore messageStore;
-    private final ChatSessionStore sessionStore;
     private final WorkspaceRegistry workspaceRegistry;
+    private final StoreFactory storeFactory;
+
+    private ChatMessageStore getMessageStore() {
+        return storeFactory.get(ChatMessageStore.class);
+    }
+
+    private ChatSessionStore getSessionStore() {
+        return storeFactory.get(ChatSessionStore.class);
+    }
 
     // ==================== 消息功能 ====================
 
@@ -51,7 +59,7 @@ public class ChatRoom implements ChatRoomObserver {
             message.setTimestamp(LocalDateTime.now());
         }
 
-        messageStore.save(message);
+        getMessageStore().save(message);
         log.info("[ChatRoom] Sent message {} in workspace {}",
                 message.getId(), message.getWorkspaceId());
 
@@ -67,7 +75,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 消息列表
      */
     public List<ChatMessage> getMessages(String workspaceId, String characterId, int limit) {
-        return messageStore.findByWorkspaceIdAndReceiverId(workspaceId, characterId, limit);
+        return getMessageStore().findByWorkspaceIdAndReceiverId(workspaceId, characterId, limit);
     }
 
     /**
@@ -79,7 +87,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 消息列表
      */
     public List<ChatMessage> getAllMessages(String workspaceId, LocalDateTime startTime, LocalDateTime endTime) {
-        return messageStore.findByWorkspaceIdAndTimeRange(workspaceId, startTime, endTime);
+        return getMessageStore().findByWorkspaceIdAndTimeRange(workspaceId, startTime, endTime);
     }
 
     /**
@@ -90,7 +98,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 消息列表
      */
     public List<ChatMessage> getMessagesByCharacter(String characterId, int limit) {
-        return messageStore.findByCharacterId(characterId, limit);
+        return getMessageStore().findByCharacterId(characterId, limit);
     }
 
     // ==================== 会话功能 ====================
@@ -125,7 +133,7 @@ public class ChatRoom implements ChatRoomObserver {
                 .status(ChatSession.Status.ACTIVE)
                 .build();
 
-        sessionStore.save(session);
+        getSessionStore().save(session);
         log.info("[ChatRoom] Created session {} in workspace {}",
                 session.getId(), workspaceId);
 
@@ -139,7 +147,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @param characterId Character ID
      */
     public void addToSession(String sessionId, String characterId) {
-        ChatSession session = sessionStore.findById(sessionId);
+        ChatSession session = getSessionStore().findById(sessionId);
         if (session == null) {
             throw new IllegalArgumentException("Session not found: " + sessionId);
         }
@@ -147,7 +155,7 @@ public class ChatRoom implements ChatRoomObserver {
         if (!session.getParticipantIds().contains(characterId)) {
             session.getParticipantIds().add(characterId);
             session.setUpdatedAt(LocalDateTime.now());
-            sessionStore.update(session);
+            getSessionStore().update(session);
         }
     }
 
@@ -158,7 +166,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @param decision 决策记录
      */
     public void recordDecision(String sessionId, ChatSession.DecisionRecord decision) {
-        ChatSession session = sessionStore.findById(sessionId);
+        ChatSession session = getSessionStore().findById(sessionId);
         if (session == null) {
             throw new IllegalArgumentException("Session not found: " + sessionId);
         }
@@ -172,7 +180,7 @@ public class ChatRoom implements ChatRoomObserver {
 
         session.getDecisions().add(decision);
         session.setUpdatedAt(LocalDateTime.now());
-        sessionStore.update(session);
+        getSessionStore().update(session);
     }
 
     /**
@@ -182,7 +190,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 会话
      */
     public ChatSession getSession(String sessionId) {
-        return sessionStore.findById(sessionId);
+        return getSessionStore().findById(sessionId);
     }
 
     /**
@@ -192,7 +200,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 消息列表
      */
     public List<ChatMessage> getSessionMessages(String sessionId) {
-        return messageStore.findBySessionId(sessionId);
+        return getMessageStore().findBySessionId(sessionId);
     }
 
     /**
@@ -201,14 +209,14 @@ public class ChatRoom implements ChatRoomObserver {
      * @param sessionId 会话 ID
      */
     public void completeSession(String sessionId) {
-        ChatSession session = sessionStore.findById(sessionId);
+        ChatSession session = getSessionStore().findById(sessionId);
         if (session == null) {
             throw new IllegalArgumentException("Session not found: " + sessionId);
         }
 
         session.setStatus(ChatSession.Status.COMPLETED);
         session.setUpdatedAt(LocalDateTime.now());
-        sessionStore.update(session);
+        getSessionStore().update(session);
     }
 
     /**
@@ -218,7 +226,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 会话
      */
     public ChatSession getSessionByTaskId(String taskId) {
-        return sessionStore.findByTaskId(taskId);
+        return getSessionStore().findByTaskId(taskId);
     }
 
     // ==================== 任务协作方法 ====================
@@ -235,7 +243,7 @@ public class ChatRoom implements ChatRoomObserver {
         log.info("[ChatRoom] Starting task collaboration for task {} in workspace {}", taskId, workspaceId);
 
         // 检查是否已存在该任务的协作会话
-        ChatSession existingSession = sessionStore.findByTaskId(taskId);
+        ChatSession existingSession = getSessionStore().findByTaskId(taskId);
         if (existingSession != null) {
             log.info("[ChatRoom] Task {} already has collaboration session {}", taskId, existingSession.getId());
             return existingSession;
@@ -394,11 +402,11 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 消息列表
      */
     public List<ChatMessage> getTaskCollaborationHistory(String taskId) {
-        ChatSession session = sessionStore.findByTaskId(taskId);
+        ChatSession session = getSessionStore().findByTaskId(taskId);
         if (session == null) {
             return new ArrayList<>();
         }
-        return messageStore.findBySessionId(session.getId());
+        return getMessageStore().findBySessionId(session.getId());
     }
 
     /**
@@ -409,7 +417,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 任务相关的消息列表
      */
     public List<ChatMessage> getTaskMessages(String workspaceId, String taskId) {
-        return messageStore.findByTaskId(taskId);
+        return getMessageStore().findByTaskId(taskId);
     }
 
     /**
@@ -418,7 +426,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @param taskId 任务 ID
      */
     public void notifyTaskCollaborationComplete(String taskId) {
-        ChatSession session = sessionStore.findByTaskId(taskId);
+        ChatSession session = getSessionStore().findByTaskId(taskId);
         if (session != null) {
             completeSession(session.getId());
             log.info("[ChatRoom] Task collaboration {} completed", taskId);
@@ -435,7 +443,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @param reason 等待原因
      */
     public void markParticipantWaiting(String sessionId, String characterId, String reason) {
-        ChatSession session = sessionStore.findById(sessionId);
+        ChatSession session = getSessionStore().findById(sessionId);
         if (session == null) {
             throw new IllegalArgumentException("Session not found: " + sessionId);
         }
@@ -450,7 +458,7 @@ public class ChatRoom implements ChatRoomObserver {
             session.getBlockedParticipants().add(characterId);
         }
         session.setUpdatedAt(LocalDateTime.now());
-        sessionStore.update(session);
+        getSessionStore().update(session);
         log.info("[ChatRoom] Participant {} marked as waiting in session {}: {}", characterId, sessionId, reason);
     }
 
@@ -461,7 +469,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @param characterId Character ID
      */
     public void markParticipantReady(String sessionId, String characterId) {
-        ChatSession session = sessionStore.findById(sessionId);
+        ChatSession session = getSessionStore().findById(sessionId);
         if (session == null) {
             throw new IllegalArgumentException("Session not found: " + sessionId);
         }
@@ -473,7 +481,7 @@ public class ChatRoom implements ChatRoomObserver {
             session.getBlockedParticipants().remove(characterId);
         }
         session.setUpdatedAt(LocalDateTime.now());
-        sessionStore.update(session);
+        getSessionStore().update(session);
         log.info("[ChatRoom] Participant {} marked as ready in session {}", characterId, sessionId);
     }
 
@@ -485,7 +493,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 消息列表
      */
     public List<ChatMessage> listSessionMessages(String sessionId, int limit) {
-        List<ChatMessage> messages = messageStore.findBySessionId(sessionId);
+        List<ChatMessage> messages = getMessageStore().findBySessionId(sessionId);
         if (messages.size() > limit) {
             return messages.subList(messages.size() - limit, messages.size());
         }
@@ -499,7 +507,7 @@ public class ChatRoom implements ChatRoomObserver {
      * @return 会话摘要信息
      */
     public java.util.Map<String, Object> buildSessionSummary(String sessionId) {
-        ChatSession session = sessionStore.findById(sessionId);
+        ChatSession session = getSessionStore().findById(sessionId);
         if (session == null) {
             throw new IllegalArgumentException("Session not found: " + sessionId);
         }

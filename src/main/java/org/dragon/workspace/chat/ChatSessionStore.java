@@ -1,5 +1,7 @@
 package org.dragon.workspace.chat;
 
+import org.dragon.store.Store;
+
 import java.util.List;
 
 /**
@@ -8,7 +10,7 @@ import java.util.List;
  * @author wyj
  * @version 1.0
  */
-public interface ChatSessionStore {
+public interface ChatSessionStore extends Store {
 
     /**
      * 保存会话

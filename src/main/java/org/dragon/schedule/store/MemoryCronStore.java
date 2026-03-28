@@ -1,5 +1,7 @@
 package org.dragon.schedule.store;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.schedule.entity.CronDefinition;
 import org.dragon.schedule.entity.CronStatus;
@@ -12,6 +14,7 @@ import java.util.stream.Collectors;
  * 内存 Cron 存储实现
  */
 @Slf4j
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryCronStore implements CronStore {
 
     private final Map<String, CronDefinition> store = new ConcurrentHashMap<>();

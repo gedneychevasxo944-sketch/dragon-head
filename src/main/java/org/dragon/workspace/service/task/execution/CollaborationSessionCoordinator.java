@@ -10,6 +10,7 @@ import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.chat.ChatRoom;
 import org.dragon.workspace.chat.ChatSession;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 public class CollaborationSessionCoordinator {
 
     private final ChatRoom chatRoom;
-    private final TaskStore taskStore;
+    private final StoreFactory storeFactory;
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
 
     /**
      * 创建协作会话并绑定到父子任务
@@ -58,12 +63,12 @@ public class CollaborationSessionCoordinator {
 
         // 绑定 sessionId 到父任务
         parentTask.setCollaborationSessionId(session.getId());
-        taskStore.update(parentTask);
+        getTaskStore().update(parentTask);
 
         // 绑定 sessionId 到所有子任务
         for (Task childTask : childTasks) {
             childTask.setCollaborationSessionId(session.getId());
-            taskStore.update(childTask);
+            getTaskStore().update(childTask);
         }
 
         log.info("[CollaborationSessionCoordinator] Created session {} and bound to {} tasks",

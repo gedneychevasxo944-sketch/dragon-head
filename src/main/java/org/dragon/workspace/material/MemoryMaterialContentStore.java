@@ -1,10 +1,12 @@
 package org.dragon.workspace.material;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
+import org.springframework.stereotype.Component;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryMaterialContentStore implements MaterialContentStore {
 
     private final Map<String, ParsedMaterialContent> store = new ConcurrentHashMap<>();

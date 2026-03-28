@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * ToolRegistry 工具注册中心测试。
  * 测试工具的注册、获取、列表、过滤等功能。
  */
-class ToolRegistryTest {
+class ToolRegistryAdaptorTest {
 
     private ToolRegistry registry;
     private ObjectMapper objectMapper;
