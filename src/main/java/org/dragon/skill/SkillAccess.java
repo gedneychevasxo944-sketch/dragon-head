@@ -1,5 +1,6 @@
 package org.dragon.skill;
 
+import org.dragon.skill.model.Skill;
 import org.dragon.skill.model.SkillMetadata;
 
 import java.util.List;

@@ -10,7 +10,8 @@
       "Bash(rm -f src/main/java/org/dragon/workspace/built_ins/character/prompt_writer/tool/*.java)",
       "Bash(rm -f src/main/java/org/dragon/workspace/built_ins/character/observer_advisor/tool/*.java)",
       "Bash(git rm:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git push:*)"
     ],
     "additionalDirectories": [
       "/Users/yijunwang/.claude/plans"

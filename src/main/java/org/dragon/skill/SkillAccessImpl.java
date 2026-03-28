@@ -1,7 +1,7 @@
 package org.dragon.skill;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.skill.model.SkillEntry;
+import org.dragon.skill.model.Skill;
 import org.dragon.skill.model.SkillMetadata;
 import org.dragon.skill.registry.SkillRuntimeEntry;
 import org.dragon.skill.registry.SkillRegistry;
@@ -37,7 +37,7 @@ public class SkillAccessImpl implements SkillAccess {
     @Override
     public Skill get(String skillId) {
         return findAll().stream()
-                .filter(s -> s.getId().equals(skillId))
+                .filter(s -> s.getId() != null && s.getId().toString().equals(skillId))
                 .findFirst()
                 .orElse(null);
     }
@@ -45,7 +45,7 @@ public class SkillAccessImpl implements SkillAccess {
     @Override
     public List<Skill> findByName(String name) {
         return findAll().stream()
-                .filter(s -> s.getName().equals(name))
+                .filter(s -> s.getName() != null && s.getName().equals(name))
                 .collect(Collectors.toList());
     }
 
@@ -57,18 +57,19 @@ public class SkillAccessImpl implements SkillAccess {
     }
 
     @Override
-    public Skill.SkillMetadata getMetadata(String skillId) {
-        return findAll().stream()
-                .filter(s -> s.getId().equals(skillId))
+    public SkillMetadata getMetadata(String skillId) {
+        return skillRegistry.findAllActiveByCharacter(characterId, workspaceId).stream()
+                .filter(e -> e.getSkillEntry().getSkill().getId() != null
+                        && e.getSkillEntry().getSkill().getId().toString().equals(skillId))
                 .findFirst()
-                .map(Skill::getMetadata)
+                .map(e -> e.getSkillEntry().getMetadata())
                 .orElse(null);
     }
 
     @Override
     public List<Skill> findByIds(List<String> skillIds) {
         return findAll().stream()
-                .filter(s -> skillIds.contains(s.getId()))
+                .filter(s -> s.getId() != null && skillIds.contains(s.getId().toString()))
                 .collect(Collectors.toList());
     }
 
@@ -77,22 +78,22 @@ public class SkillAccessImpl implements SkillAccess {
         Collection<SkillRuntimeEntry> entries = skillRegistry.findAllActiveByCharacter(characterId, workspaceId);
         return entries.stream()
                 .map(SkillRuntimeEntry::getSkillEntry)
-                .map(this::toAccessSkill)
+                .map(entry -> entry.getSkill())
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<Skill> findByCategory(String category) {
-        return findAll().stream()
-                .filter(s -> category.equals(s.getCategory()))
-                .collect(Collectors.toList());
+        // SkillEntity 有 category 字段，但 model.Skill 没有
+        // 暂时返回空列表
+        return List.of();
     }
 
     @Override
     public List<Skill> findByTags(List<String> tags) {
-        return findAll().stream()
-                .filter(s -> s.getTags() != null && s.getTags().containsAll(tags))
-                .collect(Collectors.toList());
+        // model.Skill 没有 tags 字段
+        // 暂时返回空列表
+        return List.of();
     }
 
     @Override
@@ -123,43 +124,5 @@ public class SkillAccessImpl implements SkillAccess {
     @Override
     public int count() {
         return findAll().size();
-    }
-
-    /**
-     * 将运行时 SkillEntry 转换为 SkillAccess 使用的 Skill。
-     */
-    private Skill toAccessSkill(SkillEntry entry) {
-        org.dragon.skill.model.Skill model = entry.getSkill();
-        SkillMetadata modelMetadata = entry.getMetadata();
-
-        Skill.SkillMetadata metadata = null;
-        if (modelMetadata != null) {
-            metadata = Skill.SkillMetadata.builder()
-                    .inputParams(modelMetadata.getRequires() != null
-                            ? modelMetadata.getRequires().getParams() != null
-                                    ? modelMetadata.getRequires().getParams().stream()
-                                            .map(p -> Skill.Parameter.builder()
-                                                    .name(p.getName())
-                                                    .type(p.getType())
-                                                    .description(p.getDescription())
-                                                    .required(p.getRequired())
-                                                    .defaultValue(p.getDefaultValue())
-                                                    .build())
-                                            .collect(Collectors.toList())
-                                    : null
-                            : null)
-                    .outputParams(null)
-                    .config(null)
-                    .build();
-        }
-
-        return Skill.builder()
-                .id(model.getId() != null ? model.getId().toString() : null)
-                .name(model.getName())
-                .description(model.getDescription())
-                .category(null) // model.Skill doesn't have category
-                .tags(null)     // model.Skill doesn't have tags
-                .metadata(metadata)
-                .build();
     }
 }
