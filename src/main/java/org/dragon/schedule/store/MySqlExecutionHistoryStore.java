@@ -30,8 +30,7 @@ public class MySqlExecutionHistoryStore implements ExecutionHistoryStore {
     @Override
     public void save(ExecutionHistory history) {
         ExecutionHistoryEntity entity = ExecutionHistoryEntity.fromExecutionHistory(history);
-        // todo chenzhijie 临时先去掉，这个会一直写数据库，之后还原一下
-//        mysqlDb.save(entity);
+        mysqlDb.save(entity);
     }
 
     @Override
