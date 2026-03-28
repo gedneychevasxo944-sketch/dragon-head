@@ -67,6 +67,24 @@ public interface SkillLoaderService {
     void unloadSkill(Long skillId, String skillName);
 
     /**
+     * 为指定 character 加载某个 Skill 的指定版本。
+     *
+     * @param characterId character ID
+     * @param workspaceId workspace ID（可以为 null）
+     * @param skill       skill 实体
+     * @param version     要加载的版本号
+     */
+    void loadSkillForCharacter(String characterId, Long workspaceId, SkillEntity skill, int version);
+
+    /**
+     * 加载指定 character 的所有已绑定 Skill。
+     *
+     * @param characterId character ID
+     * @param workspaceId workspace ID
+     */
+    void loadAllForCharacter(String characterId, Long workspaceId);
+
+    /**
      * 检查 Skill 的依赖是否满足。
      *
      * @param entry 已解析的 SkillEntry

@@ -29,4 +29,7 @@ public class SkillRuntimeEntry {
 
     /** 所属工作空间 ID（冗余存储，方便按 workspace 快速过滤） */
     private Long workspaceId;
+
+    /** 所属 Character ID（null 表示非 character 级别） */
+    private String characterId;
 }

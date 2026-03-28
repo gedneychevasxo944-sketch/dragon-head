@@ -7,12 +7,13 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
-import org.dragon.character.mind.DefaultMind;
 import org.dragon.character.mind.Mind;
 import org.dragon.store.StoreFactory;
 import org.dragon.character.runtime.CharacterRuntime;
 import org.dragon.config.PromptManager;
+import org.dragon.skill.registry.SkillRegistry;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class CharacterRuntimeBinder {
     private final ModelRegistry modelRegistry;
     private final OrchestrationService orchestrationService;
     private final StoreFactory storeFactory;
+    private final SkillRegistry skillRegistry;
 
     /**
      * 绑定 Character 运行时依赖
@@ -44,6 +46,7 @@ public class CharacterRuntimeBinder {
         if (character == null) {
             throw new IllegalArgumentException("Character cannot be null");
         }
+
         // 构建运行时依赖
         CharacterRuntime runtime = CharacterRuntime.builder()
                 .promptManager(promptManager)
@@ -53,6 +56,8 @@ public class CharacterRuntimeBinder {
                 .modelRegistry(modelRegistry)
                 .orchestrationService(orchestrationService)
                 .mind(null)
+                .workspaceId(workspaceId != null ? Long.parseLong(workspaceId.toString()) : null)
+                .skillRegistry(skillRegistry)
                 .build();
 
         character.setRuntime(runtime);

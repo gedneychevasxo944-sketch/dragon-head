@@ -2,7 +2,7 @@ package org.dragon.character;
 
 import java.util.List;
 
-import org.dragon.agent.tool.ToolConnector;
+import org.dragon.tools.AgentTool;
 
 /**
  * Character 工厂接口
@@ -51,5 +51,5 @@ public interface CharacterFactory<T extends Character> {
      *
      * @return 工具列表
      */
-    List<ToolConnector> getAvailableTools();
+    List<AgentTool> getAvailableTools();
 }

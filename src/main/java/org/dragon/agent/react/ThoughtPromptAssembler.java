@@ -1,12 +1,11 @@
 package org.dragon.agent.react;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Iterator;
 
-import org.dragon.agent.tool.ToolConnector;
-import org.dragon.tools.ToolConnectorAdapter;
 import org.dragon.tools.ToolRegistry;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Thought Prompt 装配器
@@ -85,19 +84,27 @@ public class ThoughtPromptAssembler {
             prompt.append("## 可用工具\n");
             prompt.append("你可以使用以下工具来完成用户的请求：\n\n");
             for (String toolName : context.getAllowedTools()) {
-                toolRegistry.get(toolName).map(agentTool -> new ToolConnectorAdapter(agentTool)).ifPresent(connector -> {
-                    ToolConnector.ToolSchema schema = connector.getSchema();
+                toolRegistry.get(toolName).ifPresent(tool -> {
                     prompt.append(String.format("- **%s**: %s\n",
-                            schema.getName(),
-                            schema.getDescription() != null ? schema.getDescription() : "无描述"));
-                    if (schema.getInputParameters() != null && !schema.getInputParameters().isEmpty()) {
-                        prompt.append("  参数:\n");
-                        for (ToolConnector.ToolParameter param : schema.getInputParameters()) {
-                            prompt.append(String.format("    - %s (%s): %s %s\n",
-                                    param.getName(),
-                                    param.getType(),
-                                    param.getDescription() != null ? param.getDescription() : "",
-                                    param.isRequired() ? "[必填]" : "[可选]"));
+                            tool.getName(),
+                            tool.getDescription() != null ? tool.getDescription() : "无描述"));
+                    JsonNode paramSchema = tool.getParameterSchema();
+                    if (paramSchema != null && paramSchema.has("properties")) {
+                        JsonNode properties = paramSchema.get("properties");
+                        JsonNode required = paramSchema.has("required") ? paramSchema.get("required") : null;
+                        Iterator<String> fieldNames = properties.fieldNames();
+                        if (fieldNames.hasNext()) {
+                            prompt.append("  参数:\n");
+                            while (fieldNames.hasNext()) {
+                                String fieldName = fieldNames.next();
+                                JsonNode fieldSchema = properties.get(fieldName);
+                                boolean isRequired = required != null && required.has(fieldName);
+                                prompt.append(String.format("    - %s (%s): %s %s\n",
+                                        fieldName,
+                                        fieldSchema.has("type") ? fieldSchema.get("type").asText() : "string",
+                                        fieldSchema.has("description") ? fieldSchema.get("description").asText() : "",
+                                        isRequired ? "[必填]" : "[可选]"));
+                            }
                         }
                     }
                 });
