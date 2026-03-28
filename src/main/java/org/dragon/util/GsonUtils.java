@@ -1,6 +1,10 @@
 package org.dragon.util;
 
 import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.List;
 
 /**
  * Description:
@@ -27,6 +31,11 @@ public class GsonUtils {
 
     public static <T> T fromJson(String json, Class<T> tClass) {
         return gson.fromJson(json, tClass);
+    }
+
+    public static <T> List<T> fromJsonList(String json, Class<T> tClass) {
+        Type listType = new TypeToken<List<T>>() {}.getType();
+        return gson.fromJson(json, listType);
     }
 
 

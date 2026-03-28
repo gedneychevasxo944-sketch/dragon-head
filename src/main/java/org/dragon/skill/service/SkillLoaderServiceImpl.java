@@ -16,6 +16,7 @@ import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.store.StoreFactory;
+import org.dragon.util.GsonUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,7 +35,6 @@ import java.util.Optional;
 public class SkillLoaderServiceImpl implements SkillLoaderService {
 
     private final SkillRegistry skillRegistry;
-    private final ObjectMapper objectMapper;
     private final StoreFactory storeFactory;
     private final org.dragon.skill.store.WorkspaceSkillStore workspaceSkillStore;
 
@@ -98,9 +98,8 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                     .build();
 
             // 反序列化 requires 和 install
-            SkillRequires requires = deserializeObject(entity.getRequiresConfig(), SkillRequires.class);
-            List<SkillInstallSpec> installSpecs = deserializeList(entity.getInstallConfig(),
-                    new TypeReference<List<SkillInstallSpec>>() {});
+            SkillRequires requires = GsonUtils.fromJson(entity.getRequiresConfig(), SkillRequires.class);
+            List<SkillInstallSpec> installSpecs = GsonUtils.fromJsonList(entity.getInstallConfig(), SkillInstallSpec.class);
 
             SkillMetadata metadata = SkillMetadata.builder()
                     .requires(requires)
@@ -178,9 +177,8 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                     .content(skill.getSkillContent())
                     .build();
 
-            SkillRequires requires = deserializeObject(skill.getRequiresConfig(), SkillRequires.class);
-            List<SkillInstallSpec> installSpecs = deserializeList(skill.getInstallConfig(),
-                    new TypeReference<List<SkillInstallSpec>>() {});
+            SkillRequires requires = GsonUtils.fromJson(skill.getRequiresConfig(), SkillRequires.class);
+            List<SkillInstallSpec> installSpecs = GsonUtils.fromJsonList(skill.getInstallConfig(), SkillInstallSpec.class);
 
             SkillMetadata metadata = SkillMetadata.builder()
                     .requires(requires)
@@ -289,32 +287,6 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
         } catch (Exception e) {
             log.warn("解析 frontmatterRaw 失败: {}", e.getMessage());
             return Map.of();
-        }
-    }
-
-    /**
-     * 反序列化 JSON 字符串为对象。
-     */
-    private <T> T deserializeObject(String json, Class<T> clazz) {
-        if (json == null || json.isBlank()) return null;
-        try {
-            return objectMapper.readValue(json, clazz);
-        } catch (Exception e) {
-            log.warn("反序列化失败: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 反序列化 JSON 字符串为 List。
-     */
-    private <T> T deserializeList(String json, TypeReference<T> typeRef) {
-        if (json == null || json.isBlank()) return null;
-        try {
-            return objectMapper.readValue(json, typeRef);
-        } catch (Exception e) {
-            log.warn("反序列化失败: {}", e.getMessage());
-            return null;
         }
     }
 

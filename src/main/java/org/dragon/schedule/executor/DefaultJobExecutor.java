@@ -6,6 +6,7 @@ import org.dragon.schedule.entity.*;
 import org.dragon.schedule.store.ExecutionHistoryStore;
 import org.dragon.store.StoreFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  * 默认任务执行器实现
  */
 @Slf4j
+@Component
 public class DefaultJobExecutor implements JobExecutor {
 
     private final ScheduleProperties properties;
@@ -31,7 +33,6 @@ public class DefaultJobExecutor implements JobExecutor {
     private final AtomicInteger executionCounter = new AtomicInteger(0);
 
     public DefaultJobExecutor(ScheduleProperties properties,
-                             ExecutionHistoryStore executionHistoryStore,
                              ApplicationContext applicationContext,
                              StoreFactory storeFactory) {
         this.properties = properties;

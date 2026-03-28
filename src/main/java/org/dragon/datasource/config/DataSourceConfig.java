@@ -1,6 +1,7 @@
 package org.dragon.datasource.config;
 
 import com.zaxxer.hikari.HikariDataSource;
+import org.flywaydb.core.Flyway;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -30,12 +31,23 @@ public class DataSourceConfig {
     @Bean
     @Primary
     public DataSource mysqlDataSource() {
-        return DataSourceBuilder.create()
+        DataSource dataSource = DataSourceBuilder.create()
                 .type(HikariDataSource.class)
                 .url(jdbcUrl)
                 .username(username)
                 .password(password)
                 .driverClassName(driverClassName)
                 .build();
+        // 启动 flyway 做库表迁移
+        // 运行 Flyway 迁移
+        Flyway flyway = Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .baselineOnMigrate(true)
+                .cleanDisabled(false)
+                .load();
+        flyway.clean();
+        flyway.migrate();
+        return dataSource;
     }
 }

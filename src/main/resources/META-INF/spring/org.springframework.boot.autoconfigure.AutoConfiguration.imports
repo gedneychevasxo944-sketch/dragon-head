@@ -1,1 +1,2 @@
 org.dragon.store.config.StoreAutoConfiguration
+org.dragon.schedule.config.ScheduleAutoConfiguration

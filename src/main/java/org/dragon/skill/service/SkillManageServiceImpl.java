@@ -1,8 +1,5 @@
 package org.dragon.skill.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.skill.SkillFrontmatterParser;
@@ -17,6 +14,7 @@ import org.dragon.skill.storage.SkillStorageBackend;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.validator.SkillZipValidator;
 import org.dragon.store.StoreFactory;
+import org.dragon.util.GsonUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,7 +39,6 @@ public class SkillManageServiceImpl implements SkillManageService {
     private final SkillEventPublisher eventPublisher;
     private final SkillRegistry skillRegistry;
     private final SkillStorageBackend storageBackend;
-    private final ObjectMapper objectMapper;
     private final StoreFactory storeFactory;
 
     private SkillStore getSkillStore() {
@@ -329,8 +326,8 @@ public class SkillManageServiceImpl implements SkillManageService {
     private String serializeTags(List<String> tags) {
         if (tags == null || tags.isEmpty()) return "[]";
         try {
-            return objectMapper.writeValueAsString(tags);
-        } catch (JsonProcessingException e) {
+            return GsonUtils.toJson(tags);
+        } catch (Exception e) {
             return "[]";
         }
     }
@@ -338,8 +335,8 @@ public class SkillManageServiceImpl implements SkillManageService {
     private List<String> deserializeTags(String tagsJson) {
         if (tagsJson == null || tagsJson.isBlank()) return new ArrayList<>();
         try {
-            return objectMapper.readValue(tagsJson, new TypeReference<List<String>>() {});
-        } catch (JsonProcessingException e) {
+            return GsonUtils.fromJsonList(tagsJson, String.class);
+        } catch (Exception e) {
             return new ArrayList<>();
         }
     }
@@ -347,8 +344,8 @@ public class SkillManageServiceImpl implements SkillManageService {
     private String serializeObject(Object obj) {
         if (obj == null) return null;
         try {
-            return objectMapper.writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
+            return GsonUtils.toJson(obj);
+        } catch (Exception e) {
             return null;
         }
     }

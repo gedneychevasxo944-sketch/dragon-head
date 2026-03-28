@@ -9,6 +9,7 @@ import org.dragon.schedule.entity.JobContext;
 import org.dragon.schedule.executor.JobExecutor;
 import org.dragon.schedule.lock.DistributedLock;
 import org.dragon.schedule.parser.CronExpression;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
  * 默认 Cron 调度器实现
  */
 @Slf4j
+@Component
 public class DefaultCronScheduler implements CronScheduler, TriggerManager {
 
     private final JobExecutor jobExecutor;
