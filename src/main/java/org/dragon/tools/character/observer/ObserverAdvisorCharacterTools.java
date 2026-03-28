@@ -420,7 +420,7 @@ public class ObserverAdvisorCharacterTools {
                             ? EvaluationRecord.TargetType.CHARACTER
                             : EvaluationRecord.TargetType.WORKSPACE;
 
-                    List<EvaluationRecord> records = evaluationRecordStore.findByTargetAndTimeRange(
+                    List<EvaluationRecord> records = getEvaluationRecordStore().findByTargetAndTimeRange(
                             evalTargetType, targetId, startTime, endTime);
 
                     Map<String, Object> data = Map.of("records", records, "count", records.size());
