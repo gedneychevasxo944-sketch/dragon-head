@@ -3,6 +3,7 @@ package org.dragon.observer.actionlog;
 import io.ebean.Database;
 import org.dragon.datasource.entity.ObserverActionLogEntity;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 /**
  * MySqlActionLogStore 观察者动作日志MySQL存储实现
  */
+@Primary
 @Component
 public class MySqlActionLogStore implements ActionLogStore {
 

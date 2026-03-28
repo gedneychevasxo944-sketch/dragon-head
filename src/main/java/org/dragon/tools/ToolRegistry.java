@@ -1,6 +1,7 @@
 package org.dragon.tools;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
  * </p>
  */
 @Slf4j
+@Component
 public class ToolRegistry {
 
     /** 工具名称到工具实例的映射 */

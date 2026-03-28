@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ToolAutoRegistrar {
 
-    private final ToolRegistry toolRegistry;
+    private final ToolRegistryAdaptor toolRegistryAdaptor;
     private final List<ToolConnector> toolConnectors;
 
     @PostConstruct
@@ -28,7 +28,7 @@ public class ToolAutoRegistrar {
         int count = 0;
         for (ToolConnector connector : toolConnectors) {
             if (connector != null && connector.getName() != null) {
-                toolRegistry.register(connector);
+                toolRegistryAdaptor.register(connector);
                 count++;
                 log.info("[ToolAutoRegistrar] Registered tool: {}", connector.getName());
             }
