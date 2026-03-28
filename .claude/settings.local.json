@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(while read:*)",
+      "Bash(do file=\"$line%%:*\" if ! grep -q \"@Profile\" \"$file\")",
+      "Bash(then echo:*)"
+    ]
+  }
+}
