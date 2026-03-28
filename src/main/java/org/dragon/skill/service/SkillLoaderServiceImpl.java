@@ -15,6 +15,7 @@ import org.dragon.skill.registry.SkillRuntimeEntry;
 import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.store.SkillStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -32,15 +33,19 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SkillLoaderServiceImpl implements SkillLoaderService {
 
-    private final SkillStore skillStore;
     private final SkillRegistry skillRegistry;
     private final ObjectMapper objectMapper;
+    private final StoreFactory storeFactory;
     private final org.dragon.skill.store.WorkspaceSkillStore workspaceSkillStore;
+
+    private SkillStore getSkillStore() {
+        return storeFactory.get(SkillStore.class);
+    }
 
     @Override
     public void loadAll() {
         log.info("开始全量加载 Skill...");
-        List<SkillEntity> entities = skillStore.findAllEnabled();
+        List<SkillEntity> entities = getSkillStore().findAllEnabled();
 
         int successCount = 0;
         int failCount = 0;
@@ -135,7 +140,7 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
 
     @Override
     public void reloadSkill(Long skillId) {
-        skillStore.findById(skillId).ifPresentOrElse(
+        getSkillStore().findById(skillId).ifPresentOrElse(
                 entity -> {
                     // 先注销旧版本
                     skillRegistry.unregister(entity.getName());

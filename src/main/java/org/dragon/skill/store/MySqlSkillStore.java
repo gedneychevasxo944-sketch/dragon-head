@@ -3,6 +3,8 @@ package org.dragon.skill.store;
 import io.ebean.Database;
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.SkillCategory;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +18,7 @@ import java.util.Optional;
  * @since 1.0
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlSkillStore implements SkillStore {
 
     private final Database db;

@@ -3,6 +3,8 @@ package org.dragon.agent.workflow;
 import io.ebean.Database;
 import org.dragon.datasource.entity.WorkflowEntity;
 import org.dragon.datasource.entity.WorkflowStateEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
  * MySqlWorkflowStore 工作流MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlWorkflowStore implements WorkflowStore {
 
     private final Database mysqlDb;

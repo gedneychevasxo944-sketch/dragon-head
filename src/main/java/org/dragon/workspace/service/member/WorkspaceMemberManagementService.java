@@ -8,6 +8,7 @@ import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WorkspaceMemberManagementService {
 
-    private final WorkspaceMemberStore memberStore;
     private final WorkspaceRegistry workspaceRegistry;
+    private final StoreFactory storeFactory;
+
+    private WorkspaceMemberStore getMemberStore() {
+        return storeFactory.get(WorkspaceMemberStore.class);
+    }
 
     /**
      * 添加成员到工作空间
@@ -43,7 +48,7 @@ public class WorkspaceMemberManagementService {
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         // 检查成员是否已存在
-        Optional<WorkspaceMember> existing = memberStore.findByWorkspaceIdAndCharacterId(
+        Optional<WorkspaceMember> existing = getMemberStore().findByWorkspaceIdAndCharacterId(
                 workspaceId, characterId);
         if (existing.isPresent()) {
             throw new IllegalArgumentException("Character already exists in workspace: " + characterId);
@@ -63,7 +68,7 @@ public class WorkspaceMemberManagementService {
                 .lastActiveAt(LocalDateTime.now())
                 .build();
 
-        memberStore.save(member);
+        getMemberStore().save(member);
         log.info("[WorkspaceMemberManagementService] Added member {} to workspace {}",
                 characterId, workspaceId);
 
@@ -78,7 +83,7 @@ public class WorkspaceMemberManagementService {
      */
     public void removeMember(String workspaceId, String characterId) {
         String memberId = WorkspaceMember.createId(workspaceId, characterId);
-        memberStore.delete(memberId);
+        getMemberStore().delete(memberId);
         log.info("[WorkspaceMemberManagementService] Removed member {} from workspace {}",
                 characterId, workspaceId);
     }
@@ -90,7 +95,7 @@ public class WorkspaceMemberManagementService {
      * @return 成员列表
      */
     public List<WorkspaceMember> listMembers(String workspaceId) {
-        return memberStore.findByWorkspaceId(workspaceId);
+        return getMemberStore().findByWorkspaceId(workspaceId);
     }
 
     /**
@@ -101,7 +106,7 @@ public class WorkspaceMemberManagementService {
      * @return Optional 成员
      */
     public Optional<WorkspaceMember> getMember(String workspaceId, String characterId) {
-        return memberStore.findByWorkspaceIdAndCharacterId(workspaceId, characterId);
+        return getMemberStore().findByWorkspaceIdAndCharacterId(workspaceId, characterId);
     }
 
     /**
@@ -112,12 +117,12 @@ public class WorkspaceMemberManagementService {
      * @param role 新角色
      */
     public void updateMemberRole(String workspaceId, String characterId, String role) {
-        WorkspaceMember member = memberStore.findByWorkspaceIdAndCharacterId(workspaceId, characterId)
+        WorkspaceMember member = getMemberStore().findByWorkspaceIdAndCharacterId(workspaceId, characterId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         member.setRole(role);
         member.setLastActiveAt(LocalDateTime.now());
-        memberStore.update(member);
+        getMemberStore().update(member);
         log.info("[WorkspaceMemberManagementService] Updated member {} role to {} in workspace {}",
                 characterId, role, workspaceId);
     }
@@ -130,12 +135,12 @@ public class WorkspaceMemberManagementService {
      * @param tags 新标签列表
      */
     public void updateMemberTags(String workspaceId, String characterId, List<String> tags) {
-        WorkspaceMember member = memberStore.findByWorkspaceIdAndCharacterId(workspaceId, characterId)
+        WorkspaceMember member = getMemberStore().findByWorkspaceIdAndCharacterId(workspaceId, characterId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         member.setTags(tags);
         member.setLastActiveAt(LocalDateTime.now());
-        memberStore.update(member);
+        getMemberStore().update(member);
         log.info("[WorkspaceMemberManagementService] Updated member {} tags in workspace {}",
                 characterId, workspaceId);
     }
@@ -147,7 +152,7 @@ public class WorkspaceMemberManagementService {
      * @return 工作空间列表
      */
     public List<Workspace> getWorkspacesForCharacter(String characterId) {
-        List<WorkspaceMember> memberships = memberStore.findByCharacterId(characterId);
+        List<WorkspaceMember> memberships = getMemberStore().findByCharacterId(characterId);
         return memberships.stream()
                 .map(m -> workspaceRegistry.get(m.getWorkspaceId()))
                 .filter(Optional::isPresent)
@@ -163,12 +168,12 @@ public class WorkspaceMemberManagementService {
      * @param weight 新权重
      */
     public void updateMemberWeight(String workspaceId, String characterId, double weight) {
-        WorkspaceMember member = memberStore.findByWorkspaceIdAndCharacterId(workspaceId, characterId)
+        WorkspaceMember member = getMemberStore().findByWorkspaceIdAndCharacterId(workspaceId, characterId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         member.setWeight(weight);
         member.setLastActiveAt(LocalDateTime.now());
-        memberStore.update(member);
+        getMemberStore().update(member);
     }
 
     /**
@@ -179,12 +184,12 @@ public class WorkspaceMemberManagementService {
      * @param priority 新优先级
      */
     public void updateMemberPriority(String workspaceId, String characterId, int priority) {
-        WorkspaceMember member = memberStore.findByWorkspaceIdAndCharacterId(workspaceId, characterId)
+        WorkspaceMember member = getMemberStore().findByWorkspaceIdAndCharacterId(workspaceId, characterId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         member.setPriority(priority);
         member.setLastActiveAt(LocalDateTime.now());
-        memberStore.update(member);
+        getMemberStore().update(member);
     }
 
     /**
@@ -195,13 +200,13 @@ public class WorkspaceMemberManagementService {
      * @param reputationChange 声誉积分变化（正负值）
      */
     public void updateMemberReputation(String workspaceId, String characterId, int reputationChange) {
-        WorkspaceMember member = memberStore.findByWorkspaceIdAndCharacterId(workspaceId, characterId)
+        WorkspaceMember member = getMemberStore().findByWorkspaceIdAndCharacterId(workspaceId, characterId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         int newReputation = member.getReputation() + reputationChange;
         member.setReputation(Math.max(0, newReputation)); // 不允许负值
         member.setLastActiveAt(LocalDateTime.now());
-        memberStore.update(member);
+        getMemberStore().update(member);
 
         log.info("[WorkspaceMemberManagementService] Updated member {} reputation by {} in workspace {}, new value: {}",
                 characterId, reputationChange, workspaceId, member.getReputation());
@@ -214,6 +219,6 @@ public class WorkspaceMemberManagementService {
      * @return 成员数量
      */
     public int getMemberCount(String workspaceId) {
-        return memberStore.countByWorkspaceId(workspaceId);
+        return getMemberStore().countByWorkspaceId(workspaceId);
     }
 }

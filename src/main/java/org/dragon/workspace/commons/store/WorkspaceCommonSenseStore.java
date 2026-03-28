@@ -1,10 +1,11 @@
 package org.dragon.workspace.commons.store;
 
-import java.util.List;
-import java.util.Optional;
-
+import org.dragon.store.Store;
 import org.dragon.workspace.commons.CommonSense;
 import org.dragon.workspace.commons.CommonSenseFolder;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * WorkspaceCommonSenseStore 工作空间常识存储接口
@@ -13,7 +14,7 @@ import org.dragon.workspace.commons.CommonSenseFolder;
  * @author wyj
  * @version 1.0
  */
-public interface WorkspaceCommonSenseStore {
+public interface WorkspaceCommonSenseStore extends Store {
 
     // ==================== 文件夹管理 ====================
 

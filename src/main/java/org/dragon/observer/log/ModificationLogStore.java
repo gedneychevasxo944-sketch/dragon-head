@@ -1,5 +1,7 @@
 package org.dragon.observer.log;
 
+import org.dragon.store.Store;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +12,7 @@ import java.util.Optional;
  * @author wyj
  * @version 1.0
  */
-public interface ModificationLogStore {
+public interface ModificationLogStore extends Store {
 
     /**
      * 保存修改日志

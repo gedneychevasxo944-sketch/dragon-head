@@ -20,6 +20,7 @@ import org.dragon.observer.evaluation.EvaluationRecordStore;
 import org.dragon.observer.log.ModificationLog;
 import org.dragon.observer.log.ModificationLogStore;
 import org.dragon.observer.optimization.applier.OptimizationTargetApplier;
+import org.dragon.store.StoreFactory;
 import org.dragon.observer.optimization.plan.OptimizationAction;
 import org.dragon.observer.optimization.store.OptimizationActionStore;
 import org.slf4j.Logger;
@@ -41,13 +42,23 @@ public class OptimizationExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(OptimizationExecutor.class);
 
-    private final OptimizationActionStore optimizationActionStore;
-    private final ModificationLogStore modificationLogStore;
+    private final StoreFactory storeFactory;
     private final CommonSenseValidator commonSenseValidator;
-    private final EvaluationRecordStore evaluationRecordStore;
     private final List<OptimizationTargetApplier> appliers;
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final CharacterCaller characterCaller;
+
+    private OptimizationActionStore getOptimizationActionStore() {
+        return storeFactory.get(OptimizationActionStore.class);
+    }
+
+    private ModificationLogStore getModificationLogStore() {
+        return storeFactory.get(ModificationLogStore.class);
+    }
+
+    private EvaluationRecordStore getEvaluationRecordStore() {
+        return storeFactory.get(EvaluationRecordStore.class);
+    }
 
     /**
      * 获取指定目标类型的 applier
@@ -63,7 +74,7 @@ public class OptimizationExecutor {
      * 执行优化动作
      */
     public OptimizationAction execute(String actionId) {
-        OptimizationAction action = optimizationActionStore.findById(actionId)
+        OptimizationAction action = getOptimizationActionStore().findById(actionId)
                 .orElseThrow(() -> new IllegalArgumentException("Optimization action not found: " + actionId));
         return execute(action);
     }
@@ -75,7 +86,7 @@ public class OptimizationExecutor {
         if (!action.canExecute()) {
             log.warn("[OptimizationExecutor] Action cannot execute: {}", action.getId());
             action.markRejected("Action is not in PENDING state");
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
             return action;
         }
 
@@ -89,7 +100,7 @@ public class OptimizationExecutor {
             String reason = "Violated common sense: " + validationResult.getViolations();
             log.warn("[OptimizationExecutor] Action rejected by common sense: {}", reason);
             action.markRejected(reason);
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
             return action;
         }
 
@@ -97,7 +108,7 @@ public class OptimizationExecutor {
         if (applier == null) {
             log.warn("[OptimizationExecutor] No applier found for target type: {}", action.getTargetType());
             action.markRejected("No applier for target type: " + action.getTargetType());
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
             return action;
         }
 
@@ -110,7 +121,7 @@ public class OptimizationExecutor {
 
             if (!result.isSuccess()) {
                 action.markRejected(result.getError());
-                optimizationActionStore.save(action);
+                getOptimizationActionStore().save(action);
                 return action;
             }
 
@@ -130,11 +141,11 @@ public class OptimizationExecutor {
                     .operator("OBSERVER")
                     .timestamp(LocalDateTime.now())
                     .build();
-            modificationLogStore.save(modLog);
+            getModificationLogStore().save(modLog);
 
             // 标记为已执行
             action.markExecuted(result.getMessage());
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
 
             log.info("[OptimizationExecutor] Action executed successfully: {}", action.getId());
 
@@ -142,7 +153,7 @@ public class OptimizationExecutor {
             log.error("[OptimizationExecutor] Action execution failed: {}", action.getId(), e);
             action.setStatus(OptimizationAction.Status.FAILED);
             action.setResult("Execution failed: " + e.getMessage());
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
         }
 
         return action;
@@ -163,7 +174,7 @@ public class OptimizationExecutor {
      * 回滚优化动作
      */
     public OptimizationAction rollback(String actionId) {
-        OptimizationAction action = optimizationActionStore.findById(actionId)
+        OptimizationAction action = getOptimizationActionStore().findById(actionId)
                 .orElseThrow(() -> new IllegalArgumentException("Optimization action not found: " + actionId));
 
         if (!action.canRollback()) {
@@ -193,18 +204,18 @@ public class OptimizationExecutor {
                         .operator("OBSERVER")
                         .timestamp(LocalDateTime.now())
                         .build();
-                modificationLogStore.save(rollbackLog);
+                getModificationLogStore().save(rollbackLog);
             }
 
             action.markRolledBack();
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
 
             log.info("[OptimizationExecutor] Action rolled back successfully: {}", action.getId());
 
         } catch (Exception e) {
             log.error("[OptimizationExecutor] Action rollback failed: {}", action.getId(), e);
             action.setResult("Rollback failed: " + e.getMessage());
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
         }
 
         return action;
@@ -216,7 +227,7 @@ public class OptimizationExecutor {
     public List<OptimizationAction> generateActionsFromEvaluation(String evaluationId) {
         List<OptimizationAction> actions = new ArrayList<>();
 
-        EvaluationRecord evaluation = evaluationRecordStore.findById(evaluationId)
+        EvaluationRecord evaluation = getEvaluationRecordStore().findById(evaluationId)
                 .orElseThrow(() -> new IllegalArgumentException("Evaluation not found: " + evaluationId));
 
         if (evaluation.getSuggestions() != null) {
@@ -224,7 +235,7 @@ public class OptimizationExecutor {
                 OptimizationAction action = generateAction(evaluation, suggestion);
                 if (action != null) {
                     actions.add(action);
-                    optimizationActionStore.save(action);
+                    getOptimizationActionStore().save(action);
                 }
             }
         }
@@ -271,7 +282,7 @@ public class OptimizationExecutor {
         if (!action.canExecute()) {
             log.warn("[OptimizationExecutor] Action cannot execute: {}", action.getId());
             action.markRejected("Action is not in PENDING state");
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
             return action;
         }
 
@@ -279,7 +290,7 @@ public class OptimizationExecutor {
         if (applier == null) {
             log.warn("[OptimizationExecutor] No applier found for target type: {}", action.getTargetType());
             action.markRejected("No applier for target type: " + action.getTargetType());
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
             return action;
         }
 
@@ -298,14 +309,14 @@ public class OptimizationExecutor {
             if (suggestions.isEmpty()) {
                 log.info("[OptimizationExecutor] No suggestions generated, skipping optimization");
                 action.markExecuted("No suggestions generated");
-                optimizationActionStore.save(action);
+                getOptimizationActionStore().save(action);
                 return action;
             }
 
             if (suggestions.isEmpty()) {
                 log.info("[OptimizationExecutor] No suggestions generated, skipping optimization");
                 action.markExecuted("No suggestions generated");
-                optimizationActionStore.save(action);
+                getOptimizationActionStore().save(action);
                 return action;
             }
 
@@ -318,7 +329,7 @@ public class OptimizationExecutor {
 
             if (!result.isSuccess()) {
                 action.markRejected(result.getError());
-                optimizationActionStore.save(action);
+                getOptimizationActionStore().save(action);
                 return action;
             }
 
@@ -337,11 +348,11 @@ public class OptimizationExecutor {
                     .operator("OBSERVER_LLM")
                     .timestamp(LocalDateTime.now())
                     .build();
-            modificationLogStore.save(modLog);
+            getModificationLogStore().save(modLog);
 
             action.markExecuted("LLM-driven optimization executed with " + suggestions.size() + " suggestions");
             action.getParameters().put("suggestions", suggestions);
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
 
             log.info("[OptimizationExecutor] LLM-driven optimization executed successfully: {} suggestions", suggestions.size());
 
@@ -349,7 +360,7 @@ public class OptimizationExecutor {
             log.error("[OptimizationExecutor] LLM-driven optimization failed: {}", action.getId(), e);
             action.setStatus(OptimizationAction.Status.FAILED);
             action.setResult("LLM optimization failed: " + e.getMessage());
-            optimizationActionStore.save(action);
+            getOptimizationActionStore().save(action);
         }
 
         return action;

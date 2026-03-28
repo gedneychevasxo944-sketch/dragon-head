@@ -2,6 +2,8 @@ package org.dragon.observer.evaluation;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.EvaluationRecordEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
  * MySqlEvaluationRecordStore 评价记录MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlEvaluationRecordStore implements EvaluationRecordStore {
 
     private final Database mysqlDb;

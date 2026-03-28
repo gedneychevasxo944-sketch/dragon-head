@@ -5,6 +5,8 @@ import org.dragon.datasource.entity.OptimizationActionEntity;
 import org.dragon.observer.optimization.plan.OptimizationAction;
 import org.dragon.observer.optimization.plan.OptimizationAction.Status;
 import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
  * MySqlOptimizationActionStore 优化动作MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlOptimizationActionStore implements OptimizationActionStore {
 
     private final Database mysqlDb;

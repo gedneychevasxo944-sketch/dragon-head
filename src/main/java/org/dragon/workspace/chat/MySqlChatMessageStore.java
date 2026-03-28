@@ -2,6 +2,8 @@ package org.dragon.workspace.chat;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.ChatMessageEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
  * MySqlChatMessageStore 聊天消息MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlChatMessageStore implements ChatMessageStore {
 
     private final Database mysqlDb;

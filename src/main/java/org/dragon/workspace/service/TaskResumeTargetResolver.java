@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TaskResumeTargetResolver {
 
-    private final TaskStore taskStore;
+    private final StoreFactory storeFactory;
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
 
     /**
      * 从匹配到的任务中解析出实际可执行的任务
@@ -40,7 +45,7 @@ public class TaskResumeTargetResolver {
         }
 
         // 如果命中的是父任务，查找可继续的子任务
-        List<Task> childTasks = taskStore.findByParentTaskId(matchedTask.getId());
+        List<Task> childTasks = getTaskStore().findByParentTaskId(matchedTask.getId());
         if (childTasks.isEmpty()) {
             log.warn("[TaskResumeTargetResolver] Parent task {} has no child tasks, using parent", matchedTask.getId());
             return matchedTask;
@@ -69,7 +74,7 @@ public class TaskResumeTargetResolver {
      * @return 可执行的子任务列表
      */
     public List<Task> resolveExecutableTasks(Task parentTask) {
-        List<Task> childTasks = taskStore.findByParentTaskId(parentTask.getId());
+        List<Task> childTasks = getTaskStore().findByParentTaskId(parentTask.getId());
         return childTasks.stream()
                 .filter(this::isTaskRunnable)
                 .toList();

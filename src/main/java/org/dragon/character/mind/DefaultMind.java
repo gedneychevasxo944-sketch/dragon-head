@@ -5,6 +5,7 @@ import org.dragon.character.mind.memory.MemoryAccess;
 import org.dragon.skill.SkillAccess;
 import org.dragon.character.mind.tag.Tag;
 import org.dragon.character.mind.tag.TagRepository;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;

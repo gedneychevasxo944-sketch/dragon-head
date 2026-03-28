@@ -18,6 +18,7 @@ import org.dragon.observer.optimization.plan.OptimizationAction;
 import org.dragon.observer.optimization.plan.OptimizationPlan;
 import org.dragon.observer.optimization.plan.OptimizationPlanItem;
 import org.dragon.observer.optimization.plan.OptimizationPlanParser;
+import org.dragon.store.StoreFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,13 +54,17 @@ public class ObserverController {
     @Autowired
     private final ObserverService observerService;
     @Autowired
-    private final WorkspaceCommonSenseStore commonSenseStore;
-    @Autowired
     private final ObserverPlanningService planningService;
     @Autowired
     private final OptimizationPlanParser planParser;
     @Autowired
     private final DataCollector dataCollector;
+    @Autowired
+    private final StoreFactory storeFactory;
+
+    private WorkspaceCommonSenseStore getCommonSenseStore() {
+        return storeFactory.get(WorkspaceCommonSenseStore.class);
+    }
 
     // ==================== Observer 生命周期 ====================
 
@@ -244,7 +249,7 @@ public class ObserverController {
     @Operation(summary = "新增常识规则")
     @PostMapping("/common-senses")
     public ResponseEntity<CommonSense> createCommonSense(@RequestBody CommonSense commonSense) {
-        CommonSense saved = commonSenseStore.save(commonSense);
+        CommonSense saved = getCommonSenseStore().save(commonSense);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -257,11 +262,11 @@ public class ObserverController {
             @RequestParam(required = false, defaultValue = "false") boolean enabledOnly) {
         List<CommonSense> list;
         if (category != null) {
-            list = commonSenseStore.findByWorkspaceAndCategory(workspaceId, category);
+            list = getCommonSenseStore().findByWorkspaceAndCategory(workspaceId, category);
         } else if (enabledOnly) {
-            list = commonSenseStore.findEnabled(workspaceId);
+            list = getCommonSenseStore().findEnabled(workspaceId);
         } else {
-            list = commonSenseStore.findByWorkspace(workspaceId);
+            list = getCommonSenseStore().findByWorkspace(workspaceId);
         }
         return ResponseEntity.ok(list);
     }
@@ -269,7 +274,7 @@ public class ObserverController {
     @Operation(summary = "查询指定常识规则")
     @GetMapping("/common-senses/{commonSenseId}")
     public ResponseEntity<CommonSense> getCommonSense(@PathVariable String commonSenseId) {
-        return commonSenseStore.findById(commonSenseId)
+        return getCommonSenseStore().findById(commonSenseId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -281,24 +286,24 @@ public class ObserverController {
             @RequestBody CommonSense commonSense) {
         commonSense.setId(commonSenseId);
         // 关键级别常识不允许被禁用
-        CommonSense existing = commonSenseStore.findById(commonSenseId)
+        CommonSense existing = getCommonSenseStore().findById(commonSenseId)
                 .orElseThrow(() -> new IllegalArgumentException("CommonSense not found: " + commonSenseId));
         if (existing.isCritical() && !commonSense.isEnabled()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        CommonSense saved = commonSenseStore.save(commonSense);
+        CommonSense saved = getCommonSenseStore().save(commonSense);
         return ResponseEntity.ok(saved);
     }
 
     @Operation(summary = "删除常识规则（CRITICAL 级别不允许删除）")
     @DeleteMapping("/common-senses/{commonSenseId}")
     public ResponseEntity<Void> deleteCommonSense(@PathVariable String commonSenseId) {
-        CommonSense existing = commonSenseStore.findById(commonSenseId)
+        CommonSense existing = getCommonSenseStore().findById(commonSenseId)
                 .orElseThrow(() -> new IllegalArgumentException("CommonSense not found: " + commonSenseId));
         if (existing.isCritical()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        commonSenseStore.delete(commonSenseId);
+        getCommonSenseStore().delete(commonSenseId);
         return ResponseEntity.noContent().build();
     }
 

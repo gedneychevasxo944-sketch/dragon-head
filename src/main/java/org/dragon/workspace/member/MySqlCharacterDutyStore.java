@@ -2,6 +2,8 @@ package org.dragon.workspace.member;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.CharacterDutyEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
  * MySqlCharacterDutyStore Character职责MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlCharacterDutyStore implements CharacterDutyStore {
 
     private final Database mysqlDb;

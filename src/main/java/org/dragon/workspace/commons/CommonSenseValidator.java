@@ -8,6 +8,7 @@ import org.dragon.workspace.commons.content.CommonSenseContent;
 import org.dragon.workspace.commons.content.CommonSenseContentParser;
 import org.dragon.workspace.commons.content.ConstraintContent;
 import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
+import org.dragon.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -29,8 +30,12 @@ public class CommonSenseValidator {
 
     private static final String GLOBAL_WORKSPACE_ID = "_global";
 
-    private final WorkspaceCommonSenseStore commonSenseStore;
+    private final StoreFactory storeFactory;
     private final CommonSenseContentParser contentParser;
+
+    private WorkspaceCommonSenseStore getCommonSenseStore() {
+        return storeFactory.get(WorkspaceCommonSenseStore.class);
+    }
 
     /**
      * 校验结果
@@ -130,7 +135,7 @@ public class CommonSenseValidator {
      * 获取全局工作空间的启用的常识列表
      */
     private List<CommonSense> getEnabledCommonSense() {
-        return commonSenseStore.findEnabled(GLOBAL_WORKSPACE_ID);
+        return getCommonSenseStore().findEnabled(GLOBAL_WORKSPACE_ID);
     }
 
     /**

@@ -1,13 +1,15 @@
 package org.dragon.agent.workflow;
 
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Component;
 
 /**
  * MemoryWorkflowStore 内存实现
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
  * @version 1.0
  */
 @Component
+@StoreTypeAnn(StoreType.MEMORY)
 public class MemoryWorkflowStore implements WorkflowStore {
 
     private final Map<String, Workflow> workflows = new ConcurrentHashMap<>();

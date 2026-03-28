@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.dragon.agent.model.ModelRegistry;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
+import org.dragon.store.StoreFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -29,16 +30,20 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
     private final ModelRegistry modelRegistry;
     private final CharacterRegistry characterRegistry;
     private final CharacterRuntimeBinder characterRuntimeBinder;
-    private final WorkflowStore workflowStore;
+    private final StoreFactory storeFactory;
 
     public DefaultWorkflowExecutor(ModelRegistry modelRegistry,
                                     CharacterRegistry characterRegistry,
                                     @Lazy CharacterRuntimeBinder characterRuntimeBinder,
-                                    WorkflowStore workflowStore) {
+                                    StoreFactory storeFactory) {
         this.modelRegistry = modelRegistry;
         this.characterRegistry = characterRegistry;
         this.characterRuntimeBinder = characterRuntimeBinder;
-        this.workflowStore = workflowStore;
+        this.storeFactory = storeFactory;
+    }
+
+    private WorkflowStore getWorkflowStore() {
+        return storeFactory.get(WorkflowStore.class);
     }
 
     private final Map<String, WorkflowState> runningWorkflows = new ConcurrentHashMap<>();
@@ -58,7 +63,7 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
                 .build();
 
         runningWorkflows.put(executionId, state);
-        workflowStore.saveState(state);
+        getWorkflowStore().saveState(state);
 
         try {
             // 执行工作流节点
@@ -384,37 +389,37 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
 
     @Override
     public void terminate(String executionId) {
-        WorkflowState state = workflowStore.findStateByExecutionId(executionId).orElse(null);
+        WorkflowState state = getWorkflowStore().findStateByExecutionId(executionId).orElse(null);
         if (state != null) {
             state.setStatus(WorkflowState.State.TERMINATED);
             state.setEndTime(LocalDateTime.now());
-            workflowStore.saveState(state);
+            getWorkflowStore().saveState(state);
             log.info("[DefaultWorkflowExecutor] Terminated workflow: {}", executionId);
         }
     }
 
     @Override
     public void suspend(String executionId) {
-        WorkflowState state = workflowStore.findStateByExecutionId(executionId).orElse(null);
+        WorkflowState state = getWorkflowStore().findStateByExecutionId(executionId).orElse(null);
         if (state != null) {
             state.setStatus(WorkflowState.State.SUSPENDED);
-            workflowStore.saveState(state);
+            getWorkflowStore().saveState(state);
             log.info("[DefaultWorkflowExecutor] Suspended workflow: {}", executionId);
         }
     }
 
     @Override
     public void resume(String executionId) {
-        WorkflowState state = workflowStore.findStateByExecutionId(executionId).orElse(null);
+        WorkflowState state = getWorkflowStore().findStateByExecutionId(executionId).orElse(null);
         if (state != null) {
             state.setStatus(WorkflowState.State.RUNNING);
-            workflowStore.saveState(state);
+            getWorkflowStore().saveState(state);
             log.info("[DefaultWorkflowExecutor] Resumed workflow: {}", executionId);
         }
     }
 
     @Override
     public WorkflowState getState(String executionId) {
-        return workflowStore.findStateByExecutionId(executionId).orElse(null);
+        return getWorkflowStore().findStateByExecutionId(executionId).orElse(null);
     }
 }

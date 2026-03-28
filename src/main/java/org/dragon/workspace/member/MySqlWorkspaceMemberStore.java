@@ -2,6 +2,8 @@ package org.dragon.workspace.member;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.WorkspaceMemberEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
  * MySqlWorkspaceMemberStore 工作空间成员MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlWorkspaceMemberStore implements WorkspaceMemberStore {
 
     private final Database mysqlDb;

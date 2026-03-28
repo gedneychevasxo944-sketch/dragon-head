@@ -1,6 +1,7 @@
 package org.dragon.channel.store;
 
 import org.dragon.channel.entity.ChannelConfig;
+import org.dragon.store.Store;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +14,7 @@ import java.util.Optional;
  * @author zhz
  * @version 1.0
  */
-public interface ChannelConfigStore {
+public interface ChannelConfigStore extends Store {
     /**
      * 保存渠道配置
      */

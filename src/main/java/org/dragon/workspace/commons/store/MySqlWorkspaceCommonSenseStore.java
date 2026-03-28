@@ -3,6 +3,8 @@ package org.dragon.workspace.commons.store;
 import io.ebean.Database;
 import org.dragon.datasource.entity.CommonSenseEntity;
 import org.dragon.datasource.entity.CommonSenseFolderEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.dragon.workspace.commons.CommonSense;
 import org.dragon.workspace.commons.CommonSenseFolder;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
  * MySqlWorkspaceCommonSenseStore 工作空间常识MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlWorkspaceCommonSenseStore implements WorkspaceCommonSenseStore {
 
     private final Database mysqlDb;

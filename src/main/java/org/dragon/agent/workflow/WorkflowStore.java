@@ -1,5 +1,7 @@
 package org.dragon.agent.workflow;
 
+import org.dragon.store.Store;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -10,7 +12,7 @@ import java.util.Optional;
  * @author wyj
  * @version 1.0
  */
-public interface WorkflowStore {
+public interface WorkflowStore extends Store {
 
     /**
      * 保存工作流

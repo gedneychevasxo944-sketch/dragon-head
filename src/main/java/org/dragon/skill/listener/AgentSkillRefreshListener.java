@@ -5,6 +5,7 @@ import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.service.SkillLoaderService;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.store.WorkspaceSkillStore;
+import org.dragon.store.StoreFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -30,8 +31,12 @@ public class AgentSkillRefreshListener {
 
     private final SkillRegistry skillRegistry;
     private final SkillLoaderService loaderService;
-    private final SkillStore skillStore;
+    private final StoreFactory storeFactory;
     private final WorkspaceSkillStore workspaceSkillStore;
+
+    private SkillStore getSkillStore() {
+        return storeFactory.get(SkillStore.class);
+    }
 
     @Async
     @EventListener
@@ -54,7 +59,7 @@ public class AgentSkillRefreshListener {
         log.info("刷新 workspace 运行时 Skill: workspaceId={}, skillName={}, version={}",
                 event.getWorkspaceId(), event.getSkillName(), event.getTargetVersion());
 
-        skillStore.findById(event.getSkillId()).ifPresentOrElse(
+        getSkillStore().findById(event.getSkillId()).ifPresentOrElse(
                 skill -> loaderService.loadSkillForWorkspace(
                         skill,
                         event.getWorkspaceId(),
@@ -77,7 +82,7 @@ public class AgentSkillRefreshListener {
         workspaceSkillStore
                 .findByWorkspaceIdAndSkillId(event.getWorkspaceId(), event.getSkillId())
                 .ifPresent(binding ->
-                        skillStore.findById(event.getSkillId()).ifPresent(skill ->
+                        getSkillStore().findById(event.getSkillId()).ifPresent(skill ->
                                 loaderService.loadSkillForWorkspace(
                                         skill,
                                         event.getWorkspaceId(),

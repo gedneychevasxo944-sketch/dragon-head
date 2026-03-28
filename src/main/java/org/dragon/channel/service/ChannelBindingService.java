@@ -6,6 +6,7 @@ import org.dragon.channel.entity.ChannelBinding;
 import org.dragon.channel.entity.ChannelConfig;
 import org.dragon.channel.store.ChannelBindingStore;
 import org.dragon.channel.store.ChannelConfigStore;
+import org.dragon.store.StoreFactory;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.springframework.stereotype.Service;
 
@@ -28,8 +29,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ChannelBindingService {
 
-    private final ChannelBindingStore channelBindingStore;
-    private final ChannelConfigStore channelConfigStore;
+    private final StoreFactory storeFactory;
     private final WorkspaceRegistry workspaceRegistry;
 
     // ==================== ChannelConfig 管理 ====================
@@ -44,14 +44,14 @@ public class ChannelBindingService {
         if (config.getId() == null || config.getId().isEmpty()) {
             throw new IllegalArgumentException("ChannelConfig id is required");
         }
-        if (channelConfigStore.exists(config.getId())) {
+        if (this.getChannelBindingStore().exists(config.getId())) {
             throw new IllegalArgumentException("ChannelConfig already exists: " + config.getId());
         }
 
         LocalDateTime now = LocalDateTime.now();
         config.setCreatedAt(now);
         config.setUpdatedAt(now);
-        channelConfigStore.save(config);
+        this.getChannelConfigStore().save(config);
 
         log.info("[ChannelBindingService] Created channel config: {} (type: {})",
                 config.getId(), config.getChannelType());
@@ -62,11 +62,11 @@ public class ChannelBindingService {
      * 更新渠道配置
      */
     public ChannelConfig updateChannelConfig(ChannelConfig config) {
-        channelConfigStore.findById(config.getId())
+        this.getChannelConfigStore().findById(config.getId())
                 .orElseThrow(() -> new IllegalArgumentException("ChannelConfig not found: " + config.getId()));
 
         config.setUpdatedAt(LocalDateTime.now());
-        channelConfigStore.update(config);
+        this.getChannelConfigStore().update(config);
 
         log.info("[ChannelBindingService] Updated channel config: {}", config.getId());
         return config;
@@ -77,10 +77,10 @@ public class ChannelBindingService {
      * 注意：会同步删除该 config 下的所有绑定关系
      */
     public void deleteChannelConfig(String configId) {
-        channelConfigStore.findById(configId)
+        this.getChannelConfigStore().findById(configId)
                 .orElseThrow(() -> new IllegalArgumentException("ChannelConfig not found: " + configId));
 
-        channelConfigStore.delete(configId);
+        this.getChannelConfigStore().delete(configId);
         log.info("[ChannelBindingService] Deleted channel config: {}", configId);
     }
 
@@ -88,7 +88,7 @@ public class ChannelBindingService {
      * 查询渠道配置
      */
     public Optional<ChannelConfig> getChannelConfig(String configId) {
-        return channelConfigStore.findById(configId);
+        return this.getChannelConfigStore().findById(configId);
     }
 
     /**
@@ -96,16 +96,16 @@ public class ChannelBindingService {
      */
     public List<ChannelConfig> listChannelConfigs(String channelType) {
         if (channelType != null) {
-            return channelConfigStore.findByChannelType(channelType);
+            return this.getChannelConfigStore().findByChannelType(channelType);
         }
-        return channelConfigStore.findAll();
+        return this.getChannelConfigStore().findAll();
     }
 
     /**
      * 查询所有已启用的渠道配置
      */
     public List<ChannelConfig> listEnabledChannelConfigs() {
-        return channelConfigStore.findAllEnabled();
+        return this.getChannelConfigStore().findAllEnabled();
     }
 
     // ==================== ChannelBinding 管理 ====================
@@ -129,7 +129,7 @@ public class ChannelBindingService {
         String bindingId = ChannelBinding.createId(channelName, chatId);
 
         // 防止重复绑定
-        if (channelBindingStore.exists(bindingId)) {
+        if (this.getChannelBindingStore().exists(bindingId)) {
             throw new IllegalArgumentException(
                     "Binding already exists for channel=" + channelName + " chatId=" + chatId
                             + ", please delete it first");
@@ -148,7 +148,7 @@ public class ChannelBindingService {
                 .updatedAt(now)
                 .build();
 
-        channelBindingStore.save(binding);
+        this.getChannelBindingStore().save(binding);
         log.info("[ChannelBindingService] Created binding: channel={} chatId={} -> workspace={}",
                 channelName, chatId, workspaceId);
         return binding;
@@ -167,13 +167,13 @@ public class ChannelBindingService {
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + newWorkspaceId));
 
         String bindingId = ChannelBinding.createId(channelName, chatId);
-        ChannelBinding binding = channelBindingStore.findById(bindingId)
+        ChannelBinding binding = this.getChannelBindingStore().findById(bindingId)
                 .orElseThrow(() -> new IllegalArgumentException("Binding not found: " + bindingId));
 
         String oldWorkspaceId = binding.getWorkspaceId();
         binding.setWorkspaceId(newWorkspaceId);
         binding.setUpdatedAt(LocalDateTime.now());
-        channelBindingStore.update(binding);
+        this.getChannelBindingStore().update(binding);
 
         log.info("[ChannelBindingService] Updated binding: channel={} chatId={} workspace: {} -> {}",
                 channelName, chatId, oldWorkspaceId, newWorkspaceId);
@@ -189,12 +189,12 @@ public class ChannelBindingService {
      */
     public void setBindingEnabled(String channelName, String chatId, boolean enabled) {
         String bindingId = ChannelBinding.createId(channelName, chatId);
-        ChannelBinding binding = channelBindingStore.findById(bindingId)
+        ChannelBinding binding = this.getChannelBindingStore().findById(bindingId)
                 .orElseThrow(() -> new IllegalArgumentException("Binding not found: " + bindingId));
 
         binding.setEnabled(enabled);
         binding.setUpdatedAt(LocalDateTime.now());
-        channelBindingStore.update(binding);
+        this.getChannelBindingStore().update(binding);
 
         log.info("[ChannelBindingService] Set binding {} enabled={}", bindingId, enabled);
     }
@@ -204,10 +204,10 @@ public class ChannelBindingService {
      */
     public void deleteBinding(String channelName, String chatId) {
         String bindingId = ChannelBinding.createId(channelName, chatId);
-        channelBindingStore.findById(bindingId)
+        this.getChannelBindingStore().findById(bindingId)
                 .orElseThrow(() -> new IllegalArgumentException("Binding not found: " + bindingId));
 
-        channelBindingStore.delete(bindingId);
+        this.getChannelBindingStore().delete(bindingId);
         log.info("[ChannelBindingService] Deleted binding: channel={} chatId={}", channelName, chatId);
     }
 
@@ -215,28 +215,28 @@ public class ChannelBindingService {
      * 查询单条绑定关系
      */
     public Optional<ChannelBinding> getBinding(String channelName, String chatId) {
-        return channelBindingStore.findByChannelNameAndChatId(channelName, chatId);
+        return this.getChannelBindingStore().findByChannelNameAndChatId(channelName, chatId);
     }
 
     /**
      * 查询某个 Workspace 的所有绑定
      */
     public List<ChannelBinding> listBindingsByWorkspace(String workspaceId) {
-        return channelBindingStore.findByWorkspaceId(workspaceId);
+        return this.getChannelBindingStore().findByWorkspaceId(workspaceId);
     }
 
     /**
      * 查询某个渠道的所有绑定
      */
     public List<ChannelBinding> listBindingsByChannel(String channelName) {
-        return channelBindingStore.findByChannelName(channelName);
+        return this.getChannelBindingStore().findByChannelName(channelName);
     }
 
     /**
      * 查询所有绑定
      */
     public List<ChannelBinding> listAllBindings() {
-        return channelBindingStore.findAll();
+        return this.getChannelBindingStore().findAll();
     }
 
     // ==================== 路由解析（核心：供 Gateway 使用）====================
@@ -250,8 +250,16 @@ public class ChannelBindingService {
      * @return workspaceId（如果绑定存在且启用）；否则 empty
      */
     public Optional<String> resolveWorkspaceId(String channelName, String chatId) {
-        return channelBindingStore.findByChannelNameAndChatId(channelName, chatId)
+        return this.getChannelBindingStore().findByChannelNameAndChatId(channelName, chatId)
                 .filter(ChannelBinding::isEnabled)
                 .map(ChannelBinding::getWorkspaceId);
+    }
+
+    private ChannelBindingStore getChannelBindingStore() {
+        return storeFactory.get(ChannelBindingStore.class);
+    }
+
+    private ChannelConfigStore getChannelConfigStore() {
+        return storeFactory.get(ChannelConfigStore.class);
     }
 }

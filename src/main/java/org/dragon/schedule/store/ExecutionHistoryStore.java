@@ -2,6 +2,7 @@ package org.dragon.schedule.store;
 
 import org.dragon.schedule.entity.ExecutionHistory;
 import org.dragon.schedule.entity.ExecutionStatus;
+import org.dragon.store.Store;
 
 import java.util.List;
 import java.util.Optional;
@@ -9,7 +10,7 @@ import java.util.Optional;
 /**
  * 执行历史存储接口
  */
-public interface ExecutionHistoryStore {
+public interface ExecutionHistoryStore extends Store {
 
     /**
      * 保存执行历史

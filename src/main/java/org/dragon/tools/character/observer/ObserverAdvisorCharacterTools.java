@@ -13,6 +13,7 @@ import org.dragon.observer.collector.dto.WorkspaceObservationSnapshot;
 import org.dragon.observer.evaluation.EvaluationEngine;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.gson.Gson;
@@ -39,8 +40,12 @@ public class ObserverAdvisorCharacterTools {
     private static final String TOOL_GET_EVALUATION_RECORDS = "get_evaluation_records";
 
     private final DataCollector dataCollector;
-    private final EvaluationRecordStore evaluationRecordStore;
+    private final StoreFactory storeFactory;
     private final Gson gson = new Gson();
+
+    private EvaluationRecordStore getEvaluationRecordStore() {
+        return storeFactory.get(EvaluationRecordStore.class);
+    }
 
     /**
      * 获取所有可用工具
@@ -400,7 +405,7 @@ public class ObserverAdvisorCharacterTools {
                         ? EvaluationRecord.TargetType.CHARACTER
                         : EvaluationRecord.TargetType.WORKSPACE;
 
-                List<EvaluationRecord> records = evaluationRecordStore.findByTargetAndTimeRange(
+                List<EvaluationRecord> records = getEvaluationRecordStore().findByTargetAndTimeRange(
                         evalTargetType, targetId, startTime, endTime);
 
                 return ToolResult.builder()

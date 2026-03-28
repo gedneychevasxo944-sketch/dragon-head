@@ -15,6 +15,7 @@ import org.dragon.workspace.chat.ChatSession;
 import org.dragon.workspace.material.Material;
 import org.dragon.workspace.service.material.WorkspaceMaterialService;
 import org.dragon.workspace.task.notify.WorkspaceTaskNotifier;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -32,11 +33,15 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WorkspaceTaskExecutionService {
 
-    private final TaskStore taskStore;
     private final TaskBridge taskBridge;
     private final WorkspaceTaskNotifier taskNotifier;
     private final ChatRoom chatRoom;
     private final WorkspaceMaterialService materialService;
+    private final StoreFactory storeFactory;
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
 
     /**
      * 执行单个子任务
@@ -53,7 +58,7 @@ public class WorkspaceTaskExecutionService {
         // 更新状态为 RUNNING
         childTask.setStatus(TaskStatus.RUNNING);
         childTask.setStartedAt(LocalDateTime.now());
-        taskStore.update(childTask);
+        getTaskStore().update(childTask);
 
         // 发送开始执行通知
         taskNotifier.notifyStarted(childTask);
@@ -124,7 +129,7 @@ public class WorkspaceTaskExecutionService {
         if (childTaskIds != null) {
             for (String childTaskId : childTaskIds) {
                 if (!childTaskId.equals(childTask.getId())) {
-                    Optional<Task> siblingTask = taskStore.findById(childTaskId);
+                    Optional<Task> siblingTask = getTaskStore().findById(childTaskId);
                     if (siblingTask.isPresent() && siblingTask.get().getCharacterId() != null) {
                         peerCharacterIds.add(siblingTask.get().getCharacterId());
                     }
@@ -229,7 +234,7 @@ public class WorkspaceTaskExecutionService {
                     // 依赖未满足，跳过执行（后续可改为加入等待队列）
                     log.warn("[TaskExecutionService] Dependencies not met for task {}, marking as WAITING_DEPENDENCY", childTask.getId());
                     childTask.setStatus(TaskStatus.WAITING_DEPENDENCY);
-                    taskStore.update(childTask);
+                    getTaskStore().update(childTask);
                     taskNotifier.notifyWaiting(childTask, "Waiting for dependency");
                     continue;
                 }
@@ -240,7 +245,7 @@ public class WorkspaceTaskExecutionService {
                 log.error("[TaskExecutionService] Error executing childTask {}: {}", childTask.getId(), e.getMessage(), e);
                 childTask.setStatus(TaskStatus.FAILED);
                 childTask.setErrorMessage(e.getMessage());
-                taskStore.update(childTask);
+                getTaskStore().update(childTask);
                 taskNotifier.notifyFailed(childTask, e.getMessage());
             }
         }
@@ -260,7 +265,7 @@ public class WorkspaceTaskExecutionService {
 
         // 检查所有依赖任务是否已完成
         for (String depTaskId : dependencyTaskIds) {
-            Optional<Task> depTask = taskStore.findById(depTaskId);
+            Optional<Task> depTask = getTaskStore().findById(depTaskId);
             if (depTask.isEmpty() || depTask.get().getStatus() != TaskStatus.COMPLETED) {
                 return false;
             }
@@ -278,7 +283,7 @@ public class WorkspaceTaskExecutionService {
         }
 
         List<Task> childTasks = childTaskIds.stream()
-                .map(taskStore::findById)
+                .map(getTaskStore()::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
@@ -298,16 +303,16 @@ public class WorkspaceTaskExecutionService {
             parentTask.setStatus(TaskStatus.COMPLETED);
             parentTask.setCompletedAt(LocalDateTime.now());
             parentTask.setResult("All child tasks completed successfully");
-            taskStore.update(parentTask);
+            getTaskStore().update(parentTask);
             log.info("[TaskExecutionService] Parent task {} completed", parentTask.getId());
         } else if (anyFailed) {
             parentTask.setStatus(TaskStatus.FAILED);
-            taskStore.update(parentTask);
+            getTaskStore().update(parentTask);
             log.warn("[TaskExecutionService] Parent task {} has failed child tasks", parentTask.getId());
         } else if (!anyRunning && anyWaiting) {
             // 没有正在运行的，但有等待中的
             parentTask.setStatus(TaskStatus.RUNNING); // 保持运行状态
-            taskStore.update(parentTask);
+            getTaskStore().update(parentTask);
         }
     }
 
@@ -328,7 +333,7 @@ public class WorkspaceTaskExecutionService {
      * @return 被调度的子任务列表
      */
     public List<Task> executeRunnableChildTasks(String parentTaskId, Task parentTask) {
-        List<Task> runnableTasks = taskStore.findRunnableChildTasks(parentTaskId);
+        List<Task> runnableTasks = getTaskStore().findRunnableChildTasks(parentTaskId);
         for (Task task : runnableTasks) {
             try {
                 executeChildTask(task, parentTask);
@@ -337,7 +342,7 @@ public class WorkspaceTaskExecutionService {
                         task.getId(), e.getMessage(), e);
                 task.setStatus(TaskStatus.FAILED);
                 task.setErrorMessage(e.getMessage());
-                taskStore.update(task);
+                getTaskStore().update(task);
                 taskNotifier.notifyFailed(task, e.getMessage());
             }
         }

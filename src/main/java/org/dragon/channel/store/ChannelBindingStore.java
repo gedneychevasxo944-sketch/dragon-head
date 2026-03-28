@@ -1,6 +1,7 @@
 package org.dragon.channel.store;
 
 import org.dragon.channel.entity.ChannelBinding;
+import org.dragon.store.Store;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +13,7 @@ import java.util.Optional;
  * @author zhz
  * @version 1.0
  */
-public interface ChannelBindingStore {
+public interface ChannelBindingStore extends Store {
     /**
      * 保存绑定关系
      */

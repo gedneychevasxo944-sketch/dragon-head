@@ -2,6 +2,8 @@ package org.dragon.workspace.material;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.MaterialEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
  * MySqlMaterialStore 物料MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlMaterialStore implements MaterialStore {
 
     private final Database mysqlDb;

@@ -1,5 +1,7 @@
 package org.dragon.observer.actionlog;
 
+import org.dragon.store.Store;
+
 import java.util.List;
 
 /**
@@ -8,7 +10,7 @@ import java.util.List;
  * @author wyj
  * @version 1.0
  */
-public interface ActionLogStore {
+public interface ActionLogStore extends Store {
 
     /**
      * 保存日志

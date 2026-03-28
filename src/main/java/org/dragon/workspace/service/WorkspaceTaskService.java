@@ -9,6 +9,7 @@ import org.dragon.task.TaskStore;
 import org.dragon.task.TaskStatus;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.service.task.execution.TaskBridge;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -26,9 +27,13 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WorkspaceTaskService {
 
-    private final TaskStore taskStore;
     private final WorkspaceRegistry workspaceRegistry;
     private final TaskBridge taskBridge;
+    private final StoreFactory storeFactory;
+
+    private TaskStore getTaskStore() {
+        return storeFactory.get(TaskStore.class);
+    }
 
     /**
      * 获取任务
@@ -42,7 +47,7 @@ public class WorkspaceTaskService {
         workspaceRegistry.get(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
-        return taskStore.findById(taskId)
+        return getTaskStore().findById(taskId)
                 .filter(task -> workspaceId.equals(task.getWorkspaceId()));
     }
 
@@ -85,7 +90,7 @@ public class WorkspaceTaskService {
         task.setUpdatedAt(LocalDateTime.now());
         task.setCompletedAt(LocalDateTime.now());
 
-        taskStore.update(task);
+        getTaskStore().update(task);
         log.info("[WorkspaceTaskService] Cancelled task: {}", taskId);
 
         return task;
@@ -114,7 +119,7 @@ public class WorkspaceTaskService {
             task.setCompletedAt(LocalDateTime.now());
         }
 
-        taskStore.update(task);
+        getTaskStore().update(task);
         log.info("[WorkspaceTaskService] Updated task status: {} -> {}", taskId, status);
 
         return task;
@@ -137,7 +142,7 @@ public class WorkspaceTaskService {
         task.setUpdatedAt(LocalDateTime.now());
         task.setCompletedAt(LocalDateTime.now());
 
-        taskStore.update(task);
+        getTaskStore().update(task);
         log.info("[WorkspaceTaskService] Updated task result: {}", taskId);
 
         return task;
@@ -160,7 +165,7 @@ public class WorkspaceTaskService {
         task.setUpdatedAt(LocalDateTime.now());
         task.setCompletedAt(LocalDateTime.now());
 
-        taskStore.update(task);
+        getTaskStore().update(task);
         log.error("[WorkspaceTaskService] Task failed: {} - {}", taskId, errorMessage);
 
         return task;
@@ -176,7 +181,7 @@ public class WorkspaceTaskService {
         workspaceRegistry.get(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
-        return taskStore.findByWorkspaceId(workspaceId);
+        return getTaskStore().findByWorkspaceId(workspaceId);
     }
 
     /**
@@ -223,7 +228,7 @@ public class WorkspaceTaskService {
         task.setLastQuestion(question);
         task.setWaitingReason("WAITING_USER_INPUT");
         task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
+        getTaskStore().update(task);
 
         log.info("[WorkspaceTaskService] Task {} waiting for user input: {}", taskId, question);
         return task;
@@ -253,7 +258,7 @@ public class WorkspaceTaskService {
             task.getDependencyTaskIds().add(dependencyTaskId);
         }
 
-        taskStore.update(task);
+        getTaskStore().update(task);
         log.info("[WorkspaceTaskService] Task {} waiting for dependency: {}", taskId, dependencyTaskId);
         return task;
     }
@@ -289,7 +294,7 @@ public class WorkspaceTaskService {
         }
         task.getExecutionMessages().add(message);
         task.setUpdatedAt(LocalDateTime.now());
-        taskStore.update(task);
+        getTaskStore().update(task);
 
         return task;
     }

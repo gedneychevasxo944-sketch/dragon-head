@@ -1,5 +1,7 @@
 package org.dragon.observer.optimization.store;
 
+import org.dragon.store.Store;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -13,7 +15,7 @@ import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
  * @author wyj
  * @version 1.0
  */
-public interface OptimizationActionStore {
+public interface OptimizationActionStore extends Store {
 
     /**
      * 保存优化动作

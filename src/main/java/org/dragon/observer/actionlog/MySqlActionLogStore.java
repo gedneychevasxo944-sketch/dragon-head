@@ -2,6 +2,8 @@ package org.dragon.observer.actionlog;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.ObserverActionLogEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
  */
 @Primary
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlActionLogStore implements ActionLogStore {
 
     private final Database mysqlDb;

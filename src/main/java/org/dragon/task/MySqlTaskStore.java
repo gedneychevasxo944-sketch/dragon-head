@@ -2,6 +2,8 @@ package org.dragon.task;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.TaskEntity;
+import org.dragon.store.StoreType;
+import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
  * MySqlTaskStore 任务MySQL存储实现
  */
 @Component
+@StoreTypeAnn(StoreType.MYSQL)
 public class MySqlTaskStore implements TaskStore {
 
     private final Database mysqlDb;
