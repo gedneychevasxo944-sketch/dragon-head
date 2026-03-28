@@ -11,6 +11,7 @@ import org.dragon.skill.service.SkillManageService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +26,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/skills")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class SkillController {
 
     private final SkillManageService skillManageService;
