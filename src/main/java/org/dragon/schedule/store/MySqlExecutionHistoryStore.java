@@ -30,7 +30,7 @@ public class MySqlExecutionHistoryStore implements ExecutionHistoryStore {
     @Override
     public void save(ExecutionHistory history) {
         ExecutionHistoryEntity entity = ExecutionHistoryEntity.fromExecutionHistory(history);
-        mysqlDb.save(entity);
+//        mysqlDb.save(entity);
     }
 
     @Override

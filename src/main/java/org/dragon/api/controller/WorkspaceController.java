@@ -7,12 +7,9 @@ import org.dragon.task.TaskStatus;
 import org.dragon.workspace.Workspace;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLog;
+import org.dragon.workspace.WorkspaceApplication;
+import org.dragon.workspace.WorkspaceApplicationProvider;
 import org.dragon.workspace.material.Material;
-import org.dragon.observer.actionlog.ObserverActionLogService;
-import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
-import org.dragon.workspace.service.material.WorkspaceMaterialService;
-import org.dragon.workspace.service.WorkspaceTaskService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -54,21 +51,18 @@ import java.util.List;
 @PreAuthorize("isAuthenticated()")
 public class WorkspaceController {
 
-    @Autowired
-    private final WorkspaceLifecycleService workspaceLifecycleService;
-    @Autowired
-    private final WorkspaceTaskService workspaceTaskService;
-    @Autowired
-    private final ObserverActionLogService workspaceActionLogService;
-    @Autowired
-    private final WorkspaceMaterialService workspaceMaterialService;
+    private final WorkspaceApplicationProvider workspaceApplicationProvider;
+
+    private WorkspaceApplication app(String workspaceId) {
+        return workspaceApplicationProvider.getApplication(workspaceId);
+    }
 
     // ==================== Workspace 生命周期 ====================
 
     @Operation(summary = "创建工作空间")
     @PostMapping
     public ResponseEntity<Workspace> createWorkspace(@RequestBody Workspace workspace) {
-        Workspace created = workspaceLifecycleService.createWorkspace(workspace);
+        Workspace created = app(workspace.getId()).createWorkspace(workspace);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -77,15 +71,15 @@ public class WorkspaceController {
     public ResponseEntity<List<Workspace>> listWorkspaces(
             @RequestParam(required = false) Workspace.Status status) {
         List<Workspace> list = (status != null)
-                ? workspaceLifecycleService.listWorkspacesByStatus(status)
-                : workspaceLifecycleService.listWorkspaces();
+                ? app("default").listWorkspacesByStatus(status)
+                : app("default").listWorkspaces();
         return ResponseEntity.ok(list);
     }
 
     @Operation(summary = "获取指定工作空间")
     @GetMapping("/{workspaceId}")
     public ResponseEntity<Workspace> getWorkspace(@PathVariable String workspaceId) {
-        return workspaceLifecycleService.getWorkspace(workspaceId)
+        return app(workspaceId).getWorkspace(workspaceId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -96,35 +90,35 @@ public class WorkspaceController {
             @PathVariable String workspaceId,
             @RequestBody Workspace workspace) {
         workspace.setId(workspaceId);
-        Workspace updated = workspaceLifecycleService.updateWorkspace(workspace);
+        Workspace updated = app(workspaceId).updateWorkspace(workspace);
         return ResponseEntity.ok(updated);
     }
 
     @Operation(summary = "删除工作空间")
     @DeleteMapping("/{workspaceId}")
     public ResponseEntity<Void> deleteWorkspace(@PathVariable String workspaceId) {
-        workspaceLifecycleService.deleteWorkspace(workspaceId);
+        app(workspaceId).deleteWorkspace(workspaceId);
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "激活工作空间")
     @PostMapping("/{workspaceId}/activate")
     public ResponseEntity<Void> activateWorkspace(@PathVariable String workspaceId) {
-        workspaceLifecycleService.activateWorkspace(workspaceId);
+        app(workspaceId).activateWorkspace(workspaceId);
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "停用工作空间")
     @PostMapping("/{workspaceId}/deactivate")
     public ResponseEntity<Void> deactivateWorkspace(@PathVariable String workspaceId) {
-        workspaceLifecycleService.deactivateWorkspace(workspaceId);
+        app(workspaceId).deactivateWorkspace(workspaceId);
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "归档工作空间")
     @PostMapping("/{workspaceId}/archive")
     public ResponseEntity<Void> archiveWorkspace(@PathVariable String workspaceId) {
-        workspaceLifecycleService.archiveWorkspace(workspaceId);
+        app(workspaceId).archiveWorkspace(workspaceId);
         return ResponseEntity.ok().build();
     }
 
@@ -136,8 +130,8 @@ public class WorkspaceController {
             @PathVariable String workspaceId,
             @RequestParam(required = false) TaskStatus status) {
         List<Task> tasks = (status != null)
-                ? workspaceTaskService.listTasksByStatus(workspaceId, status)
-                : workspaceTaskService.listTasks(workspaceId);
+                ? app(workspaceId).getWorkspaceTaskService().listTasksByStatus(workspaceId, status)
+                : app(workspaceId).listTasks(workspaceId);
         return ResponseEntity.ok(tasks);
     }
 
@@ -146,7 +140,7 @@ public class WorkspaceController {
     public ResponseEntity<Task> getTask(
             @PathVariable String workspaceId,
             @PathVariable String taskId) {
-        return workspaceTaskService.getTask(workspaceId, taskId)
+        return app(workspaceId).getTask(workspaceId, taskId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -156,7 +150,7 @@ public class WorkspaceController {
     public ResponseEntity<String> getTaskResult(
             @PathVariable String workspaceId,
             @PathVariable String taskId) {
-        String result = workspaceTaskService.getTaskResult(workspaceId, taskId);
+        String result = app(workspaceId).getTaskResult(workspaceId, taskId);
         return ResponseEntity.ok(result);
     }
 
@@ -165,7 +159,7 @@ public class WorkspaceController {
     public ResponseEntity<Task> cancelTask(
             @PathVariable String workspaceId,
             @PathVariable String taskId) {
-        Task task = workspaceTaskService.cancelTask(workspaceId, taskId);
+        Task task = app(workspaceId).cancelTask(workspaceId, taskId);
         return ResponseEntity.ok(task);
     }
 
@@ -179,11 +173,11 @@ public class WorkspaceController {
             @RequestParam(required = false) ActionType actionType) {
         List<ObserverActionLog> logs;
         if (characterId != null) {
-            logs = workspaceActionLogService.getActionLogs("CHARACTER", characterId);
+            logs = app(workspaceId).getWorkspaceActionLogService().getActionLogs("CHARACTER", characterId);
         } else if (actionType != null) {
-            logs = workspaceActionLogService.getActionLogsByType(actionType);
+            logs = app(workspaceId).getWorkspaceActionLogService().getActionLogsByType(actionType);
         } else {
-            logs = workspaceActionLogService.getActionLogs("WORKSPACE", workspaceId);
+            logs = app(workspaceId).getActionLogs(workspaceId);
         }
         return ResponseEntity.ok(logs);
     }
@@ -193,7 +187,7 @@ public class WorkspaceController {
     @Operation(summary = "查询工作空间的所有物料")
     @GetMapping("/{workspaceId}/materials")
     public ResponseEntity<List<Material>> listMaterials(@PathVariable String workspaceId) {
-        List<Material> materials = workspaceMaterialService.listByWorkspace(workspaceId);
+        List<Material> materials = app(workspaceId).listMaterials(workspaceId);
         return ResponseEntity.ok(materials);
     }
 
@@ -203,7 +197,7 @@ public class WorkspaceController {
             @PathVariable String workspaceId,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "uploader", defaultValue = "admin") String uploader) throws IOException {
-        Material material = workspaceMaterialService.upload(
+        Material material = app(workspaceId).uploadMaterial(
                 workspaceId,
                 file.getInputStream(),
                 file.getOriginalFilename(),
@@ -218,7 +212,7 @@ public class WorkspaceController {
     public ResponseEntity<Material> getMaterial(
             @PathVariable String workspaceId,
             @PathVariable String materialId) {
-        return workspaceMaterialService.get(materialId)
+        return app(workspaceId).getMaterial(workspaceId, materialId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -228,9 +222,9 @@ public class WorkspaceController {
     public ResponseEntity<InputStreamResource> downloadMaterial(
             @PathVariable String workspaceId,
             @PathVariable String materialId) {
-        Material material = workspaceMaterialService.get(materialId)
+        Material material = app(workspaceId).getMaterial(workspaceId, materialId)
                 .orElseThrow(() -> new IllegalArgumentException("Material not found: " + materialId));
-        InputStream inputStream = workspaceMaterialService.download(materialId);
+        InputStream inputStream = app(workspaceId).downloadMaterial(workspaceId, materialId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + material.getName() + "\"")
@@ -243,7 +237,7 @@ public class WorkspaceController {
     public ResponseEntity<Void> deleteMaterial(
             @PathVariable String workspaceId,
             @PathVariable String materialId) {
-        workspaceMaterialService.delete(materialId);
+        app(workspaceId).deleteMaterial(workspaceId, materialId);
         return ResponseEntity.noContent().build();
     }
 }
