@@ -40,7 +40,7 @@ class MySqlChatMessageStoreTest {
     static void initDatabase() throws Exception {
         // 创建 MySQL DataSource
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:mysql://localhost:3306/adeptify_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true");
+        config.setJdbcUrl("jdbc:mysql://localhost:3306/adeptify?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true");
         config.setUsername("root");
         config.setPassword("123456");
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");

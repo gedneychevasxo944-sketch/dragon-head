@@ -1,0 +1,26 @@
+# ===================================================================
+# Dockerfile-dev - 开发环境
+# 不做 mvn package，直接从本地编译后的 classes 目录启动
+# ===================================================================
+FROM eclipse-temurin:21-jre-alpine
+
+RUN apk add --no-cache curl netcat-openbsd bash
+
+WORKDIR /app
+
+# 先复制一个启动脚本（检测 classpath 变化后重启）
+COPY docker/entrypoint-dev.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# 复制依赖（如果本地已有target目录则覆盖）
+COPY target/classes /app/classes
+COPY target/generated-sources /app/generated-sources
+COPY src/main/resources /app/resources
+
+# JAR 方式备用（如果 classes 不存在则用 JAR）
+# 先尝试 JAR 启动（启动脚本中处理）
+COPY target/dragon-head-*.jar /app/app.jar
+
+EXPOSE 8080 5005
+
+ENTRYPOINT ["/entrypoint.sh"]

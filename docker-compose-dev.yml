@@ -1,0 +1,94 @@
+# ===================================================================
+# DragonHead Docker Compose - 开发环境（热挂载 + 远程调试）
+# ===================================================================
+# 用法:
+#   docker-compose -f docker-compose-dev.yml up -d
+#   docker-compose -f docker-compose-dev.yml logs -f  # 查看日志
+#
+# 代码改动后:
+#   mvn compile -q  # 编译（本地执行，秒级）
+#   # 容器自动检测 classpath 变化并重启（通过 entrypoint.sh）
+# ===================================================================
+
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: dragon-mysql-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-adeptify}
+      MYSQL_USER: ${MYSQL_USER:-dragon}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dragon123}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-123456}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - dragon-net
+
+  dragon-head:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    container_name: dragon-head-dev
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-adeptify}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_MYSQL_USERNAME: ${MYSQL_USER:-dragon}
+      SPRING_DATASOURCE_MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dragon123}
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_DATASOURCE_H2_URL: jdbc:h2:mem:dragon;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      SPRING_DATASOURCE_H2_USERNAME: sa
+      SPRING_DATASOURCE_H2_PASSWORD:
+      CHANNEL_FEISHU_APPID: ${FEISHU_APP_ID:-}
+      CHANNEL_FEISHU_APPSECRET: ${FEISHU_APP_SECRET:-}
+      CHANNEL_FEISHU_ROBOTOPENID: ${FEISHU_ROBOT_OPENID:-}
+      CHANNEL_FEISHU_WAKEWORD: ${FEISHU_WAKEWORD:-}
+      CHANNEL_FEISHU_WHITELIST: ${FEISHU_WHITELIST:-}
+      LLM_MINIMAX_APIKEY: ${MINIMAX_API_KEY:-}
+      LLM_MINIMAX_GROUPID: ${MINIMAX_GROUP_ID:-}
+      LLM_KIMI_APIKEY: ${KIMI_API_KEY:-}
+      LLM_DEEPSEEK_APIKEY: ${DEEPSEEK_API_KEY:-}
+      DRAGON_STORE_TYPE: ${DRAGON_STORE_TYPE:-MYSQL}
+      DRAGON_DEFAULT_CHARACTER_ID: ${DEFAULT_CHARACTER_ID:-}
+      # 开启调试模式
+      JAVA_DEBUG: "true"
+      JAVA_DEBUG_PORT: "5005"
+    ports:
+      - "${APP_PORT:-8080}:8080"
+      - "5005:5005"
+    volumes:
+      # 热挂载编译输出目录（改动代码后本地 mvn compile 即可）
+      - ./target/classes:/app/classes:rw
+      - ./target/generated-sources:/app/generated-sources:rw
+      - ./src/main/resources:/app/resources:rw
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - dragon-net
+
+volumes:
+  mysql_data:
+
+networks:
+  dragon-net:
+    driver: bridge
