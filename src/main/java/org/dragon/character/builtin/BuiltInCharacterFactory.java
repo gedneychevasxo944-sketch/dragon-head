@@ -16,6 +16,7 @@ import org.dragon.character.profile.CharacterProfile;
 import org.dragon.tools.AgentTool;
 import org.dragon.tools.ToolRegistry;
 import org.dragon.workspace.WorkspaceRegistry;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,7 @@ public class BuiltInCharacterFactory implements CharacterFactory<Character> {
 
     private final CharacterRegistry characterRegistry;
     private final WorkspaceRegistry workspaceRegistry;
-    private final CharacterRuntimeBinder characterRuntimeBinder;
+    private final @Lazy CharacterRuntimeBinder characterRuntimeBinder;
     private final ToolRegistry toolRegistry;
 
     /** Observer Advisor 的特殊 scope 前缀 */

@@ -6,6 +6,7 @@ import org.dragon.datasource.entity.WorkflowStateEntity;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 /**
  * MySqlWorkflowStore 工作流MySQL存储实现
  */
+@Primary
 @Component
 @StoreTypeAnn(StoreType.MYSQL)
 public class MySqlWorkflowStore implements WorkflowStore {

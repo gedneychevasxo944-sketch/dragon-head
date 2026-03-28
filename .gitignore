@@ -39,3 +39,7 @@ build/
 .claude/
 .plans/
 docs/
+
+### Docker ###
+.env
+docker/mysql/data/

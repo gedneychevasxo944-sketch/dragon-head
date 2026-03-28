@@ -38,8 +38,8 @@ public class ReActExecutor {
     private final LLMCaller llmCaller;
     private final Gson gson;
     private final PromptManager promptManager;
-    private final BuiltInCharacterFactory builtInCharacterFactory;
-    private final CharacterCaller characterCaller;
+    private final ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider;
+    private final ObjectProvider<CharacterCaller> characterCallerProvider;
     private final ThoughtPromptAssembler thoughtPromptAssembler;
     private final ActionParser actionParser;
     private final ActionExecutor actionExecutor;
@@ -55,8 +55,8 @@ public class ReActExecutor {
                          ObservationEvaluator observationEvaluator) {
         this.llmCaller = llmCaller;
         this.promptManager = promptManager;
-        this.builtInCharacterFactory = builtInCharacterFactoryProvider.getIfAvailable();
-        this.characterCaller = characterCallerProvider.getIfAvailable();
+        this.builtInCharacterFactoryProvider = builtInCharacterFactoryProvider;
+        this.characterCallerProvider = characterCallerProvider;
         this.gson = new Gson();
         this.thoughtPromptAssembler = thoughtPromptAssembler;
         this.actionParser = actionParser;
@@ -256,7 +256,13 @@ public class ReActExecutor {
      * 尝试通过 PromptWriter 动态装配 Prompt
      */
     private String tryBuildDynamicThoughtPrompt(ReActContext context) {
-        if (promptManager == null || builtInCharacterFactory == null || characterCaller == null) {
+        if (promptManager == null) {
+            return null;
+        }
+
+        BuiltInCharacterFactory builtInCharacterFactory = builtInCharacterFactoryProvider.getIfAvailable();
+        CharacterCaller characterCaller = characterCallerProvider.getIfAvailable();
+        if (builtInCharacterFactory == null || characterCaller == null) {
             return null;
         }
 

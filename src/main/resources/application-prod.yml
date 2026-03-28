@@ -1,0 +1,30 @@
+# ===================================================================
+# Production Profile 配置
+# 激活方式: SPRING_PROFILES_ACTIVE=prod
+# ===================================================================
+
+# 飞书渠道 - 生产环境通过环境变量覆盖
+channel:
+  feishu:
+    appId: ${CHANNEL_FEISHU_APPID:}
+    appSecret: ${CHANNEL_FEISHU_APPSECRET:}
+    robotOpenId: ${CHANNEL_FEISHU_ROBOTOPENID:}
+    wakeWord: ${CHANNEL_FEISHU_WAKEWORD:}
+    whitelist: ${CHANNEL_FEISHU_WHITELIST:}
+
+# Dragon Store 类型: MYSQL (通过 DRAGON_STORE_TYPE 环境变量控制)
+dragon:
+  store:
+    enabled: true
+    type: ${DRAGON_STORE_TYPE:MYSQL}
+  default-character-id: ${DRAGON_DEFAULT_CHARACTER_ID:}
+
+# LLM 配置
+llm:
+  minimax:
+    apiKey: ${LLM_MINIMAX_APIKEY:}
+    groupId: ${LLM_MINIMAX_GROUPID:}
+  kimi:
+    apiKey: ${LLM_KIMI_APIKEY:}
+  deepseek:
+    apiKey: ${LLM_DEEPSEEK_APIKEY:}

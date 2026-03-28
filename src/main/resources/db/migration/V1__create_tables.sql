@@ -2,6 +2,7 @@
 -- Generated from Entity classes
 
 -- Chat message table
+use adeptify;
 CREATE TABLE chat_message (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
