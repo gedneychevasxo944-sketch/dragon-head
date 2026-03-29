@@ -94,7 +94,7 @@ public class ChatMessage {
      * 是否已读
      */
     @Builder.Default
-    private boolean read = false;
+    private Boolean read = false;
 
     /**
      * 扩展属性
@@ -132,4 +132,11 @@ public class ChatMessage {
      * 关联 ID（用于消息关联和追溯）
      */
     private String correlationId;
+
+    /**
+     * 检查是否已读
+     */
+    public boolean isRead() {
+        return Boolean.TRUE.equals(read);
+    }
 }

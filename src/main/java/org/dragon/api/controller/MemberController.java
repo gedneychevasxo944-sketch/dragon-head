@@ -197,17 +197,17 @@ public class MemberController {
 
     @Data
     public static class WeightRequest {
-        private double weight;
+        private Double weight;
     }
 
     @Data
     public static class PriorityRequest {
-        private int priority;
+        private Integer priority;
     }
 
     @Data
     public static class ReputationRequest {
         /** 积分变化量，正值加分，负值扣分 */
-        private int change;
+        private Integer change;
     }
 }

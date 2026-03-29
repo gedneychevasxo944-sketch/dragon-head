@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.BooleanUtils;
 
 /**
  * CommonSense 常识实体 (Workspace 版本)
@@ -97,13 +98,13 @@ public class CommonSense {
      * 版本号
      */
     @Builder.Default
-    private int version = 1;
+    private Integer version = 1;
 
     /**
      * 是否启用
      */
     @Builder.Default
-    private boolean enabled = true;
+    private Boolean enabled = true;
 
     /**
      * 转换成 prompt 的模板
@@ -151,6 +152,14 @@ public class CommonSense {
      * 创建者
      */
     private String createdBy;
+
+
+    /**
+     * 检查是否为关键级别
+     */
+    public boolean isEnabled() {
+        return BooleanUtils.isTrue(enabled);
+    }
 
     /**
      * 检查是否为关键级别

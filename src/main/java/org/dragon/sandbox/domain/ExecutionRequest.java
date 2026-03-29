@@ -39,7 +39,7 @@ public class ExecutionRequest {
      * 执行超时时间（秒），默认 30 秒。
      */
     @Builder.Default
-    private int timeoutSeconds = 30;
+    private Integer timeoutSeconds = 30;
 
     /**
      * 执行的工作目录（相对于 sandbox 根目录）。

@@ -49,7 +49,8 @@ public class CharacterProfile {
     /**
      * 版本号
      */
-    private int version;
+    @Builder.Default
+    private Integer version = 0;
 
     /**
      * 描述

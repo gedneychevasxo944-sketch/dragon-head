@@ -21,4 +21,18 @@ public class WorkspaceSkillUpdateRequest {
 
     /** 在当前 workspace 中启用/禁用此 skill */
     private Boolean enabled;
+
+    /**
+     * 检查是否使用最新版本
+     */
+    public boolean isUseLatest() {
+        return Boolean.TRUE.equals(useLatest);
+    }
+
+    /**
+     * 检查是否启用
+     */
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(enabled);
+    }
 }

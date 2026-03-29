@@ -53,7 +53,15 @@ public class LLMRequest {
     /**
      * 是否流式输出
      */
-    private boolean stream;
+    @Builder.Default
+    private Boolean stream = false;
+
+    /**
+     * 检查是否流式输出
+     */
+    public boolean isStream() {
+        return Boolean.TRUE.equals(stream);
+    }
 
     /**
      * LLM 消息

@@ -2,16 +2,16 @@ package org.dragon.memory.models;
 
 public class SyncRequest {
 
-    private boolean force;
+    private Boolean force;
     private String reason;
-    private boolean incremental;
-    private boolean targetedSessionSync;
+    private Boolean incremental;
+    private Boolean targetedSessionSync;
     private String sessionKey;
 
     public SyncRequest() {
     }
 
-    public SyncRequest(boolean force, String reason, boolean incremental) {
+    public SyncRequest(Boolean force, String reason, Boolean incremental) {
         this.force = force;
         this.reason = reason;
         this.incremental = incremental;
@@ -43,11 +43,11 @@ public class SyncRequest {
     }
 
     // Getters and Setters
-    public boolean isForce() {
+    public Boolean isForce() {
         return force;
     }
 
-    public void setForce(boolean force) {
+    public void setForce(Boolean force) {
         this.force = force;
     }
 
@@ -59,19 +59,19 @@ public class SyncRequest {
         this.reason = reason;
     }
 
-    public boolean isIncremental() {
+    public Boolean isIncremental() {
         return incremental;
     }
 
-    public void setIncremental(boolean incremental) {
+    public void setIncremental(Boolean incremental) {
         this.incremental = incremental;
     }
 
-    public boolean isTargetedSessionSync() {
+    public Boolean isTargetedSessionSync() {
         return targetedSessionSync;
     }
 
-    public void setTargetedSessionSync(boolean targetedSessionSync) {
+    public void setTargetedSessionSync(Boolean targetedSessionSync) {
         this.targetedSessionSync = targetedSessionSync;
     }
 
@@ -88,7 +88,7 @@ public class SyncRequest {
         return this;
     }
 
-    public SyncRequest withForce(boolean force) {
+    public SyncRequest withForce(Boolean force) {
         this.force = force;
         return this;
     }

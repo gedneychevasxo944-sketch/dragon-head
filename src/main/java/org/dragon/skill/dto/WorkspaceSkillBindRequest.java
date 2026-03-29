@@ -1,8 +1,8 @@
 package org.dragon.skill.dto;
 
-import lombok.Data;
-
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * Workspace 圈选 Skill 请求。
@@ -25,4 +25,11 @@ public class WorkspaceSkillBindRequest {
      * 若 useLatest=true，此字段忽略，系统自动使用当前最新版本。
      */
     private Integer pinnedVersion;
+
+    /**
+     * 检查是否使用最新版本
+     */
+    public boolean isUseLatest() {
+        return Boolean.TRUE.equals(useLatest);
+    }
 }

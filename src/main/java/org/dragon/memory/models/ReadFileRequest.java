@@ -3,13 +3,13 @@ package org.dragon.memory.models;
 public class ReadFileRequest {
 
     private String path;
-    private int startLine;
-    private int endLine;
+    private Integer startLine;
+    private Integer endLine;
 
     public ReadFileRequest() {
     }
 
-    public ReadFileRequest(String path, int startLine, int endLine) {
+    public ReadFileRequest(String path, Integer startLine, Integer endLine) {
         this.path = path;
         this.startLine = startLine;
         this.endLine = endLine;
@@ -24,19 +24,19 @@ public class ReadFileRequest {
         this.path = path;
     }
 
-    public int getStartLine() {
+    public Integer getStartLine() {
         return startLine;
     }
 
-    public void setStartLine(int startLine) {
+    public void setStartLine(Integer startLine) {
         this.startLine = startLine;
     }
 
-    public int getEndLine() {
+    public Integer getEndLine() {
         return endLine;
     }
 
-    public void setEndLine(int endLine) {
+    public void setEndLine(Integer endLine) {
         this.endLine = endLine;
     }
 }

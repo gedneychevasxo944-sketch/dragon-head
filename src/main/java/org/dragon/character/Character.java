@@ -87,11 +87,11 @@ public class Character {
         profile.setDescription(description);
     }
 
-    public int getVersion() {
+    public Integer getVersion() {
         return profile.getVersion();
     }
 
-    public void setVersion(int version) {
+    public void setVersion(Integer version) {
         profile.setVersion(version);
     }
 

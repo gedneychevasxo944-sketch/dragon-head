@@ -38,7 +38,8 @@ public class CharacterExecutorConfig {
     @AllArgsConstructor
     public static class WorkflowConfig {
         private String defaultWorkflowId;
-        private int maxSteps;
+        @Builder.Default
+        private Integer maxSteps = 10;
         private String timeout;
     }
 
@@ -47,8 +48,25 @@ public class CharacterExecutorConfig {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ReActConfig {
-        private int maxIterations;
-        private boolean enableMemorySearch;
-        private boolean enableToolUse;
+        @Builder.Default
+        private Integer maxIterations = 10;
+        @Builder.Default
+        private Boolean enableMemorySearch = true;
+        @Builder.Default
+        private Boolean enableToolUse = true;
+
+        /**
+         * 检查是否启用记忆搜索
+         */
+        public boolean isEnableMemorySearch() {
+            return Boolean.TRUE.equals(enableMemorySearch);
+        }
+
+        /**
+         * 检查是否启用工具使用
+         */
+        public boolean isEnableToolUse() {
+            return Boolean.TRUE.equals(enableToolUse);
+        }
     }
 }

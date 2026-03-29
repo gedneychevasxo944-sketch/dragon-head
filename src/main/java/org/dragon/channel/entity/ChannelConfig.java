@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.BooleanUtils;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class ChannelConfig {
      * 是否启用
      */
     @Builder.Default
-    private boolean enabled = true;
+    private Boolean enabled = true;
     /**
      * 渠道凭证配置（各渠道不同）
      * 飞书示例:
@@ -62,4 +63,14 @@ public class ChannelConfig {
      * 更新时间
      */
     private LocalDateTime updatedAt;
+
+
+
+    /**
+     * 检查是否为关键级别
+     */
+    public boolean isEnabled() {
+        return BooleanUtils.isTrue(enabled);
+    }
+
 }

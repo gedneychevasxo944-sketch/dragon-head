@@ -32,10 +32,21 @@ public class SkillQueryRequest {
     private Long creatorId;
     /** 按启用状态过滤（null=不过滤，true=仅启用，false=仅禁用） */
     private Boolean enabled;
-    /** 页码，从 1 开始，默认 1 */
+
+    /**
+     * 检查是否启用
+     */
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(enabled);
+    }
+    /**
+     * 页码，从 1 开始，默认 1
+     */
     @Builder.Default
-    private int page = 1;
-    /** 每页条数，默认 20 */
+    private Integer page = 1;
+    /**
+     * 每页条数，默认 20
+     */
     @Builder.Default
-    private int size = 20;
+    private Integer size = 20;
 }

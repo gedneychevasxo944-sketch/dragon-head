@@ -67,32 +67,32 @@ public class Observer {
      * 当评分低于此阈值时触发优化
      */
     @Builder.Default
-    private double optimizationThreshold = 0.6;
+    private Double optimizationThreshold = 0.6;
 
     /**
      * 连续低分触发优化的次数阈值
      */
     @Builder.Default
-    private int consecutiveLowScoreThreshold = 3;
+    private Integer consecutiveLowScoreThreshold = 3;
 
     /**
      * 是否启用常识校验
      */
     @Builder.Default
-    private boolean commonSenseEnabled = true;
+    private Boolean commonSenseEnabled = true;
 
     /**
      * 是否启用自动优化
      */
     @Builder.Default
-    private boolean autoOptimizationEnabled = true;
+    private Boolean autoOptimizationEnabled = true;
 
     /**
      * 周期性评价周期（小时）
      * 0 表示不启用周期性评价
      */
     @Builder.Default
-    private int periodicEvaluationHours = 24;
+    private Integer periodicEvaluationHours = 24;
 
     /**
      * 扩展属性
@@ -121,7 +121,7 @@ public class Observer {
      * 默认 true - 生成的计划需要人工确认后执行
      */
     @Builder.Default
-    private boolean manualApprovalRequired = true;
+    private Boolean manualApprovalRequired = true;
 
     /**
      * 定时 cron 表达式
@@ -134,14 +134,14 @@ public class Observer {
      * 用于限定收集数据的时间范围
      */
     @Builder.Default
-    private int planWindowHours = 24;
+    private Integer planWindowHours = 24;
 
     /**
      * 最大计划项数量
      * 限制单次计划生成的最大条目数
      */
     @Builder.Default
-    private int maxPlanItems = 50;
+    private Integer maxPlanItems = 50;
 
     /**
      * 创建时间
@@ -192,5 +192,18 @@ public class Observer {
      */
     public boolean isActive() {
         return status == Status.ACTIVE;
+    }
+
+    // 显式 getter 方法，确保 isXxx() 风格兼容
+    public boolean isCommonSenseEnabled() {
+        return commonSenseEnabled != null ? commonSenseEnabled : true;
+    }
+
+    public boolean isAutoOptimizationEnabled() {
+        return autoOptimizationEnabled != null ? autoOptimizationEnabled : true;
+    }
+
+    public boolean isManualApprovalRequired() {
+        return manualApprovalRequired != null ? manualApprovalRequired : true;
     }
 }

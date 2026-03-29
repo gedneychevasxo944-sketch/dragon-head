@@ -50,7 +50,7 @@ public class CommonSenseFolder {
      * 排序顺序
      */
     @Builder.Default
-    private int sortOrder = 0;
+    private Integer sortOrder = 0;
 
     /**
      * 创建时间

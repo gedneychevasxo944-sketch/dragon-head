@@ -39,7 +39,7 @@ public class SuggestionRequest {
      * 收集最近多少天的数据
      */
     @Builder.Default
-    private int recentTasksDays = 7;
+    private Integer recentTasksDays = 7;
 
     /**
      * 最大建议数量

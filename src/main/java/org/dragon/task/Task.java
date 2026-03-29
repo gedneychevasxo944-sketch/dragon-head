@@ -283,7 +283,8 @@ public class Task {
         /**
          * 步骤序号
          */
-        private int stepNumber;
+        @Builder.Default
+        private Integer stepNumber = 0;
 
         /**
          * 步骤类型 (THOUGHT, ACTION, OBSERVATION)
@@ -303,12 +304,14 @@ public class Task {
         /**
          * 消耗的 token
          */
-        private int tokenConsumption;
+        @Builder.Default
+        private Integer tokenConsumption = 0;
 
         /**
          * 执行时长（毫秒）
          */
-        private long durationMs;
+        @Builder.Default
+        private Long durationMs = 0L;
 
         /**
          * 时间戳
@@ -343,11 +346,19 @@ public class Task {
         /**
          * 是否为流式
          */
-        private boolean streaming;
+        @Builder.Default
+        private Boolean streaming = false;
 
         /**
          * 时间戳
          */
         private LocalDateTime timestamp;
+
+        /**
+         * 检查是否为流式
+         */
+        public boolean isStreaming() {
+            return Boolean.TRUE.equals(streaming);
+        }
     }
 }

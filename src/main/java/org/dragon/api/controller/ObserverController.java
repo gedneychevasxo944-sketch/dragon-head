@@ -457,7 +457,7 @@ public class ObserverController {
         private EvaluationRecord.TargetType targetType;
         private String targetId;
         /** 评价时间窗口（小时） */
-        private int periodHours;
+        private Integer periodHours;
     }
 
     @Data

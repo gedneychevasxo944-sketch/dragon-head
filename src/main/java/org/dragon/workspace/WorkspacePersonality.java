@@ -64,7 +64,7 @@ public class WorkspacePersonality {
      * 0 表示完全风险规避，1 表示完全风险偏好
      */
     @Builder.Default
-    private double riskTolerance = 0.5;
+    private Double riskTolerance = 0.5;
 
     /**
      * 协作偏好

@@ -56,7 +56,7 @@ public class ChannelBinding {
      * 是否启用
      */
     @Builder.Default
-    private boolean enabled = true;
+    private Boolean enabled = true;
     /**
      * 扩展属性（如特定渠道的额外路由配置）
      */
@@ -78,6 +78,13 @@ public class ChannelBinding {
      */
     public static String createId(String channelName, String chatId) {
         return channelName + "_" + chatId;
+    }
+
+    /**
+     * 检查是否启用
+     */
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(enabled);
     }
 
 }

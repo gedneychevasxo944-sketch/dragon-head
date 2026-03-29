@@ -70,20 +70,20 @@ public class WorkspaceMember {
      * 影响任务分配优先级
      */
     @Builder.Default
-    private double weight = 1.0;
+    private Double weight = 1.0;
 
     /**
      * 调度优先级
      */
     @Builder.Default
-    private int priority = 0;
+    private Integer priority = 0;
 
     /**
      * 声誉积分
      * 影响角色晋升或权限
      */
     @Builder.Default
-    private int reputation = 0;
+    private Integer reputation = 0;
 
     /**
      * 资源配额
@@ -127,18 +127,18 @@ public class WorkspaceMember {
         /**
          * Token 预算配额
          */
-        private int tokenBudget;
+        private Integer tokenBudget;
 
         /**
          * 并发任务限制
          */
         @Builder.Default
-        private int maxConcurrentTasks = 5;
+        private Integer maxConcurrentTasks = 5;
 
         /**
          * 每日最大使用时长（分钟）
          */
         @Builder.Default
-        private int maxDailyMinutes = 480;
+        private Integer maxDailyMinutes = 480;
     }
 }
