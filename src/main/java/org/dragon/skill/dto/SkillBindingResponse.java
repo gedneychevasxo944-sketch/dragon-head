@@ -6,17 +6,17 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * Character 绑定的 Skill 响应 DTO。
+ * Skill 绑定响应 DTO（Workspace 维度）。
  *
  * @since 1.0
  */
 @Data
 @Builder
-public class CharacterSkillResponse {
+public class SkillBindingResponse {
 
     private Long id;
-    private String characterId;
-    private Long workspaceId;      // null 表示全局绑定
+    private Long workspaceId;       // null 表示全局绑定;
+    private String characterId;     // null 表示全局绑定;
 
     /** Skill 基础信息 */
     private Long skillId;
@@ -28,7 +28,7 @@ public class CharacterSkillResponse {
     private Integer pinnedVersion;
     private Boolean useLatest;
 
-    /** 当前 skill 的最新版本 */
+    /** 当前 skill 的最新版本（用于提示用户是否有新版本可用） */
     private Integer latestVersion;
 
     /** 是否有新版本可用 */

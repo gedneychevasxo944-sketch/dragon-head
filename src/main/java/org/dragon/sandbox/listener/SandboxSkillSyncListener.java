@@ -2,7 +2,7 @@ package org.dragon.sandbox.listener;
 
 import org.dragon.sandbox.domain.Sandbox;
 import org.dragon.sandbox.manager.SandboxManager;
-import org.dragon.skill.event.WorkspaceSkillChangedEvent;
+import org.dragon.skill.event.SkillBindingChangedEvent;
 import org.dragon.skill.service.SkillSandboxSupportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * Sandbox 文件同步监听器（第二层）。
  *
  * 职责：
- * 监听 WorkspaceSkillChangedEvent，
+ * 监听 SkillBindingChangedEvent，
  * 根据 actionType 对 sandbox 中的 skill 文件执行对应操作。
  *
  * 注意：只处理文件层面的操作，不涉及 registry 和 agent。
@@ -31,7 +31,7 @@ public class SandboxSkillSyncListener {
 
     @Async
     @EventListener
-    public void onWorkspaceSkillChanged(WorkspaceSkillChangedEvent event) {
+    public void onSkillBindingChanged(SkillBindingChangedEvent event) {
         // 若该 workspace 的 sandbox 尚未创建，无需处理（创建时会全量同步）
         Sandbox sandbox = sandboxManager.get(event.getWorkspaceId()).orElse(null);
         if (sandbox == null) {
@@ -54,7 +54,7 @@ public class SandboxSkillSyncListener {
     /**
      * 重新加载：删除旧版本文件，下载新版本文件。
      */
-    private void handleReload(WorkspaceSkillChangedEvent event, Sandbox sandbox) {
+    private void handleReload(SkillBindingChangedEvent event, Sandbox sandbox) {
         log.info("Sandbox 文件热更新: workspaceId={}, skillName={}, targetVersion={}",
                 event.getWorkspaceId(), event.getSkillName(), event.getTargetVersion());
         try {
@@ -72,7 +72,7 @@ public class SandboxSkillSyncListener {
     /**
      * 移除：删除 sandbox 中该 skill 的文件目录。
      */
-    private void handleRemove(WorkspaceSkillChangedEvent event, Sandbox sandbox) {
+    private void handleRemove(SkillBindingChangedEvent event, Sandbox sandbox) {
         log.info("Sandbox 移除 Skill 文件: workspaceId={}, skillName={}",
                 event.getWorkspaceId(), event.getSkillName());
         try {

@@ -13,6 +13,11 @@ import org.dragon.workspace.material.Material;
 import org.dragon.workspace.member.CharacterDuty;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.observer.actionlog.ObserverActionLogService;
+import org.dragon.skill.dto.SkillBindingRequest;
+import org.dragon.skill.dto.SkillBindingResponse;
+import org.dragon.skill.dto.SkillBindingUpdateRequest;
+import org.dragon.skill.entity.SkillEntity;
+import org.dragon.skill.service.SkillBindingService;
 import org.dragon.workspace.service.hiring.WorkspaceHiringService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
 import org.dragon.workspace.service.material.WorkspaceMaterialService;
@@ -55,6 +60,7 @@ public class WorkspaceApplication {
     private final TaskContinuationResolver taskContinuationResolver;
     private final TaskResumeTargetResolver taskResumeTargetResolver;
     private final WorkspaceTaskExecutionService taskExecutionService;
+    private final SkillBindingService skillBindingService;
 
     /**
      * 私有构造函数，通过 Builder 构建
@@ -73,6 +79,7 @@ public class WorkspaceApplication {
         this.taskContinuationResolver = builder.taskContinuationResolver;
         this.taskResumeTargetResolver = builder.taskResumeTargetResolver;
         this.taskExecutionService = builder.taskExecutionService;
+        this.skillBindingService = builder.skillBindingService;
     }
 
     // ==================== Workspace 生命周期管理委托 ====================
@@ -265,5 +272,36 @@ public class WorkspaceApplication {
 
     public List<Material> listMaterials(String workspaceId) {
         return materialService.listByWorkspace(workspaceId);
+    }
+
+    // ==================== 技能管理委托 ====================
+
+    /**
+     * 圈选一个 Skill 到 workspace。
+     */
+    public SkillBindingResponse bindSkill(Long workspaceId, SkillBindingRequest request) {
+        return skillBindingService.bindWorkspaceSkill(workspaceId, request);
+    }
+
+    /**
+     * 从 workspace 取消圈选一个 Skill。
+     */
+    public void unbindSkill(Long workspaceId, Long skillId) {
+        skillBindingService.unbindWorkspaceSkill(workspaceId, skillId);
+    }
+
+    /**
+     * 更新 workspace skill 绑定配置。
+     */
+    public SkillBindingResponse updateSkillBinding(Long workspaceId, Long skillId,
+                                                    SkillBindingUpdateRequest request) {
+        return skillBindingService.updateWorkspaceBinding(workspaceId, skillId, request);
+    }
+
+    /**
+     * 查询 workspace 已圈选的所有 Skill。
+     */
+    public List<SkillBindingResponse> listWorkspaceSkills(Long workspaceId) {
+        return skillBindingService.listWorkspaceSkills(workspaceId);
     }
 }

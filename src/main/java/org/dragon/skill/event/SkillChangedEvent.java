@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
  *
  * 注意：Skill 是公共资源，不归属任何 workspace。
  * 此事件只标识"哪个 skill 发生了变更"，不包含 workspace 信息。
- * 由 SkillChangeListener 查询 workspace_skill 关联表确定影响范围后，
- * 再发布 WorkspaceSkillChangedEvent。
+ * 由 SkillChangeListener 查询 skill_bind 关联表确定影响范围后，
+ * 再发布 SkillBindingChangedEvent。
  *
  * @since 1.0
  */

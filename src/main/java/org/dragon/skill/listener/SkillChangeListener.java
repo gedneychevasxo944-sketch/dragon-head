@@ -1,12 +1,11 @@
 package org.dragon.skill.listener;
 
-import org.dragon.skill.entity.WorkspaceSkillEntity;
+import org.dragon.skill.entity.SkillBindingEntity;
+import org.dragon.skill.enums.BindType;
 import org.dragon.skill.event.SkillChangedEvent;
 import org.dragon.skill.event.SkillEventPublisher;
-import org.dragon.skill.event.WorkspaceSkillChangedEvent;
-import org.dragon.skill.service.SkillLoaderService;
-import org.dragon.skill.store.WorkspaceSkillStore;
-import org.dragon.store.StoreFactory;
+import org.dragon.skill.event.SkillBindingChangedEvent;
+import org.dragon.skill.store.SkillBindingStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -20,9 +19,9 @@ import java.util.List;
  *
  * 职责：
  * 1. 接收 SkillChangedEvent（skill 维度的变更）
- * 2. 查询 workspace_skill 关联表，确定受影响的 workspace 范围
+ * 2. 查询 skill_bind 关联表，确定受影响的 workspace 范围
  * 3. 根据变更类型和 useLatest 策略，为每个受影响的 workspace
- *    发布 WorkspaceSkillChangedEvent（workspace 维度的变更）
+ *    发布 SkillBindingChangedEvent（workspace 维度的变更）
  *
  * 注意：此监听器只做"事件路由"，不直接操作 sandbox 或 registry，
  * 具体操作由下游监听器完成，保持职责单一。
@@ -35,8 +34,7 @@ import java.util.List;
 public class SkillChangeListener {
 
     private final SkillEventPublisher eventPublisher;
-    private final SkillLoaderService loaderService;
-    private final WorkspaceSkillStore workspaceSkillStore;
+    private final SkillBindingStore skillBindingStore;
 
     @Async
     @EventListener
@@ -63,8 +61,11 @@ public class SkillChangeListener {
      * - useLatest=false 的 workspace → 不通知（锁定版本，不受影响）
      */
     private void handleVersionUpdated(SkillChangedEvent event) {
-        List<WorkspaceSkillEntity> followers =
-                workspaceSkillStore.findAllUseLatestBySkillId(event.getSkillId());
+        List<SkillBindingEntity> followers =
+                skillBindingStore.findAllUseLatestBySkillId(event.getSkillId())
+                        .stream()
+                        .filter(bind -> bind.getBindType() == BindType.WORKSPACE)
+                        .toList();
 
         if (followers.isEmpty()) {
             log.info("Skill [{}] 无 useLatest=true 的 workspace 订阅，跳过通知",
@@ -76,11 +77,11 @@ public class SkillChangeListener {
                 event.getSkillName(), followers.size());
 
         followers.forEach(ws ->
-                eventPublisher.publishWorkspaceSkillChanged(
+                eventPublisher.publishSkillBindingChanged(
                         ws.getWorkspaceId(),
                         event.getSkillId(),
                         event.getSkillName(),
-                        WorkspaceSkillChangedEvent.ActionType.RELOAD,
+                        SkillBindingChangedEvent.ActionType.RELOAD,
                         event.getVersion()   // 目标版本 = 最新版本
                 )
         );
@@ -95,17 +96,17 @@ public class SkillChangeListener {
      */
     private void handleMetaUpdated(SkillChangedEvent event) {
         List<Long> affectedWorkspaces =
-                workspaceSkillStore.findWorkspaceIdsBySkillId(event.getSkillId());
+                skillBindingStore.findWorkspaceIdsBySkillId(event.getSkillId());
 
         log.info("Skill [{}] 元数据更新，通知 {} 个 workspace 刷新 Prompt",
                 event.getSkillName(), affectedWorkspaces.size());
 
         affectedWorkspaces.forEach(wsId ->
-                eventPublisher.publishWorkspaceSkillChanged(
+                eventPublisher.publishSkillBindingChanged(
                         wsId,
                         event.getSkillId(),
                         event.getSkillName(),
-                        WorkspaceSkillChangedEvent.ActionType.REFRESH_PROMPT,
+                        SkillBindingChangedEvent.ActionType.REFRESH_PROMPT,
                         null
                 )
         );
@@ -119,17 +120,17 @@ public class SkillChangeListener {
      */
     private void handleDeleted(SkillChangedEvent event) {
         List<Long> affectedWorkspaces =
-                workspaceSkillStore.findWorkspaceIdsBySkillId(event.getSkillId());
+                skillBindingStore.findWorkspaceIdsBySkillId(event.getSkillId());
 
         log.info("Skill [{}] 已删除，通知 {} 个 workspace 移除",
                 event.getSkillName(), affectedWorkspaces.size());
 
         affectedWorkspaces.forEach(wsId ->
-                eventPublisher.publishWorkspaceSkillChanged(
+                eventPublisher.publishSkillBindingChanged(
                         wsId,
                         event.getSkillId(),
                         event.getSkillName(),
-                        WorkspaceSkillChangedEvent.ActionType.REMOVE,
+                        SkillBindingChangedEvent.ActionType.REMOVE,
                         null
                 )
         );
@@ -141,17 +142,17 @@ public class SkillChangeListener {
      */
     private void handleDisabled(SkillChangedEvent event) {
         List<Long> affectedWorkspaces =
-                workspaceSkillStore.findWorkspaceIdsBySkillId(event.getSkillId());
+                skillBindingStore.findWorkspaceIdsBySkillId(event.getSkillId());
 
         log.info("Skill [{}] 已全局禁用，通知 {} 个 workspace 移除",
                 event.getSkillName(), affectedWorkspaces.size());
 
         affectedWorkspaces.forEach(wsId ->
-                eventPublisher.publishWorkspaceSkillChanged(
+                eventPublisher.publishSkillBindingChanged(
                         wsId,
                         event.getSkillId(),
                         event.getSkillName(),
-                        WorkspaceSkillChangedEvent.ActionType.REMOVE,
+                        SkillBindingChangedEvent.ActionType.REMOVE,
                         null
                 )
         );
@@ -166,18 +167,21 @@ public class SkillChangeListener {
      * - 两者都需要重新加载，因为之前 REMOVE 时已从运行时移除
      */
     private void handleActivated(SkillChangedEvent event) {
-        List<WorkspaceSkillEntity> allBindings =
-                workspaceSkillStore.findAllEnabledBySkillId(event.getSkillId());
+        List<SkillBindingEntity> allBindings =
+                skillBindingStore.findAllEnabledBySkillId(event.getSkillId())
+                        .stream()
+                        .filter(bind -> bind.getBindType() == BindType.WORKSPACE)
+                        .toList();
 
         log.info("Skill [{}] 重新激活，通知 {} 个 workspace 重新加载",
                 event.getSkillName(), allBindings.size());
 
         allBindings.forEach(ws ->
-                eventPublisher.publishWorkspaceSkillChanged(
+                eventPublisher.publishSkillBindingChanged(
                         ws.getWorkspaceId(),
                         event.getSkillId(),
                         event.getSkillName(),
-                        WorkspaceSkillChangedEvent.ActionType.RELOAD,
+                        SkillBindingChangedEvent.ActionType.RELOAD,
                         ws.getPinnedVersion()  // 各 workspace 使用自己锁定的版本
                 )
         );

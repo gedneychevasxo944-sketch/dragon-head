@@ -3,7 +3,9 @@ package org.dragon.skill.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.skill.SkillFrontmatterParser;
+import org.dragon.skill.entity.SkillBindingEntity;
 import org.dragon.skill.entity.SkillEntity;
+import org.dragon.skill.enums.BindType;
 import org.dragon.skill.model.Skill;
 import org.dragon.skill.model.SkillEntry;
 import org.dragon.skill.model.SkillInstallSpec;
@@ -12,6 +14,7 @@ import org.dragon.skill.model.SkillRequires;
 import org.dragon.skill.registry.SkillRuntimeEntry;
 import org.dragon.skill.registry.SkillRuntimeState;
 import org.dragon.skill.registry.SkillRegistry;
+import org.dragon.skill.store.SkillBindingStore;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.store.StoreFactory;
 import org.dragon.util.GsonUtils;
@@ -34,7 +37,7 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
 
     private final SkillRegistry skillRegistry;
     private final StoreFactory storeFactory;
-    private final org.dragon.skill.store.WorkspaceSkillStore workspaceSkillStore;
+    private final SkillBindingStore skillBindingStore;
 
     private SkillStore getSkillStore() {
         return storeFactory.get(SkillStore.class);
@@ -64,8 +67,8 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     @Override
     public void loadByWorkspace(Long workspaceId) {
         log.info("按工作空间加载 Skill: workspaceId={}", workspaceId);
-        List<org.dragon.skill.entity.WorkspaceSkillEntity> entities = workspaceSkillStore.findAllEnabledByWorkspace(workspaceId);
-        for (org.dragon.skill.entity.WorkspaceSkillEntity wsEntity : entities) {
+        List<SkillBindingEntity> entities = skillBindingStore.findAllEnabledByWorkspace(workspaceId);
+        for (SkillBindingEntity wsEntity : entities) {
             SkillEntity entity = wsEntity.getSkill();
             // 若该 Skill 已在注册表中，跳过重复加载
             if (skillRegistry.findById(entity.getId()).isPresent()) {
@@ -216,13 +219,13 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     @Override
     public void loadAllForWorkspace(Long workspaceId) {
         log.info("加载 workspace 圈选的 Skill: workspaceId={}", workspaceId);
-        List<org.dragon.skill.entity.WorkspaceSkillEntity> bindings =
-                workspaceSkillStore.findAllEnabledByWorkspace(workspaceId);
+        List<SkillBindingEntity> bindings =
+                skillBindingStore.findAllEnabledByWorkspace(workspaceId);
 
         log.info("加载 workspace 圈选的 Skill: workspaceId={}, count={}",
                 workspaceId, bindings.size());
 
-        for (org.dragon.skill.entity.WorkspaceSkillEntity binding : bindings) {
+        for (SkillBindingEntity binding : bindings) {
             loadSkillForWorkspace(
                     binding.getSkill(),
                     workspaceId,
@@ -294,8 +297,8 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     @Override
     public void loadAllForCharacter(String characterId, Long workspaceId) {
         log.info("加载 character 绑定的 Skill: characterId={}, workspaceId={}", characterId, workspaceId);
-        // TODO: 从 SkillBindStore 获取 character 绑定的 skills
-        // 需要在 SkillBindStore 完成后调用
+        // TODO: 从 SkillBindingStore 获取 character 绑定的 skills
+        // 需要在 SkillBindingStore 完成后调用
     }
 
     @Override

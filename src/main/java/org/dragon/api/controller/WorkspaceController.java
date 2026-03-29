@@ -2,6 +2,9 @@ package org.dragon.api.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.dragon.skill.dto.SkillBindingRequest;
+import org.dragon.skill.dto.SkillBindingResponse;
+import org.dragon.skill.dto.SkillBindingUpdateRequest;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.workspace.Workspace;
@@ -239,5 +242,46 @@ public class WorkspaceController {
             @PathVariable String materialId) {
         app(workspaceId).deleteMaterial(workspaceId, materialId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================== Skill 圈选管理 ====================
+
+    @Operation(summary = "查询 workspace 已圈选的所有 Skill")
+    @GetMapping("/{workspaceId}/skills")
+    public ResponseEntity<List<SkillBindingResponse>> listSkills(
+            @PathVariable String workspaceId) {
+        List<SkillBindingResponse> list = app(workspaceId).listWorkspaceSkills(
+                Long.parseLong(workspaceId));
+        return ResponseEntity.ok(list);
+    }
+
+    @Operation(summary = "为 workspace 圈选一个 Skill")
+    @PostMapping("/{workspaceId}/skills")
+    public ResponseEntity<SkillBindingResponse> bindSkill(
+            @PathVariable String workspaceId,
+            @RequestBody SkillBindingRequest request) {
+        SkillBindingResponse response = app(workspaceId).bindSkill(
+                Long.parseLong(workspaceId), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "从 workspace 取消圈选 Skill")
+    @DeleteMapping("/{workspaceId}/skills/{skillId}")
+    public ResponseEntity<Void> unbindSkill(
+            @PathVariable String workspaceId,
+            @PathVariable Long skillId) {
+        app(workspaceId).unbindSkill(Long.parseLong(workspaceId), skillId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "更新 workspace skill 绑定配置")
+    @PutMapping("/{workspaceId}/skills/{skillId}")
+    public ResponseEntity<SkillBindingResponse> updateSkillBinding(
+            @PathVariable String workspaceId,
+            @PathVariable Long skillId,
+            @RequestBody SkillBindingUpdateRequest request) {
+        SkillBindingResponse response = app(workspaceId).updateSkillBinding(
+                Long.parseLong(workspaceId), skillId, request);
+        return ResponseEntity.ok(response);
     }
 }

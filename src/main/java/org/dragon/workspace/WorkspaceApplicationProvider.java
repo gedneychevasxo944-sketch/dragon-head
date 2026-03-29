@@ -5,6 +5,7 @@ import org.dragon.character.CharacterRegistry;
 import org.dragon.observer.actionlog.ObserverActionLogService;
 import org.dragon.store.StoreFactory;
 import org.dragon.task.TaskStore;
+import org.dragon.skill.service.SkillBindingService;
 import org.dragon.workspace.service.hiring.WorkspaceHiringService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
 import org.dragon.workspace.service.material.WorkspaceMaterialService;
@@ -47,6 +48,7 @@ public class WorkspaceApplicationProvider {
     private final TaskContinuationResolver taskContinuationResolver;
     private final TaskResumeTargetResolver taskResumeTargetResolver;
     private final WorkspaceTaskExecutionService taskExecutionService;
+    private final SkillBindingService skillBindingService;
 
     /**
      * WorkspaceApplication 缓存，避免每次 new 一个新实例
@@ -76,6 +78,7 @@ public class WorkspaceApplicationProvider {
                 .taskContinuationResolver(taskContinuationResolver)
                 .taskResumeTargetResolver(taskResumeTargetResolver)
                 .taskExecutionService(taskExecutionService)
+                .skillBindingService(skillBindingService)
                 .build());
     }
 
