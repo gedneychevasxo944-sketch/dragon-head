@@ -1,6 +1,7 @@
 package org.dragon.sandbox.executor;
 
 import org.dragon.sandbox.domain.*;
+import org.dragon.sandbox.manager.SandboxManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,7 @@ import java.util.concurrent.*;
 @RequiredArgsConstructor
 public class SandboxExecutor {
 
-    private final org.dragon.sandbox.manager.SandboxManager sandboxManager;
+    private final SandboxManager sandboxManager;
 
     /**
      * 在指定 workspace 的 sandbox 中执行命令。
