@@ -102,13 +102,15 @@ public interface SkillRegistry {
      */
     Collection<SkillRuntimeEntry> findAll();
 
+    //TODO 还需要处理一下渐进式披露的逻辑（根据上下文进行skill内容检索）
+
     /**
      * 获取指定工作空间的 System Prompt Fragment。
      * 包含：该工作空间专属 Skill + 所有内置 Skill（workspaceId=0）。
      *
      * @param workspaceId 工作空间 ID
      */
-    String buildSystemPromptFragment(long workspaceId);
+    String buildSystemPromptFragment(String characterId, long workspaceId);
 
     /**
      * 获取所有 Skill 的运行时状态快照（用于监控）。

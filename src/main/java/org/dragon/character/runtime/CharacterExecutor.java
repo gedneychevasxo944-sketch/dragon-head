@@ -2,21 +2,16 @@ package org.dragon.character.runtime;
 
 import java.util.UUID;
 
-import org.dragon.agent.model.ModelRegistry;
 import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActContext;
-import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.react.ReActResult;
 import org.dragon.agent.workflow.Workflow;
-import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowResult;
-import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.config.CharacterExecutorConfig;
 import org.dragon.character.mind.DefaultMind;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.config.PromptKeys;
-import org.dragon.config.PromptManager;
 import org.dragon.skill.SkillAccess;
 import org.dragon.skill.SkillAccessImpl;
 import org.dragon.task.Task;
@@ -215,8 +210,8 @@ public class CharacterExecutor {
 
     private String resolveSystemPrompt() {
         String prompt = "";
+        String workspace = resolveWorkspace();
         if (runtime.getPromptManager() != null) {
-            String workspace = resolveWorkspace();
             prompt = runtime.getPromptManager().getPrompt(workspace, profile.getId(), PromptKeys.CHARACTER_SYSTEM);
         }
         if (prompt == null || prompt.isEmpty()) {
@@ -225,6 +220,8 @@ public class CharacterExecutor {
                 prompt = currentMind.getPersonality().toPrompt();
             }
         }
+        // 增加skill的prompt
+        prompt += runtime.getSkillRegistry().buildSystemPromptFragment(profile.getId(), Long.parseLong(workspace));
         return prompt != null ? prompt : "";
     }
 

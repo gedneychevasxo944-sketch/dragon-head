@@ -83,38 +83,4 @@ public class SkillController {
         skillManageService.enableSkill(id);
         return ResponseEntity.ok().build();
     }
-
-    @Operation(summary = "手动重新加载 Skill")
-    @PostMapping("/{id}/reload")
-    public ResponseEntity<Void> reloadSkill(@PathVariable Long id) {
-        skillManageService.reloadSkill(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @Operation(summary = "获取所有 Skill 运行时状态快照")
-    @GetMapping("/runtime-state")
-    public ResponseEntity<Map<String, SkillRuntimeState>> getRuntimeStateSnapshot() {
-        return ResponseEntity.ok(skillManageService.getRuntimeStateSnapshot());
-    }
-
-    @Operation(summary = "重试所有 FAILED 状态的 Skill")
-    @PostMapping("/retry-failed")
-    public ResponseEntity<Void> retryFailedSkills() {
-        skillManageService.retryFailedSkills();
-        return ResponseEntity.ok().build();
-    }
-
-    @Operation(summary = "全量重新加载")
-    @PostMapping("/full-reload")
-    public ResponseEntity<Void> fullReload() {
-        skillManageService.fullReload();
-        return ResponseEntity.ok().build();
-    }
-
-    @Operation(summary = "获取当前 System Prompt Fragment")
-    @GetMapping("/system-prompt")
-    public ResponseEntity<String> getSystemPromptFragment(
-            @RequestParam(defaultValue = "0") long workspaceId) {
-        return ResponseEntity.ok(skillManageService.getSystemPromptFragment(workspaceId));
-    }
 }

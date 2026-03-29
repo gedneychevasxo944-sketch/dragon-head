@@ -176,8 +176,8 @@ public class InMemorySkillRegistry implements SkillRegistry {
     }
 
     @Override
-    public String buildSystemPromptFragment(long workspaceId) {
-        Collection<SkillRuntimeEntry> entries = findAllActiveByWorkspace(workspaceId);
+    public String buildSystemPromptFragment(String characterId, long workspaceId) {
+        Collection<SkillRuntimeEntry> entries = findAllActiveByCharacter(characterId, workspaceId);
         if (entries.isEmpty()) {
             return "";
         }
