@@ -128,6 +128,22 @@ public class DeepseekLLMCaller implements LLMCaller {
 
         body.add("messages", messages);
 
+        // 工具列表（用于 tool_call 模式）
+        if (request.getTools() != null && !request.getTools().isEmpty()) {
+            JsonArray toolsArray = new JsonArray();
+            for (Map<String, Object> tool : request.getTools()) {
+                JsonObject toolObj = new JsonObject();
+                toolObj.addProperty("type", "function");
+                JsonObject functionObj = new JsonObject();
+                functionObj.addProperty("name", String.valueOf(tool.get("name")));
+                functionObj.addProperty("description", String.valueOf(tool.get("description")));
+                functionObj.add("parameters", gson.toJsonTree(tool.get("input_schema")));
+                toolObj.add("function", functionObj);
+                toolsArray.add(toolObj);
+            }
+            body.add("tools", toolsArray);
+        }
+
         // 可选参数
         if (request.getTemperature() != null) {
             body.addProperty("temperature", request.getTemperature());

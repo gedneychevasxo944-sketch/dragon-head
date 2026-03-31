@@ -6,6 +6,7 @@ import org.dragon.skill.SkillFrontmatterParser;
 import org.dragon.skill.entity.SkillBindingEntity;
 import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.enums.BindType;
+import org.dragon.skill.filter.SkillFilter;
 import org.dragon.skill.model.Skill;
 import org.dragon.skill.model.SkillEntry;
 import org.dragon.skill.model.SkillInstallSpec;
@@ -38,6 +39,7 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
     private final SkillRegistry skillRegistry;
     private final StoreFactory storeFactory;
     private final SkillBindingStore skillBindingStore;
+    private final SkillFilter skillFilter;
 
     private SkillStore getSkillStore() {
         return storeFactory.get(SkillStore.class);
@@ -116,16 +118,19 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                     .metadata(metadata)
                     .build();
 
-            // 依赖检查（仍然需要，检查运行环境）
-            Optional<String> requiresError = checkRequires(entry);
-
             SkillRuntimeEntry runtimeEntry = SkillRuntimeEntry.builder()
                     .skillEntry(entry)
                     .workspaceId(null)  // 系统级别加载，不关联特定 workspace
                     .stateChangedAt(LocalDateTime.now())
-                    .state(requiresError.isPresent() ? SkillRuntimeState.FAILED : SkillRuntimeState.ACTIVE)
-                    .errorMessage(requiresError.orElse(null))
                     .build();
+
+            // 使用 SkillFilter 进行环境检查
+            if (!skillFilter.shouldInclude(runtimeEntry)) {
+                runtimeEntry.setState(SkillRuntimeState.FAILED);
+                runtimeEntry.setErrorMessage("Environment requirements not met");
+            } else {
+                runtimeEntry.setState(SkillRuntimeState.ACTIVE);
+            }
 
             skillRegistry.register(runtimeEntry);
 
@@ -194,15 +199,19 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                     .metadata(metadata)
                     .build();
 
-            Optional<String> requiresError = checkRequires(entry);
-
             SkillRuntimeEntry runtimeEntry = SkillRuntimeEntry.builder()
                     .skillEntry(entry)
                     .workspaceId(workspaceId)
                     .stateChangedAt(LocalDateTime.now())
-                    .state(requiresError.isPresent() ? SkillRuntimeState.FAILED : SkillRuntimeState.ACTIVE)
-                    .errorMessage(requiresError.orElse(null))
                     .build();
+
+            // 使用 SkillFilter 进行环境检查
+            if (!skillFilter.shouldInclude(runtimeEntry)) {
+                runtimeEntry.setState(SkillRuntimeState.FAILED);
+                runtimeEntry.setErrorMessage("Environment requirements not met");
+            } else {
+                runtimeEntry.setState(SkillRuntimeState.ACTIVE);
+            }
 
             // 注册到 workspace 分区
             skillRegistry.registerForWorkspace(workspaceId, runtimeEntry);
@@ -271,16 +280,20 @@ public class SkillLoaderServiceImpl implements SkillLoaderService {
                     .metadata(metadata)
                     .build();
 
-            Optional<String> requiresError = checkRequires(entry);
-
             SkillRuntimeEntry runtimeEntry = SkillRuntimeEntry.builder()
                     .skillEntry(entry)
                     .workspaceId(workspaceId)
                     .characterId(characterId)
                     .stateChangedAt(LocalDateTime.now())
-                    .state(requiresError.isPresent() ? SkillRuntimeState.FAILED : SkillRuntimeState.ACTIVE)
-                    .errorMessage(requiresError.orElse(null))
                     .build();
+
+            // 使用 SkillFilter 进行环境检查
+            if (!skillFilter.shouldInclude(runtimeEntry)) {
+                runtimeEntry.setState(SkillRuntimeState.FAILED);
+                runtimeEntry.setErrorMessage("Environment requirements not met");
+            } else {
+                runtimeEntry.setState(SkillRuntimeState.ACTIVE);
+            }
 
             // 注册到 character 分区
             skillRegistry.registerForCharacter(characterId, workspaceId, runtimeEntry);

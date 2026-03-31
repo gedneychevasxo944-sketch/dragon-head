@@ -34,4 +34,6 @@ public class SkillMetadata {
     SkillRequires requires;
     /** 技能安装规范列表 */
     List<SkillInstallSpec> install;
+    /** 允许使用的工具列表（用于 Skill 级工具过滤） */
+    List<String> allowedTools;
 }

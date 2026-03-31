@@ -136,6 +136,12 @@ public class ReActContext {
     @Builder.Default
     private Set<String> allowedTools = new HashSet<>();
 
+    /**
+     * 当前激活的 Skill 列表（用于工具过滤）
+     */
+    @Builder.Default
+    private List<org.dragon.skill.registry.SkillRuntimeEntry> activeSkills = new ArrayList<>();
+
     // ==================== 协作上下文字段 ====================
 
     /**

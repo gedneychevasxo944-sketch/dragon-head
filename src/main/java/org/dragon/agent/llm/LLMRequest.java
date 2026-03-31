@@ -36,6 +36,11 @@ public class LLMRequest {
     private String systemPrompt;
 
     /**
+     * 工具列表（用于 tool_call 模式）
+     */
+    private List<Map<String, Object>> tools;
+
+    /**
      * 温度
      */
     private Double temperature;

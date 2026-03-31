@@ -14,6 +14,7 @@ import org.dragon.character.profile.CharacterProfile;
 import org.dragon.config.PromptKeys;
 import org.dragon.skill.SkillAccess;
 import org.dragon.skill.SkillAccessImpl;
+import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.task.Task;
 
 import lombok.Builder;
@@ -110,6 +111,8 @@ public class CharacterExecutor {
         int maxIterations = resolveMaxIterations();
 
         String systemPrompt = resolveSystemPrompt();
+        String workspace = resolveWorkspace();
+        Long workspaceId = workspace != null ? Long.parseLong(workspace) : null;
 
         ReActContext.ReActContextBuilder contextBuilder = ReActContext.builder()
                 .executionId(UUID.randomUUID().toString())
@@ -121,7 +124,8 @@ public class CharacterExecutor {
                 .maxIterations(maxIterations)
                 .streamingEnabled(streaming)
                 .task(task)
-                .allowedTools(profile.getAllowedTools());
+                .allowedTools(profile.getAllowedTools())
+                .activeSkills(resolveActiveSkills(workspaceId));
 
         if (bridgeContext != null) {
             boolean collaborationEnabled = bridgeContext.isCollaborationJudgementEnabled();
@@ -230,6 +234,20 @@ public class CharacterExecutor {
             return profile.getWorkspaceIds().get(0);
         }
         return null;
+    }
+
+    /**
+     * 解析当前激活的 Skills 列表。
+     *
+     * @param workspaceId 工作空间 ID（可能为 null）
+     * @return 激活的 SkillRuntimeEntry 列表
+     */
+    private java.util.List<org.dragon.skill.registry.SkillRuntimeEntry> resolveActiveSkills(Long workspaceId) {
+        if (workspaceId == null || runtime.getSkillRegistry() == null) {
+            return java.util.Collections.emptyList();
+        }
+        SkillRegistry registry = runtime.getSkillRegistry();
+        return new java.util.ArrayList<>(registry.findAllActiveByCharacter(profile.getId(), workspaceId));
     }
 
     private Mind getMind() {

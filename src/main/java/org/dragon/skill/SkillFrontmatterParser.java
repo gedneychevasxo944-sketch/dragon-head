@@ -254,15 +254,16 @@ public class SkillFrontmatterParser {
                 return null;
 
             JsonObject metaObj = meta.getAsJsonObject();
-            return new SkillMetadata(
-                    hasAndTrue(metaObj, "always") ? true : null,
-                    textOrNull(metaObj, "skillKey"),
-                    textOrNull(metaObj, "primaryEnv"),
-                    textOrNull(metaObj, "emoji"),
-                    textOrNull(metaObj, "homepage"),
-                    stringList(metaObj, "os"),
-                    resolveRequires(metaObj),
-                    null);
+            return SkillMetadata.builder()
+                    .always(hasAndTrue(metaObj, "always") ? true : null)
+                    .skillKey(textOrNull(metaObj, "skillKey"))
+                    .primaryEnv(textOrNull(metaObj, "primaryEnv"))
+                    .emoji(textOrNull(metaObj, "emoji"))
+                    .homepage(textOrNull(metaObj, "homepage"))
+                    .os(stringList(metaObj, "os"))
+                    .requires(resolveRequires(metaObj))
+                    .allowedTools(stringList(metaObj, "allowedTools"))
+                    .build();
         } catch (Exception e) {
             log.debug("解析技能元数据失败: {}", e.getMessage());
             return null;
