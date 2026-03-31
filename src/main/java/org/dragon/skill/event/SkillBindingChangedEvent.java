@@ -6,10 +6,10 @@ import org.springframework.context.ApplicationEvent;
 import java.time.LocalDateTime;
 
 /**
- * Workspace 维度的 Skill 变更事件。
+ * Skill 绑定变更事件（Workspace 维度）。
  *
  * 由 SkillChangeListener 在处理 SkillChangedEvent 后，
- * 查询 workspace_skill 关联表确定影响范围，再为每个受影响的 workspace 发布此事件。
+ * 查询 skill_bind 关联表确定影响范围，再为每个受影响的 workspace 发布此事件。
  *
  * 消费者：
  * - SandboxSkillSyncListener：负责刷新 sandbox 中的 skill 文件
@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * @since 1.0
  */
 @Getter
-public class WorkspaceSkillChangedEvent extends ApplicationEvent {
+public class SkillBindingChangedEvent extends ApplicationEvent {
 
     /**
      * Workspace 应执行的动作类型。
@@ -46,13 +46,13 @@ public class WorkspaceSkillChangedEvent extends ApplicationEvent {
 
     /**
      * 需要加载的目标版本（actionType=RELOAD 时有效）。
-     * 来自 workspace_skill.pinnedVersion（已被 WorkspaceSkillService 更新为最新）。
+     * 来自 skill_bind.pinnedVersion（已被 SkillBindingService 更新为最新）。
      */
     private final Integer targetVersion;
 
     private final LocalDateTime occurredAt;
 
-    public WorkspaceSkillChangedEvent(Object source, Long workspaceId, Long skillId,
+    public SkillBindingChangedEvent(Object source, Long workspaceId, Long skillId,
                                        String skillName, ActionType actionType,
                                        Integer targetVersion) {
         super(source);

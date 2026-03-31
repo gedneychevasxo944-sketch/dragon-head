@@ -1,10 +1,10 @@
 package org.dragon.skill.listener;
 
-import org.dragon.skill.event.WorkspaceSkillChangedEvent;
+import org.dragon.skill.event.SkillBindingChangedEvent;
 import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.service.SkillLoaderService;
+import org.dragon.skill.store.SkillBindingStore;
 import org.dragon.skill.store.SkillStore;
-import org.dragon.skill.store.WorkspaceSkillStore;
 import org.dragon.store.StoreFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  * Agent 运行时 Skill 刷新监听器（第二层）。
  *
  * 职责：
- * 监听 WorkspaceSkillChangedEvent，
+ * 监听 SkillBindingChangedEvent，
  * 根据 actionType 更新 SkillRegistry 中对应 workspace 的运行时状态，
  * 使 Agent 下次构建 System Prompt 时能获取到最新内容。
  *
@@ -32,7 +32,7 @@ public class AgentSkillRefreshListener {
     private final SkillRegistry skillRegistry;
     private final SkillLoaderService loaderService;
     private final StoreFactory storeFactory;
-    private final WorkspaceSkillStore workspaceSkillStore;
+    private final SkillBindingStore skillBindingStore;
 
     private SkillStore getSkillStore() {
         return storeFactory.get(SkillStore.class);
@@ -40,8 +40,8 @@ public class AgentSkillRefreshListener {
 
     @Async
     @EventListener
-    public void onWorkspaceSkillChanged(WorkspaceSkillChangedEvent event) {
-        log.info("收到 WorkspaceSkill 变更事件: workspaceId={}, skillName={}, action={}",
+    public void onSkillBindingChanged(SkillBindingChangedEvent event) {
+        log.info("收到 SkillBinding 变更事件: workspaceId={}, skillName={}, action={}",
                 event.getWorkspaceId(), event.getSkillName(), event.getActionType());
 
         switch (event.getActionType()) {
@@ -55,7 +55,7 @@ public class AgentSkillRefreshListener {
      * 重新加载：从数据库重新构建 SkillEntry，更新 workspace 注册表分区。
      * 文件已由 SandboxSkillSyncListener 更新，此处只更新运行时对象。
      */
-    private void handleReload(WorkspaceSkillChangedEvent event) {
+    private void handleReload(SkillBindingChangedEvent event) {
         log.info("刷新 workspace 运行时 Skill: workspaceId={}, skillName={}, version={}",
                 event.getWorkspaceId(), event.getSkillName(), event.getTargetVersion());
 
@@ -74,13 +74,13 @@ public class AgentSkillRefreshListener {
      * 但 skill_description 或 skill_content 可能已更新，
      * 需要重新从数据库加载最新内容到注册表。
      */
-    private void handleRefreshPrompt(WorkspaceSkillChangedEvent event) {
+    private void handleRefreshPrompt(SkillBindingChangedEvent event) {
         log.info("刷新 workspace System Prompt: workspaceId={}, skillName={}",
                 event.getWorkspaceId(), event.getSkillName());
 
         // 查询该 workspace 对此 skill 的锁定版本
-        workspaceSkillStore
-                .findByWorkspaceIdAndSkillId(event.getWorkspaceId(), event.getSkillId())
+        skillBindingStore
+                .findByWorkspaceAndSkill(event.getWorkspaceId(), event.getSkillId())
                 .ifPresent(binding ->
                         getSkillStore().findById(event.getSkillId()).ifPresent(skill ->
                                 loaderService.loadSkillForWorkspace(
@@ -95,7 +95,7 @@ public class AgentSkillRefreshListener {
     /**
      * 移除：从 workspace 注册表分区中注销该 skill。
      */
-    private void handleRemove(WorkspaceSkillChangedEvent event) {
+    private void handleRemove(SkillBindingChangedEvent event) {
         log.info("从 workspace 运行时移除 Skill: workspaceId={}, skillName={}",
                 event.getWorkspaceId(), event.getSkillName());
 

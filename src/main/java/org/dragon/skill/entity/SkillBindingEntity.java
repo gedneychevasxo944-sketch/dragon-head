@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
         columnNames = {"skill_id", "bind_type", "workspace_id", "character_id"}
     )
 )
-public class SkillBindEntity {
+public class SkillBindingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

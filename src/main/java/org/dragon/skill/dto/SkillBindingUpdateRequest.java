@@ -3,12 +3,12 @@ package org.dragon.skill.dto;
 import lombok.Data;
 
 /**
- * 更新 Workspace Skill 关联配置请求。
+ * 更新 Skill 绑定配置请求（Workspace 维度）。
  *
  * @since 1.0
  */
 @Data
-public class WorkspaceSkillUpdateRequest {
+public class SkillBindingUpdateRequest {
 
     /** 更新版本跟随策略 */
     private Boolean useLatest;

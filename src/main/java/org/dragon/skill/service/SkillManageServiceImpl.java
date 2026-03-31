@@ -273,49 +273,6 @@ public class SkillManageServiceImpl implements SkillManageService {
         log.info("Skill 已启用: id={}, name={}", skillId, entity.getName());
     }
 
-    @Override
-    public void reloadSkill(Long skillId) {
-        requireActiveSkill(skillId);
-        loaderService.reloadSkill(skillId);
-        log.info("Skill 手动重新加载触发: id={}", skillId);
-    }
-
-    @Override
-    public Map<String, SkillRuntimeState> getRuntimeStateSnapshot() {
-        return skillRegistry.getRuntimeStateSnapshot();
-    }
-
-    @Override
-    public void retryFailedSkills() {
-        Map<String, SkillRuntimeState> snapshot = skillRegistry.getRuntimeStateSnapshot();
-        List<String> failedNames = snapshot.entrySet().stream()
-                .filter(e -> e.getValue() == SkillRuntimeState.FAILED)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-
-        log.info("开始重试 {} 个 FAILED 状态的 Skill", failedNames.size());
-        for (String name : failedNames) {
-            getSkillStore().findByName(name).ifPresent(entity -> {
-                log.info("重试加载 Skill: id={}, name={}", entity.getId(), entity.getName());
-                skillRegistry.unregister(name); // 先清除旧的 FAILED 记录
-                loaderService.loadSkill(entity);
-            });
-        }
-    }
-
-    @Override
-    public void fullReload() {
-        log.info("开始全量重新加载 Skill...");
-        skillRegistry.clear();
-        loaderService.loadAll();
-        log.info("全量重新加载完成，当前注册数量: {}", skillRegistry.size());
-    }
-
-    @Override
-    public String getSystemPromptFragment(long workspaceId) {
-        return skillRegistry.buildSystemPromptFragment(workspaceId);
-    }
-
     // ==================== 私有工具方法 ====================
 
     private SkillEntity requireActiveSkill(Long skillId) {

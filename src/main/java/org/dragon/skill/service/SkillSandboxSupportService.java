@@ -169,17 +169,6 @@ public class SkillSandboxSupportService {
     }
 
     /**
-     * 获取指定 workspace 的 System Prompt Fragment。
-     * 由 Agent 在构建 LLM 上下文时调用。
-     *
-     * @param workspaceId workspace ID
-     * @return 注入 System Prompt 的 Skill 说明文本
-     */
-    public String getSystemPromptFragment(Long workspaceId) {
-        return skillRegistry.buildSystemPromptFragment(workspaceId);
-    }
-
-    /**
      * 获取指定 workspace 下所有 ACTIVE Skill 的名称列表。
      * 用于 sandbox 初始化时确认需要同步哪些文件。
      */

@@ -3,6 +3,7 @@ package org.dragon.workspace;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.task.TaskStore;
 import org.dragon.observer.actionlog.ObserverActionLogService;
+import org.dragon.skill.service.SkillBindingService;
 import org.dragon.workspace.service.hiring.WorkspaceHiringService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
 import org.dragon.workspace.service.material.WorkspaceMaterialService;
@@ -39,6 +40,7 @@ class WorkspaceApplicationBuilder {
     TaskContinuationResolver taskContinuationResolver;
     TaskResumeTargetResolver taskResumeTargetResolver;
     WorkspaceTaskExecutionService taskExecutionService;
+    SkillBindingService skillBindingService;
 
     /**
      * 设置 Workspace ID
@@ -184,6 +186,17 @@ class WorkspaceApplicationBuilder {
     }
 
     /**
+     * 设置技能绑定服务
+     * 
+     * @param skillBindService
+     * @return
+     */
+    public WorkspaceApplicationBuilder skillBindingService(SkillBindingService skillBindingService) {
+        this.skillBindingService = skillBindingService;
+        return this;
+    }
+
+    /**
      * 构建 WorkspaceApplication 实例
      * 在构建过程中可以完成 Workspace 的初始化逻辑
      *
@@ -211,6 +224,9 @@ class WorkspaceApplicationBuilder {
         }
         if (taskExecutionService == null) {
             throw new IllegalStateException("taskExecutionService is required");
+        }
+        if (skillBindingService == null) {
+            throw new IllegalStateException("skillBindingService is required");
         }
 
         // 可以在这里添加初始化逻辑，例如：
