@@ -8,6 +8,10 @@ import org.dragon.memv2.app.DefaultMemoryRecallService;
 import org.dragon.memv2.app.DefaultMemoryExtractionService;
 import org.dragon.memv2.app.DefaultMemoryRanker;
 import org.dragon.memv2.app.DefaultMemoryDedupPolicy;
+import org.dragon.memv2.app.DefaultMemoryValidationPolicy;
+import org.dragon.memv2.app.DefaultMemoryIndexService;
+import org.dragon.memv2.app.DefaultSessionToLongTermBridge;
+import org.dragon.memv2.app.DefaultSessionCompressionService;
 import org.dragon.memv2.core.MemoryFacade;
 import org.dragon.memv2.core.CharacterMemoryService;
 import org.dragon.memv2.core.WorkspaceMemoryService;
@@ -16,6 +20,12 @@ import org.dragon.memv2.core.MemoryRecallService;
 import org.dragon.memv2.core.MemoryExtractionService;
 import org.dragon.memv2.core.MemoryRanker;
 import org.dragon.memv2.core.MemoryDedupPolicy;
+import org.dragon.memv2.core.MemoryRoutingPolicy;
+import org.dragon.memv2.app.DefaultMemoryRoutingPolicy;
+import org.dragon.memv2.core.MemoryValidationPolicy;
+import org.dragon.memv2.core.MemoryIndexService;
+import org.dragon.memv2.core.SessionToLongTermBridge;
+import org.dragon.memv2.core.SessionCompressionService;
 import org.dragon.memv2.storage.fs.FileCharacterMemoryRepository;
 import org.dragon.memv2.storage.fs.FileWorkspaceMemoryRepository;
 import org.dragon.memv2.storage.fs.FileSessionMemoryRepository;
@@ -103,8 +113,12 @@ public class MemoryAutoConfiguration {
     @Bean
     public DefaultMemoryExtractionService defaultMemoryExtractionService(
             FileCharacterMemoryRepository fileCharacterMemoryRepository,
-            FileWorkspaceMemoryRepository fileWorkspaceMemoryRepository) {
-        return new DefaultMemoryExtractionService(fileCharacterMemoryRepository, fileWorkspaceMemoryRepository);
+            FileWorkspaceMemoryRepository fileWorkspaceMemoryRepository,
+            DefaultMemoryRoutingPolicy defaultMemoryRoutingPolicy,
+            DefaultMemoryValidationPolicy defaultMemoryValidationPolicy,
+            DefaultMemoryDedupPolicy defaultMemoryDedupPolicy) {
+        return new DefaultMemoryExtractionService(fileCharacterMemoryRepository, fileWorkspaceMemoryRepository,
+                defaultMemoryRoutingPolicy, defaultMemoryValidationPolicy, defaultMemoryDedupPolicy);
     }
 
     @Bean
@@ -115,6 +129,36 @@ public class MemoryAutoConfiguration {
     @Bean
     public DefaultMemoryDedupPolicy defaultMemoryDedupPolicy() {
         return new DefaultMemoryDedupPolicy();
+    }
+
+    @Bean
+    public DefaultMemoryRoutingPolicy defaultMemoryRoutingPolicy() {
+        return new DefaultMemoryRoutingPolicy();
+    }
+
+    @Bean
+    public DefaultMemoryValidationPolicy defaultMemoryValidationPolicy() {
+        return new DefaultMemoryValidationPolicy();
+    }
+
+    @Bean
+    public DefaultMemoryIndexService defaultMemoryIndexService(
+            FileCharacterMemoryRepository fileCharacterMemoryRepository,
+            FileWorkspaceMemoryRepository fileWorkspaceMemoryRepository,
+            MemoryIndexParser memoryIndexParser) {
+        return new DefaultMemoryIndexService(fileCharacterMemoryRepository, fileWorkspaceMemoryRepository, memoryIndexParser);
+    }
+
+    @Bean
+    public DefaultSessionToLongTermBridge defaultSessionToLongTermBridge(
+            DefaultSessionMemoryService defaultSessionMemoryService) {
+        return new DefaultSessionToLongTermBridge(defaultSessionMemoryService);
+    }
+
+    @Bean
+    public DefaultSessionCompressionService defaultSessionCompressionService(
+            DefaultSessionMemoryService defaultSessionMemoryService) {
+        return new DefaultSessionCompressionService(defaultSessionMemoryService);
     }
 
     @Bean

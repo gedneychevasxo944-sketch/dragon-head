@@ -5,6 +5,9 @@ import org.dragon.memv2.core.SessionSnapshot;
 import org.dragon.memv2.core.MemoryExtractionService;
 import org.dragon.memv2.core.MemoryScope;
 import org.dragon.memv2.core.MemoryType;
+import org.dragon.memv2.core.MemoryRoutingPolicy;
+import org.dragon.memv2.core.MemoryValidationPolicy;
+import org.dragon.memv2.core.MemoryDedupPolicy;
 import org.dragon.memv2.storage.repo.CharacterMemoryRepository;
 import org.dragon.memv2.storage.repo.WorkspaceMemoryRepository;
 import org.springframework.stereotype.Service;
@@ -12,7 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 /**
  * 记忆提取服务实现类
@@ -25,11 +28,20 @@ import java.util.stream.Collectors;
 public class DefaultMemoryExtractionService implements MemoryExtractionService {
     private final CharacterMemoryRepository characterMemoryRepository;
     private final WorkspaceMemoryRepository workspaceMemoryRepository;
+    private final MemoryRoutingPolicy memoryRoutingPolicy;
+    private final MemoryValidationPolicy memoryValidationPolicy;
+    private final MemoryDedupPolicy memoryDedupPolicy;
 
     public DefaultMemoryExtractionService(CharacterMemoryRepository characterMemoryRepository,
-                                         WorkspaceMemoryRepository workspaceMemoryRepository) {
+                                         WorkspaceMemoryRepository workspaceMemoryRepository,
+                                         MemoryRoutingPolicy memoryRoutingPolicy,
+                                         MemoryValidationPolicy memoryValidationPolicy,
+                                         MemoryDedupPolicy memoryDedupPolicy) {
         this.characterMemoryRepository = characterMemoryRepository;
         this.workspaceMemoryRepository = workspaceMemoryRepository;
+        this.memoryRoutingPolicy = memoryRoutingPolicy;
+        this.memoryValidationPolicy = memoryValidationPolicy;
+        this.memoryDedupPolicy = memoryDedupPolicy;
     }
 
     @Override
@@ -44,8 +56,6 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
                     .description(snapshot.getSummary())
                     .content(snapshot.getSummary())
                     .type(MemoryType.SESSION_SUMMARY)
-                    .scope(determineScope(snapshot))
-                    .ownerId(determineOwnerId(snapshot))
                     .fileName("session_summary.md")
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
@@ -61,8 +71,6 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
                     .description(decision)
                     .content(decision)
                     .type(MemoryType.WORKSPACE_DECISION)
-                    .scope(determineScope(snapshot))
-                    .ownerId(determineOwnerId(snapshot))
                     .fileName("decision_" + System.currentTimeMillis() + ".md")
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
@@ -79,8 +87,6 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
                         .description(event)
                         .content(event)
                         .type(MemoryType.PROJECT)
-                        .scope(determineScope(snapshot))
-                        .ownerId(determineOwnerId(snapshot))
                         .fileName("event_" + System.currentTimeMillis() + ".md")
                         .createdAt(Instant.now())
                         .updatedAt(Instant.now())
@@ -98,14 +104,58 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
         List<MemoryEntry> promotedEntries = new ArrayList<>();
 
         for (MemoryEntry candidate : candidates) {
-            if (candidate.getScope() == MemoryScope.CHARACTER && snapshot.getCharacterId() != null) {
-                promotedEntries.add(characterMemoryRepository.create(snapshot.getCharacterId(), candidate));
-            } else if (candidate.getScope() == MemoryScope.WORKSPACE && snapshot.getWorkspaceId() != null) {
-                promotedEntries.add(workspaceMemoryRepository.create(snapshot.getWorkspaceId(), candidate));
+            // 1. 校验记忆条目
+            MemoryValidationPolicy.ValidationResult validationResult = memoryValidationPolicy.validate(candidate);
+            if (!validationResult.isValid()) {
+                continue; // 跳过无效的记忆条目
+            }
+
+            // 2. 确定记忆作用域
+            MemoryScope scope = memoryRoutingPolicy.route(candidate, snapshot);
+            candidate.setScope(scope);
+            candidate.setOwnerId(scope == MemoryScope.WORKSPACE ? snapshot.getWorkspaceId() : snapshot.getCharacterId());
+
+            // 3. 检查是否应该提升到长期记忆
+            if (!memoryRoutingPolicy.shouldPromote(candidate, snapshot)) {
+                continue; // 跳过不应提升的记忆条目
+            }
+
+            // 4. 去重逻辑
+            List<MemoryEntry> existingMemories = getExistingMemories(snapshot, scope);
+            Optional<MemoryEntry> duplicateEntry = memoryDedupPolicy.findDuplicate(candidate, existingMemories);
+            if (duplicateEntry.isPresent()) {
+                // 如果找到重复条目，合并后更新
+                MemoryEntry mergedEntry = memoryDedupPolicy.merge(duplicateEntry.get(), candidate);
+                if (scope == MemoryScope.CHARACTER && snapshot.getCharacterId() != null) {
+                    characterMemoryRepository.update(snapshot.getCharacterId(), mergedEntry);
+                    promotedEntries.add(mergedEntry);
+                } else if (scope == MemoryScope.WORKSPACE && snapshot.getWorkspaceId() != null) {
+                    workspaceMemoryRepository.update(snapshot.getWorkspaceId(), mergedEntry);
+                    promotedEntries.add(mergedEntry);
+                }
+            } else {
+                // 如果没有找到重复条目，创建新条目
+                if (scope == MemoryScope.CHARACTER && snapshot.getCharacterId() != null) {
+                    promotedEntries.add(characterMemoryRepository.create(snapshot.getCharacterId(), candidate));
+                } else if (scope == MemoryScope.WORKSPACE && snapshot.getWorkspaceId() != null) {
+                    promotedEntries.add(workspaceMemoryRepository.create(snapshot.getWorkspaceId(), candidate));
+                }
             }
         }
 
         return promotedEntries;
+    }
+
+    /**
+     * 获取已存在的记忆列表
+     */
+    private List<MemoryEntry> getExistingMemories(SessionSnapshot snapshot, MemoryScope scope) {
+        if (scope == MemoryScope.CHARACTER && snapshot.getCharacterId() != null) {
+            return characterMemoryRepository.list(snapshot.getCharacterId());
+        } else if (scope == MemoryScope.WORKSPACE && snapshot.getWorkspaceId() != null) {
+            return workspaceMemoryRepository.list(snapshot.getWorkspaceId());
+        }
+        return List.of();
     }
 
     /**

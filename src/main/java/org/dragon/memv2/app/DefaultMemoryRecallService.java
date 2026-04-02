@@ -55,10 +55,54 @@ public class DefaultMemoryRecallService implements MemoryRecallService {
             results.addAll(recallWorkspace(query.getWorkspaceId(), query.getText(), query.getLimit()));
         }
 
-        // 按分数排序并限制结果数量
-        return results.stream()
-                .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+        // 统一过滤规则
+        List<MemorySearchResult> filteredResults = applyFilters(results, query);
+
+        // 统一排序规则
+        List<MemorySearchResult> sortedResults = applySorting(filteredResults);
+
+        // 限制结果数量
+        return sortedResults.stream()
                 .limit(query.getLimit())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 应用过滤规则
+     */
+    private List<MemorySearchResult> applyFilters(List<MemorySearchResult> results, MemoryQuery query) {
+        // 类型过滤
+        if (!query.getTypes().isEmpty()) {
+            results = results.stream()
+                    .filter(result -> query.getTypes().contains(result.getMemory().getType()))
+                    .collect(Collectors.toList());
+        }
+
+        // 作用域过滤
+        if (!query.getScopes().isEmpty()) {
+            results = results.stream()
+                    .filter(result -> query.getScopes().contains(result.getMemory().getScope()))
+                    .collect(Collectors.toList());
+        }
+
+        return results;
+    }
+
+    /**
+     * 应用排序规则
+     */
+    private List<MemorySearchResult> applySorting(List<MemorySearchResult> results) {
+        return results.stream()
+                .sorted((a, b) -> {
+                    // 按分数降序排列
+                    int scoreComparison = Double.compare(b.getScore(), a.getScore());
+                    if (scoreComparison != 0) {
+                        return scoreComparison;
+                    }
+
+                    // 分数相同按更新时间降序排列
+                    return b.getMemory().getUpdatedAt().compareTo(a.getMemory().getUpdatedAt());
+                })
                 .collect(Collectors.toList());
     }
 
