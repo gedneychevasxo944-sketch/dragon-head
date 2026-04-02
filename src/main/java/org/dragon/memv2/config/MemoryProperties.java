@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 /**
  * 记忆系统配置属性类
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Data

@@ -6,7 +6,7 @@ import java.util.List;
  * 会话记忆服务接口
  * 负责管理会话短期记忆，包括会话摘要、事件记录和检查点管理
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 public interface SessionMemoryService {

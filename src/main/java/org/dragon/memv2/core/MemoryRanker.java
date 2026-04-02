@@ -6,7 +6,7 @@ import java.util.List;
  * 记忆排序服务接口
  * 负责对记忆检索结果进行排序
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 public interface MemoryRanker {

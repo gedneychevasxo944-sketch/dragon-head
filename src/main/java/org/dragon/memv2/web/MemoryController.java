@@ -12,7 +12,7 @@ import java.util.List;
  * 记忆管理控制器
  * 提供HTTP接口，用于管理角色和工作空间记忆
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @RestController

@@ -17,7 +17,7 @@ import java.util.List;
  * 记忆系统统一接口实现类
  * 提供上层访问记忆系统的统一入口，屏蔽底层复杂性
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Service

@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * Markdown 解析器类
  * 负责 MemoryEntry 与 Markdown 文本之间的双向转换，以及 SessionSnapshot 的序列化
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Component

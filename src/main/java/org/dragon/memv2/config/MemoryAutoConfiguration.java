@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Configuration;
  * 记忆系统自动配置类
  * 负责Spring Boot环境下MemV2模块的Bean自动装配
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Configuration

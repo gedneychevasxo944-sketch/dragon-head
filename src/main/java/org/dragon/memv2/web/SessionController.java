@@ -11,7 +11,7 @@ import java.util.List;
  * 会话记忆管理控制器
  * 提供HTTP接口，用于管理会话记忆
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @RestController

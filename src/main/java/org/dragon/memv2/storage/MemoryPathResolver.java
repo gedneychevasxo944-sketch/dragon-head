@@ -10,7 +10,7 @@ import java.nio.file.Paths;
  * 记忆路径解析器类
  * 负责统一管理记忆文件和目录的路径计算
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Component

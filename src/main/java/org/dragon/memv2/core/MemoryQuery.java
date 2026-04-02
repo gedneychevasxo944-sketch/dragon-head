@@ -12,7 +12,7 @@ import java.util.Set;
  * 记忆查询类
  * 抽象记忆检索请求，允许指定查询词、作用域、类型、返回上限等条件
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Data

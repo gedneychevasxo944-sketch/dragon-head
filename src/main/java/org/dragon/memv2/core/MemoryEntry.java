@@ -13,7 +13,7 @@ import java.util.Map;
  * 记忆条目类
  * 表示一条完整的记忆内容，包含元数据和正文
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Data

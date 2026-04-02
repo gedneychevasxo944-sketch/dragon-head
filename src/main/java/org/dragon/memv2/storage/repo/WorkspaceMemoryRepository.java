@@ -9,7 +9,7 @@ import java.util.Optional;
  * 工作空间记忆仓库接口
  * 负责管理工作空间共享记忆的增删改查和索引维护
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 public interface WorkspaceMemoryRepository {

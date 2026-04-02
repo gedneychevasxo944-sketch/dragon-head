@@ -12,7 +12,7 @@ import java.util.Optional;
  * 工作空间记忆服务实现类
  * 负责管理工作空间共享记忆的增删改查和索引维护
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Service

@@ -12,7 +12,7 @@ import java.util.Optional;
  * 角色记忆服务实现类
  * 负责管理角色长期记忆的增删改查和索引维护
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Service

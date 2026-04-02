@@ -13,7 +13,7 @@ import java.util.List;
  * 会话快照类
  * 表示当前会话的抽象摘要，包含会话状态、当前目标、最近决策等信息
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Data

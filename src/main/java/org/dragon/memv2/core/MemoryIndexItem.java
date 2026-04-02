@@ -11,7 +11,7 @@ import java.time.Instant;
  * 记忆索引条目类
  * 表示MEMORY.md索引文件中的一条记录，包含记忆导航信息但不包含正文内容
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Data

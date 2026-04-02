@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  * 文件系统工作空间记忆仓库实现类
  * 使用本地文件系统存储工作空间记忆，管理 MEMORY.md 索引和 mem 目录下的记忆文件
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Repository

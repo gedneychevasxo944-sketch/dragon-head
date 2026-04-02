@@ -12,7 +12,7 @@ import java.util.Optional;
  * 记忆去重策略实现类
  * 负责处理记忆的去重逻辑
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Service

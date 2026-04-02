@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
  * 记忆搜索结果类
  * 表示记忆检索的结果，包含记忆条目、分数和匹配原因
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Data

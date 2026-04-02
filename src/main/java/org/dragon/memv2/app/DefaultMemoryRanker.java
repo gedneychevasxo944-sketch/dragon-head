@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * 记忆排序服务实现类
  * 负责对记忆检索结果进行排序
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Service

@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * 记忆提取服务实现类
  * 负责从会话记忆中提取可长期保存的记忆候选，并进行固化处理
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Service

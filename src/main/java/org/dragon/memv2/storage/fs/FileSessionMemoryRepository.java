@@ -20,7 +20,7 @@ import java.util.Optional;
  * 文件系统会话记忆仓库实现类
  * 使用本地文件系统存储会话记忆，管理 session-memory.md 和 events.jsonl 文件
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Repository

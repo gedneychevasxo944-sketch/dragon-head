@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * 记忆索引解析器类
  * 负责解析 MEMORY.md 索引文件，将其转换为 MemoryIndexItem 对象列表
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 @Component

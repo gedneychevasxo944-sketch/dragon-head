@@ -9,7 +9,7 @@ import java.util.Optional;
  * 会话记忆仓库接口
  * 负责管理会话短期记忆的增删改查和检查点维护
  *
- * @author wyj
+ * @author binarytom
  * @version 1.0
  */
 public interface SessionMemoryRepository {
