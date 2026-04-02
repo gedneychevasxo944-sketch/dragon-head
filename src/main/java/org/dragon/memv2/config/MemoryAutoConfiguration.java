@@ -6,12 +6,16 @@ import org.dragon.memv2.app.DefaultWorkspaceMemoryService;
 import org.dragon.memv2.app.DefaultSessionMemoryService;
 import org.dragon.memv2.app.DefaultMemoryRecallService;
 import org.dragon.memv2.app.DefaultMemoryExtractionService;
+import org.dragon.memv2.app.DefaultMemoryRanker;
+import org.dragon.memv2.app.DefaultMemoryDedupPolicy;
 import org.dragon.memv2.core.MemoryFacade;
 import org.dragon.memv2.core.CharacterMemoryService;
 import org.dragon.memv2.core.WorkspaceMemoryService;
 import org.dragon.memv2.core.SessionMemoryService;
 import org.dragon.memv2.core.MemoryRecallService;
 import org.dragon.memv2.core.MemoryExtractionService;
+import org.dragon.memv2.core.MemoryRanker;
+import org.dragon.memv2.core.MemoryDedupPolicy;
 import org.dragon.memv2.storage.fs.FileCharacterMemoryRepository;
 import org.dragon.memv2.storage.fs.FileWorkspaceMemoryRepository;
 import org.dragon.memv2.storage.fs.FileSessionMemoryRepository;
@@ -84,18 +88,33 @@ public class MemoryAutoConfiguration {
 
     @Bean
     public DefaultSessionMemoryService defaultSessionMemoryService(
-            FileSessionMemoryRepository fileSessionMemoryRepository) {
-        return new DefaultSessionMemoryService(fileSessionMemoryRepository);
+            FileSessionMemoryRepository fileSessionMemoryRepository,
+            DefaultMemoryExtractionService defaultMemoryExtractionService) {
+        return new DefaultSessionMemoryService(fileSessionMemoryRepository, defaultMemoryExtractionService);
     }
 
     @Bean
-    public DefaultMemoryRecallService defaultMemoryRecallService() {
-        return new DefaultMemoryRecallService();
+    public DefaultMemoryRecallService defaultMemoryRecallService(
+            FileCharacterMemoryRepository fileCharacterMemoryRepository,
+            FileWorkspaceMemoryRepository fileWorkspaceMemoryRepository) {
+        return new DefaultMemoryRecallService(fileCharacterMemoryRepository, fileWorkspaceMemoryRepository);
     }
 
     @Bean
-    public DefaultMemoryExtractionService defaultMemoryExtractionService() {
-        return new DefaultMemoryExtractionService();
+    public DefaultMemoryExtractionService defaultMemoryExtractionService(
+            FileCharacterMemoryRepository fileCharacterMemoryRepository,
+            FileWorkspaceMemoryRepository fileWorkspaceMemoryRepository) {
+        return new DefaultMemoryExtractionService(fileCharacterMemoryRepository, fileWorkspaceMemoryRepository);
+    }
+
+    @Bean
+    public DefaultMemoryRanker defaultMemoryRanker() {
+        return new DefaultMemoryRanker();
+    }
+
+    @Bean
+    public DefaultMemoryDedupPolicy defaultMemoryDedupPolicy() {
+        return new DefaultMemoryDedupPolicy();
     }
 
     @Bean

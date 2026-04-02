@@ -1,6 +1,8 @@
 package org.dragon.memv2.storage.fs;
 
 import org.dragon.memv2.core.MemoryEntry;
+import org.dragon.memv2.core.MemoryType;
+import org.dragon.memv2.core.MemoryScope;
 import org.dragon.memv2.storage.MemoryPathResolver;
 import org.dragon.memv2.storage.MemoryMarkdownParser;
 import org.dragon.memv2.storage.MemoryIndexParser;
@@ -10,8 +12,12 @@ import org.springframework.stereotype.Repository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * 文件系统角色记忆仓库实现类
@@ -70,8 +76,16 @@ public class FileCharacterMemoryRepository implements CharacterMemoryRepository 
             if (!Files.exists(memDir)) {
                 return Optional.empty();
             }
-            // 简化实现：实际应根据ID查找对应文件
-            return Optional.empty();
+
+            // 遍历 mem 目录下的所有文件，查找匹配的记忆文件
+            try (Stream<Path> paths = Files.list(memDir)) {
+                return paths
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.toString().endsWith(".md"))
+                        .map(this::readMemoryFile)
+                        .filter(entry -> memoryId.equals(entry.getId()))
+                        .findFirst();
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to get character memory: " + e.getMessage(), e);
         }
@@ -80,20 +94,38 @@ public class FileCharacterMemoryRepository implements CharacterMemoryRepository 
     @Override
     public List<MemoryEntry> list(String characterId) {
         Path memDir = pathResolver.resolveCharacterMemDir(characterId);
+        List<MemoryEntry> entries = new ArrayList<>();
         try {
             if (!Files.exists(memDir)) {
-                return List.of();
+                return entries;
             }
-            // 简化实现：实际应列出所有记忆文件
-            return List.of();
+
+            try (Stream<Path> paths = Files.list(memDir)) {
+                paths
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.toString().endsWith(".md"))
+                        .map(this::readMemoryFile)
+                        .forEach(entries::add);
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to list character memories: " + e.getMessage(), e);
         }
+        return entries;
     }
 
     @Override
     public void delete(String characterId, String memoryId) {
-        // 简化实现：实际应删除对应文件并更新索引
+        Path memDir = pathResolver.resolveCharacterMemDir(characterId);
+        try {
+            Optional<MemoryEntry> entryOpt = get(characterId, memoryId);
+            if (entryOpt.isPresent()) {
+                Path filePath = memDir.resolve(entryOpt.get().getFileName());
+                Files.deleteIfExists(filePath);
+                rebuildIndex(characterId);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete character memory: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -103,10 +135,44 @@ public class FileCharacterMemoryRepository implements CharacterMemoryRepository 
             if (!Files.exists(indexPath.getParent())) {
                 Files.createDirectories(indexPath.getParent());
             }
-            // 简化实现：实际应根据当前记忆条目重建索引
-            Files.writeString(indexPath, indexParser.render(List.of()));
+
+            List<MemoryEntry> entries = list(characterId);
+            Files.writeString(indexPath, indexParser.render(convertToIndexItems(entries)));
         } catch (IOException e) {
             throw new RuntimeException("Failed to rebuild character index: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 读取记忆文件
+     */
+    private MemoryEntry readMemoryFile(Path path) {
+        try {
+            String content = Files.readString(path);
+            MemoryEntry entry = markdownParser.parse(content);
+            entry.setFileName(path.getFileName().toString());
+            entry.setFilePath(path.toString());
+            return entry;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read memory file: " + path, e);
+        }
+    }
+
+    /**
+     * 将 MemoryEntry 转换为 MemoryIndexItem
+     */
+    private List<org.dragon.memv2.core.MemoryIndexItem> convertToIndexItems(List<MemoryEntry> entries) {
+        List<org.dragon.memv2.core.MemoryIndexItem> items = new ArrayList<>();
+        for (MemoryEntry entry : entries) {
+            org.dragon.memv2.core.MemoryIndexItem item = new org.dragon.memv2.core.MemoryIndexItem();
+            item.setMemoryId(entry.getId());
+            item.setTitle(entry.getTitle());
+            item.setRelativePath(entry.getFileName());
+            item.setSummaryLine(entry.getDescription());
+            item.setType(entry.getType());
+            item.setUpdatedAt(entry.getUpdatedAt());
+            items.add(item);
+        }
+        return items;
     }
 }
