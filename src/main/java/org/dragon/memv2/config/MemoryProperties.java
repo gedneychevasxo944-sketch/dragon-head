@@ -2,7 +2,6 @@ package org.dragon.memv2.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * 记忆系统配置属性类
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Component;
  * @version 1.0
  */
 @Data
-@Component
 @ConfigurationProperties(prefix = "memory")
 public class MemoryProperties {
     /**

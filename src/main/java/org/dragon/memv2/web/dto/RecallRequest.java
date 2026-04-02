@@ -1,7 +1,5 @@
 package org.dragon.memv2.web.dto;
 
-import org.dragon.memv2.core.MemoryQuery;
-
 /**
  * 回忆记忆请求DTO
  *
@@ -9,13 +7,13 @@ import org.dragon.memv2.core.MemoryQuery;
  * @version 1.0
  */
 public class RecallRequest {
-    private MemoryQuery query;
+    private MemoryQueryDTO query;
 
-    public MemoryQuery getQuery() {
+    public MemoryQueryDTO getQuery() {
         return query;
     }
 
-    public void setQuery(MemoryQuery query) {
+    public void setQuery(MemoryQueryDTO query) {
         this.query = query;
     }
 }

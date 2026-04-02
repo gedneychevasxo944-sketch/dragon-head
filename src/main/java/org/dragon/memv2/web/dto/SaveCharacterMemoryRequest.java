@@ -1,7 +1,5 @@
 package org.dragon.memv2.web.dto;
 
-import org.dragon.memv2.core.MemoryEntry;
-
 /**
  * 保存角色记忆请求DTO
  *
@@ -10,7 +8,7 @@ import org.dragon.memv2.core.MemoryEntry;
  */
 public class SaveCharacterMemoryRequest {
     private String characterId;
-    private MemoryEntry memoryEntry;
+    private MemoryEntryDTO memoryEntry;
 
     public String getCharacterId() {
         return characterId;
@@ -20,11 +18,11 @@ public class SaveCharacterMemoryRequest {
         this.characterId = characterId;
     }
 
-    public MemoryEntry getMemoryEntry() {
+    public MemoryEntryDTO getMemoryEntry() {
         return memoryEntry;
     }
 
-    public void setMemoryEntry(MemoryEntry memoryEntry) {
+    public void setMemoryEntry(MemoryEntryDTO memoryEntry) {
         this.memoryEntry = memoryEntry;
     }
 }

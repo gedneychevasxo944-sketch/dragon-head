@@ -4,9 +4,11 @@ import org.dragon.memv2.core.MemoryEntry;
 import org.dragon.memv2.core.MemoryQuery;
 import org.dragon.memv2.core.MemorySearchResult;
 import org.dragon.memv2.core.MemoryFacade;
+import org.dragon.memv2.web.dto.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 记忆管理控制器
@@ -25,19 +27,30 @@ public class MemoryController {
     }
 
     @PostMapping("/characters/{characterId}")
-    public MemoryEntry saveCharacterMemory(@PathVariable String characterId,
-                                           @RequestBody MemoryEntry entry) {
-        return memoryFacade.saveCharacterMemory(characterId, entry);
+    public MemoryEntryDTO saveCharacterMemory(@PathVariable String characterId,
+                                              @RequestBody MemoryEntryDTO entryDto) {
+        MemoryEntry entry = MemoryConverter.toEntity(entryDto);
+        MemoryEntry savedEntry = memoryFacade.saveCharacterMemory(characterId, entry);
+        return MemoryConverter.toDto(savedEntry);
     }
 
     @PostMapping("/workspaces/{workspaceId}")
-    public MemoryEntry saveWorkspaceMemory(@PathVariable String workspaceId,
-                                           @RequestBody MemoryEntry entry) {
-        return memoryFacade.saveWorkspaceMemory(workspaceId, entry);
+    public MemoryEntryDTO saveWorkspaceMemory(@PathVariable String workspaceId,
+                                              @RequestBody MemoryEntryDTO entryDto) {
+        MemoryEntry entry = MemoryConverter.toEntity(entryDto);
+        MemoryEntry savedEntry = memoryFacade.saveWorkspaceMemory(workspaceId, entry);
+        return MemoryConverter.toDto(savedEntry);
     }
 
     @PostMapping("/recall")
-    public List<MemorySearchResult> recall(@RequestBody MemoryQuery query) {
-        return memoryFacade.recall(query);
+    public RecallResponse recall(@RequestBody RecallRequest request) {
+        MemoryQuery query = MemoryConverter.toEntity(request.getQuery());
+        List<MemorySearchResult> results = memoryFacade.recall(query);
+        List<MemorySearchResultDTO> resultDtos = results.stream()
+                .map(MemoryConverter::toDto)
+                .collect(Collectors.toList());
+        RecallResponse response = new RecallResponse();
+        response.setResults(resultDtos);
+        return response;
     }
 }

@@ -1,7 +1,5 @@
 package org.dragon.memv2.web.dto;
 
-import org.dragon.memv2.core.MemorySearchResult;
-
 import java.util.List;
 
 /**
@@ -11,13 +9,13 @@ import java.util.List;
  * @version 1.0
  */
 public class RecallResponse {
-    private List<MemorySearchResult> results;
+    private List<MemorySearchResultDTO> results;
 
-    public List<MemorySearchResult> getResults() {
+    public List<MemorySearchResultDTO> getResults() {
         return results;
     }
 
-    public void setResults(List<MemorySearchResult> results) {
+    public void setResults(List<MemorySearchResultDTO> results) {
         this.results = results;
     }
 }

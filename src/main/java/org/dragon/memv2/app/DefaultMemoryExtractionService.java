@@ -165,26 +165,6 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
         return content.toLowerCase().replaceAll("[^a-zA-Z0-9_]", "_").substring(0, Math.min(content.length(), 30));
     }
 
-    /**
-     * 确定记忆作用域
-     */
-    private MemoryScope determineScope(SessionSnapshot snapshot) {
-        // 如果有工作空间ID，则默认存储在工作空间
-        if (snapshot.getWorkspaceId() != null) {
-            return MemoryScope.WORKSPACE;
-        }
-        return MemoryScope.CHARACTER;
-    }
-
-    /**
-     * 确定记忆所有者ID
-     */
-    private String determineOwnerId(SessionSnapshot snapshot) {
-        if (snapshot.getWorkspaceId() != null) {
-            return snapshot.getWorkspaceId();
-        }
-        return snapshot.getCharacterId();
-    }
 
     /**
      * 判断事件是否重要

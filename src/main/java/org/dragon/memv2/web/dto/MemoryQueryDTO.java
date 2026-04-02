@@ -1,4 +1,4 @@
-package org.dragon.memv2.core;
+package org.dragon.memv2.web.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 记忆查询类
+ * 记忆查询DTO类
  * 抽象记忆检索请求，允许指定查询词、作用域、类型、返回上限等条件
  *
  * @author binarytom
@@ -19,7 +19,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MemoryQuery {
+public class MemoryQueryDTO {
     /**
      * 查询文本
      */
@@ -44,17 +44,16 @@ public class MemoryQuery {
      * 作用域集合
      */
     @Builder.Default
-    private Set<MemoryScope> scopes = new HashSet<>();
+    private Set<String> scopes = new HashSet<>();
 
     /**
      * 类型集合
      */
     @Builder.Default
-    private Set<MemoryType> types = new HashSet<>();
+    private Set<String> types = new HashSet<>();
 
     /**
      * 返回结果数量限制
      */
-    @Builder.Default
-    private int limit = 5;
+    private int limit;
 }
