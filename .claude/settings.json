@@ -11,7 +11,8 @@
       "Bash(rm -f src/main/java/org/dragon/workspace/built_ins/character/observer_advisor/tool/*.java)",
       "Bash(git rm:*)",
       "Bash(git stash:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Read(//Users/yijunwang/code/adeptify-fe/**)"
     ],
     "additionalDirectories": [
       "/Users/yijunwang/.claude/plans"
