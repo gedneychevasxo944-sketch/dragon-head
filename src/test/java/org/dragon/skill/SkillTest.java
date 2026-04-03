@@ -29,9 +29,7 @@ class SkillTest {
     @Test
     void testSkillWithMetadata() {
         SkillMetadata metadata = SkillMetadata.builder()
-                .skillKey("test-key")
-                .emoji("📦")
-                .homepage("https://example.com")
+                .always(true)
                 .build();
 
         Skill skill = Skill.builder()
@@ -42,7 +40,7 @@ class SkillTest {
                 .build();
 
         assertNotNull(skill);
-        assertEquals("test-key", metadata.getSkillKey());
+        assertEquals(true, metadata.getAlways());
     }
 
     @Test
