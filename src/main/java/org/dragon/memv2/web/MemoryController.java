@@ -42,6 +42,50 @@ public class MemoryController {
         return MemoryConverter.toDto(savedEntry);
     }
 
+    @GetMapping("/characters/{characterId}/{memoryId}")
+    public MemoryEntryDTO getCharacterMemory(@PathVariable String characterId,
+                                             @PathVariable String memoryId) {
+        return memoryFacade.getCharacterMemory(characterId, MemoryId.of(memoryId))
+                .map(MemoryConverter::toDto)
+                .orElse(null);
+    }
+
+    @GetMapping("/workspaces/{workspaceId}/{memoryId}")
+    public MemoryEntryDTO getWorkspaceMemory(@PathVariable String workspaceId,
+                                             @PathVariable String memoryId) {
+        return memoryFacade.getWorkspaceMemory(workspaceId, MemoryId.of(memoryId))
+                .map(MemoryConverter::toDto)
+                .orElse(null);
+    }
+
+    @GetMapping("/characters/{characterId}")
+    public List<MemoryEntryDTO> listCharacterMemories(@PathVariable String characterId) {
+        List<MemoryEntry> entries = memoryFacade.listCharacterMemories(characterId);
+        return entries.stream()
+                .map(MemoryConverter::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/workspaces/{workspaceId}")
+    public List<MemoryEntryDTO> listWorkspaceMemories(@PathVariable String workspaceId) {
+        List<MemoryEntry> entries = memoryFacade.listWorkspaceMemories(workspaceId);
+        return entries.stream()
+                .map(MemoryConverter::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @DeleteMapping("/characters/{characterId}/{memoryId}")
+    public void deleteCharacterMemory(@PathVariable String characterId,
+                                      @PathVariable String memoryId) {
+        memoryFacade.deleteCharacterMemory(characterId, MemoryId.of(memoryId));
+    }
+
+    @DeleteMapping("/workspaces/{workspaceId}/{memoryId}")
+    public void deleteWorkspaceMemory(@PathVariable String workspaceId,
+                                      @PathVariable String memoryId) {
+        memoryFacade.deleteWorkspaceMemory(workspaceId, MemoryId.of(memoryId));
+    }
+
     @PostMapping("/recall")
     public RecallResponse recall(@RequestBody RecallRequest request) {
         MemoryQuery query = MemoryConverter.toEntity(request.getQuery());

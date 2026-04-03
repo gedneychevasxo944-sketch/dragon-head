@@ -22,7 +22,7 @@ public class MemoryIndexItem {
     /**
      * 记忆ID
      */
-    private String memoryId;
+    private MemoryId memoryId;
 
     /**
      * 记忆标题

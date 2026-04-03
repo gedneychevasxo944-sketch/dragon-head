@@ -9,9 +9,11 @@ import org.dragon.memv2.core.CharacterMemoryService;
 import org.dragon.memv2.core.WorkspaceMemoryService;
 import org.dragon.memv2.core.SessionMemoryService;
 import org.dragon.memv2.core.MemoryRecallService;
+import org.dragon.memv2.core.AgentMemoryContext;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 记忆系统统一接口实现类
@@ -48,8 +50,53 @@ public class DefaultMemoryFacade implements MemoryFacade {
     }
 
     @Override
+    public Optional<MemoryEntry> getCharacterMemory(String characterId, MemoryId memoryId) {
+        return characterMemoryService.get(characterId, memoryId);
+    }
+
+    @Override
+    public Optional<MemoryEntry> getWorkspaceMemory(String workspaceId, MemoryId memoryId) {
+        return workspaceMemoryService.get(workspaceId, memoryId);
+    }
+
+    @Override
+    public List<MemoryEntry> listCharacterMemories(String characterId) {
+        return characterMemoryService.list(characterId);
+    }
+
+    @Override
+    public List<MemoryEntry> listWorkspaceMemories(String workspaceId) {
+        return workspaceMemoryService.list(workspaceId);
+    }
+
+    @Override
+    public void deleteCharacterMemory(String characterId, MemoryId memoryId) {
+        characterMemoryService.delete(characterId, memoryId);
+    }
+
+    @Override
+    public void deleteWorkspaceMemory(String workspaceId, MemoryId memoryId) {
+        workspaceMemoryService.delete(workspaceId, memoryId);
+    }
+
+    @Override
+    public SessionSnapshot startSession(String sessionId, String workspaceId, String characterId) {
+        return sessionMemoryService.start(sessionId, workspaceId, characterId);
+    }
+
+    @Override
     public SessionSnapshot updateSession(String sessionId, SessionSnapshot snapshot) {
         return sessionMemoryService.update(sessionId, snapshot);
+    }
+
+    @Override
+    public SessionSnapshot getSession(String sessionId) {
+        return sessionMemoryService.get(sessionId);
+    }
+
+    @Override
+    public void checkpointSession(String sessionId) {
+        sessionMemoryService.checkpoint(sessionId);
     }
 
     @Override
@@ -58,7 +105,29 @@ public class DefaultMemoryFacade implements MemoryFacade {
     }
 
     @Override
+    public void closeSession(String sessionId) {
+        sessionMemoryService.close(sessionId);
+    }
+
+    @Override
     public List<MemorySearchResult> recall(MemoryQuery query) {
+        return memoryRecallService.recallComposite(query);
+    }
+
+    @Override
+    public List<MemorySearchResult> recallForAgent(AgentMemoryContext context, MemoryQuery query) {
+        // 使用代理上下文信息丰富查询条件
+        if (context.getCharacterId() != null) {
+            query.setCharacterId(context.getCharacterId());
+        }
+        if (context.getWorkspaceId() != null) {
+            query.setWorkspaceId(context.getWorkspaceId());
+        }
+        if (context.getSessionId() != null) {
+            query.setSessionId(context.getSessionId());
+        }
+
+        // 调用召回服务
         return memoryRecallService.recallComposite(query);
     }
 }

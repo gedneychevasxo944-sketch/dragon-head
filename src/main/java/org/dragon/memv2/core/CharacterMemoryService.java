@@ -15,11 +15,11 @@ public interface CharacterMemoryService {
 
     MemoryEntry update(String characterId, MemoryEntry entry);
 
-    Optional<MemoryEntry> get(String characterId, String memoryId);
+    Optional<MemoryEntry> get(String characterId, MemoryId memoryId);
 
     List<MemoryEntry> list(String characterId);
 
-    void delete(String characterId, String memoryId);
+    void delete(String characterId, MemoryId memoryId);
 
     void rebuildIndex(String characterId);
 }

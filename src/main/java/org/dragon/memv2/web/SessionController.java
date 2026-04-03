@@ -27,6 +27,20 @@ public class SessionController {
         this.memoryFacade = memoryFacade;
     }
 
+    @PostMapping("/{sessionId}/start")
+    public SessionSnapshotDTO startSession(@PathVariable String sessionId,
+                                           @RequestParam String workspaceId,
+                                           @RequestParam String characterId) {
+        SessionSnapshot snapshot = memoryFacade.startSession(sessionId, workspaceId, characterId);
+        return MemoryConverter.toDto(snapshot);
+    }
+
+    @GetMapping("/{sessionId}")
+    public SessionSnapshotDTO getSession(@PathVariable String sessionId) {
+        SessionSnapshot snapshot = memoryFacade.getSession(sessionId);
+        return MemoryConverter.toDto(snapshot);
+    }
+
     @PostMapping("/{sessionId}/update")
     public SessionSnapshotDTO updateSession(@PathVariable String sessionId,
                                             @RequestBody SessionSnapshotDTO snapshotDto) {
@@ -35,11 +49,21 @@ public class SessionController {
         return MemoryConverter.toDto(updatedSnapshot);
     }
 
+    @PostMapping("/{sessionId}/checkpoint")
+    public void checkpointSession(@PathVariable String sessionId) {
+        memoryFacade.checkpointSession(sessionId);
+    }
+
     @PostMapping("/{sessionId}/flush")
     public List<MemoryEntryDTO> flushSessionToLongTerm(@PathVariable String sessionId) {
         List<MemoryEntry> entries = memoryFacade.flushSessionToLongTerm(sessionId);
         return entries.stream()
                 .map(MemoryConverter::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @PostMapping("/{sessionId}/close")
+    public void closeSession(@PathVariable String sessionId) {
+        memoryFacade.closeSession(sessionId);
     }
 }

@@ -34,7 +34,7 @@ public class DefaultCharacterMemoryService implements CharacterMemoryService {
     }
 
     @Override
-    public Optional<MemoryEntry> get(String characterId, String memoryId) {
+    public Optional<MemoryEntry> get(String characterId, MemoryId memoryId) {
         return characterMemoryRepository.get(characterId, memoryId);
     }
 
@@ -44,7 +44,7 @@ public class DefaultCharacterMemoryService implements CharacterMemoryService {
     }
 
     @Override
-    public void delete(String characterId, String memoryId) {
+    public void delete(String characterId, MemoryId memoryId) {
         characterMemoryRepository.delete(characterId, memoryId);
     }
 

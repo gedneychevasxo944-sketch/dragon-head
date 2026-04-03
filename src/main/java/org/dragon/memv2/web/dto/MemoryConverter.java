@@ -30,7 +30,7 @@ public class MemoryConverter {
         }
 
         return MemoryEntryDTO.builder()
-                .id(entry.getId())
+                .id(entry.getId() != null ? entry.getId().getValue() : null)
                 .title(entry.getTitle())
                 .description(entry.getDescription())
                 .type(entry.getType() != null ? entry.getType().name() : null)
@@ -57,7 +57,7 @@ public class MemoryConverter {
         }
 
         return MemoryEntry.builder()
-                .id(dto.getId())
+                .id(dto.getId() != null ? MemoryId.of(dto.getId()) : null)
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .type(dto.getType() != null ? MemoryType.valueOf(dto.getType()) : null)

@@ -34,7 +34,7 @@ public class DefaultWorkspaceMemoryService implements WorkspaceMemoryService {
     }
 
     @Override
-    public Optional<MemoryEntry> get(String workspaceId, String memoryId) {
+    public Optional<MemoryEntry> get(String workspaceId, MemoryId memoryId) {
         return workspaceMemoryRepository.get(workspaceId, memoryId);
     }
 
@@ -44,7 +44,7 @@ public class DefaultWorkspaceMemoryService implements WorkspaceMemoryService {
     }
 
     @Override
-    public void delete(String workspaceId, String memoryId) {
+    public void delete(String workspaceId, MemoryId memoryId) {
         workspaceMemoryRepository.delete(workspaceId, memoryId);
     }
 

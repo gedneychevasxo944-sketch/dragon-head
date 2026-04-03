@@ -14,5 +14,7 @@ public interface MemoryRecallService {
 
     List<MemorySearchResult> recallWorkspace(String workspaceId, String query, int limit);
 
+    List<MemorySearchResult> recallSession(String sessionId, String query, int limit);
+
     List<MemorySearchResult> recallComposite(MemoryQuery query);
 }

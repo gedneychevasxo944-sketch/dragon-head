@@ -3,6 +3,12 @@ package org.dragon.memv2.config;
 import org.dragon.memv2.storage.MemoryPathResolver;
 import org.dragon.memv2.storage.MemoryMarkdownParser;
 import org.dragon.memv2.storage.MemoryIndexParser;
+import org.dragon.memv2.storage.repo.CharacterMemoryRepository;
+import org.dragon.memv2.storage.repo.WorkspaceMemoryRepository;
+import org.dragon.memv2.storage.repo.SessionMemoryRepository;
+import org.dragon.memv2.storage.fs.FileCharacterMemoryRepository;
+import org.dragon.memv2.storage.fs.FileWorkspaceMemoryRepository;
+import org.dragon.memv2.storage.fs.FileSessionMemoryRepository;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,5 +38,28 @@ public class MemoryAutoConfiguration {
     @Bean
     public MemoryIndexParser memoryIndexParser() {
         return new MemoryIndexParser();
+    }
+
+    @Bean
+    public CharacterMemoryRepository characterMemoryRepository(
+            MemoryPathResolver pathResolver,
+            MemoryMarkdownParser markdownParser,
+            MemoryIndexParser indexParser) {
+        return new FileCharacterMemoryRepository(pathResolver, markdownParser, indexParser);
+    }
+
+    @Bean
+    public WorkspaceMemoryRepository workspaceMemoryRepository(
+            MemoryPathResolver pathResolver,
+            MemoryMarkdownParser markdownParser,
+            MemoryIndexParser indexParser) {
+        return new FileWorkspaceMemoryRepository(pathResolver, markdownParser, indexParser);
+    }
+
+    @Bean
+    public SessionMemoryRepository sessionMemoryRepository(
+            MemoryPathResolver pathResolver,
+            MemoryMarkdownParser markdownParser) {
+        return new FileSessionMemoryRepository(pathResolver, markdownParser);
     }
 }

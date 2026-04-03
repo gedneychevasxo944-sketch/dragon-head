@@ -48,7 +48,7 @@ public class FileCharacterMemoryRepository extends AbstractFileMemoryRepository 
     }
 
     @Override
-    public Optional<MemoryEntry> get(String characterId, String memoryId) {
+    public Optional<MemoryEntry> get(String characterId, MemoryId memoryId) {
         return super.getMemory(characterId, memoryId);
     }
 
@@ -58,7 +58,7 @@ public class FileCharacterMemoryRepository extends AbstractFileMemoryRepository 
     }
 
     @Override
-    public void delete(String characterId, String memoryId) {
+    public void delete(String characterId, MemoryId memoryId) {
         super.deleteMemory(characterId, memoryId);
     }
 

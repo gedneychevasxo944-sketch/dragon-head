@@ -55,8 +55,9 @@ public class MemoryIndexParser {
     /**
      * 生成记忆ID
      */
-    private String generateMemoryId(String title) {
-        return title.toLowerCase().replaceAll("[^a-zA-Z0-9_]", "_").trim();
+    private MemoryId generateMemoryId(String title) {
+        String idString = title.toLowerCase().replaceAll("[^a-zA-Z0-9_]", "_").trim();
+        return MemoryId.of(idString);
     }
 
     /**

@@ -24,7 +24,7 @@ public class MemoryEntry {
     /**
      * 记忆ID
      */
-    private String id;
+    private MemoryId id;
 
     /**
      * 记忆标题

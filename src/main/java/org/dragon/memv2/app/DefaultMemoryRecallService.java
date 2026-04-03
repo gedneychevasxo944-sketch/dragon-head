@@ -5,8 +5,10 @@ import org.dragon.memv2.core.MemoryQuery;
 import org.dragon.memv2.core.MemorySearchResult;
 import org.dragon.memv2.core.MemoryRecallService;
 import org.dragon.memv2.core.MemoryRanker;
+import org.dragon.memv2.core.SessionSnapshot;
 import org.dragon.memv2.storage.repo.CharacterMemoryRepository;
 import org.dragon.memv2.storage.repo.WorkspaceMemoryRepository;
+import org.dragon.memv2.storage.repo.SessionMemoryRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -25,13 +27,16 @@ import java.util.stream.Collectors;
 public class DefaultMemoryRecallService implements MemoryRecallService {
     private final CharacterMemoryRepository characterMemoryRepository;
     private final WorkspaceMemoryRepository workspaceMemoryRepository;
+    private final SessionMemoryRepository sessionMemoryRepository;
     private final MemoryRanker memoryRanker;
 
     public DefaultMemoryRecallService(CharacterMemoryRepository characterMemoryRepository,
                                       WorkspaceMemoryRepository workspaceMemoryRepository,
+                                      SessionMemoryRepository sessionMemoryRepository,
                                       MemoryRanker memoryRanker) {
         this.characterMemoryRepository = characterMemoryRepository;
         this.workspaceMemoryRepository = workspaceMemoryRepository;
+        this.sessionMemoryRepository = sessionMemoryRepository;
         this.memoryRanker = memoryRanker;
     }
 
@@ -48,6 +53,30 @@ public class DefaultMemoryRecallService implements MemoryRecallService {
     }
 
     @Override
+    public List<MemorySearchResult> recallSession(String sessionId, String query, int limit) {
+        Optional<SessionSnapshot> snapshotOpt = sessionMemoryRepository.get(sessionId);
+        if (snapshotOpt.isPresent()) {
+            SessionSnapshot snapshot = snapshotOpt.get();
+            // 这里可以根据需要将 SessionSnapshot 转换为 MemoryEntry 进行搜索
+            // 目前简单实现：如果会话内容包含查询词，则返回该会话的记忆结果
+            List<MemoryEntry> sessionEntries = new ArrayList<>();
+            MemoryEntry entry = MemoryEntry.builder()
+                    .id(MemoryId.generate())
+                    .title("会话摘要")
+                    .description(snapshot.getSummary())
+                    .content(snapshot.getContent())
+                    .type(MemoryType.SESSION)
+                    .scope(MemoryScope.SESSION)
+                    .ownerId(sessionId)
+                    .updatedAt(snapshot.getUpdatedAt())
+                    .build();
+            sessionEntries.add(entry);
+            return searchEntries(sessionEntries, query, limit);
+        }
+        return new ArrayList<>();
+    }
+
+    @Override
     public List<MemorySearchResult> recallComposite(MemoryQuery query) {
         List<MemorySearchResult> results = new ArrayList<>();
 
@@ -57,6 +86,10 @@ public class DefaultMemoryRecallService implements MemoryRecallService {
 
         if (query.getWorkspaceId() != null) {
             results.addAll(recallWorkspace(query.getWorkspaceId(), query.getText(), query.getLimit()));
+        }
+
+        if (query.getSessionId() != null) {
+            results.addAll(recallSession(query.getSessionId(), query.getText(), query.getLimit()));
         }
 
         // 统一过滤规则

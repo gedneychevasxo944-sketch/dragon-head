@@ -48,7 +48,7 @@ public class FileWorkspaceMemoryRepository extends AbstractFileMemoryRepository 
     }
 
     @Override
-    public Optional<MemoryEntry> get(String workspaceId, String memoryId) {
+    public Optional<MemoryEntry> get(String workspaceId, MemoryId memoryId) {
         return super.getMemory(workspaceId, memoryId);
     }
 
@@ -58,7 +58,7 @@ public class FileWorkspaceMemoryRepository extends AbstractFileMemoryRepository 
     }
 
     @Override
-    public void delete(String workspaceId, String memoryId) {
+    public void delete(String workspaceId, MemoryId memoryId) {
         super.deleteMemory(workspaceId, memoryId);
     }
 

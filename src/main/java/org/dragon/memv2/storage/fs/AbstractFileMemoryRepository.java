@@ -86,7 +86,7 @@ public abstract class AbstractFileMemoryRepository {
     /**
      * 获取记忆文件
      */
-    protected Optional<MemoryEntry> getMemory(String id, String memoryId) {
+    protected Optional<MemoryEntry> getMemory(String id, MemoryId memoryId) {
         Path memDir = resolveMemDir(id);
         try {
             if (!Files.exists(memDir)) {
@@ -98,7 +98,7 @@ public abstract class AbstractFileMemoryRepository {
                         .filter(Files::isRegularFile)
                         .filter(p -> p.toString().endsWith(".md"))
                         .map(this::readMemoryFile)
-                        .filter(entry -> memoryId.equals(entry.getId()))
+                        .filter(entry -> entry.getId() != null && memoryId.equals(entry.getId()))
                         .findFirst();
             }
         } catch (Exception e) {
@@ -133,7 +133,7 @@ public abstract class AbstractFileMemoryRepository {
     /**
      * 删除记忆文件
      */
-    protected void deleteMemory(String id, String memoryId) {
+    protected void deleteMemory(String id, MemoryId memoryId) {
         Path memDir = resolveMemDir(id);
         try {
             Optional<MemoryEntry> entryOpt = getMemory(id, memoryId);

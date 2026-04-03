@@ -79,7 +79,7 @@ public class MemoryMarkdownParser {
 
                 switch (key.toLowerCase()) {
                     case "id":
-                        entry.setId(value);
+                        entry.setId(MemoryId.of(value));
                         break;
                     case "name":
                         entry.setTitle(value);

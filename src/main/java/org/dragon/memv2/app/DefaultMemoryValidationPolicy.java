@@ -21,7 +21,7 @@ public class DefaultMemoryValidationPolicy implements MemoryValidationPolicy {
             return ValidationResult.invalid("记忆条目不能为空");
         }
 
-        if (entry.getId() == null || entry.getId().isEmpty()) {
+        if (entry.getId() == null) {
             return ValidationResult.invalid("记忆ID不能为空");
         }
 

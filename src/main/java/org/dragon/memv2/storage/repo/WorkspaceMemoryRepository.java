@@ -17,11 +17,11 @@ public interface WorkspaceMemoryRepository {
 
     MemoryEntry update(String workspaceId, MemoryEntry entry);
 
-    Optional<MemoryEntry> get(String workspaceId, String memoryId);
+    Optional<MemoryEntry> get(String workspaceId, MemoryId memoryId);
 
     List<MemoryEntry> list(String workspaceId);
 
-    void delete(String workspaceId, String memoryId);
+    void delete(String workspaceId, MemoryId memoryId);
 
     void rebuildIndex(String workspaceId);
 }
