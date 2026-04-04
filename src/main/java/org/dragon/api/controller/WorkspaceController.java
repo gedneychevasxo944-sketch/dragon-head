@@ -67,7 +67,7 @@ public class WorkspaceController {
             @RequestParam(required = false) String teamStatus,
             @RequestParam(required = false) Boolean hasObserver) {
         PageResponse<Workspace> result = workspaceApiApplication.listWorkspaces(
-                page, pageSize, search, status, hasObserver);
+                page, pageSize, search, status, teamStatus, hasObserver);
         return ApiResponse.success(result);
     }
 

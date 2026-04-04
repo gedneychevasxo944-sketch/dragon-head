@@ -58,11 +58,12 @@ public class WorkspaceApiApplication {
      * @param pageSize    每页数量
      * @param search      搜索关键词
      * @param status      状态筛选
+     * @param teamStatus  团队状态筛选 (complete/incomplete/not_initialized)
      * @param hasObserver 是否有 Observer
      * @return 分页结果
      */
     public PageResponse<Workspace> listWorkspaces(int page, int pageSize, String search,
-                                                  String status, Boolean hasObserver) {
+                                                  String status, String teamStatus, Boolean hasObserver) {
         List<Workspace> all;
         if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
             try {
@@ -77,6 +78,7 @@ public class WorkspaceApiApplication {
 
         List<Workspace> filtered = all.stream()
                 .filter(w -> {
+                    // search 筛选
                     if (search != null && !search.isBlank()) {
                         String s = search.toLowerCase();
                         boolean nameMatch = w.getName() != null && w.getName().toLowerCase().contains(s);

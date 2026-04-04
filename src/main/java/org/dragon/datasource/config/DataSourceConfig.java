@@ -47,7 +47,7 @@ public class DataSourceConfig {
                 .cleanDisabled(false)
                 .load();
 //        flyway.clean();
-        flyway.migrate();
+//        flyway.migrate();
         return dataSource;
     }
 }
