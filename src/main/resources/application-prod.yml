@@ -18,6 +18,25 @@ dragon:
     enabled: true
     type: ${DRAGON_STORE_TYPE:MYSQL}
   default-character-id: ${DRAGON_DEFAULT_CHARACTER_ID:}
+  memory:
+    # Memory storage type: file, mysql, or memory (default: file)
+    type: file
+    # Base directory for file storage
+    base-dir: ${DRAGON_MEMORY_BASE_DIR:./data/memories}
+    # Character memory directory pattern
+    character-dir-pattern: ${DRAGON_MEMORY_CHARACTER_DIR_PATTERN:characters/%s/mem}
+    # Workspace memory directory pattern
+    workspace-dir-pattern: ${DRAGON_MEMORY_WORKSPACE_DIR_PATTERN:workspaces/%s/mem}
+    # Session memory directory pattern
+    session-dir-pattern: ${DRAGON_MEMORY_SESSION_DIR_PATTERN:sessions/%s}
+    # Memory index file name
+    index-file-name: MEMORY.md
+    # File encoding for memory files
+    encoding: UTF-8
+    # Maximum size of memory content (in characters)
+    max-content-length: 10000
+    # Maximum number of memory entries per character/workspace
+    max-entries: 1000
 
 # LLM 配置
 llm:

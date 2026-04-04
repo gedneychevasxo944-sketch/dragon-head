@@ -39,6 +39,9 @@ build/
 .plans/
 docs/
 
+### Claude Settings ###
+.claude/settings.local.json
+
 ### Docker ###
 .env
 docker/mysql/data/

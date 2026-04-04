@@ -1,6 +1,10 @@
 package org.dragon.user.controller;
 
 import org.dragon.user.dto.ApiResponse;
+import org.dragon.memv2.exception.MemoryException;
+import org.dragon.memv2.exception.MemoryNotFoundException;
+import org.dragon.memv2.exception.MemoryValidationException;
+import org.dragon.memv2.exception.MemoryStorageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -51,6 +55,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(400, "参数验证失败"));
+    }
+
+    @ExceptionHandler(MemoryException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMemoryException(MemoryException e) {
+        if (e instanceof MemoryNotFoundException) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(404, e.getMessage()));
+        } else if (e instanceof MemoryValidationException) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(400, e.getMessage()));
+        } else if (e instanceof MemoryStorageException) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, e.getMessage()));
+        } else {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, e.getMessage()));
+        }
     }
 
     @ExceptionHandler(Exception.class)
