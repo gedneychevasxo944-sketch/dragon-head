@@ -27,7 +27,7 @@ import org.dragon.character.profile.CharacterProfile;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "character")
+@Table(name = "`character`")
 public class CharacterEntity {
 
     @Id
