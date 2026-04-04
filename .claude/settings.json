@@ -23,7 +23,9 @@
       "Bash(mysql -u root -e \"FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED BY ''; CREATE DATABASE IF NOT EXISTS adeptify CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
       "Bash(pkill -f \"spring-boot:run\")",
       "Bash(pkill -f \"dragon-head\")",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(mvn process-classes:*)",
+      "Bash(mysql -u root -e \"USE adeptify; SOURCE /Users/yijunwang/code/dragon-head/src/main/resources/db/migration/V4__create_registry_tables.sql;\")"
     ],
     "additionalDirectories": [
       "/Users/yijunwang/.claude/plans"

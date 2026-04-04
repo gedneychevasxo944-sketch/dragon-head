@@ -8,6 +8,7 @@ import org.dragon.application.StudioApplication;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.character.Character;
+import org.dragon.studio.service.TraitService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 /**
  * StudioController Studio 模块 API
@@ -40,6 +42,7 @@ import java.util.stream.Collectors;
 public class StudioController {
 
     private final StudioApplication studioApplication;
+    private final TraitService traitService;
 
     // ==================== 1. Character（角色）====================
 
@@ -143,55 +146,8 @@ public class StudioController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String type,
             @RequestParam(required = false) String category) {
-        // 临时实现：返回 mock 数据
-        List<Map<String, Object>> mockTraits = List.of(
-                Map.of("id", "trait_001", "name", "结构化思维", "type", "personality", "category", "行事原则", "description", "倾向于用逻辑和结构化的方式处理信息和问题"),
-                Map.of("id", "trait_002", "name", "数据驱动", "type", "personality", "category", "决策风格", "description", "决策基于数据分析而非直觉"),
-                Map.of("id", "trait_003", "name", "风险管理意识", "type", "personality", "category", "风险偏好", "description", "主动识别和评估潜在风险"),
-                Map.of("id", "trait_004", "name", "批判性思维", "type", "personality", "category", "决策风格", "description", "不轻信信息，善于质疑和分析"),
-                Map.of("id", "trait_005", "name", "高效协作", "type", "personality", "category", "协作风格", "description", "擅长与他人合作，共同完成任务"),
-                Map.of("id", "trait_006", "name", "温暖同理", "type", "personality", "category", "沟通风格", "description", "能够理解和感受他人情绪"),
-                Map.of("id", "trait_007", "name", "耐心引导", "type", "personality", "category", "沟通风格", "description", "不急躁，愿意花时间解释和引导"),
-                Map.of("id", "trait_008", "name", "创意发散", "type", "personality", "category", "语言语气", "description", "思维活跃，善于产生新颖想法"),
-                Map.of("id", "trait_009", "name", "简洁表达", "type", "personality", "category", "语言语气", "description", "追求简洁明了的表达方式"),
-                Map.of("id", "trait_010", "name", "代码质量优先", "type", "config", "category", "默认能力", "description", "严格遵循代码规范和最佳实践"),
-                Map.of("id", "trait_011", "name", "性能意识", "type", "config", "category", "默认能力", "description", "关注系统性能和资源效率"),
-                Map.of("id", "trait_012", "name", "学术严谨", "type", "config", "category", "默认能力", "description", "引用规范，内容经过验证"),
-                Map.of("id", "trait_013", "name", "用户中心", "type", "personality", "category", "行事原则", "description", "始终以用户价值为出发点"),
-                Map.of("id", "trait_014", "name", "迭代思维", "type", "personality", "category", "行事原则", "description", "小步快跑，持续改进"),
-                Map.of("id", "trait_015", "name", "全渠道营销", "type", "config", "category", "工具白名单", "description", "覆盖多个营销渠道的整合能力"),
-                Map.of("id", "trait_016", "name", "品牌叙事", "type", "personality", "category", "语言语气", "description", "擅长讲故事，建立情感连接")
-        );
-
-        // 过滤
-        List<Map<String, Object>> filtered = mockTraits.stream()
-                .filter(t -> {
-                    if (search != null && !search.isBlank()) {
-                        String s = search.toLowerCase();
-                        boolean nameMatch = t.get("name") != null && t.get("name").toString().toLowerCase().contains(s);
-                        boolean descMatch = t.get("description") != null && t.get("description").toString().toLowerCase().contains(s);
-                        if (!nameMatch && !descMatch) return false;
-                    }
-                    if (type != null && !type.isBlank() && !"all".equalsIgnoreCase(type)) {
-                        boolean typeMatch = t.get("type") != null && t.get("type").toString().equals(type);
-                        if (!typeMatch) return false;
-                    }
-                    if (category != null && !category.isBlank() && !"all".equalsIgnoreCase(category)) {
-                        boolean categoryMatch = t.get("category") != null && t.get("category").toString().equals(category);
-                        if (!categoryMatch) return false;
-                    }
-                    return true;
-                })
-                .collect(Collectors.toList());
-
-        long total = filtered.size();
-        int fromIndex = Math.max(0, (page - 1) * pageSize);
-        int toIndex = Math.min(fromIndex + pageSize, filtered.size());
-        List<Map<String, Object>> pageData = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-
-        return ApiResponse.success(PageResponse.of(pageData, total, page, pageSize));
+        return ApiResponse.success(traitService.listTraits(page, pageSize, search, category));
     }
 
     /**
@@ -201,14 +157,7 @@ public class StudioController {
     @Operation(summary = "创建 Trait")
     @PostMapping("/traits")
     public ApiResponse<Map<String, Object>> createTrait(@RequestBody Map<String, Object> traitData) {
-        // 临时实现：返回创建的 Trait
-        Map<String, Object> response = new java.util.HashMap<>(traitData);
-        response.put("id", "trait_" + System.currentTimeMillis());
-        response.put("usedByCount", 0);
-        response.put("enabled", true);
-        response.put("createdAt", java.time.LocalDateTime.now().toString());
-        response.put("updatedAt", java.time.LocalDateTime.now().toString());
-        return ApiResponse.success(response);
+        return ApiResponse.success(traitService.createTrait(traitData));
     }
 
     /**
@@ -217,20 +166,10 @@ public class StudioController {
      */
     @Operation(summary = "获取 Trait 详情")
     @GetMapping("/traits/{id}")
-    public ApiResponse<Map<String, Object>> getTrait(@PathVariable String id) {
-        // 临时实现：返回 mock 数据
-        return ApiResponse.success(Map.of(
-                "id", id,
-                "name", "示例 Trait",
-                "type", "personality",
-                "category", "沟通风格",
-                "description", "这是一个示例 Trait",
-                "content", "Trait 的详细内容",
-                "usedByCount", 1,
-                "enabled", true,
-                "createdAt", java.time.LocalDateTime.now().minusDays(10).toString(),
-                "updatedAt", java.time.LocalDateTime.now().minusDays(5).toString()
-        ));
+    public ApiResponse<Map<String, Object>> getTrait(@PathVariable Long id) {
+        Optional<Map<String, Object>> trait = traitService.getTrait(id);
+        return trait.map(ApiResponse::success)
+                .orElse(ApiResponse.error(404, "Trait not found: " + id));
     }
 
     /**
@@ -240,13 +179,11 @@ public class StudioController {
     @Operation(summary = "更新 Trait")
     @PutMapping("/traits/{id}")
     public ApiResponse<Map<String, Object>> updateTrait(
-            @PathVariable String id,
+            @PathVariable Long id,
             @RequestBody Map<String, Object> traitData) {
-        // 临时实现：返回更新后的 Trait
-        Map<String, Object> response = new java.util.HashMap<>(traitData);
-        response.put("id", id);
-        response.put("updatedAt", java.time.LocalDateTime.now().toString());
-        return ApiResponse.success(response);
+        Optional<Map<String, Object>> updated = traitService.updateTrait(id, traitData);
+        return updated.map(ApiResponse::success)
+                .orElse(ApiResponse.error(404, "Trait not found: " + id));
     }
 
     /**
@@ -255,8 +192,9 @@ public class StudioController {
      */
     @Operation(summary = "删除 Trait")
     @DeleteMapping("/traits/{id}")
-    public ApiResponse<Map<String, Object>> deleteTrait(@PathVariable String id) {
-        return ApiResponse.success(Map.of("success", true));
+    public ApiResponse<Void> deleteTrait(@PathVariable Long id) {
+        boolean deleted = traitService.deleteTrait(id);
+        return deleted ? ApiResponse.success() : ApiResponse.error(404, "Trait not found: " + id);
     }
 
     // ==================== 3. Template（内置模板）====================
