@@ -1,4 +1,4 @@
-package org.dragon.permission.entity;
+package org.dragon.datasource.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

@@ -3,7 +3,7 @@ package org.dragon.permission.service;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.permission.dto.CollaboratorDTO;
 import org.dragon.permission.dto.InvitationDTO;
-import org.dragon.permission.entity.AssetMemberEntity;
+import org.dragon.datasource.entity.AssetMemberEntity;
 import org.dragon.permission.enums.ApprovalType;
 import org.dragon.permission.enums.Role;
 import org.dragon.permission.store.AssetMemberStore;

@@ -1,7 +1,7 @@
 package org.dragon.permission.store;
 
 import io.ebean.Database;
-import org.dragon.permission.entity.PermissionPolicyEntity;
+import org.dragon.datasource.entity.PermissionPolicyEntity;
 import org.dragon.permission.enums.Role;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;

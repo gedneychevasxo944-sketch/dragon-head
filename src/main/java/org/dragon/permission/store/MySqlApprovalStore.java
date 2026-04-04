@@ -1,7 +1,7 @@
 package org.dragon.permission.store;
 
 import io.ebean.Database;
-import org.dragon.permission.entity.ApprovalRequestEntity;
+import org.dragon.datasource.entity.ApprovalRequestEntity;
 import org.dragon.permission.enums.ApprovalStatus;
 import org.dragon.permission.enums.ApprovalType;
 import org.dragon.store.StoreType;

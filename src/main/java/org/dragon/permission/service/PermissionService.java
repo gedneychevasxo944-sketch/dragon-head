@@ -1,8 +1,8 @@
 package org.dragon.permission.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.permission.entity.AssetMemberEntity;
-import org.dragon.permission.entity.PermissionPolicyEntity;
+import org.dragon.datasource.entity.AssetMemberEntity;
+import org.dragon.datasource.entity.PermissionPolicyEntity;
 import org.dragon.permission.enums.Permission;
 import org.dragon.permission.enums.Role;
 import org.dragon.permission.store.AssetMemberStore;

@@ -1,6 +1,6 @@
 package org.dragon.permission.store;
 
-import org.dragon.permission.entity.PermissionPolicyEntity;
+import org.dragon.datasource.entity.PermissionPolicyEntity;
 import org.dragon.permission.enums.Role;
 import org.dragon.store.Store;
 import org.dragon.permission.enums.ResourceType;

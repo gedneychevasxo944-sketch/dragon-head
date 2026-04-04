@@ -1,4 +1,4 @@
-package org.dragon.permission.entity;
+package org.dragon.datasource.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.permission.enums.Role;
 import org.dragon.permission.enums.ResourceType;
+
+import java.time.LocalDateTime;
 
 /**
  * PermissionPolicyEntity 权限策略表
@@ -42,23 +44,23 @@ public class PermissionPolicyEntity {
     private String permission;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private java.time.LocalDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private java.time.LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
-            createdAt = java.time.LocalDateTime.now();
+            createdAt = LocalDateTime.now();
         }
         if (updatedAt == null) {
-            updatedAt = java.time.LocalDateTime.now();
+            updatedAt = LocalDateTime.now();
         }
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = java.time.LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 }

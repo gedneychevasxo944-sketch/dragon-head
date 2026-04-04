@@ -1,7 +1,7 @@
 package org.dragon.permission.store;
 
 import io.ebean.Database;
-import org.dragon.permission.entity.AssetMemberEntity;
+import org.dragon.datasource.entity.AssetMemberEntity;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import org.dragon.permission.enums.ResourceType;

@@ -1,6 +1,6 @@
 package org.dragon.permission.store;
 
-import org.dragon.permission.entity.ApprovalRequestEntity;
+import org.dragon.datasource.entity.ApprovalRequestEntity;
 import org.dragon.permission.enums.ApprovalStatus;
 import org.dragon.permission.enums.ApprovalType;
 import org.dragon.store.Store;
