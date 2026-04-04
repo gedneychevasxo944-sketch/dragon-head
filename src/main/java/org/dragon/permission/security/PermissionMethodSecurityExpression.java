@@ -147,6 +147,13 @@ public class PermissionMethodSecurityExpression
     }
 
     /**
+     * 检查当前用户是否有权限查看指定资源（支持 Long 类型的资源 ID）
+     */
+    public boolean canView(Long resourceId, String resourceType) {
+        return canView(String.valueOf(resourceId), resourceType);
+    }
+
+    /**
      * 检查当前用户是否有权限编辑指定资源
      */
     public boolean canEdit(String resourceId, String resourceType) {
@@ -155,6 +162,13 @@ public class PermissionMethodSecurityExpression
                 resourceId,
                 getCurrentUserId()
         );
+    }
+
+    /**
+     * 检查当前用户是否有权限编辑指定资源（支持 Long 类型的资源 ID）
+     */
+    public boolean canEdit(Long resourceId, String resourceType) {
+        return canEdit(String.valueOf(resourceId), resourceType);
     }
 
     /**
@@ -169,6 +183,13 @@ public class PermissionMethodSecurityExpression
     }
 
     /**
+     * 检查当前用户是否有权限删除指定资源（支持 Long 类型的资源 ID）
+     */
+    public boolean canDelete(Long resourceId, String resourceType) {
+        return canDelete(String.valueOf(resourceId), resourceType);
+    }
+
+    /**
      * 检查当前用户是否有权限使用（调用/执行）指定资源
      */
     public boolean canUse(String resourceId, String resourceType) {
@@ -177,6 +198,13 @@ public class PermissionMethodSecurityExpression
                 resourceId,
                 getCurrentUserId()
         );
+    }
+
+    /**
+     * 检查当前用户是否有权限使用（调用/执行）指定资源（支持 Long 类型的资源 ID）
+     */
+    public boolean canUse(Long resourceId, String resourceType) {
+        return canUse(String.valueOf(resourceId), resourceType);
     }
 
     /**
@@ -191,6 +219,13 @@ public class PermissionMethodSecurityExpression
     }
 
     /**
+     * 检查当前用户是否有权限管理指定资源的协作者（支持 Long 类型的资源 ID）
+     */
+    public boolean canManage(Long resourceId, String resourceType) {
+        return canManage(String.valueOf(resourceId), resourceType);
+    }
+
+    /**
      * 检查当前用户是否是指定资源的所有者
      */
     public boolean isOwner(String resourceId, String resourceType) {
@@ -199,6 +234,13 @@ public class PermissionMethodSecurityExpression
                 resourceId,
                 getCurrentUserId()
         );
+    }
+
+    /**
+     * 检查当前用户是否是指定资源的所有者（支持 Long 类型的资源 ID）
+     */
+    public boolean isOwner(Long resourceId, String resourceType) {
+        return isOwner(String.valueOf(resourceId), resourceType);
     }
 
     /**
