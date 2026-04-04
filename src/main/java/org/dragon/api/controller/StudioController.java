@@ -171,8 +171,8 @@ public class StudioController {
     @Operation(summary = "获取 Trait 详情")
     @GetMapping("/traits/{id}")
     @PreAuthorize("canView(#id, 'TRAIT')")
-    public ApiResponse<Map<String, Object>> getTrait(@PathVariable Long id) {
-        Optional<Map<String, Object>> trait = traitService.getTrait(id);
+    public ApiResponse<Map<String, Object>> getTrait(@PathVariable String id) {
+        Optional<Map<String, Object>> trait = traitService.getTrait(Long.parseLong(id));
         return trait.map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Trait not found: " + id));
     }
@@ -185,9 +185,9 @@ public class StudioController {
     @PutMapping("/traits/{id}")
     @PreAuthorize("canEdit(#id, 'TRAIT')")
     public ApiResponse<Map<String, Object>> updateTrait(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestBody Map<String, Object> traitData) {
-        Optional<Map<String, Object>> updated = traitService.updateTrait(id, traitData);
+        Optional<Map<String, Object>> updated = traitService.updateTrait(Long.parseLong(id), traitData);
         return updated.map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Trait not found: " + id));
     }
@@ -199,8 +199,8 @@ public class StudioController {
     @Operation(summary = "删除 Trait")
     @DeleteMapping("/traits/{id}")
     @PreAuthorize("canDelete(#id, 'TRAIT')")
-    public ApiResponse<Void> deleteTrait(@PathVariable Long id) {
-        boolean deleted = traitService.deleteTrait(id);
+    public ApiResponse<Void> deleteTrait(@PathVariable String id) {
+        boolean deleted = traitService.deleteTrait(Long.parseLong(id));
         return deleted ? ApiResponse.success() : ApiResponse.error(404, "Trait not found: " + id);
     }
 

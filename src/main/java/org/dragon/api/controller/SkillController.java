@@ -85,8 +85,8 @@ public class SkillController {
     @Operation(summary = "获取技能详情")
     @GetMapping("/{id}")
     @PreAuthorize("canView(#id, 'SKILL')")
-    public ApiResponse<SkillResponse> getSkill(@PathVariable Long id) {
-        SkillResponse response = skillApplication.getSkill(id);
+    public ApiResponse<SkillResponse> getSkill(@PathVariable String id) {
+        SkillResponse response = skillApplication.getSkill(Long.parseLong(id));
         return ApiResponse.success(response);
     }
 
@@ -98,10 +98,10 @@ public class SkillController {
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("canEdit(#id, 'SKILL')")
     public ApiResponse<SkillResponse> updateSkill(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestPart(value = "file", required = false) MultipartFile file,
             @RequestPart("data") SkillUpdateRequest request) {
-        SkillResponse response = skillApplication.updateSkill(id, file, request);
+        SkillResponse response = skillApplication.updateSkill(Long.parseLong(id), file, request);
         return ApiResponse.success(response);
     }
 
@@ -113,9 +113,9 @@ public class SkillController {
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasPermission(#id, 'SKILL', 'PUBLISH')")
     public ApiResponse<SkillResponse> publishSkill(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestBody PublishSkillRequest request) {
-        SkillResponse response = skillApplication.publishSkill(id, request.getVersion(), request.getChangelog());
+        SkillResponse response = skillApplication.publishSkill(Long.parseLong(id), request.getVersion(), request.getChangelog());
         return ApiResponse.success(response);
     }
 
@@ -126,8 +126,8 @@ public class SkillController {
     @Operation(summary = "删除技能")
     @DeleteMapping("/{id}")
     @PreAuthorize("canDelete(#id, 'SKILL')")
-    public ApiResponse<Map<String, Object>> deleteSkill(@PathVariable Long id) {
-        skillApplication.deleteSkill(id);
+    public ApiResponse<Map<String, Object>> deleteSkill(@PathVariable String id) {
+        skillApplication.deleteSkill(Long.parseLong(id));
         return ApiResponse.success(Map.of("success", true));
     }
 
@@ -139,14 +139,14 @@ public class SkillController {
     @PutMapping("/{id}/draft")
     @PreAuthorize("canEdit(#id, 'SKILL')")
     public ApiResponse<SkillResponse> saveDraft(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         Map<String, Object> content = (Map<String, Object>) body.get("content");
         if (content == null) {
             content = body;
         }
-        SkillResponse response = skillApplication.saveDraft(id, content);
+        SkillResponse response = skillApplication.saveDraft(Long.parseLong(id), content);
         return ApiResponse.success(response);
     }
 
