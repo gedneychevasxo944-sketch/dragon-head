@@ -3,19 +3,15 @@ package org.dragon.skill;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.skill.model.Skill;
-import org.dragon.skill.model.SkillEntry;
 import org.dragon.skill.model.SkillInstallSpec;
 import org.dragon.skill.model.SkillInvocationPolicy;
 import org.dragon.skill.model.SkillMetadata;
 import org.dragon.skill.model.SkillRequires;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -256,10 +252,6 @@ public class SkillFrontmatterParser {
             JsonObject metaObj = meta.getAsJsonObject();
             return SkillMetadata.builder()
                     .always(hasAndTrue(metaObj, "always") ? true : null)
-                    .skillKey(textOrNull(metaObj, "skillKey"))
-                    .primaryEnv(textOrNull(metaObj, "primaryEnv"))
-                    .emoji(textOrNull(metaObj, "emoji"))
-                    .homepage(textOrNull(metaObj, "homepage"))
                     .os(stringList(metaObj, "os"))
                     .requires(resolveRequires(metaObj))
                     .allowedTools(stringList(metaObj, "allowedTools"))
@@ -288,17 +280,6 @@ public class SkillFrontmatterParser {
         boolean disableModelInvocation = parseBool(
                 frontmatter.get("disable-model-invocation"), false);
         return new SkillInvocationPolicy(userInvocable, disableModelInvocation);
-    }
-
-    /**
-     * 从技能名称和条目中解析技能键（标识符）。
-     */
-    public static String resolveSkillKey(Skill skill, SkillEntry entry) {
-        if (entry != null && entry.getMetadata() != null
-                && entry.getMetadata().getSkillKey() != null) {
-            return entry.getMetadata().getSkillKey();
-        }
-        return skill.getName();
     }
 
     // =========================================================================

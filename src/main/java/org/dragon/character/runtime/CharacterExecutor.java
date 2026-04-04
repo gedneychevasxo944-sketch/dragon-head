@@ -139,7 +139,6 @@ public class CharacterExecutor {
             if (collaborationEnabled && bridgeContext.getCollaborationSessionId() != null) {
                 String collaborationPrompt = "";
                 if (runtime.getPromptManager() != null) {
-                    String workspace = resolveWorkspace();
                     collaborationPrompt = runtime.getPromptManager().getPrompt(workspace, profile.getId(), PromptKeys.CHARACTER_COLLABORATION_DECISION);
                 }
                 contextBuilder
