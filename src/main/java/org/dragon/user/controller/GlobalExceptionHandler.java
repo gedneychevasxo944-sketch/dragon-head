@@ -1,10 +1,10 @@
 package org.dragon.user.controller;
 
 import org.dragon.user.dto.ApiResponse;
-import org.dragon.memv2.exception.MemoryException;
-import org.dragon.memv2.exception.MemoryNotFoundException;
-import org.dragon.memv2.exception.MemoryValidationException;
-import org.dragon.memv2.exception.MemoryStorageException;
+import org.dragon.memory.exception.MemoryException;
+import org.dragon.memory.exception.MemoryNotFoundException;
+import org.dragon.memory.exception.MemoryValidationException;
+import org.dragon.memory.exception.MemoryStorageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;

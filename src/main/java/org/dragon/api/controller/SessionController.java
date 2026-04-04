@@ -1,8 +1,8 @@
 package org.dragon.api.controller;
 
-import org.dragon.memv2.core.MemoryEntry;
-import org.dragon.memv2.core.SessionSnapshot;
-import org.dragon.memv2.core.MemoryFacade;
+import org.dragon.memory.core.MemoryEntry;
+import org.dragon.memory.core.SessionSnapshot;
+import org.dragon.memory.core.MemoryFacade;
 import org.dragon.api.controller.dto.MemoryConverter;
 import org.dragon.api.controller.dto.MemoryEntryDTO;
 import org.dragon.api.controller.dto.SessionSnapshotDTO;

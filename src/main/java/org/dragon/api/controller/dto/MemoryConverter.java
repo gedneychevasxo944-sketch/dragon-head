@@ -1,12 +1,12 @@
 package org.dragon.api.controller.dto;
 
-import org.dragon.memv2.core.MemoryEntry;
-import org.dragon.memv2.core.MemoryQuery;
-import org.dragon.memv2.core.MemoryScope;
-import org.dragon.memv2.core.MemorySearchResult;
-import org.dragon.memv2.core.MemoryType;
-import org.dragon.memv2.core.SessionSnapshot;
-import org.dragon.memv2.core.MemoryId;
+import org.dragon.memory.core.MemoryEntry;
+import org.dragon.memory.core.MemoryQuery;
+import org.dragon.memory.core.MemoryScope;
+import org.dragon.memory.core.MemorySearchResult;
+import org.dragon.memory.core.MemoryType;
+import org.dragon.memory.core.SessionSnapshot;
+import org.dragon.memory.core.MemoryId;
 
 import java.util.stream.Collectors;
 

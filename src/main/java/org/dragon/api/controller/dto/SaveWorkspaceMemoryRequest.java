@@ -1,6 +1,6 @@
 package org.dragon.api.controller.dto;
 
-import org.dragon.memv2.core.MemoryEntry;
+import org.dragon.memory.core.MemoryEntry;
 
 /**
  * 保存工作空间记忆请求DTO
