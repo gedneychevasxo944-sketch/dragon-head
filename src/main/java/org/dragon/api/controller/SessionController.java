@@ -6,6 +6,7 @@ import org.dragon.memory.core.MemoryFacade;
 import org.dragon.api.controller.dto.MemoryConverter;
 import org.dragon.api.controller.dto.MemoryEntryDTO;
 import org.dragon.api.controller.dto.SessionSnapshotDTO;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/sessions")
+@PreAuthorize("isAuthenticated()")
 public class SessionController {
     private final MemoryFacade memoryFacade;
 

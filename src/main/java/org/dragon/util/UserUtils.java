@@ -1,6 +1,6 @@
 package org.dragon.util;
 
-import org.dragon.user.security.filter.JwtAuthenticationFilter;
+import org.dragon.user.security.UserPrincipal;
 import org.dragon.util.bean.UserInfo;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,14 +23,14 @@ public class UserUtils {
             return new UserInfo();
         }
 
-        String userId;
-        String username;
-
         Object principal = authentication.getPrincipal();
-        if (principal instanceof JwtAuthenticationFilter.UserPrincipal(Long id, String username1)) {
-            userId = String.valueOf(id);
-            username = username1;
-            return new UserInfo(userId, username, null, authentication.isAuthenticated());
+        if (principal instanceof UserPrincipal userPrincipal) {
+            return new UserInfo(
+                String.valueOf(userPrincipal.getUserId()),
+                userPrincipal.getUsername(),
+                null,
+                authentication.isAuthenticated()
+            );
         }
 
         return new UserInfo();

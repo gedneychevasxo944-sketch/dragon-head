@@ -1,7 +1,7 @@
 -- V4: Create registry tables for Character, Model, Observer, Tool persistence
 
 -- Character table
-CREATE TABLE character (
+CREATE TABLE `character` (
     id VARCHAR(64) PRIMARY KEY,
     workspace_ids JSON,
     organization_ids JSON,

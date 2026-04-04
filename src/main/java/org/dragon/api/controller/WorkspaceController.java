@@ -88,6 +88,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace 详情")
     @GetMapping("/{workspaceId}")
+    @PreAuthorize("canView(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Workspace> getWorkspace(@PathVariable String workspaceId) {
         return workspaceApiApplication.getWorkspace(workspaceId)
                 .map(ApiResponse::success)
@@ -100,6 +101,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "更新 Workspace 设置")
     @PutMapping("/{workspaceId}/settings")
+    @PreAuthorize("canEdit(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Workspace> updateWorkspace(
             @PathVariable String workspaceId,
             @RequestBody Workspace workspace) {
@@ -113,6 +115,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "删除 Workspace")
     @DeleteMapping("/{workspaceId}")
+    @PreAuthorize("canDelete(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> deleteWorkspace(@PathVariable String workspaceId) {
         workspaceApiApplication.deleteWorkspace(workspaceId);
         return ApiResponse.success(Map.of("success", true));
@@ -126,6 +129,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace AI 团队成员列表")
     @GetMapping("/{workspaceId}/members")
+    @PreAuthorize("canView(#workspaceId, 'WORKSPACE')")
     public ApiResponse<List<WorkspaceMember>> listMembers(@PathVariable String workspaceId) {
         List<WorkspaceMember> members = workspaceApiApplication.listMembers(workspaceId);
         return ApiResponse.success(members);
@@ -148,6 +152,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "添加 Workspace 成员")
     @PostMapping("/{workspaceId}/members")
+    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<WorkspaceMember> addMember(
             @PathVariable String workspaceId,
             @RequestBody AddMemberRequest request) {
@@ -167,6 +172,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "移除 Workspace 成员")
     @DeleteMapping("/{workspaceId}/members/{memberId}")
+    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> removeMember(
             @PathVariable String workspaceId,
             @PathVariable String memberId) {
@@ -260,6 +266,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace Observer 绑定信息")
     @GetMapping("/{workspaceId}/observer")
+    @PreAuthorize("canView(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> getObserverInfo(@PathVariable String workspaceId) {
         Map<String, Object> info = workspaceApiApplication.getObserverInfo(workspaceId);
         return ApiResponse.success(info);
@@ -271,6 +278,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "为 Workspace 绑定 Observer")
     @PostMapping("/{workspaceId}/observer")
+    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> bindObserver(
             @PathVariable String workspaceId,
             @RequestBody BindObserverRequest request) {
@@ -285,6 +293,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "解绑 Workspace Observer")
     @DeleteMapping("/{workspaceId}/observer")
+    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> unbindObserver(@PathVariable String workspaceId) {
         workspaceApiApplication.unbindObserver(workspaceId);
         return ApiResponse.success(Map.of("success", true));
@@ -411,6 +420,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace 权限成员列表")
     @GetMapping("/{workspaceId}/permissions")
+    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<List<Map<String, Object>>> listPermissions(@PathVariable String workspaceId) {
         List<Map<String, Object>> permissions = workspaceApiApplication.listPermissions(workspaceId);
         return ApiResponse.success(permissions);
@@ -422,6 +432,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "添加 Workspace 成员权限")
     @PostMapping("/{workspaceId}/permissions")
+    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> addPermission(
             @PathVariable String workspaceId,
             @RequestBody PermissionRequest request) {
@@ -435,6 +446,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "更新 Workspace 成员权限")
     @PutMapping("/{workspaceId}/permissions/{userId}")
+    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> updatePermission(
             @PathVariable String workspaceId,
             @PathVariable String userId,
@@ -449,6 +461,7 @@ public class WorkspaceController {
      */
     @Operation(summary = "移除 Workspace 成员权限")
     @DeleteMapping("/{workspaceId}/permissions/{userId}")
+    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> removePermission(
             @PathVariable String workspaceId,
             @PathVariable String userId) {

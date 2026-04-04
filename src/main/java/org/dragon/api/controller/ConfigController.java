@@ -66,6 +66,7 @@ public class ConfigController {
      */
     @Operation(summary = "更新配置项（可保存为草稿）")
     @PutMapping("/items/{id}")
+    @PreAuthorize("canEdit(#id, 'CONFIG')")
     public ApiResponse<Map<String, Object>> updateConfigItem(
             @PathVariable String id,
             @RequestBody UpdateConfigRequest request) {
@@ -80,6 +81,7 @@ public class ConfigController {
      */
     @Operation(summary = "发布配置草稿")
     @PostMapping("/items/{id}/publish")
+    @PreAuthorize("hasPermission(#id, 'CONFIG', 'PUBLISH')")
     public ApiResponse<Map<String, Object>> publishConfigItem(@PathVariable String id) {
         Map<String, Object> result = configApplication.publishConfigItem(id);
         return ApiResponse.success(result);
@@ -91,6 +93,7 @@ public class ConfigController {
      */
     @Operation(summary = "回滚配置到指定版本")
     @PostMapping("/items/{id}/rollback")
+    @PreAuthorize("canEdit(#id, 'CONFIG')")
     public ApiResponse<Map<String, Object>> rollbackConfigItem(
             @PathVariable String id,
             @RequestBody RollbackConfigRequest request) {
@@ -104,6 +107,7 @@ public class ConfigController {
      */
     @Operation(summary = "获取配置项生效链")
     @GetMapping("/items/{id}/effect-chain")
+    @PreAuthorize("canView(#id, 'CONFIG')")
     public ApiResponse<List<Map<String, Object>>> getEffectChain(@PathVariable String id) {
         List<Map<String, Object>> chain = configApplication.getEffectChain(id);
         return ApiResponse.success(chain);
@@ -131,6 +135,7 @@ public class ConfigController {
      */
     @Operation(summary = "获取配置项变更影响分析")
     @GetMapping("/items/{id}/impact")
+    @PreAuthorize("canView(#id, 'CONFIG')")
     public ApiResponse<Map<String, Object>> getImpactAnalysis(@PathVariable String id) {
         Map<String, Object> impact = configApplication.getImpactAnalysis(id);
         return ApiResponse.success(impact);

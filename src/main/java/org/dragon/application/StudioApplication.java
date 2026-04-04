@@ -6,6 +6,9 @@ import org.dragon.api.dto.PageResponse;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.PermissionService;
+import org.dragon.util.UserUtils;
 import org.dragon.workspace.WorkspaceApplicationProvider;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +33,7 @@ public class StudioApplication {
 
     private final CharacterRegistry characterRegistry;
     private final WorkspaceApplicationProvider workspaceApplicationProvider;
+    private final PermissionService permissionService;
 
     // ==================== Character CRUD ====================
 
@@ -47,9 +51,17 @@ public class StudioApplication {
                                                   String status, String source) {
         List<Character> all = characterRegistry.listAll();
 
+        // 按用户可见性过滤
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.CHARACTER, userId);
+
         // 过滤
         List<Character> filtered = all.stream()
                 .filter(c -> {
+                    // 可见性过滤
+                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(c.getId())) {
+                        return false;
+                    }
                     if (search != null && !search.isBlank()) {
                         String s = search.toLowerCase();
                         boolean nameMatch = c.getName() != null && c.getName().toLowerCase().contains(s);

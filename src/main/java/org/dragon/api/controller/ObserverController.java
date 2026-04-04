@@ -79,6 +79,7 @@ public class ObserverController {
      */
     @Operation(summary = "获取 Observer 详情")
     @GetMapping("/{id}")
+    @PreAuthorize("canView(#id, 'OBSERVER')")
     public ApiResponse<Observer> getObserver(@PathVariable String id) {
         return observerApplication.getObserver(id)
                 .map(ApiResponse::success)
@@ -91,6 +92,7 @@ public class ObserverController {
      */
     @Operation(summary = "更新 Observer")
     @PutMapping("/{id}")
+    @PreAuthorize("canEdit(#id, 'OBSERVER')")
     public ApiResponse<Observer> updateObserver(
             @PathVariable String id,
             @RequestBody Observer observer) {
@@ -104,6 +106,7 @@ public class ObserverController {
      */
     @Operation(summary = "删除 Observer")
     @DeleteMapping("/{id}")
+    @PreAuthorize("canDelete(#id, 'OBSERVER')")
     public ApiResponse<Map<String, Object>> deleteObserver(@PathVariable String id) {
         observerApplication.deleteObserver(id);
         return ApiResponse.success(Map.of("success", true));
@@ -115,6 +118,7 @@ public class ObserverController {
      */
     @Operation(summary = "手动触发 Observer 评价")
     @PostMapping("/{id}/evaluate")
+    @PreAuthorize("canUse(#id, 'OBSERVER')")
     public ApiResponse<Map<String, Object>> triggerEvaluation(@PathVariable String id) {
         Map<String, Object> result = observerApplication.triggerEvaluation(id);
         return ApiResponse.success(result);

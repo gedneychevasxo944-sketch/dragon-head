@@ -1,11 +1,16 @@
 package org.dragon.user.security.config;
 
+import jakarta.annotation.PostConstruct;
+import org.dragon.permission.security.PermissionServiceExpressionHandler;
+import org.dragon.permission.service.PermissionService;
 import org.dragon.user.security.filter.JwtAuthenticationFilter;
 import org.dragon.user.security.handler.JwtAccessDeniedHandler;
 import org.dragon.user.security.handler.JwtAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.GlobalMethodSecurityConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -27,18 +32,30 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-public class SecurityConfig {
+public class SecurityConfig extends GlobalMethodSecurityConfiguration {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final PermissionService permissionService;
+    private final PermissionServiceExpressionHandler expressionHandler;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                           JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
-                          JwtAccessDeniedHandler jwtAccessDeniedHandler) {
+                          JwtAccessDeniedHandler jwtAccessDeniedHandler,
+                          PermissionService permissionService,
+                          PermissionServiceExpressionHandler expressionHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
         this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
+        this.permissionService = permissionService;
+        this.expressionHandler = expressionHandler;
+    }
+
+    @PostConstruct
+    public void init() {
+        expressionHandler.setPermissionService(permissionService);
+        setMethodSecurityExpressionHandler(List.of(expressionHandler));
     }
 
     @Bean

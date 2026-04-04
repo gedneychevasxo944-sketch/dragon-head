@@ -43,6 +43,13 @@ public class UserEntity {
     @Builder.Default
     private String status = "NORMAL";
 
+    /**
+     * 用户角色：ADMIN（管理员）或 USER（普通用户）
+     */
+    @Column(length = 16)
+    @Builder.Default
+    private String role = "USER";
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 

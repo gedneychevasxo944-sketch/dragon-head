@@ -5,11 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLog;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.PermissionService;
 import org.dragon.skill.dto.SkillBindingRequest;
 import org.dragon.skill.dto.SkillBindingResponse;
 import org.dragon.skill.dto.SkillBindingUpdateRequest;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
+import org.dragon.util.UserUtils;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceApplication;
 import org.dragon.workspace.WorkspaceApplicationProvider;
@@ -44,6 +47,7 @@ public class WorkspaceApiApplication {
     private final WorkspaceApplicationProvider workspaceApplicationProvider;
     private final WorkspaceLifecycleService workspaceLifecycleService;
     private final WorkspaceMemberManagementService memberManagementService;
+    private final PermissionService permissionService;
 
     private WorkspaceApplication app(String workspaceId) {
         return workspaceApplicationProvider.getApplication(workspaceId);
@@ -76,6 +80,10 @@ public class WorkspaceApiApplication {
             all = workspaceLifecycleService.listWorkspaces();
         }
 
+        // 按用户可见性过滤
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.WORKSPACE, userId);
+
         List<Workspace> filtered = all.stream()
                 .filter(w -> {
                     // search 筛选
@@ -83,6 +91,10 @@ public class WorkspaceApiApplication {
                         String s = search.toLowerCase();
                         boolean nameMatch = w.getName() != null && w.getName().toLowerCase().contains(s);
                         if (!nameMatch) return false;
+                    }
+                    // 可见性过滤
+                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(w.getId())) {
+                        return false;
                     }
                     return true;
                 })

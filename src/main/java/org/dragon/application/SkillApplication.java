@@ -3,6 +3,8 @@ package org.dragon.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.PermissionService;
 import org.dragon.skill.dto.SkillCreateRequest;
 import org.dragon.skill.dto.SkillQueryRequest;
 import org.dragon.skill.dto.SkillResponse;
@@ -10,11 +12,13 @@ import org.dragon.skill.dto.SkillUpdateRequest;
 import org.dragon.skill.enums.SkillCategory;
 import org.dragon.skill.enums.SkillVisibility;
 import org.dragon.skill.service.SkillManageService;
+import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * SkillApplication Skill 模块应用服务
@@ -30,6 +34,7 @@ import java.util.Map;
 public class SkillApplication {
 
     private final SkillManageService skillManageService;
+    private final PermissionService permissionService;
 
     // ==================== Skill CRUD ====================
 
@@ -67,10 +72,25 @@ public class SkillApplication {
         }
 
         List<SkillResponse> all = skillManageService.listSkills(request);
-        long total = all.size();
+
+        // 按用户可见性过滤
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.SKILL, userId);
+
+        List<SkillResponse> filtered = all.stream()
+                .filter(skill -> {
+                    if (visibleIds != null && !visibleIds.isEmpty()) {
+                        String skillId = String.valueOf(skill.getId());
+                        if (!visibleIds.contains(skillId)) return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        long total = filtered.size();
         int fromIndex = Math.max(0, (page - 1) * pageSize);
-        int toIndex = Math.min(fromIndex + pageSize, all.size());
-        List<SkillResponse> pageData = fromIndex >= all.size() ? List.of() : all.subList(fromIndex, toIndex);
+        int toIndex = Math.min(fromIndex + pageSize, filtered.size());
+        List<SkillResponse> pageData = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
         return PageResponse.of(pageData, total, page, pageSize);
     }
 

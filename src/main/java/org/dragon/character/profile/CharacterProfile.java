@@ -37,11 +37,6 @@ public class CharacterProfile {
     private List<String> workspaceIds;
 
     /**
-     * 所属 Organization ID
-     */
-    private List<String> organizationIds;
-
-    /**
      * Character 名称
      */
     private String name;
