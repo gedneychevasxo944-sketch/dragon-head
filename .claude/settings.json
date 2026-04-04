@@ -12,7 +12,18 @@
       "Bash(git rm:*)",
       "Bash(git stash:*)",
       "Bash(git push:*)",
-      "Read(//Users/yijunwang/code/adeptify-fe/**)"
+      "Read(//Users/yijunwang/code/adeptify-fe/**)",
+      "Bash(./mvnw spring-boot:run)",
+      "Bash(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS adeptify CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
+      "Bash(brew services:*)",
+      "Bash(mysql -u root --socket=/tmp/mysql.sock -e \"SELECT 1\")",
+      "Bash(mysql -u root -h 127.0.0.1 -P 3306 -e \"SELECT 1\")",
+      "Read(//opt/homebrew/etc/**)",
+      "Bash(mysqld_safe --skip-grant-tables --skip-networking)",
+      "Bash(mysql -u root -e \"FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED BY ''; CREATE DATABASE IF NOT EXISTS adeptify CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
+      "Bash(pkill -f \"spring-boot:run\")",
+      "Bash(pkill -f \"dragon-head\")",
+      "Bash(git pull:*)"
     ],
     "additionalDirectories": [
       "/Users/yijunwang/.claude/plans"
