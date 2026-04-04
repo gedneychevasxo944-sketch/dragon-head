@@ -87,6 +87,22 @@ public class Character {
         profile.setDescription(description);
     }
 
+    public String getAvatar() {
+        return profile.getAvatar();
+    }
+
+    public void setAvatar(String avatar) {
+        profile.setAvatar(avatar);
+    }
+
+    public String getSource() {
+        return profile.getSource();
+    }
+
+    public void setSource(String source) {
+        profile.setSource(source);
+    }
+
     public Integer getVersion() {
         return profile.getVersion();
     }
@@ -117,6 +133,62 @@ public class Character {
 
     public void setExtensions(Map<String, Object> extensions) {
         profile.setExtensions(extensions);
+    }
+
+    public List<String> getTraits() {
+        return profile.getTraits();
+    }
+
+    public void setTraits(List<String> traits) {
+        profile.setTraits(traits);
+    }
+
+    public Map<String, Object> getTraitConfigs() {
+        return profile.getTraitConfigs();
+    }
+
+    public void setTraitConfigs(Map<String, Object> traitConfigs) {
+        profile.setTraitConfigs(traitConfigs);
+    }
+
+    public List<Map<String, Object>> getSkills() {
+        return profile.getSkills();
+    }
+
+    public void setSkills(List<Map<String, Object>> skills) {
+        profile.setSkills(skills);
+    }
+
+    public String getPromptTemplate() {
+        return profile.getPromptTemplate();
+    }
+
+    public void setPromptTemplate(String promptTemplate) {
+        profile.setPromptTemplate(promptTemplate);
+    }
+
+    public List<String> getDefaultTools() {
+        return profile.getDefaultTools();
+    }
+
+    public void setDefaultTools(List<String> defaultTools) {
+        profile.setDefaultTools(defaultTools);
+    }
+
+    public Boolean getIsRunning() {
+        return profile.getIsRunning();
+    }
+
+    public void setIsRunning(Boolean isRunning) {
+        profile.setIsRunning(isRunning);
+    }
+
+    public Integer getDeployedCount() {
+        return profile.getDeployedCount();
+    }
+
+    public void setDeployedCount(Integer deployedCount) {
+        profile.setDeployedCount(deployedCount);
     }
 
     public LocalDateTime getCreatedAt() {

@@ -58,6 +58,16 @@ public class CharacterProfile {
     private String description;
 
     /**
+     * 头像 URL
+     */
+    private String avatar;
+
+    /**
+     * 角色来源
+     */
+    private String source;
+
+    /**
      * 心智模块配置
      */
     private MindConfig mindConfig;
@@ -78,6 +88,41 @@ public class CharacterProfile {
      */
     @Builder.Default
     private Set<String> allowedTools = new HashSet<>();
+
+    /**
+     * Trait IDs
+     */
+    private List<String> traits;
+
+    /**
+     * Trait 配置
+     */
+    private Map<String, Object> traitConfigs;
+
+    /**
+     * 技能引用
+     */
+    private List<Map<String, Object>> skills;
+
+    /**
+     * Prompt 模板
+     */
+    private String promptTemplate;
+
+    /**
+     * 默认工具列表
+     */
+    private List<String> defaultTools;
+
+    /**
+     * 是否正在运行
+     */
+    private Boolean isRunning;
+
+    /**
+     * 派驻数量
+     */
+    private Integer deployedCount;
 
     /**
      * 创建时间

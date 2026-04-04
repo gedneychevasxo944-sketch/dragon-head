@@ -248,7 +248,7 @@
                         <id>main</id>
                         <phase>process-classes</phase>
                         <configuration>
-                            <package>org.dragon.datasource.entity</package>
+                            <packages>org.dragon.datasource.entity,org.dragon.skill.entity</packages>
                         </configuration>
                         <goals>
                             <goal>enhance</goal>
@@ -258,7 +258,7 @@
                         <id>test</id>
                         <phase>process-test-classes</phase>
                         <configuration>
-                            <package>org.dragon.datasource.entity</package>
+                            <packages>org.dragon.datasource.entity,org.dragon.skill.entity</packages>
                         </configuration>
                         <goals>
                             <goal>enhance</goal>
