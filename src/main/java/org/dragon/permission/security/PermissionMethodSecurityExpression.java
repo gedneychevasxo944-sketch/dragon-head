@@ -136,124 +136,88 @@ public class PermissionMethodSecurityExpression
     }
 
     /**
-     * 检查当前用户是否有权限查看指定资源
+     * 将资源ID转换为字符串
      */
-    public boolean canView(String resourceId, String resourceType) {
-        return permissionService.canView(
-                ResourceType.valueOf(resourceType),
-                resourceId,
-                getCurrentUserId()
-        );
+    private String toResourceIdString(Object resourceId) {
+        if (resourceId == null) {
+            return null;
+        }
+        return String.valueOf(resourceId);
     }
 
     /**
-     * 检查当前用户是否有权限查看指定资源（支持 Long 类型的资源 ID）
+     * 检查当前用户是否有权限查看指定资源
      */
-    public boolean canView(Long resourceId, String resourceType) {
-        return canView(String.valueOf(resourceId), resourceType);
+    public boolean canView(Object resourceId, String resourceType) {
+        return permissionService.canView(
+                ResourceType.valueOf(resourceType),
+                toResourceIdString(resourceId),
+                getCurrentUserId()
+        );
     }
 
     /**
      * 检查当前用户是否有权限编辑指定资源
      */
-    public boolean canEdit(String resourceId, String resourceType) {
+    public boolean canEdit(Object resourceId, String resourceType) {
         return permissionService.canEdit(
                 ResourceType.valueOf(resourceType),
-                resourceId,
+                toResourceIdString(resourceId),
                 getCurrentUserId()
         );
-    }
-
-    /**
-     * 检查当前用户是否有权限编辑指定资源（支持 Long 类型的资源 ID）
-     */
-    public boolean canEdit(Long resourceId, String resourceType) {
-        return canEdit(String.valueOf(resourceId), resourceType);
     }
 
     /**
      * 检查当前用户是否有权限删除指定资源
      */
-    public boolean canDelete(String resourceId, String resourceType) {
+    public boolean canDelete(Object resourceId, String resourceType) {
         return permissionService.canDelete(
                 ResourceType.valueOf(resourceType),
-                resourceId,
+                toResourceIdString(resourceId),
                 getCurrentUserId()
         );
-    }
-
-    /**
-     * 检查当前用户是否有权限删除指定资源（支持 Long 类型的资源 ID）
-     */
-    public boolean canDelete(Long resourceId, String resourceType) {
-        return canDelete(String.valueOf(resourceId), resourceType);
     }
 
     /**
      * 检查当前用户是否有权限使用（调用/执行）指定资源
      */
-    public boolean canUse(String resourceId, String resourceType) {
+    public boolean canUse(Object resourceId, String resourceType) {
         return permissionService.canUse(
                 ResourceType.valueOf(resourceType),
-                resourceId,
+                toResourceIdString(resourceId),
                 getCurrentUserId()
         );
-    }
-
-    /**
-     * 检查当前用户是否有权限使用（调用/执行）指定资源（支持 Long 类型的资源 ID）
-     */
-    public boolean canUse(Long resourceId, String resourceType) {
-        return canUse(String.valueOf(resourceId), resourceType);
     }
 
     /**
      * 检查当前用户是否有权限管理指定资源的协作者
      */
-    public boolean canManage(String resourceId, String resourceType) {
+    public boolean canManage(Object resourceId, String resourceType) {
         return permissionService.canManageMembers(
                 ResourceType.valueOf(resourceType),
-                resourceId,
+                toResourceIdString(resourceId),
                 getCurrentUserId()
         );
-    }
-
-    /**
-     * 检查当前用户是否有权限管理指定资源的协作者（支持 Long 类型的资源 ID）
-     */
-    public boolean canManage(Long resourceId, String resourceType) {
-        return canManage(String.valueOf(resourceId), resourceType);
     }
 
     /**
      * 检查当前用户是否是指定资源的所有者
      */
-    public boolean isOwner(String resourceId, String resourceType) {
+    public boolean isOwner(Object resourceId, String resourceType) {
         return permissionService.isOwner(
                 ResourceType.valueOf(resourceType),
-                resourceId,
+                toResourceIdString(resourceId),
                 getCurrentUserId()
         );
     }
 
     /**
-     * 检查当前用户是否是指定资源的所有者（支持 Long 类型的资源 ID）
-     */
-    public boolean isOwner(Long resourceId, String resourceType) {
-        return isOwner(String.valueOf(resourceId), resourceType);
-    }
-
-    /**
      * 通用权限检查
-     *
-     * @param resourceId     资源ID
-     * @param resourceType   资源类型
-     * @param permission     权限名称（VIEW, EDIT, DELETE 等）
      */
-    public boolean hasPermission(String resourceId, String resourceType, String permission) {
+    public boolean hasPermission(Object resourceId, String resourceType, String permission) {
         return permissionService.hasPermission(
                 ResourceType.valueOf(resourceType),
-                resourceId,
+                toResourceIdString(resourceId),
                 getCurrentUserId(),
                 Permission.valueOf(permission)
         );
@@ -262,10 +226,10 @@ public class PermissionMethodSecurityExpression
     /**
      * 获取当前用户在指定资源类型上的所有权限
      */
-    public Set<Permission> getPermissions(String resourceId, String resourceType) {
+    public Set<Permission> getPermissions(Object resourceId, String resourceType) {
         return permissionService.getPermissions(
                 ResourceType.valueOf(resourceType),
-                resourceId,
+                toResourceIdString(resourceId),
                 getCurrentUserId()
         );
     }
