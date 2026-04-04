@@ -275,10 +275,14 @@ public class CharacterExecutor {
                     runtime.getSkillRegistry());
         }
         DefaultMind defaultMind = new DefaultMind(
-                profile.getId(), null, null, skillAccess);
+                profile.getId(), null, null, skillAccess, runtime.getTraitResolutionService());
         String personalityPath = profile.getMindConfig().getPersonalityDescriptorPath();
         if (personalityPath != null && !personalityPath.isEmpty()) {
             defaultMind.loadPersonality(personalityPath);
+        }
+        // 如果有 trait IDs，从数据库加载 Trait 内容
+        if (profile.getTraits() != null && !profile.getTraits().isEmpty()) {
+            defaultMind.loadPersonalityFromTraitIds(profile.getTraits());
         }
         return defaultMind;
     }

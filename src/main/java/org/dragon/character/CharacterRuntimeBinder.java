@@ -7,7 +7,7 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
-import org.dragon.character.mind.Mind;
+import org.dragon.character.mind.TraitResolutionService;
 import org.dragon.store.StoreFactory;
 import org.dragon.character.runtime.CharacterRuntime;
 import org.dragon.config.PromptManager;
@@ -38,6 +38,7 @@ public class CharacterRuntimeBinder {
     private final OrchestrationService orchestrationService;
     private final StoreFactory storeFactory;
     private final SkillRegistry skillRegistry;
+    private final TraitResolutionService traitResolutionService;
 
     /**
      * 绑定 Character 运行时依赖
@@ -56,8 +57,9 @@ public class CharacterRuntimeBinder {
                 .modelRegistry(modelRegistry)
                 .orchestrationService(orchestrationService)
                 .mind(null)
-                .workspaceId(workspaceId != null ? Long.parseLong(workspaceId.toString()) : null)
+                .workspaceId(workspaceId != null ? Long.parseLong(workspaceId) : null)
                 .skillRegistry(skillRegistry)
+                .traitResolutionService(traitResolutionService)
                 .build();
 
         character.setRuntime(runtime);
