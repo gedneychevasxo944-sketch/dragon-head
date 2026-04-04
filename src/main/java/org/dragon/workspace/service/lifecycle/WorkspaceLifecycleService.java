@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
+import org.dragon.util.UserUtils;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,9 @@ public class WorkspaceLifecycleService {
     public Workspace createWorkspace(Workspace workspace) {
         if (workspace.getId() == null || workspace.getId().isEmpty()) {
             workspace.setId(UUID.randomUUID().toString());
+        }
+        if (StringUtils.isBlank(workspace.getOwner())) {
+            workspace.setOwner(UserUtils.getUserId());
         }
         workspace.setCreatedAt(LocalDateTime.now());
         workspace.setUpdatedAt(LocalDateTime.now());
