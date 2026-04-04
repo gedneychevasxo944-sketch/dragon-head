@@ -54,15 +54,18 @@ public class CollaboratorService {
      * 直接添加协作者（审批通过后调用）
      */
     public void addMemberDirectly(ResourceType type, String assetId, Long ownerId, Long collaboratorId) {
+        LocalDateTime now = LocalDateTime.now();
         AssetMemberEntity member = AssetMemberEntity.builder()
                 .resourceType(type)
                 .resourceId(assetId)
                 .userId(collaboratorId)
                 .role(Role.COLLABORATOR)
                 .invitedBy(String.valueOf(ownerId))
-                .invitedAt(LocalDateTime.now())
-                .acceptedAt(LocalDateTime.now())
+                .invitedAt(now)
+                .acceptedAt(now)
                 .accepted(true)
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
         assetMemberStore.save(member);
         log.info("[CollaboratorService] Added collaborator: type={}, assetId={}, collaboratorId={}", type, assetId, collaboratorId);
@@ -72,15 +75,18 @@ public class CollaboratorService {
      * 添加资产所有者（资产创建时调用）
      */
     public void addOwnerDirectly(ResourceType type, String assetId, Long ownerId) {
+        LocalDateTime now = LocalDateTime.now();
         AssetMemberEntity member = AssetMemberEntity.builder()
                 .resourceType(type)
                 .resourceId(assetId)
                 .userId(ownerId)
                 .role(Role.OWNER)
                 .invitedBy(String.valueOf(ownerId))
-                .invitedAt(LocalDateTime.now())
-                .acceptedAt(LocalDateTime.now())
+                .invitedAt(now)
+                .acceptedAt(now)
                 .accepted(true)
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
         assetMemberStore.save(member);
         log.info("[CollaboratorService] Added owner: type={}, assetId={}, ownerId={}", type, assetId, ownerId);
