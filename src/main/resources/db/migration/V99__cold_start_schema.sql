@@ -647,7 +647,6 @@ CREATE TABLE `character` (
     status VARCHAR(32),
     created_at DATETIME,
     updated_at DATETIME,
-    INDEX idx_character_workspace (workspace_ids(255)),
     INDEX idx_character_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

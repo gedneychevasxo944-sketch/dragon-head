@@ -41,7 +41,9 @@
       "Bash(mysql -uroot -p123456 -h localhost adeptify -e \"SHOW TABLES LIKE 'tool';\")",
       "Bash(mysql -uroot -p123456 -h localhost adeptify -e \"DROP DATABASE adeptify; CREATE DATABASE adeptify CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
       "Bash(mysql -uroot -p123456 -h localhost adeptify -e \"SOURCE /Users/yijunwang/code/dragon-head/src/main/resources/db/migration/V7__create_collaborator_approval_tables.sql;\")",
-      "Bash(mysql -uroot -p123456 -h localhost adeptify -e ':*)"
+      "Bash(mysql -uroot -p123456 -h localhost adeptify -e ':*)",
+      "Bash(ls /Users/yijunwang/code/dragon-head/*.xml /Users/yijunwang/code/dragon-head/*.gradle)",
+      "Bash(mvn flyway:migrate -q -Dflyway.url=\"jdbc:mysql://localhost:3306/adeptify?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true\" -Dflyway.user=root -Dflyway.password=123456)"
     ],
     "additionalDirectories": [
       "/Users/yijunwang/.claude/plans"
