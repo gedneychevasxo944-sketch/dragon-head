@@ -1,8 +1,15 @@
--- V1: Create all business tables for MySQL storage
--- Generated from Entity classes
+-- ============================================================================
+-- Dragon Head 冷启动数据库 Schema
+-- 整合自 V1~V10 所有迁移文件，冲突部分已处理
+-- ============================================================================
+
+use adeptify;
+
+-- ============================================================================
+-- V1: 核心业务表
+-- ============================================================================
 
 -- Chat message table
-use adeptify;
 CREATE TABLE chat_message (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
@@ -57,6 +64,7 @@ CREATE TABLE workspace (
     description TEXT,
     owner VARCHAR(64) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'INACTIVE',
+    visibility VARCHAR(32) NOT NULL DEFAULT 'PRIVATE' COMMENT 'PUBLIC or PRIVATE',
     properties JSON,
     personality JSON,
     created_at DATETIME,
@@ -72,6 +80,7 @@ CREATE TABLE workspace_member (
     character_id VARCHAR(64) NOT NULL,
     role VARCHAR(64),
     layer VARCHAR(32) DEFAULT 'NORMAL',
+    permission VARCHAR(32) NOT NULL DEFAULT 'VIEW' COMMENT 'VIEW, USE, EDIT, ADMIN, OWNER',
     tags JSON,
     weight DOUBLE DEFAULT 1.0,
     priority INT DEFAULT 0,
@@ -474,7 +483,9 @@ CREATE TABLE observer_action_log (
     INDEX idx_log_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ==================== V2: User & Config Tables ====================
+-- ============================================================================
+-- V1: User & Config Tables
+-- ============================================================================
 
 -- User table
 CREATE TABLE adeptify_user (
@@ -537,8 +548,282 @@ CREATE TABLE config_store (
     INDEX idx_config_workspace (workspace),
     INDEX idx_config_entity (entity_type, entity_id),
     INDEX idx_config_key (config_key)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Add visibility and permission columns to existing tables
-ALTER TABLE workspace ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'PRIVATE' COMMENT 'PUBLIC or PRIVATE';
-ALTER TABLE workspace_member ADD COLUMN permission VARCHAR(32) NOT NULL DEFAULT 'VIEW' COMMENT 'VIEW, USE, EDIT, ADMIN, OWNER';
+-- ============================================================================
+-- V2: Skill tables
+-- ============================================================================
+
+-- Skill metadata table
+CREATE TABLE skill (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(128) NOT NULL UNIQUE,
+    category VARCHAR(32) NOT NULL,
+    version INT NOT NULL DEFAULT 1,
+    tags VARCHAR(512),
+    description TEXT,
+    storage_path VARCHAR(1024) NOT NULL,
+    skill_description TEXT NOT NULL,
+    skill_content TEXT,
+    requires_config TEXT,
+    install_config TEXT,
+    frontmatter_raw TEXT,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    visibility VARCHAR(16) NOT NULL DEFAULT 'PUBLIC',
+    creator_id BIGINT NOT NULL DEFAULT 0,
+    creator_type VARCHAR(16) NOT NULL DEFAULT 'OFFICIAL',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME,
+    INDEX idx_skill_name (name),
+    INDEX idx_skill_category (category),
+    INDEX idx_skill_enabled (enabled),
+    INDEX idx_skill_visibility (visibility),
+    INDEX idx_skill_creator (creator_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Skill binding table (workspace <-> skill)
+CREATE TABLE skill_binding (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    skill_id BIGINT NOT NULL,
+    workspace_id VARCHAR(64) NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    binding_config JSON,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_skill_workspace (skill_id, workspace_id),
+    INDEX idx_binding_skill (skill_id),
+    INDEX idx_binding_workspace (workspace_id),
+    INDEX idx_binding_enabled (enabled),
+    CONSTRAINT fk_binding_skill FOREIGN KEY (skill_id) REFERENCES skill(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- V3: Skill bind table (different from skill_binding!)
+-- ============================================================================
+
+CREATE TABLE skill_bind (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    skill_id BIGINT NOT NULL,
+    bind_type VARCHAR(32) NOT NULL DEFAULT 'WORKSPACE',
+    workspace_id VARCHAR(64),
+    character_id VARCHAR(64),
+    pinned_version INT,
+    use_latest BOOLEAN NOT NULL DEFAULT TRUE,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_bind_skill (skill_id),
+    INDEX idx_bind_workspace (workspace_id),
+    INDEX idx_bind_character (character_id),
+    INDEX idx_bind_type (bind_type),
+    CONSTRAINT fk_bind_skill FOREIGN KEY (skill_id) REFERENCES skill(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- V4: Registry tables (Character, Model, Observer, Tool)
+-- ============================================================================
+
+-- Character table
+CREATE TABLE `character` (
+    id VARCHAR(64) PRIMARY KEY,
+    workspace_ids JSON,
+    organization_ids JSON,
+    name VARCHAR(255),
+    version INT DEFAULT 0,
+    description TEXT,
+    avatar VARCHAR(512),
+    source VARCHAR(64),
+    allowed_tools JSON,
+    traits JSON,
+    trait_configs JSON,
+    skills JSON,
+    prompt_template TEXT,
+    default_tools JSON,
+    is_running BOOLEAN,
+    deployed_count INT DEFAULT 0,
+    mind_config JSON,
+    extensions TEXT,
+    status VARCHAR(32),
+    created_at DATETIME,
+    updated_at DATETIME,
+    INDEX idx_character_workspace (workspace_ids(255)),
+    INDEX idx_character_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Model instance table
+CREATE TABLE model_instance (
+    id VARCHAR(64) PRIMARY KEY,
+    provider VARCHAR(32),
+    model_name VARCHAR(128),
+    endpoint VARCHAR(512),
+    credentials JSON,
+    default_params JSON,
+    enabled BOOLEAN DEFAULT TRUE,
+    description TEXT,
+    priority INT DEFAULT 0,
+    INDEX idx_model_provider (provider),
+    INDEX idx_model_enabled (enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Observer table
+CREATE TABLE observer (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(255),
+    description TEXT,
+    workspace_id VARCHAR(64),
+    status VARCHAR(32) NOT NULL DEFAULT 'INACTIVE',
+    evaluation_mode VARCHAR(32),
+    optimization_threshold DOUBLE,
+    consecutive_low_score_threshold INT DEFAULT 3,
+    common_sense_enabled BOOLEAN DEFAULT TRUE,
+    auto_optimization_enabled BOOLEAN DEFAULT TRUE,
+    periodic_evaluation_hours INT DEFAULT 24,
+    properties JSON,
+    planner_character_ids JSON,
+    reviewer_character_ids JSON,
+    supported_target_types JSON,
+    manual_approval_required BOOLEAN DEFAULT TRUE,
+    schedule_cron VARCHAR(64),
+    plan_window_hours INT DEFAULT 24,
+    max_plan_items INT DEFAULT 50,
+    created_at DATETIME,
+    updated_at DATETIME,
+    INDEX idx_observer_workspace (workspace_id),
+    INDEX idx_observer_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tool table (stores metadata only, execution logic is in code)
+CREATE TABLE tool (
+    name VARCHAR(128) PRIMARY KEY,
+    description TEXT,
+    parameter_schema TEXT,
+    enabled BOOLEAN DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- V5 + V6: Trait table (type column removed per V6)
+-- ============================================================================
+
+CREATE TABLE trait (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    category VARCHAR(64) NOT NULL,
+    description VARCHAR(512),
+    content TEXT NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    used_by_count INT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME,
+    INDEX idx_trait_category (category),
+    INDEX idx_trait_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insert initial trait data
+INSERT INTO trait (name, category, description, content, enabled, used_by_count, create_time) VALUES
+('结构化思维', 'personality', '倾向于用逻辑和结构化的方式处理信息和问题', '你倾向于用逻辑和结构化的方式处理信息和问题。在分析和解决问题时，你会先梳理框架，再填充细节。', true, 0, NOW()),
+('数据驱动', 'personality', '决策基于数据分析而非直觉', '你是一个数据驱动的人，决策时会优先考虑数据和分析结果，而非直觉。你会用数据来验证假设和支持结论。', true, 0, NOW()),
+('风险管理意识', 'personality', '主动识别和评估潜在风险', '你具有强烈的风险管理意识，会主动识别和评估潜在风险。在做决策前，你会考虑各种可能的风险因素。', true, 0, NOW()),
+('批判性思维', 'personality', '不轻信信息，善于质疑和分析', '你具有批判性思维，不轻信信息，善于质疑和分析。你会对信息进行深入思考，而非盲目接受。', true, 0, NOW()),
+('高效协作', 'personality', '擅长与他人合作，共同完成任务', '你擅长与他人合作，能够有效协调团队资源，共同完成复杂任务。你注重沟通和分工配合。', true, 0, NOW()),
+('温暖同理', 'personality', '能够理解和感受他人情绪', '你能够理解和感受他人情绪，与人交流时富有同理心。你善于倾听，能感知对方的真实需求。', true, 0, NOW()),
+('耐心引导', 'personality', '不急躁，愿意花时间解释和引导', '你耐心细致，不急躁，愿意花时间解释和引导他人。你相信循序渐进的力量。', true, 0, NOW()),
+('创意发散', 'personality', '思维活跃，善于产生新颖想法', '你思维活跃，善于产生新颖的想法和创意。你不拘泥于常规，能够提供独特的视角和解决方案。', true, 0, NOW()),
+('简洁表达', 'personality', '追求简洁明了的表达方式', '你追求简洁明了的表达方式，用最精炼的语言传达核心信息。你相信简洁是智慧的灵魂。', true, 0, NOW()),
+('代码质量优先', 'config', '严格遵循代码规范和最佳实践', '你严格遵循代码规范和最佳实践，注重代码的可读性、可维护性和性能。你会进行代码审查并提出改进建议。', true, 0, NOW()),
+('性能意识', 'config', '关注系统性能和资源效率', '你关注系统性能和资源效率，会从性能角度审视设计和实现。你善于发现和解决性能瓶颈。', true, 0, NOW()),
+('学术严谨', 'config', '引用规范，内容经过验证', '你注重学术严谨性，引用规范，内容经过验证。你会确保信息的准确性和可靠性。', true, 0, NOW()),
+('用户中心', 'personality', '始终以用户价值为出发点', '你始终以用户价值为出发点，在做决策时会优先考虑用户需求和使用体验。你相信为用户创造价值是核心目标。', true, 0, NOW()),
+('迭代思维', 'personality', '小步快跑，持续改进', '你信奉迭代思维，倾向于小步快跑、持续改进。你相信完美的方案是通过不断迭代打磨出来的。', true, 0, NOW()),
+('全渠道营销', 'config', '覆盖多个营销渠道的整合能力', '你具备全渠道营销能力，能够整合和协调多个营销渠道的策略和执行。你熟悉各渠道的特点和最佳实践。', true, 0, NOW()),
+('品牌叙事', 'personality', '擅长讲故事，建立情感连接', '你擅长讲故事，能够通过叙事建立与受众的情感连接。你善于用故事来传达品牌价值和理念。', true, 0, NOW());
+
+-- ============================================================================
+-- V7 + V10: Approval tables (asset_collaborator dropped, approval_request updated)
+-- ============================================================================
+
+-- Approval request table (for publish, unpublish, add/remove collaborator approvals)
+-- Note: asset_collaborator table was dropped in V10 (replaced by asset_member from V9)
+CREATE TABLE approval_request (
+    id VARCHAR(64) PRIMARY KEY,
+    resource_type VARCHAR(32) NOT NULL,
+    resource_id VARCHAR(64) NOT NULL,
+    approval_type VARCHAR(32) NOT NULL,
+    requester_id BIGINT NOT NULL,
+    requester_name VARCHAR(255),
+    approver_id BIGINT,
+    approver_name VARCHAR(255),
+    target_user_id BIGINT COMMENT 'For ADD_COLLABORATOR and REMOVE_COLLABORATOR approval types',
+    reason TEXT,
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    requested_at DATETIME NOT NULL,
+    processed_at DATETIME,
+    processed_comment TEXT,
+    INDEX idx_approval_resource (resource_type, resource_id),
+    INDEX idx_approval_requester (requester_id),
+    INDEX idx_approval_approver (approver_id),
+    INDEX idx_approval_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- V9: RBAC tables (asset_member and permission_policy)
+-- ============================================================================
+
+-- asset_member: User's membership/role on an asset
+CREATE TABLE asset_member (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    resource_type VARCHAR(32) NOT NULL COMMENT 'WORKSPACE, CHARACTER, SKILL, etc.',
+    resource_id VARCHAR(64) NOT NULL COMMENT 'ID of the resource',
+    user_id BIGINT NOT NULL COMMENT 'User ID',
+    role VARCHAR(32) NOT NULL COMMENT 'OWNER, ADMIN, COLLABORATOR, MEMBER',
+    invited_by VARCHAR(64) COMMENT 'User ID who invited this member',
+    invited_at DATETIME COMMENT 'When the invitation was sent',
+    accepted_at DATETIME COMMENT 'When the invitation was accepted',
+    accepted BOOLEAN DEFAULT FALSE COMMENT 'Whether invitation is accepted',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_asset_member (resource_type, resource_id, user_id),
+    INDEX idx_asset_member_resource (resource_type, resource_id),
+    INDEX idx_asset_member_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- permission_policy: Permissions granted by role+resource_type
+CREATE TABLE permission_policy (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    resource_type VARCHAR(32) NOT NULL COMMENT 'Specific type or * for all',
+    role VARCHAR(32) NOT NULL COMMENT 'OWNER, ADMIN, COLLABORATOR, MEMBER',
+    permission JSON NOT NULL COMMENT 'Array of permissions',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_policy (role, resource_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed default permission policies
+-- OWNER: 所有者，拥有全部权限
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('*', 'OWNER', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR", "TRANSFER"]');
+
+-- ADMIN: 管理员，拥有编辑管理权限
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WORKSPACE', 'ADMIN', '["VIEW", "USE", "EDIT", "MANAGE_COLLABORATOR"]'),
+('CHARACTER', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('SKILL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('TOOL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('OBSERVER', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "MANAGE_COLLABORATOR"]'),
+('CONFIG', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]'),
+('MODEL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('TEMPLATE', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('COMMONSENSE', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]'),
+('TRAIT', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]');
+
+-- COLLABORATOR: 协作者，仅能查看使用
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('*', 'COLLABORATOR', '["VIEW", "USE"]');
+
+-- MEMBER: 成员，仅能查看（Workspace内资产）
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WORKSPACE', 'MEMBER', '["VIEW"]'),
+('CHARACTER', 'MEMBER', '["VIEW"]'),
+('OBSERVER', 'MEMBER', '["VIEW"]'),
+('CONFIG', 'MEMBER', '["VIEW"]'),
+('COMMONSENSE', 'MEMBER', '["VIEW"]');

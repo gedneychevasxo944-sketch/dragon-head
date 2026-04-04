@@ -1,2 +1,0 @@
--- V8: User role column (reserved for future use - currently unused)
--- Kept for compatibility with future RBAC implementation
