@@ -69,6 +69,24 @@ public class CollaboratorService {
     }
 
     /**
+     * 添加资产所有者（资产创建时调用）
+     */
+    public void addOwnerDirectly(ResourceType type, String assetId, Long ownerId) {
+        AssetMemberEntity member = AssetMemberEntity.builder()
+                .resourceType(type)
+                .resourceId(assetId)
+                .userId(ownerId)
+                .role(Role.OWNER)
+                .invitedBy(String.valueOf(ownerId))
+                .invitedAt(LocalDateTime.now())
+                .acceptedAt(LocalDateTime.now())
+                .accepted(true)
+                .build();
+        assetMemberStore.save(member);
+        log.info("[CollaboratorService] Added owner: type={}, assetId={}, ownerId={}", type, assetId, ownerId);
+    }
+
+    /**
      * 移除协作者
      */
     public void removeCollaborator(ResourceType type, String assetId, Long ownerId, Long collaboratorId) {

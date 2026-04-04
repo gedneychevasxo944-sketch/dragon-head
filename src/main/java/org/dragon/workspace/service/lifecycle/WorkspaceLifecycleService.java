@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.CollaboratorService;
 import org.dragon.util.UserUtils;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
@@ -27,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkspaceLifecycleService {
 
     private final WorkspaceRegistry workspaceRegistry;
+    private final CollaboratorService collaboratorService;
 
     /**
      * 创建工作空间
@@ -49,6 +52,11 @@ public class WorkspaceLifecycleService {
         }
 
         workspaceRegistry.register(workspace);
+
+        // 添加创建者为 Owner
+        Long ownerId = Long.parseLong(String.valueOf(workspace.getOwner()));
+        collaboratorService.addOwnerDirectly(ResourceType.WORKSPACE, workspace.getId(), ownerId);
+
         log.info("[WorkspaceLifecycleService] Created workspace: {}", workspace.getId());
 
         return workspace;

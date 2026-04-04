@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.Observer;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.CollaboratorService;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.util.UserUtils;
 import org.dragon.observer.ObserverRegistry;
@@ -43,6 +44,7 @@ public class ObserverApplication {
     private final ObserverService observerService;
     private final ObserverActionLogService observerActionLogService;
     private final PermissionService permissionService;
+    private final CollaboratorService collaboratorService;
 
     // ==================== Observer CRUD ====================
 
@@ -112,6 +114,11 @@ public class ObserverApplication {
         observer.setCreatedAt(LocalDateTime.now());
         observer.setUpdatedAt(LocalDateTime.now());
         observerRegistry.register(observer);
+
+        // 添加创建者为 Owner
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        collaboratorService.addOwnerDirectly(ResourceType.OBSERVER, observer.getId(), userId);
+
         log.info("[ObserverApplication] Created observer: {}", observer.getId());
         return observerRegistry.get(observer.getId()).orElse(observer);
     }
