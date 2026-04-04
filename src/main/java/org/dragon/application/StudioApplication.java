@@ -139,12 +139,17 @@ public class StudioApplication {
                 .filter(c -> c.getStatus() == CharacterProfile.Status.RUNNING)
                 .count();
 
+        // 计算派驻数量
+        long totalDeployments = all.stream()
+                .mapToLong(c -> c.getWorkspaceIds() != null ? c.getWorkspaceIds().size() : 0)
+                .sum();
+
         return Map.of(
                 "totalCharacters", totalCharacters,
                 "activeCharacters", activeCharacters,
                 "runningCharacters", runningCharacters,
                 "totalTraits", 0,           // Trait 系统待实现
-                "totalDeployments", 0        // Deployment 系统待实现
+                "totalDeployments", totalDeployments
         );
     }
 
@@ -288,10 +293,14 @@ public class StudioApplication {
         record.put("characterId", c.getId());
         record.put("characterName", c.getName() != null ? c.getName() : "");
         record.put("workspaceId", wid);
-        record.put("workspaceName", wid);
+        record.put("workspaceName", "Workspace " + wid); // 临时实现：返回 Workspace 名称
+        record.put("role", "Member"); // 临时实现：返回角色
+        record.put("position", "AI Agent"); // 临时实现：返回职位
+        record.put("level", 3); // 临时实现：返回级别
         record.put("status", c.getStatus() != null ? c.getStatus().name().toLowerCase() : "idle");
         record.put("deployedAt", c.getCreatedAt() != null ? c.getCreatedAt().toString() : "");
         record.put("lastActiveAt", c.getUpdatedAt() != null ? c.getUpdatedAt().toString() : "");
+        record.put("hasOverrides", false); // 临时实现：返回是否有覆盖配置
         return record;
     }
 
