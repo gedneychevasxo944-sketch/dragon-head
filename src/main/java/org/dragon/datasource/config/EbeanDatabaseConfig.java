@@ -25,6 +25,7 @@ public class EbeanDatabaseConfig {
         config.setDataSource(mysqlDataSource);
         config.addPackage("org.dragon.datasource.entity");
         config.addPackage("org.dragon.user.entity");
+        config.addPackage("org.dragon.permission.entity");
         config.setName("mysql");
         config.setDefaultServer(true);
         return DatabaseFactory.create(config);
