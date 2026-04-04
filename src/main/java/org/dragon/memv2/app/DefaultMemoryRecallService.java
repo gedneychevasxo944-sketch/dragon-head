@@ -6,6 +6,9 @@ import org.dragon.memv2.core.MemorySearchResult;
 import org.dragon.memv2.core.MemoryRecallService;
 import org.dragon.memv2.core.MemoryRanker;
 import org.dragon.memv2.core.SessionSnapshot;
+import org.dragon.memv2.core.MemoryId;
+import org.dragon.memv2.core.MemoryType;
+import org.dragon.memv2.core.MemoryScope;
 import org.dragon.memv2.storage.repo.CharacterMemoryRepository;
 import org.dragon.memv2.storage.repo.WorkspaceMemoryRepository;
 import org.dragon.memv2.storage.repo.SessionMemoryRepository;
@@ -65,7 +68,7 @@ public class DefaultMemoryRecallService implements MemoryRecallService {
                     .title("会话摘要")
                     .description(snapshot.getSummary())
                     .content(snapshot.getContent())
-                    .type(MemoryType.SESSION)
+                    .type(MemoryType.SESSION_SUMMARY)
                     .scope(MemoryScope.SESSION)
                     .ownerId(sessionId)
                     .updatedAt(snapshot.getUpdatedAt())

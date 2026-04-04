@@ -1,4 +1,4 @@
-package org.dragon.memv2.web.dto;
+package org.dragon.api.controller.dto;
 
 import org.dragon.memv2.core.MemoryEntry;
 import org.dragon.memv2.core.MemoryQuery;
@@ -6,6 +6,7 @@ import org.dragon.memv2.core.MemoryScope;
 import org.dragon.memv2.core.MemorySearchResult;
 import org.dragon.memv2.core.MemoryType;
 import org.dragon.memv2.core.SessionSnapshot;
+import org.dragon.memv2.core.MemoryId;
 
 import java.util.stream.Collectors;
 

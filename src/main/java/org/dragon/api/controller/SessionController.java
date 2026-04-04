@@ -1,11 +1,11 @@
-package org.dragon.memv2.web;
+package org.dragon.api.controller;
 
 import org.dragon.memv2.core.MemoryEntry;
 import org.dragon.memv2.core.SessionSnapshot;
 import org.dragon.memv2.core.MemoryFacade;
-import org.dragon.memv2.web.dto.MemoryConverter;
-import org.dragon.memv2.web.dto.MemoryEntryDTO;
-import org.dragon.memv2.web.dto.SessionSnapshotDTO;
+import org.dragon.api.controller.dto.MemoryConverter;
+import org.dragon.api.controller.dto.MemoryEntryDTO;
+import org.dragon.api.controller.dto.SessionSnapshotDTO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

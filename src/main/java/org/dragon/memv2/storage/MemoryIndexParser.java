@@ -1,4 +1,6 @@
 package org.dragon.memv2.storage;
+import org.dragon.memv2.core.MemoryId;
+
 
 import org.dragon.memv2.core.MemoryIndexItem;
 import org.dragon.memv2.core.MemoryType;

@@ -1,4 +1,4 @@
-package org.dragon.memv2.web.dto;
+package org.dragon.api.controller.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

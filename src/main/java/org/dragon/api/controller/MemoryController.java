@@ -1,10 +1,11 @@
-package org.dragon.memv2.web;
+package org.dragon.api.controller;
 
 import org.dragon.memv2.core.MemoryEntry;
 import org.dragon.memv2.core.MemoryQuery;
 import org.dragon.memv2.core.MemorySearchResult;
 import org.dragon.memv2.core.MemoryFacade;
-import org.dragon.memv2.web.dto.*;
+import org.dragon.memv2.core.MemoryId;
+import org.dragon.api.controller.dto.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

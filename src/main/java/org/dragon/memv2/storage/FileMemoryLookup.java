@@ -1,4 +1,6 @@
 package org.dragon.memv2.storage;
+import org.dragon.memv2.core.MemoryId;
+
 
 import org.dragon.memv2.core.MemoryEntry;
 import org.dragon.memv2.core.MemoryType;
@@ -61,7 +63,7 @@ public class FileMemoryLookup {
      * @return 找到的记忆条目
      */
     public static Optional<MemoryEntry> findById(String memDir, String memoryId, MemoryMarkdownParser markdownParser) {
-        return findById(Paths.get(memDir), memoryId, markdownParser);
+        return findById(Paths.get(memDir), MemoryId.of(memoryId), markdownParser);
     }
 
     /**
@@ -160,7 +162,7 @@ public class FileMemoryLookup {
      * @return 是否删除成功
      */
     public static boolean delete(Path memDir, String memoryId, MemoryMarkdownParser markdownParser) {
-        Optional<MemoryEntry> entryOpt = findById(memDir, memoryId, markdownParser);
+        Optional<MemoryEntry> entryOpt = findById(memDir, MemoryId.of(memoryId), markdownParser);
         if (entryOpt.isPresent()) {
             Path filePath = Paths.get(entryOpt.get().getFilePath());
             return FileIO.deleteFile(filePath);

@@ -4,6 +4,7 @@ import org.dragon.memv2.core.MemoryEntry;
 import org.dragon.memv2.core.MemoryScope;
 import org.dragon.memv2.core.MemoryType;
 import org.dragon.memv2.core.SessionSnapshot;
+import org.dragon.memv2.core.MemoryId;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;

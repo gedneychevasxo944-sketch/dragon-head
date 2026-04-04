@@ -1,4 +1,6 @@
 package org.dragon.memv2.storage.fs;
+import org.dragon.memv2.core.MemoryId;
+
 
 import org.dragon.memv2.core.MemoryEntry;
 import org.dragon.memv2.storage.MemoryPathResolver;

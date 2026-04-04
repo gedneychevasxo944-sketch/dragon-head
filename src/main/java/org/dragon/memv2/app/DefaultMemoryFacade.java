@@ -1,4 +1,6 @@
 package org.dragon.memv2.app;
+import org.dragon.memv2.core.MemoryId;
+
 
 import org.dragon.memv2.core.MemoryEntry;
 import org.dragon.memv2.core.MemoryFacade;

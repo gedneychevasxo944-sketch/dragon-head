@@ -6,6 +6,7 @@ import org.dragon.memv2.core.MemoryExtractionService;
 import org.dragon.memv2.core.MemoryScope;
 import org.dragon.memv2.core.MemoryType;
 import org.dragon.memv2.core.MemoryRoutingPolicy;
+import org.dragon.memv2.core.MemoryId;
 import org.dragon.memv2.core.MemoryValidationPolicy;
 import org.dragon.memv2.core.MemoryDedupPolicy;
 import org.dragon.memv2.storage.repo.CharacterMemoryRepository;
@@ -161,8 +162,8 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
     /**
      * 生成记忆ID
      */
-    private String generateMemoryId(String content) {
-        return content.toLowerCase().replaceAll("[^a-zA-Z0-9_]", "_").substring(0, Math.min(content.length(), 30));
+    private MemoryId generateMemoryId(String content) {
+        return MemoryId.fromContent(content);
     }
 
 

@@ -40,21 +40,6 @@ public class MemoryAutoConfiguration {
         return new MemoryIndexParser();
     }
 
-    @Bean
-    public CharacterMemoryRepository characterMemoryRepository(
-            MemoryPathResolver pathResolver,
-            MemoryMarkdownParser markdownParser,
-            MemoryIndexParser indexParser) {
-        return new FileCharacterMemoryRepository(pathResolver, markdownParser, indexParser);
-    }
-
-    @Bean
-    public WorkspaceMemoryRepository workspaceMemoryRepository(
-            MemoryPathResolver pathResolver,
-            MemoryMarkdownParser markdownParser,
-            MemoryIndexParser indexParser) {
-        return new FileWorkspaceMemoryRepository(pathResolver, markdownParser, indexParser);
-    }
 
     @Bean
     public SessionMemoryRepository sessionMemoryRepository(

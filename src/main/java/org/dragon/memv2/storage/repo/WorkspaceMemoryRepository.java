@@ -1,4 +1,6 @@
 package org.dragon.memv2.storage.repo;
+import org.dragon.memv2.core.MemoryId;
+
 
 import org.dragon.memv2.core.MemoryEntry;
 

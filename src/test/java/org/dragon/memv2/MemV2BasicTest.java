@@ -5,8 +5,8 @@ import org.dragon.memv2.app.DefaultMemoryRoutingPolicy;
 import org.dragon.memv2.app.DefaultMemoryValidationPolicy;
 import org.dragon.memv2.app.DefaultMemoryDedupPolicy;
 import org.dragon.memv2.config.MemoryAutoConfiguration;
-import org.dragon.memv2.storage.fs.FileCharacterMemoryRepository;
-import org.dragon.memv2.storage.fs.FileWorkspaceMemoryRepository;
+import org.dragon.memv2.storage.repo.CharacterMemoryRepository;
+import org.dragon.memv2.storage.repo.WorkspaceMemoryRepository;
 import org.dragon.memv2.storage.MemoryPathResolver;
 import org.dragon.memv2.storage.MemoryMarkdownParser;
 import org.dragon.memv2.storage.MemoryIndexParser;
@@ -53,15 +53,15 @@ public class MemV2BasicTest {
     }
 
     @Test
-    public void testFileCharacterMemoryRepositoryBean() {
-        FileCharacterMemoryRepository characterRepository = applicationContext.getBean(FileCharacterMemoryRepository.class);
-        assertNotNull(characterRepository, "FileCharacterMemoryRepository bean should be available");
+    public void testCharacterMemoryRepositoryBean() {
+        CharacterMemoryRepository characterRepository = applicationContext.getBean(CharacterMemoryRepository.class);
+        assertNotNull(characterRepository, "CharacterMemoryRepository bean should be available");
     }
 
     @Test
-    public void testFileWorkspaceMemoryRepositoryBean() {
-        FileWorkspaceMemoryRepository workspaceRepository = applicationContext.getBean(FileWorkspaceMemoryRepository.class);
-        assertNotNull(workspaceRepository, "FileWorkspaceMemoryRepository bean should be available");
+    public void testWorkspaceMemoryRepositoryBean() {
+        WorkspaceMemoryRepository workspaceRepository = applicationContext.getBean(WorkspaceMemoryRepository.class);
+        assertNotNull(workspaceRepository, "WorkspaceMemoryRepository bean should be available");
     }
 
     @Test
