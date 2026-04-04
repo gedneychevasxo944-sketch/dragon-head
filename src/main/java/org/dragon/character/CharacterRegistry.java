@@ -1,15 +1,14 @@
 package org.dragon.character;
 
 import org.dragon.character.profile.CharacterProfile;
+import org.dragon.character.store.CharacterStore;
+import org.dragon.store.StoreFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Character 注册中心
@@ -22,15 +21,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Component
 public class CharacterRegistry {
 
-    /**
-     * Character 注册表
-     */
-    private final Map<String, Character> registry = new ConcurrentHashMap<>();
+    private final CharacterStore characterStore;
 
     /**
      * 默认 Character ID
      */
     private volatile String defaultCharacterId;
+
+    public CharacterRegistry(StoreFactory storeFactory) {
+        this.characterStore = storeFactory.get(CharacterStore.class);
+    }
 
     /**
      * 注册 Character
@@ -49,11 +49,11 @@ public class CharacterRegistry {
         character.setUpdatedAt(LocalDateTime.now());
 
         // 如果是第一个 Character，设为默认
-        if (registry.isEmpty()) {
+        if (characterStore.count() == 0) {
             defaultCharacterId = character.getId();
         }
 
-        registry.put(character.getId(), character);
+        characterStore.save(character);
         log.info("[CharacterRegistry] Registered character: {}, version: {}",
                 character.getId(), character.getVersion());
     }
@@ -64,14 +64,17 @@ public class CharacterRegistry {
      * @param characterId Character ID
      */
     public void unregister(String characterId) {
-        Character removed = registry.remove(characterId);
-        if (removed != null) {
-            log.info("[CharacterRegistry] Unregistered character: {}", characterId);
+        if (!characterStore.exists(characterId)) {
+            return;
+        }
 
-            // 如果删除的是默认 Character，选择下一个
-            if (defaultCharacterId != null && defaultCharacterId.equals(characterId)) {
-                defaultCharacterId = registry.isEmpty() ? null : registry.keySet().iterator().next();
-            }
+        characterStore.delete(characterId);
+        log.info("[CharacterRegistry] Unregistered character: {}", characterId);
+
+        // 如果删除的是默认 Character，选择下一个
+        if (defaultCharacterId != null && defaultCharacterId.equals(characterId)) {
+            List<Character> all = characterStore.findAll();
+            defaultCharacterId = all.isEmpty() ? null : all.get(0).getId();
         }
     }
 
@@ -82,7 +85,7 @@ public class CharacterRegistry {
      * @return Optional Character
      */
     public Optional<Character> get(String characterId) {
-        return Optional.ofNullable(registry.get(characterId));
+        return characterStore.findById(characterId);
     }
 
     /**
@@ -103,7 +106,7 @@ public class CharacterRegistry {
      * @return Character 列表
      */
     public List<Character> listAll() {
-        return new CopyOnWriteArrayList<>(registry.values());
+        return characterStore.findAll();
     }
 
     /**
@@ -116,12 +119,12 @@ public class CharacterRegistry {
             throw new IllegalArgumentException("Character or Character id cannot be null");
         }
 
-        if (!registry.containsKey(character.getId())) {
+        if (!characterStore.exists(character.getId())) {
             throw new IllegalArgumentException("Character not found: " + character.getId());
         }
 
         character.setUpdatedAt(LocalDateTime.now());
-        registry.put(character.getId(), character);
+        characterStore.update(character);
         log.info("[CharacterRegistry] Updated character: {}", character.getId());
     }
 
@@ -131,7 +134,7 @@ public class CharacterRegistry {
      * @param characterId Character ID
      */
     public void setDefaultCharacter(String characterId) {
-        if (!registry.containsKey(characterId)) {
+        if (!characterStore.exists(characterId)) {
             throw new IllegalArgumentException("Character not found: " + characterId);
         }
         defaultCharacterId = characterId;
@@ -147,6 +150,7 @@ public class CharacterRegistry {
         get(characterId).ifPresent(character -> {
             character.setStatus(CharacterProfile.Status.LOADED);
             character.setUpdatedAt(LocalDateTime.now());
+            characterStore.update(character);
             log.info("[CharacterRegistry] Loaded character: {}", characterId);
         });
     }
@@ -160,6 +164,7 @@ public class CharacterRegistry {
         get(characterId).ifPresent(character -> {
             character.setStatus(CharacterProfile.Status.RUNNING);
             character.setUpdatedAt(LocalDateTime.now());
+            characterStore.update(character);
             log.info("[CharacterRegistry] Started character: {}", characterId);
         });
     }
@@ -173,6 +178,7 @@ public class CharacterRegistry {
         get(characterId).ifPresent(character -> {
             character.setStatus(CharacterProfile.Status.PAUSED);
             character.setUpdatedAt(LocalDateTime.now());
+            characterStore.update(character);
             log.info("[CharacterRegistry] Paused character: {}", characterId);
         });
     }
@@ -186,6 +192,7 @@ public class CharacterRegistry {
         get(characterId).ifPresent(character -> {
             character.setStatus(CharacterProfile.Status.DESTROYED);
             character.setUpdatedAt(LocalDateTime.now());
+            characterStore.update(character);
             log.info("[CharacterRegistry] Destroyed character: {}", characterId);
         });
     }
@@ -196,7 +203,7 @@ public class CharacterRegistry {
      * @return 注册的 Character 数量
      */
     public int size() {
-        return registry.size();
+        return characterStore.count();
     }
 
     /**
@@ -206,6 +213,6 @@ public class CharacterRegistry {
      * @return 是否存在
      */
     public boolean exists(String characterId) {
-        return registry.containsKey(characterId);
+        return characterStore.exists(characterId);
     }
 }

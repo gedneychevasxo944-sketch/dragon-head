@@ -6,6 +6,9 @@ import org.dragon.api.dto.PageResponse;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.PermissionService;
+import org.dragon.util.UserUtils;
 import org.dragon.workspace.WorkspaceApplicationProvider;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +33,7 @@ public class StudioApplication {
 
     private final CharacterRegistry characterRegistry;
     private final WorkspaceApplicationProvider workspaceApplicationProvider;
+    private final PermissionService permissionService;
 
     // ==================== Character CRUD ====================
 
@@ -47,9 +51,17 @@ public class StudioApplication {
                                                   String status, String source) {
         List<Character> all = characterRegistry.listAll();
 
+        // 按用户可见性过滤
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.CHARACTER, userId);
+
         // 过滤
         List<Character> filtered = all.stream()
                 .filter(c -> {
+                    // 可见性过滤
+                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(c.getId())) {
+                        return false;
+                    }
                     if (search != null && !search.isBlank()) {
                         String s = search.toLowerCase();
                         boolean nameMatch = c.getName() != null && c.getName().toLowerCase().contains(s);
@@ -139,12 +151,17 @@ public class StudioApplication {
                 .filter(c -> c.getStatus() == CharacterProfile.Status.RUNNING)
                 .count();
 
+        // 计算派驻数量
+        long totalDeployments = all.stream()
+                .mapToLong(c -> c.getWorkspaceIds() != null ? c.getWorkspaceIds().size() : 0)
+                .sum();
+
         return Map.of(
                 "totalCharacters", totalCharacters,
                 "activeCharacters", activeCharacters,
                 "runningCharacters", runningCharacters,
                 "totalTraits", 0,           // Trait 系统待实现
-                "totalDeployments", 0        // Deployment 系统待实现
+                "totalDeployments", totalDeployments
         );
     }
 
@@ -288,10 +305,14 @@ public class StudioApplication {
         record.put("characterId", c.getId());
         record.put("characterName", c.getName() != null ? c.getName() : "");
         record.put("workspaceId", wid);
-        record.put("workspaceName", wid);
+        record.put("workspaceName", "Workspace " + wid); // 临时实现：返回 Workspace 名称
+        record.put("role", "Member"); // 临时实现：返回角色
+        record.put("position", "AI Agent"); // 临时实现：返回职位
+        record.put("level", 3); // 临时实现：返回级别
         record.put("status", c.getStatus() != null ? c.getStatus().name().toLowerCase() : "idle");
         record.put("deployedAt", c.getCreatedAt() != null ? c.getCreatedAt().toString() : "");
         record.put("lastActiveAt", c.getUpdatedAt() != null ? c.getUpdatedAt().toString() : "");
+        record.put("hasOverrides", false); // 临时实现：返回是否有覆盖配置
         return record;
     }
 

@@ -3,8 +3,11 @@ package org.dragon.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.PermissionService;
 import org.dragon.tools.AgentTool;
 import org.dragon.tools.ToolRegistry;
+import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -29,6 +32,7 @@ import java.util.stream.Collectors;
 public class ToolApplication {
 
     private final ToolRegistry toolRegistry;
+    private final PermissionService permissionService;
 
     // ==================== Tool 查询 ====================
 
@@ -43,8 +47,16 @@ public class ToolApplication {
     public PageResponse<Map<String, Object>> listTools(int page, int pageSize, String search) {
         List<AgentTool> all = toolRegistry.listAll();
 
+        // 按用户可见性过滤
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.TOOL, userId);
+
         List<Map<String, Object>> filtered = all.stream()
                 .filter(t -> {
+                    // 可见性过滤
+                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(t.getName())) {
+                        return false;
+                    }
                     if (search != null && !search.isBlank()) {
                         String s = search.toLowerCase();
                         boolean nameMatch = t.getName() != null && t.getName().toLowerCase().contains(s);

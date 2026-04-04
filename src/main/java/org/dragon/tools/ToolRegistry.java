@@ -1,12 +1,14 @@
 package org.dragon.tools;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
+import org.dragon.store.StoreFactory;
+import org.dragon.tools.store.ToolStore;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Agent 工具注册中心
@@ -19,8 +21,14 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class ToolRegistry {
 
-    /** 工具名称到工具实例的映射 */
-    private final Map<String, AgentTool> tools = new ConcurrentHashMap<>();
+    private final ToolStore toolStore;
+
+    /** 工具名称到工具实例的映射（运行时内存缓存） */
+    private final Map<String, AgentTool> tools = new LinkedHashMap<>();
+
+    public ToolRegistry(StoreFactory storeFactory) {
+        this.toolStore = storeFactory.get(ToolStore.class);
+    }
 
     /**
      * 注册一个工具。如果已存在同名工具，则覆盖。
@@ -29,6 +37,20 @@ public class ToolRegistry {
      */
     public void register(AgentTool tool) {
         tools.put(tool.getName(), tool);
+
+        // 持久化工具元数据
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("name", tool.getName());
+        metadata.put("description", tool.getDescription());
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            metadata.put("parameterSchema", mapper.writeValueAsString(tool.getParameterSchema()));
+        } catch (Exception e) {
+            metadata.put("parameterSchema", "{}");
+        }
+        metadata.put("enabled", true);
+        toolStore.save(metadata);
+
         log.debug("Registered tool: {}", tool.getName());
     }
 
@@ -39,28 +61,11 @@ public class ToolRegistry {
      */
     public void registerAll(Collection<AgentTool> toolList) {
         for (AgentTool tool : toolList) {
-            tools.putIfAbsent(tool.getName(), tool);
+            if (!tools.containsKey(tool.getName())) {
+                register(tool);
+            }
         }
     }
-
-    // /**
-    //  * 注册一个由插件解析的工具，将其包装为 AgentTool。
-    //  * ResolvedPluginTool 的处理器被适配到 AgentTool 接口。
-    //  *
-    //  * @param pluginTool 插件工具
-    //  */
-    // public void registerPluginTool(
-    //         com.openclaw.plugin.tools.PluginToolResolver.ResolvedPluginTool pluginTool) {
-    //     if (tools.containsKey(pluginTool.getName())) {
-    //         log.warn("Plugin tool '{}' conflicts with existing tool, skipping",
-    //                 pluginTool.getName());
-    //         return;
-    //     }
-    //     AgentTool wrapped = new PluginToolAdapter(pluginTool);
-    //     tools.put(pluginTool.getName(), wrapped);
-    //     log.info("Registered plugin tool: {} (plugin: {})",
-    //             pluginTool.getName(), pluginTool.getPluginId());
-    // }
 
     /**
      * 根据名称获取工具。

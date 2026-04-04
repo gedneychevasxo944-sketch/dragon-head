@@ -10,5 +10,4 @@ import lombok.Value;
 @Value
 public class SkillSummary {
     String name;
-    String primaryEnv;
 }

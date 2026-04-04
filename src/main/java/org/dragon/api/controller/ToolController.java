@@ -74,6 +74,7 @@ public class ToolController {
      */
     @Operation(summary = "获取工具详情")
     @GetMapping("/{id}")
+    @PreAuthorize("canView(#id, 'TOOL')")
     public ApiResponse<Map<String, Object>> getTool(@PathVariable String id) {
         return toolApplication.getTool(id)
                 .map(ApiResponse::success)
@@ -86,6 +87,7 @@ public class ToolController {
      */
     @Operation(summary = "更新工具")
     @PutMapping("/{id}")
+    @PreAuthorize("canEdit(#id, 'TOOL')")
     public ApiResponse<Map<String, Object>> updateTool(
             @PathVariable String id,
             @RequestBody Map<String, Object> toolData) {
@@ -98,6 +100,7 @@ public class ToolController {
      */
     @Operation(summary = "发布工具版本")
     @PostMapping("/{id}/publish")
+    @PreAuthorize("hasPermission(#id, 'TOOL', 'PUBLISH')")
     public ApiResponse<Map<String, Object>> publishTool(
             @PathVariable String id,
             @RequestBody Map<String, Object> publishData) {
@@ -110,6 +113,7 @@ public class ToolController {
      */
     @Operation(summary = "删除工具")
     @DeleteMapping("/{id}")
+    @PreAuthorize("canDelete(#id, 'TOOL')")
     public ApiResponse<Map<String, Object>> deleteTool(@PathVariable String id) {
         return ApiResponse.error(501, "Tool deletion via API not yet implemented.");
     }

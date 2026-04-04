@@ -1,0 +1,72 @@
+package org.dragon.character.mind;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.dragon.datasource.entity.TraitEntity;
+import org.dragon.studio.store.TraitStore;
+import org.dragon.store.StoreFactory;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Trait 内容解析服务
+ * 将 Trait ID 列表解析为 PersonalityDescriptor.TraitContent 列表
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class TraitResolutionService {
+
+    private final StoreFactory storeFactory;
+
+    private TraitStore getStore() {
+        return storeFactory.get(TraitStore.class);
+    }
+
+    /**
+     * 解析 trait IDs → TraitContent 列表
+     */
+    public List<PersonalityDescriptor.TraitContent> resolveTraits(List<String> traitIds) {
+        if (traitIds == null || traitIds.isEmpty()) {
+            return List.of();
+        }
+        return traitIds.stream()
+                .map(this::resolveSingle)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+    }
+
+    private Optional<PersonalityDescriptor.TraitContent> resolveSingle(String traitId) {
+        try {
+            Long id = parseId(traitId);
+            return getStore().findById(id)
+                    .filter(TraitEntity::getEnabled)
+                    .map(this::toTraitContent);
+        } catch (Exception e) {
+            log.warn("[TraitResolutionService] Failed to resolve trait: {}", traitId, e);
+            return Optional.empty();
+        }
+    }
+
+    private Long parseId(String traitId) {
+        if (traitId == null) {
+            throw new IllegalArgumentException("traitId cannot be null");
+        }
+        if (traitId.startsWith("trait_")) {
+            return Long.parseLong(traitId.substring(6));
+        }
+        return Long.parseLong(traitId);
+    }
+
+    private PersonalityDescriptor.TraitContent toTraitContent(TraitEntity entity) {
+        return PersonalityDescriptor.TraitContent.builder()
+                .id(String.valueOf(entity.getId()))
+                .name(entity.getName())
+                .category(entity.getCategory())
+                .content(entity.getContent())
+                .build();
+    }
+}

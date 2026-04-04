@@ -1,14 +1,12 @@
 package org.dragon.agent.model;
 
+import org.dragon.agent.model.store.ModelStore;
+import org.dragon.store.StoreFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * 模型注册中心
@@ -21,15 +19,16 @@ import java.util.stream.Collectors;
 @Component
 public class ModelRegistry {
 
-    /**
-     * 模型注册表
-     */
-    private final Map<String, ModelInstance> models = new ConcurrentHashMap<>();
+    private final ModelStore modelStore;
 
     /**
      * 默认模型 ID
      */
     private volatile String defaultModelId;
+
+    public ModelRegistry(StoreFactory storeFactory) {
+        this.modelStore = storeFactory.get(ModelStore.class);
+    }
 
     /**
      * 注册模型
@@ -41,7 +40,7 @@ public class ModelRegistry {
             throw new IllegalArgumentException("Model or Model id cannot be null");
         }
 
-        models.put(model.getId(), model);
+        modelStore.save(model);
         log.info("[ModelRegistry] Registered model: {} (provider: {}, model: {})",
                 model.getId(), model.getProvider(), model.getModelName());
 
@@ -57,14 +56,17 @@ public class ModelRegistry {
      * @param modelId 模型 ID
      */
     public void unregister(String modelId) {
-        ModelInstance removed = models.remove(modelId);
-        if (removed != null) {
-            log.info("[ModelRegistry] Unregistered model: {}", modelId);
+        if (!modelStore.exists(modelId)) {
+            return;
+        }
 
-            // 如果删除的是默认模型，选择下一个
-            if (defaultModelId != null && defaultModelId.equals(modelId)) {
-                defaultModelId = models.isEmpty() ? null : models.keySet().iterator().next();
-            }
+        modelStore.delete(modelId);
+        log.info("[ModelRegistry] Unregistered model: {}", modelId);
+
+        // 如果删除的是默认模型，选择下一个
+        if (defaultModelId != null && defaultModelId.equals(modelId)) {
+            List<ModelInstance> all = modelStore.findAll();
+            defaultModelId = all.isEmpty() ? null : all.get(0).getId();
         }
     }
 
@@ -75,7 +77,7 @@ public class ModelRegistry {
      * @return Optional 模型
      */
     public Optional<ModelInstance> get(String modelId) {
-        return Optional.ofNullable(models.get(modelId));
+        return modelStore.findById(modelId);
     }
 
     /**
@@ -96,7 +98,7 @@ public class ModelRegistry {
      * @return 模型列表
      */
     public List<ModelInstance> listModels() {
-        return new CopyOnWriteArrayList<>(models.values());
+        return modelStore.findAll();
     }
 
     /**
@@ -105,9 +107,7 @@ public class ModelRegistry {
      * @return 启用的模型列表
      */
     public List<ModelInstance> listEnabledModels() {
-        return models.values().stream()
-                .filter(ModelInstance::isEnabled)
-                .collect(Collectors.toList());
+        return modelStore.findEnabled();
     }
 
     /**
@@ -117,9 +117,7 @@ public class ModelRegistry {
      * @return 模型列表
      */
     public List<ModelInstance> listByProvider(ModelInstance.ModelProvider provider) {
-        return models.values().stream()
-                .filter(m -> m.getProvider() == provider)
-                .collect(Collectors.toList());
+        return modelStore.findByProvider(provider);
     }
 
     /**
@@ -128,7 +126,7 @@ public class ModelRegistry {
      * @param modelId 模型 ID
      */
     public void setDefaultModel(String modelId) {
-        if (!models.containsKey(modelId)) {
+        if (!modelStore.exists(modelId)) {
             throw new IllegalArgumentException("Model not found: " + modelId);
         }
         defaultModelId = modelId;
@@ -143,6 +141,7 @@ public class ModelRegistry {
     public void enable(String modelId) {
         get(modelId).ifPresent(model -> {
             model.setEnabled(true);
+            modelStore.update(model);
             log.info("[ModelRegistry] Enabled model: {}", modelId);
         });
     }
@@ -155,6 +154,7 @@ public class ModelRegistry {
     public void disable(String modelId) {
         get(modelId).ifPresent(model -> {
             model.setEnabled(false);
+            modelStore.update(model);
             log.info("[ModelRegistry] Disabled model: {}", modelId);
         });
     }
@@ -166,8 +166,7 @@ public class ModelRegistry {
      * @return 是否健康
      */
     public boolean healthCheck(String modelId) {
-        // TODO: 实现实际健康检查
-        ModelInstance model = models.get(modelId);
+        ModelInstance model = modelStore.findById(modelId).orElse(null);
         if (model == null || !model.isEnabled()) {
             return false;
         }
@@ -182,7 +181,7 @@ public class ModelRegistry {
      * @return 是否存在
      */
     public boolean exists(String modelId) {
-        return models.containsKey(modelId);
+        return modelStore.exists(modelId);
     }
 
     /**
@@ -191,6 +190,6 @@ public class ModelRegistry {
      * @return 模型数量
      */
     public int size() {
-        return models.size();
+        return modelStore.count();
     }
 }

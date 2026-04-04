@@ -2,7 +2,7 @@ package org.dragon.user.controller;
 
 import jakarta.validation.Valid;
 import org.dragon.user.dto.*;
-import org.dragon.user.security.filter.JwtAuthenticationFilter.UserPrincipal;
+import org.dragon.user.security.UserPrincipal;
 import org.dragon.user.service.SmsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,7 +46,7 @@ public class SmsController {
     public ResponseEntity<ApiResponse<Void>> sendBindCode(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestBody SmsSendRequest request) {
-        smsService.sendBindCode(principal.userId(), request.getPhone());
+        smsService.sendBindCode(principal.getUserId(), request.getPhone());
         return ResponseEntity.ok(ApiResponse.success("验证码已发送", null));
     }
 
@@ -57,7 +57,7 @@ public class SmsController {
     public ResponseEntity<ApiResponse<Void>> bindPhone(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody SmsVerifyRequest request) {
-        smsService.bindPhone(principal.userId(), request);
+        smsService.bindPhone(principal.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success("手机号绑定成功", null));
     }
 }

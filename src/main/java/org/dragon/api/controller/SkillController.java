@@ -84,6 +84,7 @@ public class SkillController {
      */
     @Operation(summary = "获取技能详情")
     @GetMapping("/{id}")
+    @PreAuthorize("canView(#id, 'SKILL')")
     public ApiResponse<SkillResponse> getSkill(@PathVariable Long id) {
         SkillResponse response = skillApplication.getSkill(id);
         return ApiResponse.success(response);
@@ -95,6 +96,7 @@ public class SkillController {
      */
     @Operation(summary = "更新技能")
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("canEdit(#id, 'SKILL')")
     public ApiResponse<SkillResponse> updateSkill(
             @PathVariable Long id,
             @RequestPart(value = "file", required = false) MultipartFile file,
@@ -109,6 +111,7 @@ public class SkillController {
      */
     @Operation(summary = "发布技能版本")
     @PostMapping("/{id}/publish")
+    @PreAuthorize("hasPermission(#id, 'SKILL', 'PUBLISH')")
     public ApiResponse<SkillResponse> publishSkill(
             @PathVariable Long id,
             @RequestBody PublishSkillRequest request) {
@@ -122,6 +125,7 @@ public class SkillController {
      */
     @Operation(summary = "删除技能")
     @DeleteMapping("/{id}")
+    @PreAuthorize("canDelete(#id, 'SKILL')")
     public ApiResponse<Map<String, Object>> deleteSkill(@PathVariable Long id) {
         skillApplication.deleteSkill(id);
         return ApiResponse.success(Map.of("success", true));
@@ -133,6 +137,7 @@ public class SkillController {
      */
     @Operation(summary = "保存技能草稿")
     @PutMapping("/{id}/draft")
+    @PreAuthorize("canEdit(#id, 'SKILL')")
     public ApiResponse<SkillResponse> saveDraft(
             @PathVariable Long id,
             @RequestBody Map<String, Object> body) {

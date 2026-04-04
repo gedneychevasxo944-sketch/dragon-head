@@ -16,7 +16,6 @@ import org.dragon.observer.actionlog.ObserverActionLogService;
 import org.dragon.skill.dto.SkillBindingRequest;
 import org.dragon.skill.dto.SkillBindingResponse;
 import org.dragon.skill.dto.SkillBindingUpdateRequest;
-import org.dragon.skill.entity.SkillEntity;
 import org.dragon.skill.service.SkillBindingService;
 import org.dragon.workspace.service.hiring.WorkspaceHiringService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
