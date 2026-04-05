@@ -184,6 +184,13 @@ public class SkillEntity {
     @Column(name = "persist_mode", length = 20)
     private PersistMode persistMode;
 
+    // ── 标签 ──────────────────────────────────────────────────────────
+
+    /** 标签列表，用于技能分类/场景归纳 */
+    @Column(columnDefinition = "JSON")
+    @DbJson
+    private List<String> tags;
+
     // ── 转换方法 ─────────────────────────────────────────────────────
 
     private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
@@ -225,6 +232,7 @@ public class SkillEntity {
         domain.setPublishedAt(this.publishedAt);
         domain.setPersist(this.persist);
         domain.setPersistMode(this.persistMode);
+        domain.setTags(toJsonString(this.tags));
         return domain;
     }
 
@@ -263,6 +271,7 @@ public class SkillEntity {
                 .publishedAt(domain.getPublishedAt())
                 .persist(domain.getPersist())
                 .persistMode(domain.getPersistMode())
+                .tags(fromJsonString(domain.getTags()))
                 .build();
     }
 

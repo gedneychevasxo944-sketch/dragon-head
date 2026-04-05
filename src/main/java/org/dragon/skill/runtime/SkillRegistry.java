@@ -235,8 +235,9 @@ public class SkillRegistry {
      */
     @SuppressWarnings("unchecked")
     private SkillDefinition buildDefinition(SkillDO do_) {
-List<String> allowedTools = parseJsonList(do_.getAllowedTools());
-List<String> aliases      = parseJsonList(do_.getAliases());
+        List<String> allowedTools = parseJsonList(do_.getAllowedTools());
+        List<String> aliases      = parseJsonList(do_.getAliases());
+        List<String> tags         = parseJsonList(do_.getTags());
 
 
         final String content = do_.getContent();
@@ -253,13 +254,14 @@ List<String> aliases      = parseJsonList(do_.getAliases());
                 .argumentHint(do_.getArgumentHint())
                 .aliases(aliases)
                 .allowedTools(allowedTools)
+                .tags(tags)
                 .model(do_.getModel())
                 .effort(do_.getEffort())
                 .executionContext(do_.getExecutionContext() != null
                         ? do_.getExecutionContext() : ExecutionContext.INLINE)
                 .disableModelInvocation(Integer.valueOf(1).equals(do_.getDisableModelInvocation()))
                 .userInvocable(!Integer.valueOf(0).equals(do_.getUserInvocable()))
-                                .persist(Integer.valueOf(1).equals(do_.getPersist()))
+                .persist(Integer.valueOf(1).equals(do_.getPersist()))
                 .persistMode(do_.getPersistMode() != null ? do_.getPersistMode() : PersistMode.FULL)
                 .storageInfo(storageInfo)
                 .content(content != null ? content : "")

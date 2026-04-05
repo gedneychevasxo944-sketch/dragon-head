@@ -68,6 +68,11 @@ public class SkillDetailVO {
     private Boolean persist;
     private PersistMode persistMode;
 
+    // ── 标签 ────────────────────────────────────────────────────────
+
+    /** 标签列表，用于技能分类/场景归纳 */
+    private List<String> tags;
+
     // ── 分类与可见性 ─────────────────────────────────────────────────
 
     private SkillCategory category;

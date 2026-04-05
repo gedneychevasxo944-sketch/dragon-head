@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.application.SkillApplication;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
+import org.dragon.skill.actionlog.SkillActionLogVO;
 import org.dragon.skill.dto.SkillDetailVO;
 import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillRegisterResult;
@@ -75,10 +76,8 @@ public class SkillController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<SkillDetailVO> createSkill(
             @RequestPart(value = "file", required = false) MultipartFile file,
-            @RequestPart("data") SkillRegisterRequest request,
-            @RequestParam Long operatorId,
-            @RequestParam String operatorName) {
-        SkillDetailVO response = skillApplication.create(file, request, operatorId, operatorName);
+            @RequestPart("data") SkillRegisterRequest request) {
+        SkillDetailVO response = skillApplication.create(file, request);
         return ApiResponse.success(response);
     }
 
@@ -103,11 +102,9 @@ public class SkillController {
     public ApiResponse<SkillDetailVO> updateSkill(
             @PathVariable String skillId,
             @RequestPart(value = "file", required = false) MultipartFile file,
-            @RequestPart("data") SkillRegisterRequest request,
-            @RequestParam Long operatorId,
-            @RequestParam String operatorName) {
+            @RequestPart("data") SkillRegisterRequest request) {
         permissionChecker.checkEdit("SKILL", skillId);
-        SkillDetailVO response = skillApplication.update(skillId, file, request, operatorId, operatorName);
+        SkillDetailVO response = skillApplication.update(skillId, file, request);
         return ApiResponse.success(response);
     }
 
@@ -119,10 +116,9 @@ public class SkillController {
     @PostMapping("/{skillId}/publish")
     public ApiResponse<SkillDetailVO> publishSkill(
             @PathVariable String skillId,
-            @RequestBody PublishSkillRequest request,
-            @RequestParam Long operatorId) {
+            @RequestBody PublishSkillRequest request) {
         permissionChecker.checkPermission("SKILL", skillId, "PUBLISH");
-        SkillDetailVO response = skillApplication.publishSkill(skillId, request.getVersion(), request.getChangelog(), operatorId);
+        SkillDetailVO response = skillApplication.publishSkill(skillId, request.getVersion(), request.getChangelog());
         return ApiResponse.success(response);
     }
 
@@ -132,11 +128,9 @@ public class SkillController {
      */
     @Operation(summary = "删除技能")
     @DeleteMapping("/{skillId}")
-    public ApiResponse<Map<String, Object>> deleteSkill(
-            @PathVariable String skillId,
-            @RequestParam Long operatorId) {
+    public ApiResponse<Map<String, Object>> deleteSkill(@PathVariable String skillId) {
         permissionChecker.checkDelete("SKILL", skillId);
-        skillApplication.deleteSkill(skillId, operatorId);
+        skillApplication.deleteSkill(skillId);
         return ApiResponse.success(Map.of("success", true));
     }
 
@@ -146,10 +140,8 @@ public class SkillController {
      */
     @Operation(summary = "禁用技能")
     @PostMapping("/{skillId}/disable")
-    public ApiResponse<Void> disableSkill(
-            @PathVariable String skillId,
-            @RequestParam Long operatorId) {
-        skillApplication.disableSkill(skillId, operatorId);
+    public ApiResponse<Void> disableSkill(@PathVariable String skillId) {
+        skillApplication.disableSkill(skillId);
         return ApiResponse.success(null);
     }
 
@@ -159,10 +151,8 @@ public class SkillController {
      */
     @Operation(summary = "启用技能")
     @PostMapping("/{skillId}/enable")
-    public ApiResponse<Void> enableSkill(
-            @PathVariable String skillId,
-            @RequestParam Long operatorId) {
-        skillApplication.enableSkill(skillId, operatorId);
+    public ApiResponse<Void> enableSkill(@PathVariable String skillId) {
+        skillApplication.enableSkill(skillId);
         return ApiResponse.success(null);
     }
 
@@ -184,6 +174,20 @@ public class SkillController {
             @RequestBody SkillRegisterRequest request) {
         permissionChecker.checkEdit("SKILL", skillId);
         SkillRegisterResult response = skillApplication.saveDraft(skillId, request);
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 获取技能活动日志
+     * GET /api/v1/skills/{skillId}/activity-logs
+     */
+    @Operation(summary = "获取技能活动日志")
+    @GetMapping("/{skillId}/activity-logs")
+    public ApiResponse<PageResponse<SkillActionLogVO>> getActivityLogs(
+            @PathVariable String skillId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        PageResponse<SkillActionLogVO> response = skillApplication.getActivityLogs(skillId, page, pageSize);
         return ApiResponse.success(response);
     }
 

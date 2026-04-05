@@ -7,6 +7,7 @@ import org.dragon.skill.enums.SkillStatus;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillStatusException;
 import org.dragon.skill.store.SkillStore;
+import org.dragon.util.bean.UserInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,10 +40,12 @@ class SkillLifecycleServiceTest {
     private SkillStore skillStore;
 
     private SkillLifecycleService lifecycleService;
+    private UserInfo testUser;
 
     @BeforeEach
     void setUp() {
         lifecycleService = new SkillLifecycleService();
+        testUser = new UserInfo("1", "testUser", null, true);
         try {
             var field = SkillLifecycleService.class.getDeclaredField("skillStore");
             field.setAccessible(true);
@@ -65,7 +68,7 @@ class SkillLifecycleServiceTest {
         when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         // when
-        lifecycleService.publish(skillId, 1L);
+        lifecycleService.publish(skillId, testUser);
 
         // then
         assertEquals(SkillStatus.ACTIVE, skill.getStatus());
@@ -81,7 +84,7 @@ class SkillLifecycleServiceTest {
         when(skillStore.findLatestBySkillId("non-existent")).thenReturn(Optional.empty());
 
         assertThrows(SkillNotFoundException.class,
-                () -> lifecycleService.publish("non-existent", 1L));
+                () -> lifecycleService.publish("non-existent", testUser));
     }
 
     /**
@@ -94,7 +97,7 @@ class SkillLifecycleServiceTest {
         when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         assertThrows(SkillStatusException.class,
-                () -> lifecycleService.publish(skillId, 1L));
+                () -> lifecycleService.publish(skillId, testUser));
     }
 
     // ==================== disable 测试 ====================
@@ -108,7 +111,7 @@ class SkillLifecycleServiceTest {
         SkillDO skill = createSkillDO(skillId, 1, SkillStatus.ACTIVE);
         when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
 
-        lifecycleService.disable(skillId, 1L);
+        lifecycleService.disable(skillId, testUser);
 
         assertEquals(SkillStatus.DISABLED, skill.getStatus());
         verify(skillStore, times(1)).update(skill);
@@ -124,7 +127,7 @@ class SkillLifecycleServiceTest {
         when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         assertThrows(SkillStatusException.class,
-                () -> lifecycleService.disable(skillId, 1L));
+                () -> lifecycleService.disable(skillId, testUser));
     }
 
     // ==================== republish 测试 ====================
@@ -138,7 +141,7 @@ class SkillLifecycleServiceTest {
         SkillDO skill = createSkillDO(skillId, 1, SkillStatus.DISABLED);
         when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
 
-        lifecycleService.republish(skillId, 1L);
+        lifecycleService.republish(skillId, testUser);
 
         assertEquals(SkillStatus.ACTIVE, skill.getStatus());
         assertNotNull(skill.getPublishedAt());
@@ -155,7 +158,7 @@ class SkillLifecycleServiceTest {
         when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         assertThrows(SkillStatusException.class,
-                () -> lifecycleService.republish(skillId, 1L));
+                () -> lifecycleService.republish(skillId, testUser));
     }
 
     // ==================== delete 测试 ====================
@@ -171,7 +174,7 @@ class SkillLifecycleServiceTest {
         when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(v2));
         when(skillStore.findAllVersionsBySkillId(skillId)).thenReturn(List.of(v1, v2));
 
-        lifecycleService.delete(skillId, 1L);
+        lifecycleService.delete(skillId, testUser);
 
         assertEquals(SkillStatus.DELETED, v1.getStatus());
         assertEquals(SkillStatus.DELETED, v2.getStatus());
@@ -188,7 +191,7 @@ class SkillLifecycleServiceTest {
         when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         // should not throw
-        lifecycleService.delete(skillId, 1L);
+        lifecycleService.delete(skillId, testUser);
 
         // update should not be called since status is already DELETED
         verify(skillStore, never()).update(any());
@@ -202,7 +205,7 @@ class SkillLifecycleServiceTest {
         when(skillStore.findLatestBySkillId("non-existent")).thenReturn(Optional.empty());
 
         assertThrows(SkillNotFoundException.class,
-                () -> lifecycleService.delete("non-existent", 1L));
+                () -> lifecycleService.delete("non-existent", testUser));
     }
 
     // ==================== 辅助方法 ====================
