@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * 提供所有资源权限的读取接口
  */
 @Slf4j
-@Service
+@Service("resourcePermissionService")
 public class PermissionService {
 
     private final AssetMemberStore assetMemberStore;

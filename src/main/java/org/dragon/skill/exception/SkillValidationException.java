@@ -1,16 +1,13 @@
 package org.dragon.skill.exception;
 
 /**
- * Skill 校验异常。
- *
- * @since 1.0
+ * 文件/内容校验失败异常。
+ * HTTP 状态码：400 Bad Request
  */
 public class SkillValidationException extends SkillException {
-    public SkillValidationException(String message) {
-        super(message);
-    }
 
-    public SkillValidationException(String message, Throwable cause) {
-        super(message, cause);
+    public SkillValidationException(String message) {
+        super(400, message);
     }
 }
+

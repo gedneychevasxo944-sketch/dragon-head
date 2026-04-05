@@ -2,7 +2,6 @@ package org.dragon.character.mind;
 
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.character.mind.memory.MemoryAccess;
-import org.dragon.skill.SkillAccess;
 import org.dragon.character.mind.tag.Tag;
 import org.dragon.character.mind.tag.TagRepository;
 
@@ -27,26 +26,21 @@ public class DefaultMind implements Mind {
 
     private final MemoryAccess memoryAccess;
 
-    private final SkillAccess skillAccess;
-
     private final TraitResolutionService traitResolutionService;
 
     public DefaultMind(String characterId,
                        TagRepository tagRepository,
-                       MemoryAccess memoryAccess,
-                       SkillAccess skillAccess) {
-        this(characterId, tagRepository, memoryAccess, skillAccess, null);
+                       MemoryAccess memoryAccess) {
+        this(characterId, tagRepository, memoryAccess, null);
     }
 
     public DefaultMind(String characterId,
                        TagRepository tagRepository,
                        MemoryAccess memoryAccess,
-                       SkillAccess skillAccess,
                        TraitResolutionService traitResolutionService) {
         this.characterId = characterId;
         this.tagRepository = tagRepository;
         this.memoryAccess = memoryAccess;
-        this.skillAccess = skillAccess;
         this.traitResolutionService = traitResolutionService;
     }
 
@@ -99,11 +93,6 @@ public class DefaultMind implements Mind {
     @Override
     public MemoryAccess getMemoryAccess() {
         return memoryAccess;
-    }
-
-    @Override
-    public SkillAccess getSkillAccess() {
-        return skillAccess;
     }
 
     @Override

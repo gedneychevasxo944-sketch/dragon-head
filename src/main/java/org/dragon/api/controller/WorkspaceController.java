@@ -11,8 +11,8 @@ import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.permission.checker.PermissionChecker;
 import org.dragon.skill.dto.SkillBindingRequest;
-import org.dragon.skill.dto.SkillBindingResponse;
-import org.dragon.skill.dto.SkillBindingUpdateRequest;
+import org.dragon.skill.dto.SkillBindingResult;
+import org.dragon.skill.dto.SkillBindingVO;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
@@ -188,9 +188,9 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace 已绑定技能列表")
     @GetMapping("/{workspaceId}/skills")
-    public ApiResponse<List<SkillBindingResponse>> listWorkspaceSkills(
+    public ApiResponse<List<SkillBindingVO>> listWorkspaceSkills(
             @PathVariable String workspaceId) {
-        List<SkillBindingResponse> list = workspaceApiApplication.listWorkspaceSkills(workspaceId);
+        List<SkillBindingVO> list = workspaceApiApplication.listWorkspaceSkills(workspaceId);
         return ApiResponse.success(list);
     }
 
@@ -200,11 +200,11 @@ public class WorkspaceController {
      */
     @Operation(summary = "为 Workspace 绑定技能")
     @PostMapping("/{workspaceId}/skills")
-    public ApiResponse<SkillBindingResponse> bindSkill(
+    public ApiResponse<SkillBindingResult> bindSkill(
             @PathVariable String workspaceId,
             @RequestBody SkillBindingRequest request) {
-        SkillBindingResponse response = workspaceApiApplication.bindSkill(workspaceId, request);
-        return ApiResponse.success(response);
+        SkillBindingResult result = workspaceApiApplication.bindSkill(workspaceId, request);
+        return ApiResponse.success(result);
     }
 
     /**
@@ -215,7 +215,7 @@ public class WorkspaceController {
     @DeleteMapping("/{workspaceId}/skills/{skillId}")
     public ApiResponse<Map<String, Object>> unbindSkill(
             @PathVariable String workspaceId,
-            @PathVariable Long skillId) {
+            @PathVariable String skillId) {
         workspaceApiApplication.unbindSkill(workspaceId, skillId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -226,12 +226,13 @@ public class WorkspaceController {
      */
     @Operation(summary = "更新 Workspace 技能绑定配置")
     @PutMapping("/{workspaceId}/skills/{skillId}")
-    public ApiResponse<SkillBindingResponse> updateSkillBinding(
+    public ApiResponse<Map<String, Object>> updateSkillBinding(
             @PathVariable String workspaceId,
-            @PathVariable Long skillId,
-            @RequestBody SkillBindingUpdateRequest request) {
-        SkillBindingResponse response = workspaceApiApplication.updateSkillBinding(workspaceId, skillId, request);
-        return ApiResponse.success(response);
+            @PathVariable String skillId,
+            @RequestBody UpdateSkillBindingRequest request) {
+        workspaceApiApplication.updateSkillBinding(workspaceId, skillId,
+                request.getVersionType(), request.getFixedVersion());
+        return ApiResponse.success(Map.of("success", true));
     }
 
     // ==================== 8. Memory（记忆配置）====================
@@ -494,5 +495,12 @@ public class WorkspaceController {
     public static class PermissionRequest {
         private String userId;
         private String role;
+    }
+
+    /** 更新技能绑定配置请求 */
+    @Data
+    public static class UpdateSkillBindingRequest {
+        private String versionType;
+        private Integer fixedVersion;
     }
 }

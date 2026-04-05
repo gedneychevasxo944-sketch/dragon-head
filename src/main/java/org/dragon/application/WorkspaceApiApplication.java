@@ -8,8 +8,8 @@ import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.skill.dto.SkillBindingRequest;
-import org.dragon.skill.dto.SkillBindingResponse;
-import org.dragon.skill.dto.SkillBindingUpdateRequest;
+import org.dragon.skill.dto.SkillBindingResult;
+import org.dragon.skill.dto.SkillBindingVO;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.util.UserUtils;
@@ -205,30 +205,30 @@ public class WorkspaceApiApplication {
     /**
      * 获取已绑定技能列表。
      */
-    public List<SkillBindingResponse> listWorkspaceSkills(String workspaceId) {
-        return app(workspaceId).listWorkspaceSkills(Long.parseLong(workspaceId));
+    public List<SkillBindingVO> listWorkspaceSkills(String workspaceId) {
+        return app(workspaceId).listWorkspaceSkills(workspaceId);
     }
 
     /**
      * 绑定技能。
      */
-    public SkillBindingResponse bindSkill(String workspaceId, SkillBindingRequest request) {
-        return app(workspaceId).bindSkill(Long.parseLong(workspaceId), request);
+    public SkillBindingResult bindSkill(String workspaceId, SkillBindingRequest request) {
+        return app(workspaceId).bindSkill(workspaceId, request);
     }
 
     /**
      * 解绑技能。
      */
-    public void unbindSkill(String workspaceId, Long skillId) {
-        app(workspaceId).unbindSkill(Long.parseLong(workspaceId), skillId);
+    public void unbindSkill(String workspaceId, String skillId) {
+        app(workspaceId).unbindSkill(workspaceId, skillId);
     }
 
     /**
      * 更新技能绑定配置。
      */
-    public SkillBindingResponse updateSkillBinding(String workspaceId, Long skillId,
-                                                   SkillBindingUpdateRequest request) {
-        return app(workspaceId).updateSkillBinding(Long.parseLong(workspaceId), skillId, request);
+    public void updateSkillBinding(String workspaceId, String skillId,
+                                   String versionType, Integer fixedVersion) {
+        app(workspaceId).updateSkillBinding(workspaceId, skillId, versionType, fixedVersion);
     }
 
     // ==================== 记忆配置 ====================

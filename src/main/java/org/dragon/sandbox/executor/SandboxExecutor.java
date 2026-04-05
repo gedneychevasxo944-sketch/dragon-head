@@ -34,50 +34,51 @@ public class SandboxExecutor {
      * @return 执行结果
      */
     public ExecutionResult execute(ExecutionRequest request) {
-        long startTime = System.currentTimeMillis();
-        String executionId = request.getExecutionId();
+        // long startTime = System.currentTimeMillis();
+        // String executionId = request.getExecutionId();
 
-        log.info("开始执行命令: executionId={}, workspaceId={}, command={}",
-                executionId, request.getWorkspaceId(), request.getCommand());
+        // log.info("开始执行命令: executionId={}, workspaceId={}, command={}",
+        //         executionId, request.getWorkspaceId(), request.getCommand());
 
-        // 1. 获取 sandbox
-        Sandbox sandbox = sandboxManager.getOrCreate(request.getWorkspaceId());
+        // // 1. 获取 sandbox
+        // Sandbox sandbox = sandboxManager.getOrCreate(request.getWorkspaceId());
 
-        // 2. 创建本次执行的临时工作目录
-        Path execWorkDir = sandbox.getTmpDir().resolve("exec-" + executionId);
-        try {
-            Files.createDirectories(execWorkDir);
-        } catch (IOException e) {
-            return buildFailureResult(executionId, "创建执行目录失败: " + e.getMessage(),
-                    System.currentTimeMillis() - startTime);
-        }
+        // // 2. 创建本次执行的临时工作目录
+        // Path execWorkDir = sandbox.getTmpDir().resolve("exec-" + executionId);
+        // try {
+        //     Files.createDirectories(execWorkDir);
+        // } catch (IOException e) {
+        //     return buildFailureResult(executionId, "创建执行目录失败: " + e.getMessage(),
+        //             System.currentTimeMillis() - startTime);
+        // }
 
-        try {
-            // 3. 解析命令（替换路径占位符）
-            String resolvedCommand = resolveCommandPaths(request.getCommand(), sandbox);
+        // try {
+        //     // 3. 解析命令（替换路径占位符）
+        //     String resolvedCommand = resolveCommandPaths(request.getCommand(), sandbox);
 
-            // 4. 合并环境变量
-            Map<String, String> mergedEnv = buildMergedEnv(sandbox, request.getExtraEnv());
+        //     // 4. 合并环境变量
+        //     Map<String, String> mergedEnv = buildMergedEnv(sandbox, request.getExtraEnv());
 
-            // 5. 确定工作目录
-            Path workingDir = request.getWorkingDir() != null
-                    ? sandbox.getRootDir().resolve(request.getWorkingDir())
-                    : execWorkDir;
+        //     // 5. 确定工作目录
+        //     Path workingDir = request.getWorkingDir() != null
+        //             ? sandbox.getRootDir().resolve(request.getWorkingDir())
+        //             : execWorkDir;
 
-            // 6. 执行命令
-            return executeCommand(
-                    executionId,
-                    resolvedCommand,
-                    workingDir,
-                    mergedEnv,
-                    request.getTimeoutSeconds(),
-                    startTime
-            );
+        //     // 6. 执行命令
+        //     return executeCommand(
+        //             executionId,
+        //             resolvedCommand,
+        //             workingDir,
+        //             mergedEnv,
+        //             request.getTimeoutSeconds(),
+        //             startTime
+        //     );
 
-        } finally {
-            // 7. 清理临时目录（异步，不阻塞返回）
-            cleanupAsync(execWorkDir);
-        }
+        // } finally {
+        //     // 7. 清理临时目录（异步，不阻塞返回）
+        //     cleanupAsync(execWorkDir);
+        // }
+        return null;
     }
 
     /**

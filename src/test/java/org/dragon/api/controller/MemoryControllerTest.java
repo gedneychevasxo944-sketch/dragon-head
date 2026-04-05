@@ -2,7 +2,7 @@ package org.dragon.api.controller;
 
 import org.dragon.api.controller.dto.ApiResponse;
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.api.controller.dto.SourceDocumentDTO;
+import org.dragon.api.controller.dto.memory.SourceDocumentDTO;
 import org.dragon.memory.core.SourceDocumentService;
 import org.dragon.memory.core.MemoryFileService;
 import org.dragon.memory.core.MemoryChunkService;
