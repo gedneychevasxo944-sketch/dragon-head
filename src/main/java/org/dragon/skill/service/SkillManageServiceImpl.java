@@ -343,4 +343,12 @@ public class SkillManageServiceImpl implements SkillManageService {
 
         return response;
     }
+
+    @Override
+    public long countFailedSkills() {
+        // 统计运行时状态为 FAILED 的 Skill 数量
+        return skillRegistry.findAll().stream()
+                .filter(r -> r.getState() == SkillRuntimeState.FAILED)
+                .count();
+    }
 }

@@ -92,4 +92,9 @@ public class MySqlApprovalStore implements ApprovalStore {
                 .eq("status", ApprovalStatus.PENDING.name())
                 .findCount() > 0;
     }
+
+    @Override
+    public List<ApprovalRequestEntity> findAll() {
+        return mysqlDb.find(ApprovalRequestEntity.class).findList();
+    }
 }

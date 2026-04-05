@@ -85,4 +85,9 @@ public class MemoryApprovalStore implements ApprovalStore {
                         && approvalType == r.getApprovalType()
                         && ApprovalStatus.PENDING == r.getStatus());
     }
+
+    @Override
+    public List<ApprovalRequestEntity> findAll() {
+        return store.values().stream().collect(Collectors.toList());
+    }
 }

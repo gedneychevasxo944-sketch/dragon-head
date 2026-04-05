@@ -68,4 +68,12 @@ public interface SkillManageService {
      * @param skillId Skill ID
      */
     void enableSkill(Long skillId);
+
+    /**
+     * 获取失败的 Skill 数量
+     * 用于健康统计
+     *
+     * @return 失败的 Skill 数量
+     */
+    long countFailedSkills();
 }

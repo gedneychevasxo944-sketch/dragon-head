@@ -6,6 +6,8 @@ import org.dragon.api.dto.PageResponse;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.observer.actionlog.ObserverActionLogService;
+import org.dragon.permission.service.ApprovalService;
+import org.dragon.skill.service.SkillManageService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +34,8 @@ public class LogsApplication {
     private final ObserverActionLogService observerActionLogService;
     private final CharacterRegistry characterRegistry;
     private final WorkspaceLifecycleService workspaceLifecycleService;
+    private final ApprovalService approvalService;
+    private final SkillManageService skillManageService;
 
     // ==================== 事件日志（Event）====================
 
@@ -293,15 +297,16 @@ public class LogsApplication {
                 .filter(c -> c.getStatus() != null && c.getStatus().name().equalsIgnoreCase("RUNNING"))
                 .count();
         long totalWorkspaces = workspaceLifecycleService.listWorkspaces().size();
+        long activeWorkspaces = workspaceLifecycleService.countActiveWorkspaces();
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalCharacters", totalCharacters);
         stats.put("activeCharacters", activeCharacters);
         stats.put("totalWorkspaces", totalWorkspaces);
-        stats.put("activeWorkspaces", 0);
-        stats.put("failedSkills", 0);
+        stats.put("activeWorkspaces", activeWorkspaces);
+        stats.put("failedSkills", skillManageService.countFailedSkills());
         stats.put("memoryAnomalies", 0);
-        stats.put("pendingApprovals", 0);
+        stats.put("pendingApprovals", approvalService.countPendingApprovals());
         stats.put("recentFailedTasks", 0);
         stats.put("highPriorityExceptions", 0);
         return stats;

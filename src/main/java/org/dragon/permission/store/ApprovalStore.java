@@ -58,4 +58,9 @@ public interface ApprovalStore extends Store {
      * 检查是否存在待处理的审批请求
      */
     boolean existsPendingRequest(ResourceType resourceType, String resourceId, ApprovalType approvalType);
+
+    /**
+     * 获取所有审批请求
+     */
+    List<ApprovalRequestEntity> findAll();
 }
