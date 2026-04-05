@@ -1,9 +1,9 @@
 package org.dragon.memory.app;
 
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.api.controller.dto.BindingDTO;
-import org.dragon.api.controller.dto.CreateBindingRequest;
-import org.dragon.api.controller.dto.UpdateBindingRequest;
+import org.dragon.api.controller.dto.memory.BindingDTO;
+import org.dragon.api.controller.dto.memory.CreateBindingRequest;
+import org.dragon.api.controller.dto.memory.UpdateBindingRequest;
 import org.dragon.memory.core.BindingService;
 import org.springframework.stereotype.Service;
 

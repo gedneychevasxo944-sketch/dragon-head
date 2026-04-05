@@ -1,9 +1,9 @@
 package org.dragon.memory.core;
 
-import org.dragon.api.controller.dto.RuntimeStatusDTO;
-import org.dragon.api.controller.dto.ProbeResultDTO;
-import org.dragon.api.controller.dto.SyncResultDTO;
-import org.dragon.api.controller.dto.BatchOperationResultDTO;
+import org.dragon.api.controller.dto.memory.RuntimeStatusDTO;
+import org.dragon.api.controller.dto.memory.ProbeResultDTO;
+import org.dragon.api.controller.dto.memory.SyncResultDTO;
+import org.dragon.api.controller.dto.memory.BatchOperationResultDTO;
 
 /**
  * 运维服务接口

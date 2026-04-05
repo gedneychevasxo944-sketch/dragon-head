@@ -1,12 +1,12 @@
 package org.dragon.memory.core;
 
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.api.controller.dto.MemoryChunkDTO;
-import org.dragon.api.controller.dto.CreateChunkRequest;
-import org.dragon.api.controller.dto.UpdateChunkRequest;
-import org.dragon.api.controller.dto.BatchDeleteChunksRequest;
-import org.dragon.api.controller.dto.BatchUpdateIndexStatusRequest;
-import org.dragon.api.controller.dto.BatchOperationResultDTO;
+import org.dragon.api.controller.dto.memory.MemoryChunkDTO;
+import org.dragon.api.controller.dto.memory.CreateChunkRequest;
+import org.dragon.api.controller.dto.memory.UpdateChunkRequest;
+import org.dragon.api.controller.dto.memory.BatchDeleteChunksRequest;
+import org.dragon.api.controller.dto.memory.BatchUpdateIndexStatusRequest;
+import org.dragon.api.controller.dto.memory.BatchOperationResultDTO;
 
 /**
  * 记忆片段服务接口

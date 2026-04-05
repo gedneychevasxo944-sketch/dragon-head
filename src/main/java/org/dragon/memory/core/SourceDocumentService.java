@@ -1,9 +1,9 @@
 package org.dragon.memory.core;
 
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.api.controller.dto.SourceDocumentDTO;
-import org.dragon.api.controller.dto.CreateSourceRequest;
-import org.dragon.api.controller.dto.UpdateSourceRequest;
+import org.dragon.api.controller.dto.memory.SourceDocumentDTO;
+import org.dragon.api.controller.dto.memory.CreateSourceRequest;
+import org.dragon.api.controller.dto.memory.UpdateSourceRequest;
 
 /**
  * 数据源服务接口

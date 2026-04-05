@@ -1,9 +1,9 @@
 package org.dragon.memory.core;
 
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.api.controller.dto.BindingDTO;
-import org.dragon.api.controller.dto.CreateBindingRequest;
-import org.dragon.api.controller.dto.UpdateBindingRequest;
+import org.dragon.api.controller.dto.memory.BindingDTO;
+import org.dragon.api.controller.dto.memory.CreateBindingRequest;
+import org.dragon.api.controller.dto.memory.UpdateBindingRequest;
 
 /**
  * 绑定关系服务接口

@@ -1,7 +1,7 @@
 package org.dragon.memory.core;
 
-import org.dragon.api.controller.dto.MemoryOverviewStatsDTO;
-import org.dragon.api.controller.dto.SourceStatsResponseDTO;
+import org.dragon.api.controller.dto.memory.MemoryOverviewStatsDTO;
+import org.dragon.api.controller.dto.memory.SourceStatsResponseDTO;
 
 /**
  * 统计服务接口

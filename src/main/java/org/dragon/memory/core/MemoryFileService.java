@@ -1,7 +1,7 @@
 package org.dragon.memory.core;
 
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.api.controller.dto.MemoryFileDTO;
+import org.dragon.api.controller.dto.memory.MemoryFileDTO;
 
 /**
  * 记忆文件服务接口

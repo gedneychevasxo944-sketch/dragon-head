@@ -1,7 +1,7 @@
 package org.dragon.memory.app;
 
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.api.controller.dto.MemoryFileDTO;
+import org.dragon.api.controller.dto.memory.MemoryFileDTO;
 import org.dragon.memory.core.MemoryFileService;
 import org.springframework.stereotype.Service;
 

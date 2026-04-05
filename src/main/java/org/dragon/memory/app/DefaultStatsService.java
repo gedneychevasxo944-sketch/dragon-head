@@ -1,7 +1,7 @@
 package org.dragon.memory.app;
 
-import org.dragon.api.controller.dto.MemoryOverviewStatsDTO;
-import org.dragon.api.controller.dto.SourceStatsResponseDTO;
+import org.dragon.api.controller.dto.memory.MemoryOverviewStatsDTO;
+import org.dragon.api.controller.dto.memory.SourceStatsResponseDTO;
 import org.dragon.memory.core.StatsService;
 import org.springframework.stereotype.Service;
 

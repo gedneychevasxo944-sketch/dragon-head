@@ -1,7 +1,7 @@
 package org.dragon.memory.app;
 
-import org.dragon.api.controller.dto.RetrievalRequestDTO;
-import org.dragon.api.controller.dto.RetrievalResponseDTO;
+import org.dragon.api.controller.dto.memory.RetrievalRequestDTO;
+import org.dragon.api.controller.dto.memory.RetrievalResponseDTO;
 import org.dragon.memory.core.RetrievalService;
 import org.springframework.stereotype.Service;
 
