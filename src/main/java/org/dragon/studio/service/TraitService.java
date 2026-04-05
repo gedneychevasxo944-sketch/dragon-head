@@ -3,8 +3,11 @@ package org.dragon.studio.service;
 import lombok.RequiredArgsConstructor;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.datasource.entity.TraitEntity;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.CollaboratorService;
 import org.dragon.store.StoreFactory;
 import org.dragon.studio.store.TraitStore;
+import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,6 +24,7 @@ import java.util.Optional;
 public class TraitService {
 
     private final StoreFactory storeFactory;
+    private final CollaboratorService collaboratorService;
 
     private TraitStore getStore() {
         return storeFactory.get(TraitStore.class);
@@ -41,6 +45,11 @@ public class TraitService {
                 .build();
 
         getStore().save(trait);
+
+        // 添加创建者为 Owner
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        collaboratorService.addOwnerDirectly(ResourceType.TRAIT, String.valueOf(trait.getId()), userId);
+
         return toMap(trait);
     }
 

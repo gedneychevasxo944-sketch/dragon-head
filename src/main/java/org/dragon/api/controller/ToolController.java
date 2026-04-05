@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.application.ToolApplication;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,10 +32,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/tools")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class ToolController {
 
     private final ToolApplication toolApplication;
+    private final PermissionChecker permissionChecker;
 
     // ==================== 15. Tool CRUD ====================
 
@@ -74,8 +74,8 @@ public class ToolController {
      */
     @Operation(summary = "获取工具详情")
     @GetMapping("/{id}")
-    @PreAuthorize("canView(#id, 'TOOL')")
     public ApiResponse<Map<String, Object>> getTool(@PathVariable String id) {
+        permissionChecker.checkView("TOOL", id);
         return toolApplication.getTool(id)
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Tool not found: " + id));
@@ -87,10 +87,10 @@ public class ToolController {
      */
     @Operation(summary = "更新工具")
     @PutMapping("/{id}")
-    @PreAuthorize("canEdit(#id, 'TOOL')")
     public ApiResponse<Map<String, Object>> updateTool(
             @PathVariable String id,
             @RequestBody Map<String, Object> toolData) {
+        permissionChecker.checkEdit("TOOL", id);
         return ApiResponse.error(501, "Tool update via API not yet implemented.");
     }
 
@@ -100,10 +100,10 @@ public class ToolController {
      */
     @Operation(summary = "发布工具版本")
     @PostMapping("/{id}/publish")
-    @PreAuthorize("hasPermission(#id, 'TOOL', 'PUBLISH')")
     public ApiResponse<Map<String, Object>> publishTool(
             @PathVariable String id,
             @RequestBody Map<String, Object> publishData) {
+        permissionChecker.checkPermission("TOOL", id, "PUBLISH");
         return ApiResponse.error(501, "Tool version publishing not yet implemented.");
     }
 
@@ -113,8 +113,8 @@ public class ToolController {
      */
     @Operation(summary = "删除工具")
     @DeleteMapping("/{id}")
-    @PreAuthorize("canDelete(#id, 'TOOL')")
     public ApiResponse<Map<String, Object>> deleteTool(@PathVariable String id) {
+        permissionChecker.checkDelete("TOOL", id);
         return ApiResponse.error(501, "Tool deletion via API not yet implemented.");
     }
 }

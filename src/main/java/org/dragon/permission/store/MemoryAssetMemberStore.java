@@ -1,6 +1,6 @@
 package org.dragon.permission.store;
 
-import org.dragon.permission.entity.AssetMemberEntity;
+import org.dragon.datasource.entity.AssetMemberEntity;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import org.dragon.permission.enums.ResourceType;

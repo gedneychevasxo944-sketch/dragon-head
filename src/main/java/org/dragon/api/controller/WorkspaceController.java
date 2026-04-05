@@ -9,6 +9,7 @@ import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLog;
+import org.dragon.permission.checker.PermissionChecker;
 import org.dragon.skill.dto.SkillBindingRequest;
 import org.dragon.skill.dto.SkillBindingResponse;
 import org.dragon.skill.dto.SkillBindingUpdateRequest;
@@ -16,7 +17,6 @@ import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,10 +46,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/workspaces")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class WorkspaceController {
 
     private final WorkspaceApiApplication workspaceApiApplication;
+    private final PermissionChecker permissionChecker;
 
     // ==================== 5. Workspace CRUD ====================
 
@@ -88,8 +88,8 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace 详情")
     @GetMapping("/{workspaceId}")
-    @PreAuthorize("canView(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Workspace> getWorkspace(@PathVariable String workspaceId) {
+        permissionChecker.checkView("WORKSPACE", workspaceId);
         return workspaceApiApplication.getWorkspace(workspaceId)
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Workspace not found: " + workspaceId));
@@ -101,10 +101,10 @@ public class WorkspaceController {
      */
     @Operation(summary = "更新 Workspace 设置")
     @PutMapping("/{workspaceId}/settings")
-    @PreAuthorize("canEdit(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Workspace> updateWorkspace(
             @PathVariable String workspaceId,
             @RequestBody Workspace workspace) {
+        permissionChecker.checkEdit("WORKSPACE", workspaceId);
         Workspace updated = workspaceApiApplication.updateWorkspace(workspaceId, workspace);
         return ApiResponse.success(updated);
     }
@@ -115,8 +115,8 @@ public class WorkspaceController {
      */
     @Operation(summary = "删除 Workspace")
     @DeleteMapping("/{workspaceId}")
-    @PreAuthorize("canDelete(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> deleteWorkspace(@PathVariable String workspaceId) {
+        permissionChecker.checkDelete("WORKSPACE", workspaceId);
         workspaceApiApplication.deleteWorkspace(workspaceId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -129,8 +129,8 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace AI 团队成员列表")
     @GetMapping("/{workspaceId}/members")
-    @PreAuthorize("canView(#workspaceId, 'WORKSPACE')")
     public ApiResponse<List<WorkspaceMember>> listMembers(@PathVariable String workspaceId) {
+        permissionChecker.checkView("WORKSPACE", workspaceId);
         List<WorkspaceMember> members = workspaceApiApplication.listMembers(workspaceId);
         return ApiResponse.success(members);
     }
@@ -152,10 +152,10 @@ public class WorkspaceController {
      */
     @Operation(summary = "添加 Workspace 成员")
     @PostMapping("/{workspaceId}/members")
-    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<WorkspaceMember> addMember(
             @PathVariable String workspaceId,
             @RequestBody AddMemberRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         WorkspaceMember member = workspaceApiApplication.addMember(
                 workspaceId,
                 request.getCharacterId(),
@@ -172,10 +172,10 @@ public class WorkspaceController {
      */
     @Operation(summary = "移除 Workspace 成员")
     @DeleteMapping("/{workspaceId}/members/{memberId}")
-    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> removeMember(
             @PathVariable String workspaceId,
             @PathVariable String memberId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.removeMember(workspaceId, memberId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -266,8 +266,8 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace Observer 绑定信息")
     @GetMapping("/{workspaceId}/observer")
-    @PreAuthorize("canView(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> getObserverInfo(@PathVariable String workspaceId) {
+        permissionChecker.checkView("WORKSPACE", workspaceId);
         Map<String, Object> info = workspaceApiApplication.getObserverInfo(workspaceId);
         return ApiResponse.success(info);
     }
@@ -278,10 +278,10 @@ public class WorkspaceController {
      */
     @Operation(summary = "为 Workspace 绑定 Observer")
     @PostMapping("/{workspaceId}/observer")
-    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> bindObserver(
             @PathVariable String workspaceId,
             @RequestBody BindObserverRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.bindObserver(workspaceId, request.getObserverId(),
                 request.getEvaluationMode(), request.getAutoOptimization());
         return ApiResponse.success(Map.of("success", true));
@@ -293,8 +293,8 @@ public class WorkspaceController {
      */
     @Operation(summary = "解绑 Workspace Observer")
     @DeleteMapping("/{workspaceId}/observer")
-    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> unbindObserver(@PathVariable String workspaceId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.unbindObserver(workspaceId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -420,8 +420,8 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace 权限成员列表")
     @GetMapping("/{workspaceId}/permissions")
-    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<List<Map<String, Object>>> listPermissions(@PathVariable String workspaceId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         List<Map<String, Object>> permissions = workspaceApiApplication.listPermissions(workspaceId);
         return ApiResponse.success(permissions);
     }
@@ -432,10 +432,10 @@ public class WorkspaceController {
      */
     @Operation(summary = "添加 Workspace 成员权限")
     @PostMapping("/{workspaceId}/permissions")
-    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> addPermission(
             @PathVariable String workspaceId,
             @RequestBody PermissionRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.addPermission(workspaceId, request.getUserId(), request.getRole());
         return ApiResponse.success(Map.of("success", true));
     }
@@ -446,11 +446,11 @@ public class WorkspaceController {
      */
     @Operation(summary = "更新 Workspace 成员权限")
     @PutMapping("/{workspaceId}/permissions/{userId}")
-    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> updatePermission(
             @PathVariable String workspaceId,
             @PathVariable String userId,
             @RequestBody PermissionRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.updatePermission(workspaceId, userId, request.getRole());
         return ApiResponse.success(Map.of("success", true));
     }
@@ -461,10 +461,10 @@ public class WorkspaceController {
      */
     @Operation(summary = "移除 Workspace 成员权限")
     @DeleteMapping("/{workspaceId}/permissions/{userId}")
-    @PreAuthorize("canManage(#workspaceId, 'WORKSPACE')")
     public ApiResponse<Map<String, Object>> removePermission(
             @PathVariable String workspaceId,
             @PathVariable String userId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.removePermission(workspaceId, userId);
         return ApiResponse.success(Map.of("success", true));
     }

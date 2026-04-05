@@ -7,6 +7,7 @@ import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.CollaboratorService;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.util.UserUtils;
 import org.dragon.workspace.WorkspaceApplicationProvider;
@@ -34,6 +35,7 @@ public class StudioApplication {
     private final CharacterRegistry characterRegistry;
     private final WorkspaceApplicationProvider workspaceApplicationProvider;
     private final PermissionService permissionService;
+    private final CollaboratorService collaboratorService;
 
     // ==================== Character CRUD ====================
 
@@ -97,6 +99,11 @@ public class StudioApplication {
      */
     public Character createCharacter(Character character) {
         characterRegistry.register(character);
+
+        // 添加创建者为 Owner
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        collaboratorService.addOwnerDirectly(ResourceType.CHARACTER, character.getId(), userId);
+
         log.info("[StudioApplication] Created character: {}", character.getId());
         return characterRegistry.get(character.getId()).orElse(character);
     }

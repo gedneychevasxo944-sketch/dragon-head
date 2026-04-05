@@ -2,6 +2,8 @@ package org.dragon.skill.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.CollaboratorService;
 import org.dragon.skill.SkillFrontmatterParser;
 import org.dragon.skill.dto.*;
 import org.dragon.skill.entity.SkillEntity;
@@ -15,6 +17,7 @@ import org.dragon.skill.store.SkillStore;
 import org.dragon.skill.validator.SkillZipValidator;
 import org.dragon.store.StoreFactory;
 import org.dragon.util.GsonUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +43,7 @@ public class SkillManageServiceImpl implements SkillManageService {
     private final SkillRegistry skillRegistry;
     private final SkillStorageBackend storageBackend;
     private final StoreFactory storeFactory;
+    private final CollaboratorService collaboratorService;
 
     private SkillStore getSkillStore() {
         return storeFactory.get(SkillStore.class);
@@ -95,6 +99,11 @@ public class SkillManageServiceImpl implements SkillManageService {
                 .build();
 
         entity = getSkillStore().save(entity);
+
+        // 添加创建者为 Owner
+        if (creatorId > 0) {
+            collaboratorService.addOwnerDirectly(ResourceType.SKILL, String.valueOf(entity.getId()), creatorId);
+        }
 
         // 步骤7：触发运行时加载（直接从数据库字段构建，无需读文件）
         loaderService.loadSkill(entity);

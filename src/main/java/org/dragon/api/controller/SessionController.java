@@ -3,9 +3,9 @@ package org.dragon.api.controller;
 import org.dragon.memory.core.MemoryEntry;
 import org.dragon.memory.core.SessionSnapshot;
 import org.dragon.memory.core.MemoryFacade;
-import org.dragon.api.controller.dto.MemoryConverter;
-import org.dragon.api.controller.dto.MemoryEntryDTO;
-import org.dragon.api.controller.dto.SessionSnapshotDTO;
+import org.dragon.api.controller.dto.memory.MemoryConverter;
+import org.dragon.api.controller.dto.memory.MemoryEntryDTO;
+import org.dragon.api.controller.dto.memory.SessionSnapshotDTO;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 

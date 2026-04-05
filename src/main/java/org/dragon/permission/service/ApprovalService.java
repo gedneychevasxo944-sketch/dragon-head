@@ -2,7 +2,7 @@ package org.dragon.permission.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.permission.dto.ApprovalRequestDTO;
-import org.dragon.permission.entity.ApprovalRequestEntity;
+import org.dragon.datasource.entity.ApprovalRequestEntity;
 import org.dragon.permission.enums.ApprovalStatus;
 import org.dragon.permission.enums.ApprovalType;
 import org.dragon.permission.store.ApprovalStore;
