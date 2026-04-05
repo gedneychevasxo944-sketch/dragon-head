@@ -165,6 +165,18 @@ public class ApprovalService {
     }
 
     /**
+     * 获取待审批数量
+     * 用于健康统计
+     *
+     * @return 待审批数量
+     */
+    public long countPendingApprovals() {
+        return approvalStore.findAll().stream()
+                .filter(r -> r.getStatus() == ApprovalStatus.PENDING)
+                .count();
+    }
+
+    /**
      * 执行审批通过后的操作
      */
     private void executeAfterApproval(ApprovalRequestEntity request) {

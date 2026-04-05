@@ -169,4 +169,13 @@ public class WorkspaceLifecycleService {
         workspaceRegistry.archive(workspaceId);
         log.info("[WorkspaceLifecycleService] Archived workspace: {}", workspaceId);
     }
+
+    /**
+     * 获取活跃工作空间数量
+     *
+     * @return 活跃工作空间数量
+     */
+    public long countActiveWorkspaces() {
+        return workspaceRegistry.listByStatus(Workspace.Status.ACTIVE).size();
+    }
 }
