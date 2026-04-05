@@ -42,7 +42,6 @@ public class PermissionService {
         if (role.isEmpty()) {
             return Collections.emptySet();
         }
-
         List<PermissionPolicyEntity> policies = permissionPolicyStore.findByRoleAndResourceType(role.get(), type);
 
         Set<Permission> permissions = new HashSet<>();

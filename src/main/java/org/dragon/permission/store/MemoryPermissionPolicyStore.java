@@ -34,6 +34,17 @@ public class MemoryPermissionPolicyStore implements PermissionPolicyStore {
     }
 
     @Override
+    public List<PermissionPolicyEntity> findByRolesAndResourceType(List<Role> roleList, ResourceType resourceType) {
+        return store.values().stream()
+                .filter(p -> roleList.contains(p.getRole()))
+                .filter(p -> {
+                    ResourceType rt = p.getResourceType();
+                    return rt == null || "*".equals(rt.name()) || rt == resourceType;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<PermissionPolicyEntity> findByRole(Role role) {
         return store.values().stream()
                 .filter(p -> role == p.getRole())

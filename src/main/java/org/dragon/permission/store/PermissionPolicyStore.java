@@ -19,6 +19,11 @@ public interface PermissionPolicyStore extends Store {
     List<PermissionPolicyEntity> findByRoleAndResourceType(Role role, ResourceType resourceType);
 
     /**
+     * 根据角色和资源类型查找策略
+     */
+    List<PermissionPolicyEntity> findByRolesAndResourceType(List<Role> roleList, ResourceType resourceType);
+
+    /**
      * 根据角色查找所有策略
      */
     List<PermissionPolicyEntity> findByRole(Role role);

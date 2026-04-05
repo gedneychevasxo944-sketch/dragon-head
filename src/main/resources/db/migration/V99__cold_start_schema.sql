@@ -10,7 +10,7 @@ use adeptify;
 -- ============================================================================
 
 -- Chat message table
-CREATE TABLE chat_message (
+CREATE TABLE IF NOT EXISTS chat_message (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     sender_id VARCHAR(64) NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE chat_message (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Chat session table
-CREATE TABLE chat_session (
+CREATE TABLE IF NOT EXISTS chat_session (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     task_id VARCHAR(64),
@@ -58,7 +58,7 @@ CREATE TABLE chat_session (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Workspace table
-CREATE TABLE workspace (
+CREATE TABLE IF NOT EXISTS workspace (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -74,7 +74,7 @@ CREATE TABLE workspace (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Workspace member table
-CREATE TABLE workspace_member (
+CREATE TABLE IF NOT EXISTS workspace_member (
     id VARCHAR(128) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     character_id VARCHAR(64) NOT NULL,
@@ -95,7 +95,7 @@ CREATE TABLE workspace_member (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Task table
-CREATE TABLE task (
+CREATE TABLE IF NOT EXISTS task (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     parent_task_id VARCHAR(64),
@@ -142,7 +142,7 @@ CREATE TABLE task (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Material table
-CREATE TABLE material (
+CREATE TABLE IF NOT EXISTS material (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -163,7 +163,7 @@ CREATE TABLE material (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Parsed material content table
-CREATE TABLE parsed_material_content (
+CREATE TABLE IF NOT EXISTS parsed_material_content (
     id VARCHAR(64) PRIMARY KEY,
     material_id VARCHAR(64) NOT NULL,
     text_content TEXT,
@@ -177,7 +177,7 @@ CREATE TABLE parsed_material_content (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Workflow table
-CREATE TABLE workflow (
+CREATE TABLE IF NOT EXISTS workflow (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     nodes JSON,
@@ -188,7 +188,7 @@ CREATE TABLE workflow (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Workflow state table
-CREATE TABLE workflow_state (
+CREATE TABLE IF NOT EXISTS workflow_state (
     execution_id VARCHAR(64) PRIMARY KEY,
     workflow_id VARCHAR(64) NOT NULL,
     character_id VARCHAR(64),
@@ -207,7 +207,7 @@ CREATE TABLE workflow_state (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Evaluation record table
-CREATE TABLE evaluation_record (
+CREATE TABLE IF NOT EXISTS evaluation_record (
     id VARCHAR(64) PRIMARY KEY,
     target_type VARCHAR(32) NOT NULL,
     target_id VARCHAR(64) NOT NULL,
@@ -239,7 +239,7 @@ CREATE TABLE evaluation_record (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Modification log table
-CREATE TABLE modification_log (
+CREATE TABLE IF NOT EXISTS modification_log (
     id VARCHAR(64) PRIMARY KEY,
     target_type VARCHAR(32) NOT NULL,
     target_id VARCHAR(64) NOT NULL,
@@ -258,7 +258,7 @@ CREATE TABLE modification_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Optimization plan table
-CREATE TABLE optimization_plan (
+CREATE TABLE IF NOT EXISTS optimization_plan (
     id VARCHAR(64) PRIMARY KEY,
     observer_id VARCHAR(64) NOT NULL,
     evaluation_id VARCHAR(64),
@@ -284,7 +284,7 @@ CREATE TABLE optimization_plan (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Optimization plan item table
-CREATE TABLE optimization_plan_item (
+CREATE TABLE IF NOT EXISTS optimization_plan_item (
     id VARCHAR(64) PRIMARY KEY,
     plan_id VARCHAR(64) NOT NULL,
     sequence INT NOT NULL DEFAULT 0,
@@ -306,7 +306,7 @@ CREATE TABLE optimization_plan_item (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Optimization action table
-CREATE TABLE optimization_action (
+CREATE TABLE IF NOT EXISTS optimization_action (
     id VARCHAR(64) PRIMARY KEY,
     evaluation_id VARCHAR(64),
     target_type VARCHAR(32) NOT NULL,
@@ -329,7 +329,7 @@ CREATE TABLE optimization_action (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Cron definition table
-CREATE TABLE cron_definition (
+CREATE TABLE IF NOT EXISTS cron_definition (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -357,7 +357,7 @@ CREATE TABLE cron_definition (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Execution history table
-CREATE TABLE execution_history (
+CREATE TABLE IF NOT EXISTS execution_history (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     execution_id VARCHAR(64) NOT NULL UNIQUE,
     cron_id VARCHAR(64),
@@ -383,7 +383,7 @@ CREATE TABLE execution_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Channel config table
-CREATE TABLE channel_config (
+CREATE TABLE IF NOT EXISTS channel_config (
     id VARCHAR(64) PRIMARY KEY,
     channel_type VARCHAR(32) NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -397,7 +397,7 @@ CREATE TABLE channel_config (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Channel binding table
-CREATE TABLE channel_binding (
+CREATE TABLE IF NOT EXISTS channel_binding (
     id VARCHAR(128) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     channel_name VARCHAR(32) NOT NULL,
@@ -415,7 +415,7 @@ CREATE TABLE channel_binding (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Character duty table
-CREATE TABLE character_duty (
+CREATE TABLE IF NOT EXISTS character_duty (
     id VARCHAR(128) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     character_id VARCHAR(64) NOT NULL,
@@ -429,7 +429,7 @@ CREATE TABLE character_duty (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Common sense folder table
-CREATE TABLE common_sense_folder (
+CREATE TABLE IF NOT EXISTS common_sense_folder (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     parent_id VARCHAR(64),
@@ -443,7 +443,7 @@ CREATE TABLE common_sense_folder (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Common sense table
-CREATE TABLE common_sense (
+CREATE TABLE IF NOT EXISTS common_sense (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     folder_id VARCHAR(64),
@@ -470,7 +470,7 @@ CREATE TABLE common_sense (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Observer action log table
-CREATE TABLE observer_action_log (
+CREATE TABLE IF NOT EXISTS observer_action_log (
     id VARCHAR(64) PRIMARY KEY,
     target_type VARCHAR(32) NOT NULL,
     target_id VARCHAR(64) NOT NULL,
@@ -488,7 +488,7 @@ CREATE TABLE observer_action_log (
 -- ============================================================================
 
 -- User table
-CREATE TABLE adeptify_user (
+CREATE TABLE IF NOT EXISTS adeptify_user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(64) NOT NULL UNIQUE,
     phone VARCHAR(32) UNIQUE,
@@ -508,7 +508,7 @@ CREATE TABLE adeptify_user (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- User token table for refresh token management
-CREATE TABLE user_token (
+CREATE TABLE IF NOT EXISTS user_token (
     id VARCHAR(64) PRIMARY KEY,
     user_id BIGINT NOT NULL,
     refresh_token VARCHAR(512) NOT NULL,
@@ -523,7 +523,7 @@ CREATE TABLE user_token (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- SMS verification code table
-CREATE TABLE sms_code (
+CREATE TABLE IF NOT EXISTS sms_code (
     id VARCHAR(64) PRIMARY KEY,
     phone VARCHAR(32) NOT NULL,
     code VARCHAR(8) NOT NULL,
@@ -536,7 +536,7 @@ CREATE TABLE sms_code (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Config store table
-CREATE TABLE config_store (
+CREATE TABLE IF NOT EXISTS config_store (
     id VARCHAR(255) PRIMARY KEY,
     workspace VARCHAR(64),
     entity_type VARCHAR(64),
@@ -555,7 +555,7 @@ CREATE TABLE config_store (
 -- ============================================================================
 
 -- Skill metadata table
-CREATE TABLE skill (
+CREATE TABLE IF NOT EXISTS skill (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(128) NOT NULL UNIQUE,
     category VARCHAR(32) NOT NULL,
@@ -583,7 +583,7 @@ CREATE TABLE skill (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Skill binding table (workspace <-> skill)
-CREATE TABLE skill_binding (
+CREATE TABLE IF NOT EXISTS skill_binding (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     skill_id BIGINT NOT NULL,
     workspace_id VARCHAR(64) NOT NULL,
@@ -602,7 +602,7 @@ CREATE TABLE skill_binding (
 -- V3: Skill bind table (different from skill_binding!)
 -- ============================================================================
 
-CREATE TABLE skill_bind (
+CREATE TABLE IF NOT EXISTS skill_bind (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     skill_id BIGINT NOT NULL,
     bind_type VARCHAR(32) NOT NULL DEFAULT 'WORKSPACE',
@@ -625,7 +625,7 @@ CREATE TABLE skill_bind (
 -- ============================================================================
 
 -- Character table
-CREATE TABLE `character` (
+CREATE TABLE IF NOT EXISTS `character` (
     id VARCHAR(64) PRIMARY KEY,
     workspace_ids JSON,
     organization_ids JSON,
@@ -651,7 +651,7 @@ CREATE TABLE `character` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Model instance table
-CREATE TABLE model_instance (
+CREATE TABLE IF NOT EXISTS model_instance (
     id VARCHAR(64) PRIMARY KEY,
     provider VARCHAR(32),
     model_name VARCHAR(128),
@@ -666,7 +666,7 @@ CREATE TABLE model_instance (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Observer table
-CREATE TABLE observer (
+CREATE TABLE IF NOT EXISTS observer (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255),
     description TEXT,
@@ -693,7 +693,7 @@ CREATE TABLE observer (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tool table (stores metadata only, execution logic is in code)
-CREATE TABLE tool (
+CREATE TABLE IF NOT EXISTS tool (
     name VARCHAR(128) PRIMARY KEY,
     description TEXT,
     parameter_schema TEXT,
@@ -704,7 +704,7 @@ CREATE TABLE tool (
 -- V5 + V6: Trait table (type column removed per V6)
 -- ============================================================================
 
-CREATE TABLE trait (
+CREATE TABLE IF NOT EXISTS trait (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
     category VARCHAR(64) NOT NULL,
@@ -743,7 +743,7 @@ INSERT INTO trait (name, category, description, content, enabled, used_by_count,
 
 -- Approval request table (for publish, unpublish, add/remove collaborator approvals)
 -- Note: asset_collaborator table was dropped in V10 (replaced by asset_member from V9)
-CREATE TABLE approval_request (
+CREATE TABLE IF NOT EXISTS approval_request (
     id VARCHAR(64) PRIMARY KEY,
     resource_type VARCHAR(32) NOT NULL,
     resource_id VARCHAR(64) NOT NULL,
@@ -769,7 +769,7 @@ CREATE TABLE approval_request (
 -- ============================================================================
 
 -- asset_member: User's membership/role on an asset
-CREATE TABLE asset_member (
+CREATE TABLE IF NOT EXISTS asset_member (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     resource_type VARCHAR(32) NOT NULL COMMENT 'WORKSPACE, CHARACTER, SKILL, etc.',
     resource_id VARCHAR(64) NOT NULL COMMENT 'ID of the resource',
@@ -787,7 +787,7 @@ CREATE TABLE asset_member (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- permission_policy: Permissions granted by role+resource_type
-CREATE TABLE permission_policy (
+CREATE TABLE IF NOT EXISTS permission_policy (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     resource_type VARCHAR(32) NOT NULL COMMENT 'Specific type or * for all',
     role VARCHAR(32) NOT NULL COMMENT 'OWNER, ADMIN, COLLABORATOR, MEMBER',
