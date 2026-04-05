@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Skill 列表摘要视图对象（不含大字段 content）。
@@ -41,5 +42,8 @@ public class SkillSummaryVO {
 
     /** 调用总次数（来自 usage 聚合，可选） */
     private Long totalUsageCount;
+
+    /** 标签列表 */
+    private List<String> tags;
 }
 

@@ -8,6 +8,7 @@ import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.observer.actionlog.ObserverActionLog;
+import org.dragon.util.UserUtils;
 import org.dragon.workspace.hiring.HireMode;
 import org.dragon.workspace.material.Material;
 import org.dragon.workspace.member.CharacterDuty;
@@ -280,14 +281,14 @@ public class WorkspaceApplication {
      * 圈选一个 Skill 到 workspace。
      */
     public SkillBindingResult bindSkill(String workspaceId, SkillBindingRequest request) {
-        return skillBindingService.bindToWorkspace(workspaceId, request);
+        return skillBindingService.bindToWorkspace(workspaceId, request, UserUtils.getUserInfo());
     }
 
     /**
      * 从 workspace 取消圈选一个 Skill。
      */
     public void unbindSkill(String workspaceId, String skillId) {
-        skillBindingService.unbindWorkspaceSkill(workspaceId, skillId);
+        skillBindingService.unbindWorkspaceSkill(workspaceId, skillId, UserUtils.getUserInfo());
     }
 
     /**
@@ -295,7 +296,7 @@ public class WorkspaceApplication {
      */
     public void updateSkillBinding(String workspaceId, String skillId,
                                    String versionType, Integer fixedVersion) {
-        skillBindingService.updateWorkspaceBinding(workspaceId, skillId, versionType, fixedVersion);
+        skillBindingService.updateWorkspaceBinding(workspaceId, skillId, versionType, fixedVersion, UserUtils.getUserInfo());
     }
 
     /**

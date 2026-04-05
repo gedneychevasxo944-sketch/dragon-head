@@ -131,5 +131,10 @@ public class SkillDO {
 
     /** 留存模式（persist=1 时生效） */
     private PersistMode persistMode;
+
+    // ── 标签 ──────────────────────────────────────────────────────────
+
+    /** 标签列表，JSON 数组字符串，如 ["数据分析","API","工具类"] */
+    private String tags;
 }
 

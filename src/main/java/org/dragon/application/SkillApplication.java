@@ -3,6 +3,8 @@ package org.dragon.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
+import org.dragon.skill.actionlog.SkillActionLogService;
+import org.dragon.skill.actionlog.SkillActionLogVO;
 import org.dragon.skill.dto.SkillDetailVO;
 import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillQueryRequest;
@@ -13,6 +15,8 @@ import org.dragon.skill.enums.SkillVisibility;
 import org.dragon.skill.service.SkillLifecycleService;
 import org.dragon.skill.service.SkillQueryService;
 import org.dragon.skill.service.SkillRegisterService;
+import org.dragon.util.UserUtils;
+import org.dragon.util.bean.UserInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,27 +38,27 @@ public class SkillApplication {
     private final SkillRegisterService registerService;
     private final SkillLifecycleService lifecycleService;
     private final SkillQueryService queryService;
+    private final SkillActionLogService actionLogService;
 
     // ==================== Skill CRUD ====================
 
     /**
-     * 创建技能（ZIP 方式）。
+     * 创建技能。
      */
-    public SkillDetailVO create(MultipartFile file, SkillRegisterRequest request,
-                                Long operatorId, String operatorName) {
-        SkillRegisterResult result = registerService.register(file, request, operatorId, operatorName);
+    public SkillDetailVO create(MultipartFile file, SkillRegisterRequest request) {
+        UserInfo user = UserUtils.getUserInfo();
+        SkillRegisterResult result = registerService.register(file, request, user);
         log.info("[SkillApplication] Created skill: skillId={}, version={}",
                 result.getSkillId(), result.getVersion());
         return queryService.getDetail(result.getSkillId(), false);
     }
 
     /**
-     * 更新技能（ZIP 方式）。
+     * 更新技能。
      */
-    public SkillDetailVO update(String skillId, MultipartFile file,
-                                SkillRegisterRequest request,
-                                Long operatorId, String operatorName) {
-        SkillRegisterResult result = registerService.update(skillId, file, request, operatorId, operatorName);
+    public SkillDetailVO update(String skillId, MultipartFile file, SkillRegisterRequest request) {
+        UserInfo user = UserUtils.getUserInfo();
+        SkillRegisterResult result = registerService.update(skillId, file, request, user);
         log.info("[SkillApplication] Updated skill: skillId={}, version={}",
                 result.getSkillId(), result.getVersion());
         return queryService.getDetail(result.getSkillId(), false);
@@ -106,17 +110,18 @@ public class SkillApplication {
     /**
      * 删除技能。
      */
-    public void deleteSkill(String skillId, Long operatorId) {
-        lifecycleService.delete(skillId, operatorId);
+    public void deleteSkill(String skillId) {
+        UserInfo user = UserUtils.getUserInfo();
+        lifecycleService.delete(skillId, user);
         log.info("[SkillApplication] Deleted skill: {}", skillId);
     }
 
     /**
      * 发布技能版本。
      */
-    public SkillDetailVO publishSkill(String skillId, String version, String changelog,
-                                        Long operatorId) {
-        lifecycleService.publish(skillId, operatorId);
+    public SkillDetailVO publishSkill(String skillId, String version, String changelog) {
+        UserInfo user = UserUtils.getUserInfo();
+        lifecycleService.publish(skillId, user);
         log.info("[SkillApplication] Published skill: {} version: {}", skillId, version);
         return queryService.getDetail(skillId, false);
     }
@@ -124,15 +129,17 @@ public class SkillApplication {
     /**
      * 禁用技能。
      */
-    public void disableSkill(String skillId, Long operatorId) {
-        lifecycleService.disable(skillId, operatorId);
+    public void disableSkill(String skillId) {
+        UserInfo user = UserUtils.getUserInfo();
+        lifecycleService.disable(skillId, user);
     }
 
     /**
      * 启用技能。
      */
-    public void enableSkill(String skillId, Long operatorId) {
-        lifecycleService.republish(skillId, operatorId);
+    public void enableSkill(String skillId) {
+        UserInfo user = UserUtils.getUserInfo();
+        lifecycleService.republish(skillId, user);
     }
 
     /**
@@ -154,5 +161,18 @@ public class SkillApplication {
         SkillRegisterResult result = registerService.saveDraft(skillId, request);
         log.info("[SkillApplication] Saved draft for skill: {}", skillId);
         return result;
+    }
+
+    /**
+     * 获取技能活动日志（分页）。
+     *
+     * @param skillId 技能 UUID
+     * @param page    页码（从 1 开始）
+     * @param size    每页条数
+     * @return 分页结果
+     */
+    public PageResponse<SkillActionLogVO> getActivityLogs(String skillId, int page, int size) {
+        var result = actionLogService.pageBySkill(skillId, page, size);
+        return PageResponse.of(result.getItems(), result.getTotal(), result.getPage(), result.getPageSize());
     }
 }
