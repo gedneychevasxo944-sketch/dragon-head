@@ -14,5 +14,9 @@ public enum ResourceType {
     MODEL,
     TRAIT,
     TEMPLATE,
-    COMMONSENSE
+    COMMONSENSE,
+    /**
+     * 表示所有资源类型，对应数据库中的 '*'
+     */
+    WILDCARD
 }

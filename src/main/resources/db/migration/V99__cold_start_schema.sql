@@ -800,7 +800,7 @@ CREATE TABLE permission_policy (
 -- Seed default permission policies
 -- OWNER: 所有者，拥有全部权限
 INSERT INTO permission_policy (resource_type, role, permission) VALUES
-('*', 'OWNER', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR", "TRANSFER"]');
+('WILDCARD', 'OWNER', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR", "TRANSFER"]');
 
 -- ADMIN: 管理员，拥有编辑管理权限
 INSERT INTO permission_policy (resource_type, role, permission) VALUES
@@ -817,7 +817,7 @@ INSERT INTO permission_policy (resource_type, role, permission) VALUES
 
 -- COLLABORATOR: 协作者，仅能查看使用
 INSERT INTO permission_policy (resource_type, role, permission) VALUES
-('*', 'COLLABORATOR', '["VIEW", "USE"]');
+('WILDCARD', 'COLLABORATOR', '["VIEW", "USE"]');
 
 -- MEMBER: 成员，仅能查看（Workspace内资产）
 INSERT INTO permission_policy (resource_type, role, permission) VALUES
