@@ -1,16 +1,19 @@
 package org.dragon.skill.exception;
 
 /**
- * Skill 基础异常。
- *
- * @since 1.0
+ * Skill 模块异常基类。
  */
 public class SkillException extends RuntimeException {
-    public SkillException(String message) {
+
+    private final int code;
+
+    public SkillException(int code, String message) {
         super(message);
+        this.code = code;
     }
 
-    public SkillException(String message, Throwable cause) {
-        super(message, cause);
+    public int getCode() {
+        return code;
     }
 }
+

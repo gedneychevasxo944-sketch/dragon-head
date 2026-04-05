@@ -11,7 +11,7 @@ import org.dragon.character.mind.TraitResolutionService;
 import org.dragon.store.StoreFactory;
 import org.dragon.character.runtime.CharacterRuntime;
 import org.dragon.config.PromptManager;
-import org.dragon.skill.registry.SkillRegistry;
+import org.dragon.skill.runtime.SkillRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * 提供所有资源权限的读取接口
  */
 @Slf4j
-@Service
+@Service("resourcePermissionService")
 public class PermissionService {
 
     private final AssetMemberStore assetMemberStore;
@@ -42,7 +42,6 @@ public class PermissionService {
         if (role.isEmpty()) {
             return Collections.emptySet();
         }
-
         List<PermissionPolicyEntity> policies = permissionPolicyStore.findByRoleAndResourceType(role.get(), type);
 
         Set<Permission> permissions = new HashSet<>();

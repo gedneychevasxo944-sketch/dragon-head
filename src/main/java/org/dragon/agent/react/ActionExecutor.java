@@ -52,6 +52,8 @@ public class ActionExecutor {
                     JsonNode paramsNode = new ObjectMapper().valueToTree(action.getParameters());
                     AgentTool.ToolContext toolContext = AgentTool.ToolContext.builder()
                             .parameters(paramsNode)
+                            .characterId(context.getCharacterId())
+                            .workspaceId(context.getWorkspaceId())
                             .build();
                     try {
                         AgentTool.ToolResult result = tool.execute(toolContext)

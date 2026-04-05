@@ -1,5 +1,7 @@
 package org.dragon.character.runtime;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import org.dragon.agent.orchestration.OrchestrationService;
@@ -12,9 +14,9 @@ import org.dragon.character.mind.DefaultMind;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.config.PromptKeys;
-import org.dragon.skill.SkillAccess;
-import org.dragon.skill.SkillAccessImpl;
-import org.dragon.skill.registry.SkillRegistry;
+import org.dragon.skill.runtime.SkillDefinition;
+import org.dragon.skill.runtime.SkillDirectoryBuilder;
+import org.dragon.skill.runtime.SkillRegistry;
 import org.dragon.task.Task;
 
 import lombok.Builder;
@@ -112,7 +114,6 @@ public class CharacterExecutor {
 
         String systemPrompt = resolveSystemPrompt();
         String workspace = resolveWorkspace();
-        Long workspaceId = workspace != null ? Long.parseLong(workspace) : null;
 
         ReActContext.ReActContextBuilder contextBuilder = ReActContext.builder()
                 .executionId(UUID.randomUUID().toString())
@@ -125,7 +126,7 @@ public class CharacterExecutor {
                 .streamingEnabled(streaming)
                 .task(task)
                 .allowedTools(profile.getAllowedTools())
-                .activeSkills(resolveActiveSkills(workspaceId));
+                .activeSkills(resolveActiveSkills(workspace));
 
         if (bridgeContext != null) {
             boolean collaborationEnabled = bridgeContext.isCollaborationJudgementEnabled();
@@ -224,7 +225,7 @@ public class CharacterExecutor {
             }
         }
         // 增加skill的prompt
-        prompt += runtime.getSkillRegistry().buildSystemPromptFragment(profile.getId(), Long.parseLong(workspace));
+        prompt += SkillDirectoryBuilder.buildDirectoryPrompt(runtime.getSkillRegistry().getSkills(profile.getId(), workspace));
         return prompt != null ? prompt : "";
     }
 
@@ -241,12 +242,12 @@ public class CharacterExecutor {
      * @param workspaceId 工作空间 ID（可能为 null）
      * @return 激活的 SkillRuntimeEntry 列表
      */
-    private java.util.List<org.dragon.skill.registry.SkillRuntimeEntry> resolveActiveSkills(Long workspaceId) {
+    private List<SkillDefinition> resolveActiveSkills(String workspaceId) {
         if (workspaceId == null || runtime.getSkillRegistry() == null) {
-            return java.util.Collections.emptyList();
+            return Collections.emptyList();
         }
         SkillRegistry registry = runtime.getSkillRegistry();
-        return new java.util.ArrayList<>(registry.findAllActiveByCharacter(profile.getId(), workspaceId));
+        return new java.util.ArrayList<>(registry.getSkills(profile.getId(), workspaceId));
     }
 
     private Mind getMind() {
@@ -266,17 +267,9 @@ public class CharacterExecutor {
         if (profile.getMindConfig() == null) {
             return null;
         }
-        // 创建 SkillAccess（如果 skillRegistry 可用）
-        SkillAccess skillAccess = null;
-        if (runtime.getSkillRegistry() != null) {
-            skillAccess = new SkillAccessImpl(
-                    profile.getId(),
-                    runtime.getWorkspaceId(),
-                    runtime.getSkillRegistry());
-        }
         DefaultMind defaultMind = new DefaultMind(
-                profile.getId(), null, null, skillAccess, runtime.getTraitResolutionService());
-        String personalityPath = profile.getMindConfig().getPersonalityDescriptorPath();
+                profile.getId(), null, null, runtime.getTraitResolutionService());
+         String personalityPath = profile.getMindConfig().getPersonalityDescriptorPath();
         if (personalityPath != null && !personalityPath.isEmpty()) {
             defaultMind.loadPersonality(personalityPath);
         }

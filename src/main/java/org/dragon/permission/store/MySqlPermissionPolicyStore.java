@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * MySqlPermissionPolicyStore 权限策略MySQL存储实现
@@ -32,7 +33,20 @@ public class MySqlPermissionPolicyStore implements PermissionPolicyStore {
                 .eq("role", role.name())
                 .or()
                 .eq("resourceType", resourceType.name())
-                .eq("resourceType", "*")
+                .eq("resourceType", "WILDCARD")
+                .endOr()
+                .findList();
+    }
+
+    @Override
+    public List<PermissionPolicyEntity> findByRolesAndResourceType(List<Role> roleList, ResourceType resourceType) {
+        List<String> roleNames = roleList.stream().map(Role::name).collect(Collectors.toList());
+        return mysqlDb.find(PermissionPolicyEntity.class)
+                .where()
+                .in("role", roleNames)
+                .or()
+                .eq("resourceType", resourceType.name())
+                .eq("resourceType", "WILDCARD")
                 .endOr()
                 .findList();
     }

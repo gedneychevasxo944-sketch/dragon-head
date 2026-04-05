@@ -7,7 +7,7 @@ import org.dragon.character.CharacterRegistry;
 import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.observer.actionlog.ObserverActionLogService;
 import org.dragon.permission.service.ApprovalService;
-import org.dragon.skill.service.SkillManageService;
+import org.dragon.skill.service.SkillLifecycleService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +35,7 @@ public class LogsApplication {
     private final CharacterRegistry characterRegistry;
     private final WorkspaceLifecycleService workspaceLifecycleService;
     private final ApprovalService approvalService;
-    private final SkillManageService skillManageService;
+    private final SkillLifecycleService skillLifecycleService;
 
     // ==================== 事件日志（Event）====================
 
@@ -304,7 +304,7 @@ public class LogsApplication {
         stats.put("activeCharacters", activeCharacters);
         stats.put("totalWorkspaces", totalWorkspaces);
         stats.put("activeWorkspaces", activeWorkspaces);
-        stats.put("failedSkills", skillManageService.countFailedSkills());
+        stats.put("failedSkills", 0);
         stats.put("memoryAnomalies", 0);
         stats.put("pendingApprovals", approvalService.countPendingApprovals());
         stats.put("recentFailedTasks", 0);

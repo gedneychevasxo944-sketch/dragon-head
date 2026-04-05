@@ -8,7 +8,7 @@ import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.TraitResolutionService;
 import org.dragon.config.PromptManager;
-import org.dragon.skill.registry.SkillRegistry;
+import org.dragon.skill.runtime.SkillRegistry;
 
 import lombok.Builder;
 import lombok.Data;
