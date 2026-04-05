@@ -8,8 +8,8 @@ import org.dragon.application.StudioApplication;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.character.Character;
+import org.dragon.permission.checker.PermissionChecker;
 import org.dragon.studio.service.TraitService;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,11 +38,11 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/v1/studio")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class StudioController {
 
     private final StudioApplication studioApplication;
     private final TraitService traitService;
+    private final PermissionChecker permissionChecker;
 
     // ==================== 1. Character（角色）====================
 
@@ -80,8 +80,8 @@ public class StudioController {
      */
     @Operation(summary = "获取角色详情")
     @GetMapping("/characters/{id}")
-    @PreAuthorize("canView(#id, 'CHARACTER')")
     public ApiResponse<Character> getCharacter(@PathVariable String id) {
+        permissionChecker.checkView("CHARACTER", id);
         return studioApplication.getCharacter(id)
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Character not found: " + id));
@@ -93,10 +93,10 @@ public class StudioController {
      */
     @Operation(summary = "更新角色")
     @PutMapping("/characters/{id}")
-    @PreAuthorize("canEdit(#id, 'CHARACTER')")
     public ApiResponse<Character> updateCharacter(
             @PathVariable String id,
             @RequestBody Character character) {
+        permissionChecker.checkEdit("CHARACTER", id);
         Character updated = studioApplication.updateCharacter(id, character);
         return ApiResponse.success(updated);
     }
@@ -107,8 +107,8 @@ public class StudioController {
      */
     @Operation(summary = "删除角色")
     @DeleteMapping("/characters/{id}")
-    @PreAuthorize("canDelete(#id, 'CHARACTER')")
     public ApiResponse<Map<String, Object>> deleteCharacter(@PathVariable String id) {
+        permissionChecker.checkDelete("CHARACTER", id);
         studioApplication.deleteCharacter(id);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -130,10 +130,10 @@ public class StudioController {
      */
     @Operation(summary = "独立运行角色 - 发送消息")
     @PostMapping("/characters/{id}/run")
-    @PreAuthorize("canUse(#id, 'CHARACTER')")
     public ApiResponse<Map<String, Object>> runCharacter(
             @PathVariable String id,
             @RequestBody RunCharacterRequest request) {
+        permissionChecker.checkUse("CHARACTER", id);
         Map<String, Object> result = studioApplication.runCharacter(id, request.getMessage(), request.getSessionId());
         return ApiResponse.success(result);
     }
@@ -170,8 +170,8 @@ public class StudioController {
      */
     @Operation(summary = "获取 Trait 详情")
     @GetMapping("/traits/{id}")
-    @PreAuthorize("canView(#id, 'TRAIT')")
     public ApiResponse<Map<String, Object>> getTrait(@PathVariable String id) {
+        permissionChecker.checkView("TRAIT", id);
         Optional<Map<String, Object>> trait = traitService.getTrait(Long.parseLong(id));
         return trait.map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Trait not found: " + id));
@@ -183,10 +183,10 @@ public class StudioController {
      */
     @Operation(summary = "更新 Trait")
     @PutMapping("/traits/{id}")
-    @PreAuthorize("canEdit(#id, 'TRAIT')")
     public ApiResponse<Map<String, Object>> updateTrait(
             @PathVariable String id,
             @RequestBody Map<String, Object> traitData) {
+        permissionChecker.checkEdit("TRAIT", id);
         Optional<Map<String, Object>> updated = traitService.updateTrait(Long.parseLong(id), traitData);
         return updated.map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Trait not found: " + id));
@@ -198,8 +198,8 @@ public class StudioController {
      */
     @Operation(summary = "删除 Trait")
     @DeleteMapping("/traits/{id}")
-    @PreAuthorize("canDelete(#id, 'TRAIT')")
     public ApiResponse<Void> deleteTrait(@PathVariable String id) {
+        permissionChecker.checkDelete("TRAIT", id);
         boolean deleted = traitService.deleteTrait(Long.parseLong(id));
         return deleted ? ApiResponse.success() : ApiResponse.error(404, "Trait not found: " + id);
     }
@@ -238,10 +238,10 @@ public class StudioController {
      */
     @Operation(summary = "从模板派生创建角色")
     @PostMapping("/templates/{id}/derive")
-    @PreAuthorize("canEdit(#id, 'TEMPLATE')")
     public ApiResponse<Character> deriveCharacterFromTemplate(
             @PathVariable String id,
             @RequestBody DeriveTemplateRequest request) {
+        permissionChecker.checkEdit("TEMPLATE", id);
         // 临时实现：先以空白角色方式创建
         Character character = new Character();
         character.setName(request.getName());
