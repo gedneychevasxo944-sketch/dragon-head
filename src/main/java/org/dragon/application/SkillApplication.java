@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.skill.actionlog.SkillActionLogService;
 import org.dragon.skill.actionlog.SkillActionLogVO;
+import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.permission.service.CollaboratorService;
 import org.dragon.skill.dto.SkillDetailVO;
 import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillQueryRequest;
@@ -39,6 +41,8 @@ public class SkillApplication {
     private final SkillLifecycleService lifecycleService;
     private final SkillQueryService queryService;
     private final SkillActionLogService actionLogService;
+    private final CollaboratorService collaboratorService;
+    private final AssetPublishStatusService publishStatusService;
 
     // ==================== Skill CRUD ====================
 

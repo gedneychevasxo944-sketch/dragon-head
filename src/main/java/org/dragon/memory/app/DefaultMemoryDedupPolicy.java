@@ -1,7 +1,10 @@
 package org.dragon.memory.app;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.memory.core.MemoryDedupPolicy;
 import org.dragon.memory.core.MemoryEntry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -17,13 +20,25 @@ import java.util.Optional;
  */
 @Service
 public class DefaultMemoryDedupPolicy implements MemoryDedupPolicy {
-    private static final double SIMILARITY_THRESHOLD = 0.7;
+
+    private static final double DEFAULT_SIMILARITY_THRESHOLD = 0.7;
+
+    private final double similarityThreshold;
+
+    @Autowired
+    public DefaultMemoryDedupPolicy(ConfigApplication configApplication) {
+        this.similarityThreshold = configApplication.getDoubleValue(
+                "memory.dedup.similarity-threshold",
+                InheritanceContext.forGlobal(),
+                DEFAULT_SIMILARITY_THRESHOLD
+        );
+    }
 
     @Override
     public Optional<MemoryEntry> findDuplicate(MemoryEntry candidate, List<MemoryEntry> existing) {
         for (MemoryEntry entry : existing) {
             double similarity = calculateSimilarity(entry, candidate);
-            if (similarity >= SIMILARITY_THRESHOLD) {
+            if (similarity >= similarityThreshold) {
                 return Optional.of(entry);
             }
         }

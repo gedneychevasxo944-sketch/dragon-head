@@ -1,5 +1,7 @@
 package org.dragon.datasource.entity;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +17,8 @@ import java.util.List;
  * @version 1.0
  */
 @Data
+@Entity
+@Table(name = "source_document")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

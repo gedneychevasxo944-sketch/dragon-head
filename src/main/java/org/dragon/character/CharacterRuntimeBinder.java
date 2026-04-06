@@ -10,7 +10,7 @@ import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.mind.TraitResolutionService;
 import org.dragon.store.StoreFactory;
 import org.dragon.character.runtime.CharacterRuntime;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.skill.runtime.SkillRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Lazy;
@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class CharacterRuntimeBinder {
 
-    private final PromptManager promptManager;
+    private final ConfigApplication configApplication;
     private final ObjectProvider<ReActExecutor> reActExecutorProvider;
     private final WorkflowExecutor workflowExecutor;
     private final ModelRegistry modelRegistry;
@@ -50,7 +50,7 @@ public class CharacterRuntimeBinder {
 
         // 构建运行时依赖
         CharacterRuntime runtime = CharacterRuntime.builder()
-                .promptManager(promptManager)
+                .configApplication(configApplication)
                 .reActExecutor(reActExecutorProvider.getObject())
                 .workflowExecutor(workflowExecutor)
                 .workflowStore(getWorkflowStore())

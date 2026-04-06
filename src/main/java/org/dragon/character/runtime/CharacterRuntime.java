@@ -7,7 +7,7 @@ import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.TraitResolutionService;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.skill.runtime.SkillRegistry;
 
 import lombok.Builder;
@@ -32,7 +32,7 @@ public class CharacterRuntime {
     /**
      * Prompt 管理器
      */
-    private PromptManager promptManager;
+    private ConfigApplication configApplication;
 
     /**
      * Workflow 执行器

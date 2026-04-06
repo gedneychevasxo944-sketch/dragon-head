@@ -17,7 +17,7 @@ import org.dragon.workspace.service.task.arrangement.dto.ChildTaskPlan;
 import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.config.PromptKeys;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.springframework.stereotype.Component;
 
 import com.google.gson.Gson;
@@ -40,7 +40,7 @@ public class TaskAssignmentResolver {
 
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final CharacterCaller characterCaller;
-    private final PromptManager promptManager;
+    private final ConfigApplication configApplication;
     private final Gson gson = new Gson();
 
     /**
@@ -69,7 +69,7 @@ public class TaskAssignmentResolver {
         Character memberSelector = builtInCharacterFactory.getOrCreateMemberSelectorCharacter(workspace.getId());
 
         // 获取选择提示模板
-        String promptTemplate = promptManager.getGlobalPrompt(
+        String promptTemplate = configApplication.getGlobalPrompt(
                 PromptKeys.MEMBER_SELECTOR_SELECT,
                 "请从可用成员中选择最合适的执行者来完成指定任务。");
 

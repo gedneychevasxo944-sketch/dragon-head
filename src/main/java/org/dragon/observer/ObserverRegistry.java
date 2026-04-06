@@ -1,8 +1,11 @@
 package org.dragon.observer;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.observer.store.ObserverStore;
 import org.dragon.store.StoreFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -27,8 +30,14 @@ public class ObserverRegistry {
      */
     private volatile String defaultObserverId;
 
-    public ObserverRegistry(StoreFactory storeFactory) {
+    @Autowired
+    public ObserverRegistry(StoreFactory storeFactory, ConfigApplication configApplication) {
         this.observerStore = storeFactory.get(ObserverStore.class);
+        this.defaultObserverId = configApplication.getStringValue(
+                "observer.default-id",
+                InheritanceContext.forGlobal(),
+                null
+        );
     }
 
     /**

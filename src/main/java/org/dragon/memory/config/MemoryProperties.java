@@ -1,7 +1,10 @@
 package org.dragon.memory.config;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * 记忆系统配置属性类
@@ -10,30 +13,22 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @version 1.0
  */
 @Data
-@ConfigurationProperties(prefix = "memory")
+@Component
 public class MemoryProperties {
-    /**
-     * 记忆存储根目录
-     */
+
     private String rootDir = "./data/memory";
-
-    /**
-     * 索引文件最大行数
-     */
     private int maxIndexLines = 200;
-
-    /**
-     * 索引文件最大字节数
-     */
     private int maxIndexBytes = 25_000;
-
-    /**
-     * 默认召回结果数量限制
-     */
     private int defaultRecallLimit = 5;
-
-    /**
-     * 是否启用会话检查点
-     */
     private boolean enableSessionCheckpoint = true;
+
+    @Autowired
+    public MemoryProperties(ConfigApplication configApplication) {
+        InheritanceContext ctx = InheritanceContext.forGlobal();
+        this.rootDir = configApplication.getStringValue("memory.root-dir", ctx, "./data/memory");
+        this.maxIndexLines = configApplication.getIntValue("memory.max-index-lines", ctx, 200);
+        this.maxIndexBytes = configApplication.getIntValue("memory.max-index-bytes", ctx, 25_000);
+        this.defaultRecallLimit = configApplication.getIntValue("memory.default-recall-limit", ctx, 5);
+        this.enableSessionCheckpoint = configApplication.getBooleanValue("memory.enable-session-checkpoint", ctx, true);
+    }
 }

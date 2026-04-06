@@ -139,8 +139,8 @@ public class CharacterExecutor {
 
             if (collaborationEnabled && bridgeContext.getCollaborationSessionId() != null) {
                 String collaborationPrompt = "";
-                if (runtime.getPromptManager() != null) {
-                    collaborationPrompt = runtime.getPromptManager().getPrompt(workspace, profile.getId(), PromptKeys.CHARACTER_COLLABORATION_DECISION);
+                if (runtime.getConfigApplication() != null) {
+                    collaborationPrompt = runtime.getConfigApplication().getPrompt(workspace, profile.getId(), PromptKeys.CHARACTER_COLLABORATION_DECISION);
                 }
                 contextBuilder
                         .collaborationJudgementEnabled(true)
@@ -215,8 +215,8 @@ public class CharacterExecutor {
     private String resolveSystemPrompt() {
         String prompt = "";
         String workspace = resolveWorkspace();
-        if (runtime.getPromptManager() != null) {
-            prompt = runtime.getPromptManager().getPrompt(workspace, profile.getId(), PromptKeys.CHARACTER_SYSTEM);
+        if (runtime.getConfigApplication() != null) {
+            prompt = runtime.getConfigApplication().getPrompt(workspace, profile.getId(), PromptKeys.CHARACTER_SYSTEM);
         }
         if (prompt == null || prompt.isEmpty()) {
             Mind currentMind = getMind();

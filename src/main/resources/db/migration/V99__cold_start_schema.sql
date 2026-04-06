@@ -826,3 +826,33 @@ INSERT INTO permission_policy (resource_type, role, permission) VALUES
 ('OBSERVER', 'MEMBER', '["VIEW"]'),
 ('CONFIG', 'MEMBER', '["VIEW"]'),
 ('COMMONSENSE', 'MEMBER', '["VIEW"]');
+
+-- ============================================================================
+-- V100: Create source documents table
+-- ============================================================================
+
+-- Source document table (for memory module)
+CREATE TABLE IF NOT EXISTS source_document (
+    id VARCHAR(64) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    source_path VARCHAR(1024) NOT NULL,
+    source_type VARCHAR(32) NOT NULL COMMENT 'file/url/api/chat/fused/character_memory/workspace_memory',
+    backend VARCHAR(64) COMMENT 'Backend storage location',
+    provider VARCHAR(64) COMMENT 'Source provider',
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    status VARCHAR(32) NOT NULL DEFAULT 'active' COMMENT 'active/error/disabled/syncing',
+    last_indexed_at DATETIME COMMENT 'Last time the source was indexed',
+    item_count INT DEFAULT 0 COMMENT 'Number of items in the source',
+    file_count INT DEFAULT 0 COMMENT 'Number of files in the source',
+    error_message TEXT COMMENT 'Error message if sync failed',
+    is_fused_source BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Whether this is a fused source',
+    is_built_in BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Whether this is a built-in source',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_source_type (source_type),
+    INDEX idx_source_status (status),
+    INDEX idx_source_enabled (enabled),
+    INDEX idx_source_created (created_at),
+    INDEX idx_source_updated (updated_at),
+    INDEX idx_source_last_indexed (last_indexed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

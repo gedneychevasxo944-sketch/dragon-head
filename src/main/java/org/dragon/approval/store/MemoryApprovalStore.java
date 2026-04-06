@@ -1,11 +1,11 @@
-package org.dragon.permission.store;
+package org.dragon.approval.store;
 
+import org.dragon.approval.enums.ApprovalStatus;
+import org.dragon.approval.enums.ApprovalType;
 import org.dragon.datasource.entity.ApprovalRequestEntity;
-import org.dragon.permission.enums.ApprovalStatus;
-import org.dragon.permission.enums.ApprovalType;
+import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
-import org.dragon.permission.enums.ResourceType;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

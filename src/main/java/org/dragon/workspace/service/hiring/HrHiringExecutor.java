@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.config.PromptKeys;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.character.Character;
 import org.dragon.workspace.member.CharacterDuty;
@@ -32,7 +32,7 @@ public class HrHiringExecutor {
 
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final CharacterCaller characterCaller;
-    private final PromptManager promptManager;
+    private final ConfigApplication promptManager;
     private final StoreFactory storeFactory;
 
     private CharacterDutyStore getCharacterDutyStore() {

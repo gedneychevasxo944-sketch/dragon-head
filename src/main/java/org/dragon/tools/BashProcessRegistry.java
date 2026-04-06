@@ -23,6 +23,10 @@ public class BashProcessRegistry {
     private static final int DEFAULT_MAX_OUTPUT_CHARS = 50_000;
     private static final int DEFAULT_TAIL_CHARS = 2000;
 
+    /** @deprecated use DEFAULT_JOB_TTL_MS */
+    @Deprecated
+    public static final long DEFAULT_JOB_TTL_MS_ALIAS = DEFAULT_JOB_TTL_MS;
+
     private final Map<String, ProcessSession> runningSessions = new ConcurrentHashMap<>();
     private final Map<String, FinishedSession> finishedSessions = new ConcurrentHashMap<>();
     private volatile long jobTtlMs;

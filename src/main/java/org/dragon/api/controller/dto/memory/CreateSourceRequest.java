@@ -44,5 +44,5 @@ public class CreateSourceRequest {
     /**
      * 是否启用（默认 true）
      */
-    private boolean enabled;
+    private Boolean enabled;
 }

@@ -19,7 +19,10 @@ import java.util.concurrent.TimeUnit;
 public class ExecTool implements AgentTool {
 
     private static final int DEFAULT_TIMEOUT_SECONDS = 120;
-    private static final int MAX_OUTPUT_LENGTH = 50_000;
+    private static final int DEFAULT_MAX_OUTPUT_LENGTH = 50_000;
+    /** @deprecated use DEFAULT_MAX_OUTPUT_LENGTH */
+    @Deprecated
+    public static final int MAX_OUTPUT_LENGTH = DEFAULT_MAX_OUTPUT_LENGTH;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

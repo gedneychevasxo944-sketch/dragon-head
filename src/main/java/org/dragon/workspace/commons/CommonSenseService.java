@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Lazy;
 
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.workspace.commons.content.CommonSenseContent;
 import org.dragon.workspace.commons.content.CommonSenseContentParser;
@@ -36,7 +36,7 @@ public class CommonSenseService {
     private final WorkspaceCommonSenseStore store;
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final CharacterCaller characterCaller;
-    private final PromptManager promptManager;
+    private final ConfigApplication configApplication;
     private final CommonSenseContentParser contentParser;
 
     /**
@@ -47,12 +47,12 @@ public class CommonSenseService {
 
     public CommonSenseService(StoreFactory storeFactory, @Lazy BuiltInCharacterFactory builtInCharacterFactory,
                               CharacterCaller characterCaller,
-                              PromptManager promptManager,
+                              ConfigApplication configApplication,
                               CommonSenseContentParser contentParser) {
         this.store = storeFactory.get(WorkspaceCommonSenseStore.class);
         this.builtInCharacterFactory = builtInCharacterFactory;
         this.characterCaller = characterCaller;
-        this.promptManager = promptManager;
+        this.configApplication = configApplication;
         this.contentParser = contentParser;
     }
 
@@ -264,11 +264,11 @@ public class CommonSenseService {
 
     /**
      * 构建给 CommonSenseWriter Character 的输入
-     * 模板从 PromptManager 读取，支持按 workspace 配置
+     * 模板从 ConfigApplication 读取，支持按 workspace 配置
      */
     private String buildCommonSenseWriterInput(String workspaceId, List<CommonSense> commonSenses) {
-        // 从 PromptManager 读取模板，默认值使用原有硬编码内容
-        String template = promptManager.getWorkspacePrompt(
+        // 从 ConfigApplication 读取模板，默认值使用原有硬编码内容
+        String template = configApplication.getWorkspacePrompt(
                 workspaceId,
                 "commonsense_writer.input_template",
                 "请根据以下常识信息，生成适合的 prompt。\n\n" +

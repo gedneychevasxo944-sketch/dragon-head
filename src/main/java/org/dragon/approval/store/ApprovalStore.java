@@ -1,10 +1,10 @@
-package org.dragon.permission.store;
+package org.dragon.approval.store;
 
+import org.dragon.approval.enums.ApprovalStatus;
+import org.dragon.approval.enums.ApprovalType;
 import org.dragon.datasource.entity.ApprovalRequestEntity;
-import org.dragon.permission.enums.ApprovalStatus;
-import org.dragon.permission.enums.ApprovalType;
-import org.dragon.store.Store;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.store.Store;
 
 import java.util.List;
 import java.util.Optional;

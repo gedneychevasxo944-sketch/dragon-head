@@ -6,7 +6,7 @@ import org.dragon.api.dto.PageResponse;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.observer.actionlog.ObserverActionLogService;
-import org.dragon.permission.service.ApprovalService;
+import org.dragon.approval.service.ApprovalService;
 import org.dragon.skill.service.SkillLifecycleService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
 import org.springframework.stereotype.Service;

@@ -1,9 +1,11 @@
 package org.dragon.skill.runtime;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.skill.config.SkillPermissionConfig;
 import org.dragon.skill.enums.ExecutionContext;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -44,7 +46,6 @@ import java.util.Set;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class SkillPermissionChecker {
 
     /**
@@ -77,10 +78,24 @@ public class SkillPermissionChecker {
      * ASK 事件等待超时（毫秒）。
      * 框架层未在此时间内响应，视为拒绝。
      */
-    private static final long ASK_TIMEOUT_MS = 30_000L;
+    private static final long DEFAULT_ASK_TIMEOUT_MS = 30_000L;
 
+    private final long askTimeoutMs;
     private final SkillPermissionConfig    permissionConfig;
     private final ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    public SkillPermissionChecker(ConfigApplication configApplication,
+                                  SkillPermissionConfig permissionConfig,
+                                  ApplicationEventPublisher eventPublisher) {
+        this.permissionConfig = permissionConfig;
+        this.eventPublisher = eventPublisher;
+        this.askTimeoutMs = configApplication.getLongValue(
+                "skill.permission.ask-timeout-ms",
+                InheritanceContext.forGlobal(),
+                DEFAULT_ASK_TIMEOUT_MS
+        );
+    }
 
     // ── 对外接口 ─────────────────────────────────────────────────────────
 
@@ -204,7 +219,7 @@ public class SkillPermissionChecker {
     /**
      * 事件策略处理：发布 {@link SkillPermissionEvent}，等待框架层异步授权。
      *
-     * <p>若框架层在 {@value #ASK_TIMEOUT_MS}ms 内未响应，视为拒绝。
+     * <p>若框架层在 {@value #DEFAULT_ASK_TIMEOUT_MS}ms 内未响应，视为拒绝。
      */
     private SkillPermissionResult handleAskWithEvent(SkillDefinition skill,
                                                       AgentContext agentContext,
@@ -214,7 +229,7 @@ public class SkillPermissionChecker {
 
         eventPublisher.publishEvent(event);
 
-        boolean authorized = event.awaitAuthorization(ASK_TIMEOUT_MS);
+        boolean authorized = event.awaitAuthorization(askTimeoutMs);
         if (authorized) {
             log.info("[SkillPermission] ALLOW (ask-event authorized): skill='{}'", skill.getName());
             return SkillPermissionResult.allow(null);
