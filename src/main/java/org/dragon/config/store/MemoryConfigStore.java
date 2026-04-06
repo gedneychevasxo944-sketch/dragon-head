@@ -127,9 +127,9 @@ public class MemoryConfigStore implements ConfigStore {
      * 空值用空字符串表示
      */
     private String buildKey(ConfigKey configKey) {
-        String workspace = configKey.getWorkspace() != null ? configKey.getWorkspace() : "";
-        String entityType = configKey.getEntityType() != null ? configKey.getEntityType() : "";
-        String entityId = configKey.getEntityId() != null ? configKey.getEntityId() : "";
+        String workspace = configKey.getScopeId() != null ? configKey.getScopeId() : "";
+        String entityType = configKey.getTargetType() != null ? configKey.getTargetType() : "";
+        String entityId = configKey.getTargetId() != null ? configKey.getTargetId() : "";
         String key = configKey.getKey() != null ? configKey.getKey() : "";
         return workspace + "|" + entityType + "|" + entityId + "|" + key;
     }
@@ -138,9 +138,9 @@ public class MemoryConfigStore implements ConfigStore {
      * 构建前缀（用于批量查询和删除）
      */
     private String buildPrefix(ConfigKey configKey) {
-        String workspace = configKey.getWorkspace() != null ? configKey.getWorkspace() : "";
-        String entityType = configKey.getEntityType() != null ? configKey.getEntityType() : "";
-        String entityId = configKey.getEntityId() != null ? configKey.getEntityId() : "";
+        String workspace = configKey.getScopeId() != null ? configKey.getScopeId() : "";
+        String entityType = configKey.getTargetType() != null ? configKey.getTargetType() : "";
+        String entityId = configKey.getTargetId() != null ? configKey.getTargetId() : "";
         return workspace + "|" + entityType + "|" + entityId + "|";
     }
 }

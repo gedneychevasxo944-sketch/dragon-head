@@ -26,7 +26,9 @@ import java.util.UUID;
 @Service
 public class SmsService {
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sms.code-validity-minutes")
     private static final int CODE_VALIDITY_MINUTES = 5;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sms.code-send-cooldown-seconds")
     private static final int CODE_SEND_COOLDOWN_SECONDS = 60;
 
     private final SmsCodeStore smsCodeStore;
@@ -34,9 +36,11 @@ public class SmsService {
     private final TokenStore tokenStore;
     private final JwtService jwtService;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sms.aliyun.access-key")
     @Value("${sms.aliyun.access-key:}")
     private String aliyunAccessKey;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sms.aliyun.access-secret")
     @Value("${sms.aliyun.access-secret:}")
     private String aliyunAccessSecret;
 

@@ -20,7 +20,9 @@ import java.util.UUID;
 @Service
 public class UserService {
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("user.max-login-fail-count")
     private static final int MAX_LOGIN_FAIL_COUNT = 5;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("user.lock-minutes")
     private static final int LOCK_MINUTES = 15;
 
     private final UserStore userStore;

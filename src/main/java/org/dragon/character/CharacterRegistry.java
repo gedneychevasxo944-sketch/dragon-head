@@ -26,6 +26,7 @@ public class CharacterRegistry {
     /**
      * 默认 Character ID
      */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("character.default-id")
     private volatile String defaultCharacterId;
 
     public CharacterRegistry(StoreFactory storeFactory) {

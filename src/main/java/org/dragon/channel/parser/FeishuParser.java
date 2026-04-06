@@ -29,6 +29,7 @@ import java.util.Map;
 @Component
 public class FeishuParser {
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("channel.feishu.robotOpenId")
     @Value("${channel.feishu.robotOpenId}")
     private String robotOpenId;
 

@@ -77,6 +77,7 @@ public class SkillPermissionChecker {
      * ASK 事件等待超时（毫秒）。
      * 框架层未在此时间内响应，视为拒绝。
      */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.permission.ask-timeout-ms")
     private static final long ASK_TIMEOUT_MS = 30_000L;
 
     private final SkillPermissionConfig    permissionConfig;

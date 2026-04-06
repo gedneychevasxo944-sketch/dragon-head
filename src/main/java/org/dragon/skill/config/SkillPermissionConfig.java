@@ -35,6 +35,7 @@ import java.util.List;
  *       由框架层决定是否继续</li>
  * </ul>
  */
+// TODO [ConfigStore Migration]: 迁移到 ConfigStore SKILL scope，使用 ConfigKey.skill() 工厂方法
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "skill.permission")

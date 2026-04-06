@@ -17,10 +17,15 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class BashProcessRegistry {
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("bash.default-job-ttl-ms")
     private static final long DEFAULT_JOB_TTL_MS = 30 * 60 * 1000; // 30 min
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("bash.min-job-ttl-ms")
     private static final long MIN_JOB_TTL_MS = 60 * 1000;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("bash.max-job-ttl-ms")
     private static final long MAX_JOB_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("bash.default-max-output-chars")
     private static final int DEFAULT_MAX_OUTPUT_CHARS = 50_000;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("bash.default-tail-chars")
     private static final int DEFAULT_TAIL_CHARS = 2000;
 
     private final Map<String, ProcessSession> runningSessions = new ConcurrentHashMap<>();

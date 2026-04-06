@@ -17,6 +17,7 @@ import java.util.Optional;
  */
 @Service
 public class DefaultMemoryDedupPolicy implements MemoryDedupPolicy {
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("memory.dedup.similarity-threshold")
     private static final double SIMILARITY_THRESHOLD = 0.7;
 
     @Override

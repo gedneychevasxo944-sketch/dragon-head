@@ -18,7 +18,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ExecTool implements AgentTool {
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("exec.default-timeout-seconds")
     private static final int DEFAULT_TIMEOUT_SECONDS = 120;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("exec.max-output-length")
     private static final int MAX_OUTPUT_LENGTH = 50_000;
 
     private final ObjectMapper objectMapper = new ObjectMapper();

@@ -31,12 +31,15 @@ public class DeepseekLLMCaller implements LLMCaller {
     private final HttpClient httpClient;
     private final Gson gson;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.deepseek.apiKey")
     @Value("${llm.deepseek.apiKey:}")
     private String apiKey;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.deepseek.baseUrl")
     @Value("${llm.deepseek.baseUrl:https://api.deepseek.com}")
     private String baseUrl;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.deepseek.model")
     @Value("${llm.deepseek.model:deepseek-chat}")
     private String defaultModel;
 

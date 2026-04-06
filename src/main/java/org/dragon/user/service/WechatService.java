@@ -27,9 +27,11 @@ public class WechatService {
     private final TokenStore tokenStore;
     private final JwtService jwtService;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("wechat.app-id")
     @Value("${wechat.app-id:}")
     private String appId;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("wechat.app-secret")
     @Value("${wechat.app-secret:}")
     private String appSecret;
 

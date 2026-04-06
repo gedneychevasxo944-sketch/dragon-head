@@ -25,6 +25,7 @@ public class CronExpression {
     private final String expression;
 
     // 默认值
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("schedule.default-seconds")
     private static final int DEFAULT_SECONDS = 0;
 
     /**

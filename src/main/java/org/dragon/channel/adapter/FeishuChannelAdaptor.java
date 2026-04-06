@@ -49,14 +49,19 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class FeishuChannelAdaptor implements ChannelAdapter {
     // ===== 默认凭证（来自 application.yml，向后兼容）=====
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("channel.feishu.appId")
     @Value("${channel.feishu.appId:}")
     private String defaultAppId;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("channel.feishu.appSecret")
     @Value("${channel.feishu.appSecret:}")
     private String defaultAppSecret;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("channel.feishu.whitelist")
     @Value("${channel.feishu.whitelist:}")
     private List<String> defaultWhitelist;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("channel.feishu.wakeWord")
     @Value("${channel.feishu.wakeWord:}")
     private String defaultWakeWord;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("channel.feishu.robotOpenId")
     @Value("${channel.feishu.robotOpenId:}")
     private String defaultRobotOpenId;
 

@@ -29,6 +29,7 @@ public final class ToolDisplay {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     /** 详情条目的最大数量 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("tool-display.max-detail-entries")
     private static final int MAX_DETAIL_ENTRIES = 8;
     /** 默认 emoji */
     private static final String DEFAULT_EMOJI = "🧩";

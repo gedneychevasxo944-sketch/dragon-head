@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author binarytom
  * @version 1.0
  */
+// TODO [ConfigStore Migration]: 迁移到 ConfigStore MEMORY scope，使用 ConfigKey.memory() 工厂方法
 @Data
 @ConfigurationProperties(prefix = "memory")
 public class MemoryProperties {

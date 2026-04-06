@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 public class WebSearchTool implements AgentTool {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("websearch.timeout")
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
 
     @Override

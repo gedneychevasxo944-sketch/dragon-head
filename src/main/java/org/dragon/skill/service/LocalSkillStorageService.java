@@ -32,6 +32,7 @@ import java.util.Map;
 public class LocalSkillStorageService implements SkillStorageService {
 
     /** 本地存储根目录，默认 /data/skills */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.storage.local.base-path")
     @Value("${skill.storage.local.base-path:/data/skills}")
     private String localBasePath;
 

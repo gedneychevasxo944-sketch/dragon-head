@@ -24,7 +24,9 @@ import java.util.regex.Pattern;
 public class WebFetchTool implements AgentTool {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("webfetch.max-body-chars")
     private static final int MAX_BODY_CHARS = 50_000;
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("webfetch.request-timeout")
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
     private static final Pattern PRIVATE_HOST_RE = Pattern.compile(

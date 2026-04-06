@@ -34,12 +34,15 @@ public class KimiLLMCaller implements LLMCaller {
     private final HttpClient httpClient;
     private final Gson gson;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.kimi.apiKey")
     @Value("${llm.kimi.apiKey:}")
     private String apiKey;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.kimi.baseUrl")
     @Value("${llm.kimi.baseUrl:https://api.moonshot.cn/v1}")
     private String baseUrl;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.kimi.model")
     @Value("${llm.kimi.model:moonshot-v1-8k-online}")
     private String defaultModel;
 

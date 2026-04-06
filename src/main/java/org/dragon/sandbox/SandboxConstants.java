@@ -15,20 +15,25 @@ public final class SandboxConstants {
     // ── 工作空间 ───────────────────────────────────────────────────
 
     /** 默认沙箱工作空间根目录 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sandbox.workspace.root")
     public static final String DEFAULT_SANDBOX_WORKSPACE_ROOT = Paths
             .get(System.getProperty("user.home"), ".dragon", "sandboxes").toString();
 
     // ── Docker ──────────────────────────────────────────────────────
 
     /** 默认沙箱镜像 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sandbox.docker.image")
     public static final String DEFAULT_SANDBOX_IMAGE = "dragonhead-sandbox:bookworm-slim";
     /** 容器名称前缀 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sandbox.docker.container-prefix")
     public static final String DEFAULT_SANDBOX_CONTAINER_PREFIX = "dragon-sbx-";
     /** 容器内工作目录 */
     public static final String DEFAULT_SANDBOX_WORKDIR = "/workspace";
     /** 空闲容器清理阈值（小时） */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sandbox.docker.idle-hours")
     public static final int DEFAULT_SANDBOX_IDLE_HOURS = 24;
     /** 容器最大保留天数 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sandbox.docker.max-age-days")
     public static final int DEFAULT_SANDBOX_MAX_AGE_DAYS = 7;
 
     // ── 工具允许/拒绝列表默认值 ────────────────────────────────────
@@ -54,10 +59,13 @@ public final class SandboxConstants {
     /** 浏览器容器名称前缀 */
     public static final String DEFAULT_SANDBOX_BROWSER_PREFIX = "dragonhead-sbx-browser-";
     /** Chrome DevTools Protocol 端口 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sandbox.browser.cdp-port")
     public static final int DEFAULT_SANDBOX_BROWSER_CDP_PORT = 9222;
     /** VNC 端口 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sandbox.browser.vnc-port")
     public static final int DEFAULT_SANDBOX_BROWSER_VNC_PORT = 5900;
     /** noVNC 端口 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("sandbox.browser.novnc-port")
     public static final int DEFAULT_SANDBOX_BROWSER_NOVNC_PORT = 6080;
     /** 浏览器自动启动超时时间（毫秒） */
     public static final int DEFAULT_SANDBOX_BROWSER_AUTOSTART_TIMEOUT_MS = 12_000;

@@ -24,6 +24,7 @@ public class ModelRegistry {
     /**
      * 默认模型 ID
      */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("model.default-id")
     private volatile String defaultModelId;
 
     public ModelRegistry(StoreFactory storeFactory) {

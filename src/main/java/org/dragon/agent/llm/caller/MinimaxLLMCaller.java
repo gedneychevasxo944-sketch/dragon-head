@@ -31,15 +31,19 @@ public class MinimaxLLMCaller implements LLMCaller {
     private final HttpClient httpClient;
     private final Gson gson;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.minimax.apiKey")
     @Value("${llm.minimax.apiKey:}")
     private String apiKey;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.minimax.baseUrl")
     @Value("${llm.minimax.baseUrl:https://api.minimax.chat}")
     private String baseUrl;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.minimax.model")
     @Value("${llm.minimax.model:abab6.5s-chat}")
     private String defaultModel;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.minimax.groupId")
     @Value("${llm.minimax.groupId:}")
     private String groupId;
 

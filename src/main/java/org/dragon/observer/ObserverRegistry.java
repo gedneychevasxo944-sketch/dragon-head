@@ -25,6 +25,7 @@ public class ObserverRegistry {
     /**
      * 默认 Observer ID
      */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("observer.default-id")
     private volatile String defaultObserverId;
 
     public ObserverRegistry(StoreFactory storeFactory) {

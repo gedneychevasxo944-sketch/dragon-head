@@ -35,6 +35,7 @@ import java.util.Map;
 public class S3SkillStorageService implements SkillStorageService {
 
     /** S3 bucket 名称 */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.storage.s3.bucket")
     @Value("${skill.storage.s3.bucket}")
     private String s3Bucket;
 

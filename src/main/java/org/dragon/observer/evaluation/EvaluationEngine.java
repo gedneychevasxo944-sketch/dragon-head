@@ -98,7 +98,9 @@ public class EvaluationEngine {
         private double satisfactionWeight = 0.15;
 
         // 标准阈值
+        // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("evaluation.max-duration-ms")
         private long maxDurationMs = 60000; // 60秒
+        // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("evaluation.max-tokens")
         private int maxTokens = 100000;
 
         // Getters and setters

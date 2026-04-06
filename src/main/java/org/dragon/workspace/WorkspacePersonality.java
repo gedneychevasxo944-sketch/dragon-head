@@ -51,12 +51,14 @@ public class WorkspacePersonality {
      * 工作风格
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore WORKSPACE scope，使用 ConfigKey.workspace() 工厂方法
     private WorkingStyle workingStyle = WorkingStyle.COLLABORATIVE;
 
     /**
      * 决策模式
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore WORKSPACE scope，使用 ConfigKey.workspace() 工厂方法
     private DecisionPattern decisionPattern = DecisionPattern.CONSULTATIVE;
 
     /**
@@ -64,6 +66,7 @@ public class WorkspacePersonality {
      * 0 表示完全风险规避，1 表示完全风险偏好
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore WORKSPACE scope，使用 ConfigKey.workspace() 工厂方法
     private Double riskTolerance = 0.5;
 
     /**

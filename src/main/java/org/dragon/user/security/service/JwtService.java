@@ -17,12 +17,15 @@ import java.util.Map;
 @Component
 public class JwtService {
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("jwt.secret")
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("jwt.access-token-validity")
     @Value("${jwt.access-token-validity:7200}")
     private long accessTokenValidity; // 秒
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("jwt.refresh-token-validity")
     @Value("${jwt.refresh-token-validity:604800}")
     private long refreshTokenValidity; // 秒
 

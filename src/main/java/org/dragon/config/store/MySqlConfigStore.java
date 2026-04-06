@@ -12,10 +12,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
-
 /**
  * MySqlConfigStore 配置存储 MySQL 实现
+ *
+ * <p>适配新的 ConfigEntity 结构：
+ * <ul>
+ *   <li>id = fullKey = {scopeType}:{scopeId}:{targetType}:{targetId}:{configKey}</li>
+ *   <li>支持 workspace/entityType/entityId 到 scopeType/scopeId 的迁移</li>
+ * </ul>
  */
 @StoreTypeAnn(StoreType.MYSQL)
 public class MySqlConfigStore implements ConfigStore {
@@ -31,7 +35,7 @@ public class MySqlConfigStore implements ConfigStore {
         if (configKey == null || configKey.getKey() == null) {
             throw new IllegalArgumentException("configKey and key cannot be null");
         }
-        String id = buildId(configKey);
+        String id = configKey.toFullKey();
         ConfigEntity existing = mysqlDb.find(ConfigEntity.class, id);
 
         if (existing != null) {
@@ -41,11 +45,14 @@ public class MySqlConfigStore implements ConfigStore {
         } else {
             ConfigEntity entity = ConfigEntity.builder()
                     .id(id)
-                    .workspace(configKey.getWorkspace())
-                    .entityType(configKey.getEntityType())
-                    .entityId(configKey.getEntityId())
+                    .scopeType(configKey.getScopeType())
+                    .scopeId(configKey.getScopeId())
+                    .targetType(configKey.getTargetType())
+                    .targetId(configKey.getTargetId())
                     .configKey(configKey.getKey())
                     .configValue(value)
+                    .status("PUBLISHED")
+                    .version(1)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
@@ -58,7 +65,7 @@ public class MySqlConfigStore implements ConfigStore {
         if (configKey == null || configKey.getKey() == null) {
             return Optional.empty();
         }
-        ConfigEntity entity = mysqlDb.find(ConfigEntity.class, buildId(configKey));
+        ConfigEntity entity = mysqlDb.find(ConfigEntity.class, configKey.toFullKey());
         return Optional.ofNullable(entity != null ? entity.getConfigValue() : null);
     }
 
@@ -73,7 +80,7 @@ public class MySqlConfigStore implements ConfigStore {
         if (configKey == null || configKey.getKey() == null) {
             return;
         }
-        mysqlDb.delete(ConfigEntity.class, buildId(configKey));
+        mysqlDb.delete(ConfigEntity.class, configKey.toFullKey());
     }
 
     @Override
@@ -81,7 +88,7 @@ public class MySqlConfigStore implements ConfigStore {
         if (configKey == null || configKey.getKey() == null) {
             return false;
         }
-        return mysqlDb.find(ConfigEntity.class, buildId(configKey)) != null;
+        return mysqlDb.find(ConfigEntity.class, configKey.toFullKey()) != null;
     }
 
     @Override
@@ -90,7 +97,7 @@ public class MySqlConfigStore implements ConfigStore {
             return new HashMap<>();
         }
 
-        String prefix = buildIdPrefix(configKey);
+        String prefix = buildPrefix(configKey);
         List<ConfigEntity> entities = mysqlDb.find(ConfigEntity.class)
                 .where()
                 .like("id", prefix + "%")
@@ -98,10 +105,7 @@ public class MySqlConfigStore implements ConfigStore {
 
         Map<String, Object> result = new HashMap<>();
         for (ConfigEntity entity : entities) {
-            // 从 id 中提取最后一个 | 后面的部分作为 configKey
-            String id = entity.getId();
-            String key = id.substring(id.lastIndexOf("|") + 1);
-            result.put(key, entity.getConfigValue());
+            result.put(entity.getId(), entity.getConfigValue());
         }
         return result;
     }
@@ -111,7 +115,7 @@ public class MySqlConfigStore implements ConfigStore {
         if (configKey == null) {
             return;
         }
-        String prefix = buildIdPrefix(configKey);
+        String prefix = buildPrefix(configKey);
         List<ConfigEntity> entities = mysqlDb.find(ConfigEntity.class)
                 .where()
                 .like("id", prefix + "%")
@@ -127,29 +131,9 @@ public class MySqlConfigStore implements ConfigStore {
     }
 
     /**
-     * 构建唯一 ID
-     * 格式: workspace|entityType|entityId|key
-     * 空值用空字符串表示
-     */
-    private String buildId(ConfigKey configKey) {
-        String workspace = nullToEmpty(configKey.getWorkspace());
-        String entityType = nullToEmpty(configKey.getEntityType());
-        String entityId = nullToEmpty(configKey.getEntityId());
-        String key = nullToEmpty(configKey.getKey());
-        return workspace + "|" + entityType + "|" + entityId + "|" + key;
-    }
-
-    /**
      * 构建 ID 前缀（用于批量查询）
      */
-    private String buildIdPrefix(ConfigKey configKey) {
-        String workspace = nullToEmpty(configKey.getWorkspace());
-        String entityType = nullToEmpty(configKey.getEntityType());
-        String entityId = nullToEmpty(configKey.getEntityId());
-        return workspace + "|" + entityType + "|" + entityId + "|";
-    }
-
-    private String nullToEmpty(@Nullable String s) {
-        return s != null ? s : "";
+    private String buildPrefix(ConfigKey configKey) {
+        return configKey.getScopeType() + ":" + configKey.getScopeId() + ":" + configKey.getTargetType() + ":" + configKey.getTargetId() + ":";
     }
 }

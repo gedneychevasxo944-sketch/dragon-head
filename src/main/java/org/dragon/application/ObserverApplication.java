@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.Observer;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.permission.service.CollaboratorService;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.util.UserUtils;
@@ -45,6 +46,7 @@ public class ObserverApplication {
     private final ObserverActionLogService observerActionLogService;
     private final PermissionService permissionService;
     private final CollaboratorService collaboratorService;
+    private final AssetPublishStatusService publishStatusService;
 
     // ==================== Observer CRUD ====================
 
@@ -119,6 +121,9 @@ public class ObserverApplication {
         Long userId = Long.parseLong(UserUtils.getUserId());
         collaboratorService.addOwnerDirectly(ResourceType.OBSERVER, observer.getId(), userId);
 
+        // 初始化发布状态（默认为 DRAFT）
+        publishStatusService.initializeStatus(ResourceType.OBSERVER, observer.getId(), String.valueOf(userId));
+
         log.info("[ObserverApplication] Created observer: {}", observer.getId());
         return observerRegistry.get(observer.getId()).orElse(observer);
     }
@@ -154,6 +159,8 @@ public class ObserverApplication {
      */
     public void deleteObserver(String observerId) {
         observerRegistry.unregister(observerId);
+        // 删除发布状态
+        publishStatusService.deleteStatus(ResourceType.OBSERVER, observerId);
         log.info("[ObserverApplication] Deleted observer: {}", observerId);
     }
 

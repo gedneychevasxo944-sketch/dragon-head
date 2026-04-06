@@ -67,12 +67,14 @@ public class Observer {
      * 当评分低于此阈值时触发优化
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore OBSERVER scope，使用 ConfigKey.observer() 工厂方法
     private Double optimizationThreshold = 0.6;
 
     /**
      * 连续低分触发优化的次数阈值
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore OBSERVER scope，使用 ConfigKey.observer() 工厂方法
     private Integer consecutiveLowScoreThreshold = 3;
 
     /**
@@ -92,6 +94,7 @@ public class Observer {
      * 0 表示不启用周期性评价
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore OBSERVER scope，使用 ConfigKey.observer() 工厂方法
     private Integer periodicEvaluationHours = 24;
 
     /**
@@ -121,6 +124,7 @@ public class Observer {
      * 默认 true - 生成的计划需要人工确认后执行
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore OBSERVER scope，使用 ConfigKey.observer() 工厂方法
     private Boolean manualApprovalRequired = true;
 
     /**
@@ -134,6 +138,7 @@ public class Observer {
      * 用于限定收集数据的时间范围
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore OBSERVER scope，使用 ConfigKey.observer() 工厂方法
     private Integer planWindowHours = 24;
 
     /**
@@ -141,6 +146,7 @@ public class Observer {
      * 限制单次计划生成的最大条目数
      */
     @Builder.Default
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore OBSERVER scope，使用 ConfigKey.observer() 工厂方法
     private Integer maxPlanItems = 50;
 
     /**

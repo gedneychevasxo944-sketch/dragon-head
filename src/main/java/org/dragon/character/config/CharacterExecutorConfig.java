@@ -20,6 +20,7 @@ public class CharacterExecutorConfig {
     /**
      * 默认模型 ID
      */
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore CHARACTER scope，使用 ConfigKey.character() 工厂方法
     private String defaultModelId;
 
     /**
@@ -38,6 +39,7 @@ public class CharacterExecutorConfig {
     @AllArgsConstructor
     public static class WorkflowConfig {
         private String defaultWorkflowId;
+        // TODO [ConfigStore Migration]: 迁移到 ConfigStore CHARACTER scope，使用 ConfigKey.character() 工厂方法
         @Builder.Default
         private Integer maxSteps = 10;
         private String timeout;
@@ -48,10 +50,13 @@ public class CharacterExecutorConfig {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ReActConfig {
+        // TODO [ConfigStore Migration]: 迁移到 ConfigStore CHARACTER scope，使用 ConfigKey.character() 工厂方法
         @Builder.Default
         private Integer maxIterations = 10;
+        // TODO [ConfigStore Migration]: 迁移到 ConfigStore CHARACTER scope，使用 ConfigKey.character() 工厂方法
         @Builder.Default
         private Boolean enableMemorySearch = true;
+        // TODO [ConfigStore Migration]: 迁移到 ConfigStore CHARACTER scope，使用 ConfigKey.character() 工厂方法
         @Builder.Default
         private Boolean enableToolUse = true;
 
