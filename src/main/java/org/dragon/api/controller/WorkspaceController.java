@@ -220,21 +220,6 @@ public class WorkspaceController {
         return ApiResponse.success(Map.of("success", true));
     }
 
-    /**
-     * 7.4 更新技能绑定配置
-     * PUT /api/v1/workspaces/:workspaceId/skills/:skillId
-     */
-    @Operation(summary = "更新 Workspace 技能绑定配置")
-    @PutMapping("/{workspaceId}/skills/{skillId}")
-    public ApiResponse<Map<String, Object>> updateSkillBinding(
-            @PathVariable String workspaceId,
-            @PathVariable String skillId,
-            @RequestBody UpdateSkillBindingRequest request) {
-        workspaceApiApplication.updateSkillBinding(workspaceId, skillId,
-                request.getVersionType(), request.getFixedVersion());
-        return ApiResponse.success(Map.of("success", true));
-    }
-
     // ==================== 8. Memory（记忆配置）====================
 
     /**

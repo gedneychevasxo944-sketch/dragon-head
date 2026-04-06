@@ -14,7 +14,7 @@ import org.dragon.character.mind.DefaultMind;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.config.PromptKeys;
-import org.dragon.skill.runtime.SkillDefinition;
+import org.dragon.skill.runtime.SkillRuntime;
 import org.dragon.skill.runtime.SkillDirectoryBuilder;
 import org.dragon.skill.runtime.SkillRegistry;
 import org.dragon.task.Task;
@@ -242,7 +242,7 @@ public class CharacterExecutor {
      * @param workspaceId 工作空间 ID（可能为 null）
      * @return 激活的 SkillRuntimeEntry 列表
      */
-    private List<SkillDefinition> resolveActiveSkills(String workspaceId) {
+    private List<SkillRuntime> resolveActiveSkills(String workspaceId) {
         if (workspaceId == null || runtime.getSkillRegistry() == null) {
             return Collections.emptyList();
         }

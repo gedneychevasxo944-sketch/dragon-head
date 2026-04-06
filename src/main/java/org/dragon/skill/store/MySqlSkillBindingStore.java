@@ -146,5 +146,18 @@ public class MySqlSkillBindingStore implements SkillBindingStore {
 
         return query.exists();
     }
+
+    @Override
+    public List<SkillBindingDO> findBySkillId(String skillId) {
+        List<SkillBindingEntity> results = mysqlDb.find(SkillBindingEntity.class)
+                .where()
+                .eq("skillId", skillId)
+                .orderBy("createdAt desc")
+                .findList();
+
+        return results.stream()
+                .map(SkillBindingEntity::toDomain)
+                .collect(Collectors.toList());
+    }
 }
 

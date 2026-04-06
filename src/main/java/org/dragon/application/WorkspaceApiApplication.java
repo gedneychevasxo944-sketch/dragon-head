@@ -223,14 +223,6 @@ public class WorkspaceApiApplication {
         app(workspaceId).unbindSkill(workspaceId, skillId);
     }
 
-    /**
-     * 更新技能绑定配置。
-     */
-    public void updateSkillBinding(String workspaceId, String skillId,
-                                   String versionType, Integer fixedVersion) {
-        app(workspaceId).updateSkillBinding(workspaceId, skillId, versionType, fixedVersion);
-    }
-
     // ==================== 记忆配置 ====================
 
     /**

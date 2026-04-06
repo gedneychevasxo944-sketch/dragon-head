@@ -38,7 +38,7 @@ public class SkillDirectoryBuilder {
      * @param skills 过滤后的可见 Skill 列表（已经过 SkillFilter）
      * @return 目录 prompt 字符串，列表为空时返回空字符串
      */
-    public static String buildDirectoryPrompt(List<SkillDefinition> skills) {
+    public static String buildDirectoryPrompt(List<SkillRuntime> skills) {
         if (skills == null || skills.isEmpty()) {
             return "";
         }
@@ -47,7 +47,7 @@ public class SkillDirectoryBuilder {
         sb.append("## Available Skills\n");
         sb.append("Use the Skill tool to invoke any of the following skills:\n\n");
 
-        for (SkillDefinition skill : skills) {
+        for (SkillRuntime skill : skills) {
             appendSkillEntry(sb, skill);
         }
 
@@ -58,7 +58,7 @@ public class SkillDirectoryBuilder {
      * 构建单个 Skill 的目录条目（仅含名称、参数提示、描述、whenToUse）。
      * 不包含完整 prompt 正文 —— 那是 SkillExecutor 的职责。
      */
-    private static void appendSkillEntry(StringBuilder sb, SkillDefinition skill) {
+    private static void appendSkillEntry(StringBuilder sb, SkillRuntime skill) {
         // 名称 + 可选参数提示
         sb.append("- **").append(skill.getName()).append("**");
         if (StringUtils.hasText(skill.getArgumentHint())) {

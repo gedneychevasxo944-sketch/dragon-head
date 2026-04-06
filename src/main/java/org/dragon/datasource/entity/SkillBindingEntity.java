@@ -3,7 +3,6 @@ package org.dragon.datasource.entity;
 import io.ebean.annotation.WhenCreated;
 import io.ebean.annotation.WhenModified;
 import org.dragon.skill.enums.BindingType;
-import org.dragon.skill.enums.VersionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -27,12 +26,11 @@ import java.time.LocalDateTime;
  * bindingType         | characterId | workspaceId | 场景
  * --------------------+-------------+-------------+-------------------------------
  * character           | 非 NULL     | NULL        | Character 自有 skill
- * workspace           | NULL        | 非 NULL     | Workspace 公共 skill 池
+ * workspace           | NULL       | 非 NULL     | Workspace 公共 skill 池
  * character_workspace | 非 NULL     | 非 NULL     | Character 在某 Workspace 的专属 skill
  * </pre>
  *
- * <p>唯一约束：{@code (binding_type, character_id, workspace_id, skill_id)}，
- * 防止重复绑定（NULL 值参与联合唯一校验时需在 Service 层单独处理）。
+ * <p>绑定到 Skill 本身，具体使用哪个版本由 skill.publishedVersionId 决定。
  */
 @Data
 @Builder
@@ -48,64 +46,35 @@ public class SkillBindingEntity {
 
     // ── 绑定类型 ─────────────────────────────────────────────────────
 
-    /** 绑定类型（不可 null） */
     @Enumerated(EnumType.STRING)
     @Column(name = "binding_type", nullable = false, length = 30)
     private BindingType bindingType;
 
     // ── 绑定主体 ─────────────────────────────────────────────────────
 
-    /**
-     * Character 主键（来自 characters 表，BIGINT）。
-     * bindingType = 'character' 或 'character_workspace' 时非 NULL。
-     */
     @Column(name = "character_id")
     private String characterId;
 
-    /**
-     * Workspace 主键（来自 workspaces 表，BIGINT）。
-     * bindingType = 'workspace' 或 'character_workspace' 时非 NULL。
-     */
     @Column(name = "workspace_id")
     private String workspaceId;
 
     // ── 绑定的 Skill ─────────────────────────────────────────────────
 
-    /** 技能业务 UUID，对应 skills.skill_id */
     @Column(name = "skill_id", nullable = false, length = 64)
     private String skillId;
 
-    // ── 版本策略 ─────────────────────────────────────────────────────
-
-    /** 版本策略（不可 null） */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "version_type", nullable = false, length = 10)
-    private VersionType versionType;
-
-    /**
-     * 固定版本号（对应 skills.version）。
-     * versionType = 'fixed' 时非 NULL；versionType = 'latest' 时为 NULL。
-     */
-    @Column(name = "fixed_version")
-    private Integer fixedVersion;
-
     // ── 时间戳 ──────────────────────────────────────────────────────
 
-    /** 绑定创建时间 */
     @Column(name = "created_at")
     @WhenCreated
     private LocalDateTime createdAt;
 
-    /** 绑定最后更新时间（如修改版本策略） */
     @Column(name = "updated_at")
     @WhenModified
     private LocalDateTime updatedAt;
 
     // ── 转换方法 ─────────────────────────────────────────────────────
 
-    /**
-     * 转换为 SkillBindingDO（Service 层领域对象）。
-     */
     public org.dragon.skill.domain.SkillBindingDO toDomain() {
         org.dragon.skill.domain.SkillBindingDO domain = new org.dragon.skill.domain.SkillBindingDO();
         domain.setId(this.id);
@@ -113,16 +82,11 @@ public class SkillBindingEntity {
         domain.setCharacterId(this.characterId);
         domain.setWorkspaceId(this.workspaceId);
         domain.setSkillId(this.skillId);
-        domain.setVersionType(this.versionType);
-        domain.setFixedVersion(this.fixedVersion);
         domain.setCreatedAt(this.createdAt);
         domain.setUpdatedAt(this.updatedAt);
         return domain;
     }
 
-    /**
-     * 从 SkillBindingDO 创建 Entity。
-     */
     public static SkillBindingEntity fromDomain(org.dragon.skill.domain.SkillBindingDO domain) {
         return SkillBindingEntity.builder()
                 .id(domain.getId())
@@ -130,8 +94,6 @@ public class SkillBindingEntity {
                 .characterId(domain.getCharacterId())
                 .workspaceId(domain.getWorkspaceId())
                 .skillId(domain.getSkillId())
-                .versionType(domain.getVersionType())
-                .fixedVersion(domain.getFixedVersion())
                 .createdAt(domain.getCreatedAt())
                 .updatedAt(domain.getUpdatedAt())
                 .build();

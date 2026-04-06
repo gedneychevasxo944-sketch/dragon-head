@@ -2,13 +2,16 @@ package org.dragon.skill.runtime;
 
 import org.dragon.skill.domain.SkillBindingDO;
 import org.dragon.skill.domain.SkillDO;
+import org.dragon.skill.domain.SkillRuntimeConfig;
+import org.dragon.skill.domain.SkillVersionDO;
 import org.dragon.skill.domain.StorageInfoVO;
 import org.dragon.skill.enums.ExecutionContext;
 import org.dragon.skill.enums.PersistMode;
 import org.dragon.skill.enums.SkillStatus;
-import org.dragon.skill.enums.VersionType;
+import org.dragon.skill.enums.SkillVersionStatus;
 import org.dragon.skill.store.SkillBindingStore;
 import org.dragon.skill.store.SkillStore;
+import org.dragon.skill.store.SkillVersionStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -26,27 +29,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Skill 注册中心（设计点 1 + 3 - 多来源聚合 + Caffeine 缓存）。
+ * Skill 注册中心。
  *
  * <p>职责：
  * <ol>
- *   <li><b>内置 Skill（category='builtin'）</b>：直接从 DB 查全量 active 记录，
- *       对所有 Character 无条件可见，不走绑定关系。</li>
- *   <li><b>用户 Skill</b>：通过 skill_bindings 三种关系（character / workspace /
- *       character_workspace）取并集。</li>
- *   <li><b>优先级</b>：用户绑定的 Skill 优先级高于同名的 builtin Skill。</li>
- *   <li><b>L1 缓存</b>：使用 Caffeine 按 "characterId:workspaceId" 缓存聚合结果，
- *       TTL=5分钟，保证"下一次对话"时变更即时生效。</li>
- *   <li><b>缓存失效</b>：监听 {@link SkillChangeEvent}，按受影响的 character/workspace 精确失效。</li>
+ *   <li><b>内置 Skill</b>：category='builtin' 且 status=ACTIVE 的 Skill</li>
+ *   <li><b>用户 Skill</b>：通过三种绑定关系获取</li>
+ *   <li><b>版本解析</b>：绑定到 Skill，具体版本由 skill.publishedVersionId 决定</li>
+ *   <li><b>L1 缓存</b>：Caffeine 按 characterId:workspaceId 缓存，TTL=5分钟</li>
  * </ol>
- *
- * <p>缓存 key 约定：
- * <pre>
- * "characterId:workspaceId"   — Character 在 Workspace 下
- * "characterId:"              — Character 独立执行（无 Workspace）
- * ":workspaceId"              — 仅 Workspace 维度（不含 Character 自有）
- * "builtin"                   — 内置 Skill 专用缓存（全局唯一，无需按 character/workspace 区分）
- * </pre>
  */
 @Slf4j
 @Component
@@ -54,18 +45,19 @@ public class SkillRegistry {
 
     private final SkillBindingStore skillBindingStore;
     private final SkillStore         skillStore;
+    private final SkillVersionStore  skillVersionStore;
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public SkillRegistry(SkillBindingStore skillBindingStore, SkillStore skillStore) {
+    public SkillRegistry(SkillBindingStore skillBindingStore,
+                         SkillStore skillStore,
+                         SkillVersionStore skillVersionStore) {
         this.skillBindingStore = skillBindingStore;
         this.skillStore = skillStore;
+        this.skillVersionStore = skillVersionStore;
     }
 
-    /**
-     * L1 缓存：key = "characterId:workspaceId"，value = SkillDefinition 列表（已聚合，未过滤）。
-     * TTL 5分钟：避免每轮对话都重新查 DB，同时保证变更在下一次对话前生效。
-     */
-    private Cache<String, List<SkillDefinition>> cache;
+    private Cache<String, List<SkillRuntime>> cache;
 
     @PostConstruct
     public void init() {
@@ -80,30 +72,17 @@ public class SkillRegistry {
     // ── 主查询入口 ────────────────────────────────────────────────────
 
     /**
-     * 获取指定上下文下可用的 Skill 列表（已聚合，未过滤 isEnabled）。
-     *
-     * <p>返回结果为以下来源的并集（已按优先级去重）：
-     * <ol>
-     *   <li>DB category='builtin' 的全量 active Skill（始终可见）</li>
-     *   <li>Character 自有 skill（bindingType=character）</li>
-     *   <li>Workspace 公共 skill（bindingType=workspace）</li>
-     *   <li>Character@Workspace 专属 skill（bindingType=character_workspace）</li>
-     * </ol>
-     * 用户绑定的 Skill（2/3/4）优先级高于同名的 builtin Skill（1）。
-     *
-     * @param characterId Character 主键（可为 null）
-     * @param workspaceId Workspace 主键（可为 null）
-     * @return 聚合后的 Skill 列表，同一 skillId 已去重
+     * 获取指定上下文下可用的 Skill 列表。
      */
-    public List<SkillDefinition> getSkills(String characterId, String workspaceId) {
+    public List<SkillRuntime> getSkills(String characterId, String workspaceId) {
         String cacheKey = buildCacheKey(characterId, workspaceId);
         return cache.get(cacheKey, key -> loadAndMerge(characterId, workspaceId));
     }
 
     /**
-     * 按名称查找 Skill（在已聚合列表中检索，支持 aliases 匹配）。
+     * 按名称查找 Skill。
      */
-    public SkillDefinition findByName(String characterId, String workspaceId, String name) {
+    public SkillRuntime findByName(String characterId, String workspaceId, String name) {
         return getSkills(characterId, workspaceId).stream()
                 .filter(s -> s.getName().equals(name)
                         || (s.getAliases() != null && s.getAliases().contains(name)))
@@ -111,11 +90,8 @@ public class SkillRegistry {
                 .orElse(null);
     }
 
-    // ── 缓存失效（设计点 3 - 监听变更事件）────────────────────────────
+    // ── 缓存失效 ─────────────────────────────────────────────────────
 
-    /**
-     * 监听 SkillChangeEvent，精确失效受影响的缓存条目。
-     */
     @EventListener
     public void onSkillChange(SkillChangeEvent event) {
         if (event.isGlobalEvict()) {
@@ -125,7 +101,6 @@ public class SkillRegistry {
         }
 
         int evicted = 0;
-        // 失效所有包含受影响 characterId 的 key
         for (String characterId : event.getAffectedCharacterIds()) {
             List<String> keys = cache.asMap().keySet().stream()
                     .filter(k -> k.startsWith(characterId + ":"))
@@ -133,7 +108,6 @@ public class SkillRegistry {
             cache.invalidateAll(keys);
             evicted += keys.size();
         }
-        // 失效所有包含受影响 workspaceId 的 key
         for (String workspaceId : event.getAffectedWorkspaceIds()) {
             List<String> keys = cache.asMap().keySet().stream()
                     .filter(k -> k.endsWith(":" + workspaceId))
@@ -146,42 +120,32 @@ public class SkillRegistry {
 
     // ── 私有加载逻辑 ─────────────────────────────────────────────────
 
-    /**
-     * 从 DB 加载并聚合 Skill 列表。
-     *
-     * <p>合并策略（使用 name 作为去重 key，优先级：用户绑定 > builtin）：
-     * <ol>
-     *   <li>先加载 builtin（优先级低，作为"底层"）</li>
-     *   <li>再加载用户绑定的 Skill（优先级高，同名时覆盖 builtin）</li>
-     * </ol>
-     */
-    private List<SkillDefinition> loadAndMerge(String characterId, String workspaceId) {
+    private List<SkillRuntime> loadAndMerge(String characterId, String workspaceId) {
         log.debug("[SkillRegistry] cache miss，重新加载 key={}", buildCacheKey(characterId, workspaceId));
 
-        // key = name，保证同名唯一（LinkedHashMap 维持插入顺序）
-        Map<String, SkillDefinition> mergedMap = new LinkedHashMap<>();
+        Map<String, SkillRuntime> mergedMap = new LinkedHashMap<>();
 
-        // 1. 加载 builtin Skill（所有 Character 全量可见，无需绑定关系）
+        // 1. 加载 builtin Skill
         List<SkillDO> builtinDOs = skillStore.findAllBuiltin();
-        builtinDOs.forEach(do_ -> {
-            SkillDefinition def = buildDefinition(do_);
-            mergedMap.put(def.getName(), def);
-        });
+        for (SkillDO do_ : builtinDOs) {
+            SkillRuntime def = buildDefinition(do_);
+            if (def != null) {
+                mergedMap.put(def.getName(), def);
+            }
+        }
         log.debug("[SkillRegistry] builtin Skill {} 个", builtinDOs.size());
 
-        // 2. 加载用户绑定的 Skill（优先级高，同名时覆盖 builtin）
-        List<SkillDefinition> userSkills = loadFromBindings(characterId, workspaceId);
-        userSkills.forEach(def -> mergedMap.put(def.getName(), def));
-        log.debug("[SkillRegistry] 用户绑定 Skill {} 个（含与 builtin 同名的覆盖）", userSkills.size());
+        // 2. 加载用户绑定的 Skill
+        List<SkillRuntime> userSkills = loadFromBindings(characterId, workspaceId);
+        for (SkillRuntime def : userSkills) {
+            mergedMap.put(def.getName(), def);
+        }
+        log.debug("[SkillRegistry] 用户绑定 Skill {} 个", userSkills.size());
 
         return new ArrayList<>(mergedMap.values());
     }
 
-    /**
-     * 从 DB 通过三种绑定关系取并集，加载当前上下文可用的用户 Skill。
-     */
-    private List<SkillDefinition> loadFromBindings(String characterId, String workspaceId) {
-
+    private List<SkillRuntime> loadFromBindings(String characterId, String workspaceId) {
         List<SkillBindingDO> bindings;
         if (characterId != null && workspaceId != null) {
             bindings = skillBindingStore.findAvailableByCharacterAndWorkspace(characterId, workspaceId);
@@ -193,12 +157,11 @@ public class SkillRegistry {
             return List.of();
         }
 
-        // 按 skillId 去重（并集中同一 skillId 可能来自多种绑定），取第一条
         return bindings.stream()
                 .collect(Collectors.toMap(
                         SkillBindingDO::getSkillId,
                         b -> b,
-                        (a, b) -> a))  // 同 skillId 保留第一条
+                        (a, b) -> a))
                 .values().stream()
                 .map(this::resolveBindingToDefinition)
                 .filter(Objects::nonNull)
@@ -206,65 +169,81 @@ public class SkillRegistry {
     }
 
     /**
-     * 将绑定记录按版本策略（latest/fixed）解析为 SkillDefinition。
+     * 将绑定解析为 SkillRuntime。
+     * 只返回 status=ACTIVE 且 publishedVersionId 不为 null 的 Skill。
      */
-    private SkillDefinition resolveBindingToDefinition(SkillBindingDO binding) {
+    private SkillRuntime resolveBindingToDefinition(SkillBindingDO binding) {
         SkillDO skillDO;
         try {
-            if (VersionType.FIXED.equals(binding.getVersionType())) {
-                skillDO = skillStore.findBySkillIdAndVersion(
-                        binding.getSkillId(), binding.getFixedVersion()).orElse(null);
-            } else {
-                // latest：取该 skillId 最新的 active 版本
-                skillDO = skillStore.findLatestActiveBySkillId(binding.getSkillId()).orElse(null);
-            }
+            skillDO = skillStore.findLatestActiveBySkillId(binding.getSkillId()).orElse(null);
         } catch (Exception e) {
             log.warn("[SkillRegistry] 解析 Skill {} 失败: {}", binding.getSkillId(), e.getMessage());
             return null;
         }
 
-        if (skillDO == null || skillDO.getStatus() != SkillStatus.ACTIVE) {
+        if (skillDO == null) {
             return null;
         }
 
-        return buildDefinition(skillDO);
+        // 获取已发布版本
+        SkillVersionDO versionDO = null;
+        if (skillDO.getPublishedVersionId() != null) {
+            versionDO = skillVersionStore.findById(skillDO.getPublishedVersionId()).orElse(null);
+        }
+
+        if (versionDO == null || versionDO.getStatus() != SkillVersionStatus.PUBLISHED) {
+            return null;
+        }
+
+        return buildDefinitionFromVersion(skillDO, versionDO);
     }
 
     /**
-     * 从 SkillDO 构建 SkillDefinition。
+     * 从 SkillDO + SkillVersionDO 构建 SkillRuntime。
      */
-    @SuppressWarnings("unchecked")
-    private SkillDefinition buildDefinition(SkillDO do_) {
-        List<String> allowedTools = parseJsonList(do_.getAllowedTools());
-        List<String> aliases      = parseJsonList(do_.getAliases());
-        List<String> tags         = parseJsonList(do_.getTags());
+    private SkillRuntime buildDefinition(SkillDO skillDO) {
+        if (skillDO == null) return null;
+        if (skillDO.getStatus() != SkillStatus.ACTIVE) return null;
 
+        SkillVersionDO versionDO = null;
+        if (skillDO.getPublishedVersionId() != null) {
+            versionDO = skillVersionStore.findById(skillDO.getPublishedVersionId()).orElse(null);
+        }
 
-        final String content = do_.getContent();
-        StorageInfoVO storageInfo = parseStorageInfo(do_.getStorageInfo());
+        if (versionDO == null || versionDO.getStatus() != SkillVersionStatus.PUBLISHED) {
+            return null;
+        }
 
-        return SkillDefinition.builder()
-                .category(do_.getCategory())
-                .skillId(do_.getSkillId())
-                .name(do_.getName())
-                .version(do_.getVersion())
-                .displayName(do_.getDisplayName())
-                .description(do_.getDescription())
-                .whenToUse(do_.getWhenToUse())
-                .argumentHint(do_.getArgumentHint())
-                .aliases(aliases)
-                .allowedTools(allowedTools)
+        return buildDefinitionFromVersion(skillDO, versionDO);
+    }
+
+    private SkillRuntime buildDefinitionFromVersion(SkillDO skillDO, SkillVersionDO versionDO) {
+        SkillRuntimeConfig runtimeConfig = parseRuntimeConfig(versionDO.getRuntimeConfig());
+        List<String> tags = parseJsonList(skillDO.getTags());
+        StorageInfoVO storageInfo = parseStorageInfo(versionDO.getStorageInfo());
+
+        return SkillRuntime.builder()
+                .category(skillDO.getCategory())
+                .skillId(skillDO.getId())
+                .name(versionDO.getName() != null ? versionDO.getName() : skillDO.getName())
+                .version(versionDO.getVersion())
+                .description(versionDO.getDescription())
+                .whenToUse(runtimeConfig != null ? runtimeConfig.getWhenToUse() : null)
+                .argumentHint(runtimeConfig != null ? runtimeConfig.getArgumentHint() : null)
+                .aliases(runtimeConfig != null ? runtimeConfig.getAliases() : null)
+                .allowedTools(runtimeConfig != null ? runtimeConfig.getAllowedTools() : null)
                 .tags(tags)
-                .model(do_.getModel())
-                .effort(do_.getEffort())
-                .executionContext(do_.getExecutionContext() != null
-                        ? do_.getExecutionContext() : ExecutionContext.INLINE)
-                .disableModelInvocation(Integer.valueOf(1).equals(do_.getDisableModelInvocation()))
-                .userInvocable(!Integer.valueOf(0).equals(do_.getUserInvocable()))
-                .persist(Integer.valueOf(1).equals(do_.getPersist()))
-                .persistMode(do_.getPersistMode() != null ? do_.getPersistMode() : PersistMode.FULL)
+                .model(runtimeConfig != null ? runtimeConfig.getModel() : null)
+                .effort(runtimeConfig != null ? runtimeConfig.getEffort() : null)
+                .executionContext(runtimeConfig != null && runtimeConfig.getExecutionContext() != null
+                        ? runtimeConfig.getExecutionContext() : ExecutionContext.INLINE)
+                .disableModelInvocation(runtimeConfig != null && Boolean.TRUE.equals(runtimeConfig.getDisableModelInvocation()))
+                .userInvocable(runtimeConfig == null || !Boolean.FALSE.equals(runtimeConfig.getUserInvocable()))
+                .persist(runtimeConfig != null && Boolean.TRUE.equals(runtimeConfig.getPersist()))
+                .persistMode(runtimeConfig != null && runtimeConfig.getPersistMode() != null
+                        ? runtimeConfig.getPersistMode() : PersistMode.FULL)
                 .storageInfo(storageInfo)
-                .content(content != null ? content : "")
+                .content(versionDO.getContent() != null ? versionDO.getContent() : "")
                 .build();
     }
 
@@ -286,10 +265,16 @@ public class SkillRegistry {
         }
     }
 
-    /**
-     * 将 storage_info JSON 字段反序列化为 StorageInfoVO。
-     * 失败时返回 null，不影响正常执行（走纯文本路径）。
-     */
+    private SkillRuntimeConfig parseRuntimeConfig(String json) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            return OBJECT_MAPPER.readValue(json, SkillRuntimeConfig.class);
+        } catch (Exception e) {
+            log.warn("[SkillRegistry] 解析 runtimeConfig 失败: {}", json, e);
+            return null;
+        }
+    }
+
     private StorageInfoVO parseStorageInfo(String json) {
         if (json == null || json.isBlank()) return null;
         try {
@@ -300,4 +285,3 @@ public class SkillRegistry {
         }
     }
 }
-

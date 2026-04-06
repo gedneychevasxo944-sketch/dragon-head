@@ -110,13 +110,13 @@ public class SkillTool implements AgentTool {
         AgentContext agentContext = buildAgentContext(context);
 
         // 1. 加载聚合 Skill 列表（多来源，含缓存）
-        List<SkillDefinition> skills = skillRegistry.getSkills(context.getCharacterId(), context.getWorkspaceId());
+        List<SkillRuntime> skills = skillRegistry.getSkills(context.getCharacterId(), context.getWorkspaceId());
 
         // 2. 动态可见性过滤
-        List<SkillDefinition> visible = skillFilter.filter(skills);
+        List<SkillRuntime> visible = skillFilter.filter(skills);
 
         // 3. 查找目标 Skill
-        SkillDefinition skill = findByName(visible, skillName);
+        SkillRuntime skill = findByName(visible, skillName);
         if (skill == null) {
             return ToolResult.fail("未找到 Skill: " + skillName
                     + "（可能未激活、已禁用，或在当前路径上下文中不可见）");
@@ -191,7 +191,7 @@ public class SkillTool implements AgentTool {
         return args.isEmpty() ? null : args;
     }
 
-    private SkillDefinition findByName(List<SkillDefinition> skills, String name) {
+    private SkillRuntime findByName(List<SkillRuntime> skills, String name) {
         if (name == null) return null;
         return skills.stream()
                 .filter(s -> name.equals(s.getName())
@@ -200,7 +200,7 @@ public class SkillTool implements AgentTool {
                 .orElse(null);
     }
 
-    private String buildOutputDescription(SkillDefinition skill, SkillToolData data) {
+    private String buildOutputDescription(SkillRuntime skill, SkillToolData data) {
         if (data.getExecutionMode() == SkillToolData.ExecutionMode.FORK) {
             return "Skill [" + skill.getName() + "] is executing in a forked sub-agent. "
                     + "Waiting for result...";

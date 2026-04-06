@@ -29,7 +29,7 @@ public class SkillFilter {
      * @param agentContext 当前 Agent 上下文
      * @return 过滤后的可见 Skill 列表
      */
-    public List<SkillDefinition> filter(List<SkillDefinition> skills) {
+    public List<SkillRuntime> filter(List<SkillRuntime> skills) {
         return skills.stream()
                 .filter(s -> !s.isDisableModelInvocation())
                 .filter(this::isEnabled)
@@ -46,7 +46,7 @@ public class SkillFilter {
      *   <li>A/B 测试灰度</li>
      * </ul>
      */
-    protected boolean isEnabled(SkillDefinition skill) {
+    protected boolean isEnabled(SkillRuntime skill) {
         // 扩展点：可注入 FeatureFlagService 等实现动态控制
         return true;
     }

@@ -12,12 +12,9 @@ public class BindWorkspaceDetail implements ActionDetail {
 
     private String workspaceId;
     private String workspaceName;
-    private String versionType;
-    private Integer fixedVersion;
 
     @Override
     public String getContent() {
-        String ver = "latest".equals(versionType) ? "(latest)" : "(fixed v" + fixedVersion + ")";
-        return "绑定到 Workspace [" + workspaceName + "] " + ver;
+        return "绑定到 Workspace [" + workspaceName + "]";
     }
 }

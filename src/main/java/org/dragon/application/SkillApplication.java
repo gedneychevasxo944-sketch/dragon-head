@@ -10,7 +10,9 @@ import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillQueryRequest;
 import org.dragon.skill.dto.SkillRegisterResult;
 import org.dragon.skill.dto.SkillSummaryVO;
+import org.dragon.skill.dto.SkillVersionSummaryVO;
 import org.dragon.skill.enums.SkillCategory;
+import org.dragon.skill.enums.SkillStatus;
 import org.dragon.skill.enums.SkillVisibility;
 import org.dragon.skill.service.SkillLifecycleService;
 import org.dragon.skill.service.SkillQueryService;
@@ -68,8 +70,8 @@ public class SkillApplication {
      * 分页获取技能列表。
      */
     public PageResponse<SkillSummaryVO> listSkills(int page, int pageSize, String search,
-                                                  String visibility, String assetState,
-                                                  String runtimeStatus, String category) {
+                                                  String visibility, String status,
+                                                  String category) {
         SkillQueryRequest request = new SkillQueryRequest();
         request.setKeyword(search);
         // 转换 String 到枚举类型
@@ -87,10 +89,9 @@ public class SkillApplication {
                 // 忽略无效的 visibility 值
             }
         }
-        // assetState 和 runtimeStatus 目前映射为 status 筛选
-        if (runtimeStatus != null && !runtimeStatus.isBlank()) {
+        if (status != null && !status.isBlank()) {
             try {
-                request.setStatus(org.dragon.skill.enums.SkillStatus.valueOf(runtimeStatus.toUpperCase()));
+                request.setStatus(SkillStatus.valueOf(status.toUpperCase()));
             } catch (IllegalArgumentException ignored) {
                 // 忽略无效的状态值
             }
@@ -121,7 +122,8 @@ public class SkillApplication {
      */
     public SkillDetailVO publishSkill(String skillId, String version, String changelog) {
         UserInfo user = UserUtils.getUserInfo();
-        lifecycleService.publish(skillId, user);
+        int ver = version != null ? Integer.parseInt(version) : 1;
+        lifecycleService.publish(skillId, ver, changelog, user);
         log.info("[SkillApplication] Published skill: {} version: {}", skillId, version);
         return queryService.getDetail(skillId, false);
     }
@@ -145,7 +147,7 @@ public class SkillApplication {
     /**
      * 获取技能版本列表。
      */
-    public List<SkillDetailVO> listVersions(String skillId) {
+    public List<SkillVersionSummaryVO> listVersions(String skillId) {
         return queryService.listVersions(skillId);
     }
 
@@ -158,7 +160,8 @@ public class SkillApplication {
      * @return 注册结果
      */
     public SkillRegisterResult saveDraft(String skillId, SkillRegisterRequest request) {
-        SkillRegisterResult result = registerService.saveDraft(skillId, request);
+        UserInfo user = UserUtils.getUserInfo();
+        SkillRegisterResult result = registerService.saveDraft(skillId, request, user);
         log.info("[SkillApplication] Saved draft for skill: {}", skillId);
         return result;
     }

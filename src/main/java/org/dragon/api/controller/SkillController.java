@@ -12,6 +12,7 @@ import org.dragon.skill.dto.SkillDetailVO;
 import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillRegisterResult;
 import org.dragon.skill.dto.SkillSummaryVO;
+import org.dragon.skill.dto.SkillVersionSummaryVO;
 import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -60,11 +61,10 @@ public class SkillController {
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String visibility,
-            @RequestParam(required = false) String assetState,
-            @RequestParam(required = false) String runtimeStatus,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String category) {
         PageResponse<SkillSummaryVO> result = skillApplication.listSkills(
-                page, pageSize, search, visibility, assetState, runtimeStatus, category);
+                page, pageSize, search, visibility, status, category);
         return ApiResponse.success(result);
     }
 
@@ -162,8 +162,8 @@ public class SkillController {
      */
     @Operation(summary = "获取技能版本列表")
     @GetMapping("/{skillId}/versions")
-    public ApiResponse<List<SkillDetailVO>> listVersions(@PathVariable String skillId) {
-        List<SkillDetailVO> response = skillApplication.listVersions(skillId);
+    public ApiResponse<List<SkillVersionSummaryVO>> listVersions(@PathVariable String skillId) {
+        List<SkillVersionSummaryVO> response = skillApplication.listVersions(skillId);
         return ApiResponse.success(response);
     }
 

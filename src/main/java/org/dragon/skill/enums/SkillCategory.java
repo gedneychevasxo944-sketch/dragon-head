@@ -10,11 +10,14 @@ import lombok.RequiredArgsConstructor;
 public enum SkillCategory {
 
     BUILTIN("builtin"),
-    DEVELOPMENT("development"),
-    DEPLOYMENT("deployment"),
-    ANALYSIS("analysis"),
-    UTILITY("utility"),
-    INTEGRATION("integration"),
+    CONVERSATION("conversation"),
+    CODER("coder"),
+    DATA_ANALYSIS("data_analysis"),
+    IMAGE_GENERATION("image_generation"),
+    KNOWLEDGE_RETRIEVAL("knowledge_retrieval"),
+    TOOL_CALLING("tool_calling"),
+    DATA_PROCESSING("data_processing"),
+    TEXT_GENERATION("text_generation"),
     OTHER("other");
 
     private final String value;

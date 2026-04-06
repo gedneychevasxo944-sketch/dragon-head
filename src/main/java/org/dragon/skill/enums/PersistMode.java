@@ -1,5 +1,6 @@
 package org.dragon.skill.enums;
 
+import io.ebean.annotation.DbEnumValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +18,9 @@ public enum PersistMode {
     SUMMARY("summary");
 
     private final String value;
+
+    @DbEnumValue
+    public String getValue() { return value; }
 
     public static PersistMode fromValue(String value) {
         if (value == null) return FULL; // 默认 full

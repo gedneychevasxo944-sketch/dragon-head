@@ -1,13 +1,12 @@
 package org.dragon.skill.domain;
 
 import org.dragon.skill.enums.BindingType;
-import org.dragon.skill.enums.VersionType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
- * skill_bindings 表领域对象。
+ * SkillBindingDO — skill_bindings 表领域对象。
  *
  * <pre>
  * bindingType         | characterId | workspaceId | 场景
@@ -16,6 +15,8 @@ import java.time.LocalDateTime;
  * WORKSPACE           | NULL        | 必填        | Workspace 公共 skill 池
  * CHARACTER_WORKSPACE | 必填        | 必填        | Character 在某 Workspace 的专属 skill
  * </pre>
+ *
+ * <p>绑定关系绑定到 Skill 本身，具体使用哪个版本由 skill.publishedVersionId 决定。
  */
 @Data
 public class SkillBindingDO {
@@ -38,22 +39,12 @@ public class SkillBindingDO {
      */
     private String workspaceId;
 
-    /** 技能唯一标识（UUID），对应 skills.skill_id */
+    /** 技能唯一标识（UUID），对应 skills.skillId */
     private String skillId;
-
-    /** 版本策略 */
-    private VersionType versionType;
-
-    /**
-     * 固定版本号（对应 skills.version）。
-     * versionType = FIXED 时必填；versionType = LATEST 时为 NULL。
-     */
-    private Integer fixedVersion;
 
     /** 绑定创建时间 */
     private LocalDateTime createdAt;
 
-    /** 绑定最后更新时间（如修改版本策略） */
+    /** 绑定最后更新时间 */
     private LocalDateTime updatedAt;
 }
-

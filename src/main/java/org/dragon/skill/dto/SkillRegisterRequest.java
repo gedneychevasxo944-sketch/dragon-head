@@ -85,18 +85,21 @@ public class SkillRegisterRequest {
     @Pattern(regexp = "^(auto|quick|standard|thorough)$", message = "effort 值非法")
     private String effort;
 
-    /** 技能分类：development / deployment / analysis / utility / integration / other */
+    /** 技能分类 */
     private String category;
 
     /**
      * 可见性。
-     * 允许值：public / private
+     * 允许值：public / private / workspace
      */
-    @Pattern(regexp = "^(public|private)$", message = "visibility 只允许 public 或 private")
+    @Pattern(regexp = "^(public|private|workspace)$", message = "visibility 只允许 public/private/workspace")
     private String visibility;
 
-    /** 标签列表，用于技能分类/场景归纳 */
+    /** 标签列表 */
     private List<String> tags;
+
+    /** 页面备注信息 */
+    private String comment;
 
     /**
      * 附加文件列表（可为空）。

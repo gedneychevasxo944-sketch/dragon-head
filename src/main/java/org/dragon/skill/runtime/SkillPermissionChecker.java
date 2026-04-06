@@ -94,7 +94,7 @@ public class SkillPermissionChecker {
      * @param agentContext 当前 Agent 上下文
      * @return 权限决策结果
      */
-    public SkillPermissionResult check(SkillDefinition skill, AgentContext agentContext) {
+    public SkillPermissionResult check(SkillRuntime skill, AgentContext agentContext) {
         String skillName = skill.getName();
 
         // 1. 检查 deny 规则（优先级最高）
@@ -180,7 +180,7 @@ public class SkillPermissionChecker {
      *   <li>{@code executionContext=fork} — fork 模式需权限</li>
      * </ul>
      */
-    private boolean hasOnlySafeProperties(SkillDefinition skill) {
+    private boolean hasOnlySafeProperties(SkillRuntime skill) {
         // allowedTools 非空 → 不安全（影响子 Agent 可用工具集）
         if (!CollectionUtils.isEmpty(skill.getAllowedTools())) {
             log.debug("[SkillPermission] 非安全属性: skill='{}', reason=allowedTools非空",
@@ -206,7 +206,7 @@ public class SkillPermissionChecker {
      *
      * <p>若框架层在 {@value #ASK_TIMEOUT_MS}ms 内未响应，视为拒绝。
      */
-    private SkillPermissionResult handleAskWithEvent(SkillDefinition skill,
+    private SkillPermissionResult handleAskWithEvent(SkillRuntime skill,
                                                       AgentContext agentContext,
                                                       List<SkillPermissionResult.Suggestion> suggestions) {
         SkillPermissionEvent event = new SkillPermissionEvent(

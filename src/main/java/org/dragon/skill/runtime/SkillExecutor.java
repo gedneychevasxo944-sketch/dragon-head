@@ -63,7 +63,7 @@ public class SkillExecutor {
      * @param agentContext 当前 Agent 上下文（fork 时用于追踪父子关系）
      * @return SkillToolData（由框架层解析并应用）
      */
-    public SkillToolData execute(SkillDefinition skill, String args,
+    public SkillToolData execute(SkillRuntime skill, String args,
                                  String sessionKey, AgentContext agentContext) {
         log.info("[SkillExecutor] 执行 Skill: name={}, mode={}, sessionKey={}",
                 skill.getName(), skill.getExecutionContext(), sessionKey);
@@ -80,7 +80,7 @@ public class SkillExecutor {
      * 含附属文件的执行路径：物化执行工作目录，执行完毕后清理。
      * 工作目录路径通过 ContextPatch.skillWorkDir 传递给框架层。
      */
-    private SkillToolData executeWithWorkspace(SkillDefinition skill, String args,
+    private SkillToolData executeWithWorkspace(SkillRuntime skill, String args,
                                                String sessionKey, AgentContext agentContext) {
         Path execDir = workspaceManager.prepareExecDir(
                 skill.getSkillId(), skill.getVersion(), skill.getStorageInfo());
@@ -109,7 +109,7 @@ public class SkillExecutor {
     /**
      * 纯文本执行路径（只有 SKILL.md，无附属文件）：直接获取 content。
      */
-    private SkillToolData executeWithContentOnly(SkillDefinition skill, String args,
+    private SkillToolData executeWithContentOnly(SkillRuntime skill, String args,
                                                   String sessionKey, AgentContext agentContext) {
         String content = loadContent(skill, sessionKey);
         String processedContent = injectArgs(content, args);
@@ -130,7 +130,7 @@ public class SkillExecutor {
      * inline 模式：将完整 prompt 包装为用户消息注入当前对话。
      * 模型接收到消息后直接在当前 context 中处理，无需创建新 Agent。
      */
-    private SkillToolData executeInline(SkillDefinition skill, String processedContent,
+    private SkillToolData executeInline(SkillRuntime skill, String processedContent,
                                          ContextPatch contextPatch, String persistContent) {
         // 构建 newMessages：将 skill prompt 包装为一条 meta 用户消息
         // 消息格式与框架的 Message 体系对齐，此处用 Map 表示结构
@@ -163,7 +163,7 @@ public class SkillExecutor {
      * 而是将执行参数打包到 SkillToolData 中，框架层识别 FORK 模式后负责创建。
      * 对应 TS 版本的 {@code executeForkedSkill()} → {@code runAgent()}。
      */
-    private SkillToolData executeFork(SkillDefinition skill, String processedContent,
+    private SkillToolData executeFork(SkillRuntime skill, String processedContent,
                                        String args, AgentContext agentContext,
                                        ContextPatch contextPatch, String persistContent) {
         log.debug("[SkillExecutor] fork 执行: skill={}, parentAgentId={}",
@@ -196,7 +196,7 @@ public class SkillExecutor {
     /**
      * @param workDir 工作目录绝对路径（物化路径时传入）或 null（纯文本路径）
      */
-    private ContextPatch buildContextPatch(SkillDefinition skill, String workDir) {
+    private ContextPatch buildContextPatch(SkillRuntime skill, String workDir) {
         List<String> tools = skill.getAllowedTools();
         String model = skill.getModel();
         SkillEffort effort = skill.getEffort();
@@ -227,7 +227,7 @@ public class SkillExecutor {
      * @param processedContent 已注入 args 的完整 prompt 正文
      * @return 需要留存的内容；若 persist=false 则返回 null
      */
-    private String resolvePersistContent(SkillDefinition skill, String processedContent) {
+    private String resolvePersistContent(SkillRuntime skill, String processedContent) {
         if (!skill.isPersist()) {
             return null;
         }
@@ -250,7 +250,7 @@ public class SkillExecutor {
      * 获取 Skill 完整 prompt 内容，并在本次对话（sessionKey）维度缓存。
      * 同一对话内多次调用同一 Skill 不重复获取。
      */
-    private String loadContent(SkillDefinition skill, String sessionKey) {
+    private String loadContent(SkillRuntime skill, String sessionKey) {
         String cacheKey = sessionKey + ":" + skill.getSkillId();
         return contentCache.computeIfAbsent(cacheKey, k -> {
             String content = skill.getContent();

@@ -546,59 +546,70 @@ ALTER TABLE workspace_member ADD COLUMN permission VARCHAR(32) NOT NULL DEFAULT 
 -- V4: Create skills, skill_bindings, skill_usage_logs tables
 -- 对应 SkillEntity, SkillBindingEntity, SkillUsageEntity
 
--- Skills 表（版本设计：每次更新 INSERT 新记录，skillId 不变，version +1）
+-- Skills 表（技能本体，元信息）
 CREATE TABLE skills (
-    id                       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '物理主键（自增）',
-    skill_id                 VARCHAR(64)  NOT NULL COMMENT '技能唯一标识（UUID，同一技能所有版本相同）',
+    id                       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '物理主键',
+    skill_id                 VARCHAR(64)  NOT NULL UNIQUE COMMENT '技能唯一标识（UUID）',
     name                     VARCHAR(100) NOT NULL COMMENT '技能名称',
     display_name             VARCHAR(100) COMMENT '显示名称',
     description              TEXT COMMENT '技能描述',
-    content                  TEXT COMMENT 'SKILL.md 正文内容',
-    aliases                  JSON COMMENT '别名列表',
-    when_to_use              TEXT COMMENT '使用场景说明',
-    argument_hint            VARCHAR(200) COMMENT '参数提示',
-    allowed_tools            JSON COMMENT '允许的工具列表',
-    model                    VARCHAR(50)  COMMENT '模型覆盖',
-    disable_model_invocation TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '禁用模型自动调用（0否1是）',
-    user_invocable           TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '用户是否可调用（0否1是）',
-    execution_context        VARCHAR(10)  NOT NULL DEFAULT 'inline' COMMENT '执行上下文（inline/fork）',
-    effort                   VARCHAR(20)  COMMENT '努力程度（auto/quick/standard/thorough）',
-
-    -- 分类和可见性
     category                 VARCHAR(50)  COMMENT '技能分类',
     visibility               VARCHAR(20)  NOT NULL DEFAULT 'private' COMMENT '可见性（public/private/workspace）',
+    tags                     JSON COMMENT '标签列表',
 
-    -- 创建者和编辑者
+    -- 创建者
     creator_type             VARCHAR(10)  NOT NULL DEFAULT 'personal' COMMENT '创建者类型（personal/official）',
-    creator_id              BIGINT UNSIGNED COMMENT '创建者用户ID',
+    creator_id               BIGINT UNSIGNED COMMENT '创建者用户ID',
     creator_name             VARCHAR(100) COMMENT '创建者用户名',
-    editor_id               BIGINT UNSIGNED COMMENT '本次版本编辑者用户ID',
-    editor_name             VARCHAR(100) COMMENT '本次版本编辑者用户名',
 
-    -- 状态和版本
-    status                   VARCHAR(10)  NOT NULL DEFAULT 'draft' COMMENT '技能状态（draft/active/disabled/deleted）',
-    version                  INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '版本号（从1开始，每次发布新版本+1）',
-
-    -- 存储类型和信息
-    storage_type             VARCHAR(10)  NOT NULL DEFAULT 'local' COMMENT '存储类型（local/s3）',
-    storage_info             JSON COMMENT '存储信息（JSON结构）',
-
-    -- 运行时行为扩展
-    persist                  TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否持续留存（0否1是）',
-    persist_mode             VARCHAR(10)  COMMENT '留存模式（full/summary）',
+    -- 状态和版本指针
+    status                   VARCHAR(10)  NOT NULL DEFAULT 'draft' COMMENT '当前状态（draft/active/disabled）',
+    published_version_id     BIGINT UNSIGNED COMMENT '已发布的版本ID（指向skill_versions.id）',
 
     -- 时间戳
-    created_at               DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '本条记录创建时间',
-    published_at             DATETIME     DEFAULT NULL COMMENT '发布时间',
+    created_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    deleted_at              DATETIME     DEFAULT NULL COMMENT '删除时间（软删除标记）',
+    comment                 TEXT COMMENT '页面备注信息',
 
-    UNIQUE KEY uk_skill_version (skill_id, version),
-    INDEX idx_skill_id (skill_id),
     INDEX idx_creator (creator_id),
     INDEX idx_status (status),
     INDEX idx_name (name),
     INDEX idx_category (category),
-    FULLTEXT INDEX ft_description (name, display_name, description)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='技能信息表（含版本历史，每次更新插入新记录）';
+    INDEX idx_deleted (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='技能信息表（不含版本内容）';
+
+-- Skill 版本表
+CREATE TABLE skill_versions (
+    id                       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '物理主键',
+    skill_id                 VARCHAR(64)  NOT NULL COMMENT '所属技能ID（UUID）',
+    version                  INT UNSIGNED NOT NULL COMMENT '版本号（从1开始）',
+
+    -- 版本内容（从 frontmatter 解析）
+    name                     VARCHAR(100) COMMENT '版本名称（解析自 SKILL.md）',
+    description              TEXT COMMENT '版本描述（解析自 SKILL.md）',
+    content                  TEXT COMMENT 'SKILL.md 正文内容',
+    frontmatter              TEXT COMMENT 'SKILL.md 原始 frontmatter YAML',
+    runtime_config           JSON COMMENT '运行时配置JSON',
+
+    -- 编辑者
+    editor_id                BIGINT UNSIGNED COMMENT '本次编辑者用户ID',
+    editor_name              VARCHAR(100) COMMENT '本次编辑者用户名',
+
+    -- 版本状态
+    status                   VARCHAR(10)  NOT NULL DEFAULT 'draft' COMMENT '版本状态（draft/published/deprecated）',
+
+    -- 存储信息
+    storage_type             VARCHAR(10)  NOT NULL DEFAULT 'local' COMMENT '存储类型（local/s3）',
+    storage_info             JSON COMMENT '存储信息（JSON结构）',
+
+    -- 时间戳
+    created_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '版本创建时间',
+    published_at             DATETIME     DEFAULT NULL COMMENT '发布时间',
+
+    UNIQUE KEY uk_skill_version (skill_id, version),
+    INDEX idx_skill_id (skill_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='技能版本表（每次更新生成新版本）';
 
 -- Skill 绑定关系表（三种维度：character / workspace / character_workspace）
 CREATE TABLE skill_bindings (
@@ -614,17 +625,13 @@ CREATE TABLE skill_bindings (
     -- 绑定的 Skill
     skill_id        VARCHAR(64)  NOT NULL COMMENT '技能唯一标识（UUID）',
 
-    -- 版本策略
-    version_type    VARCHAR(10)  NOT NULL DEFAULT 'latest' COMMENT '版本类型：latest=最新已发布版本，fixed=固定版本',
-    fixed_version   INT UNSIGNED DEFAULT NULL COMMENT '固定版本号，version_type=fixed 时必填，latest 时为 NULL',
-
     -- 时间戳
     created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 
     -- 唯一约束（防止重复绑定）
     UNIQUE KEY uk_character_skill        (character_id, skill_id, binding_type),
-    UNIQUE KEY uk_workspace_skill        (workspace_id, skill_id, binding_type),
+    UNIQUE KEY uk_workspace_skill         (workspace_id, skill_id, binding_type),
     UNIQUE KEY uk_char_ws_skill          (character_id, workspace_id, skill_id),
 
     -- 查询索引

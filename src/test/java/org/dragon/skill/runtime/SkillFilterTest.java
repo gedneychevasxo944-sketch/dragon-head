@@ -32,12 +32,12 @@ class SkillFilterTest {
      */
     @Test
     void testFilter_KeepsNormalSkills() {
-        List<SkillDefinition> skills = List.of(
+        List<SkillRuntime> skills = List.of(
                 createSkill("skill-1", false),
                 createSkill("skill-2", false)
         );
 
-        List<SkillDefinition> result = skillFilter.filter(skills);
+        List<SkillRuntime> result = skillFilter.filter(skills);
 
         assertEquals(2, result.size());
     }
@@ -47,13 +47,13 @@ class SkillFilterTest {
      */
     @Test
     void testFilter_FiltersDisabledModelInvocation() {
-        List<SkillDefinition> skills = List.of(
+        List<SkillRuntime> skills = List.of(
                 createSkill("skill-1", false),
                 createSkill("skill-2", true),  // 会被过滤
                 createSkill("skill-3", false)
         );
 
-        List<SkillDefinition> result = skillFilter.filter(skills);
+        List<SkillRuntime> result = skillFilter.filter(skills);
 
         assertEquals(2, result.size());
         assertTrue(result.stream().noneMatch(s -> s.getName().equals("skill-2")));
@@ -64,12 +64,12 @@ class SkillFilterTest {
      */
     @Test
     void testFilter_AllFiltered() {
-        List<SkillDefinition> skills = List.of(
+        List<SkillRuntime> skills = List.of(
                 createSkill("skill-1", true),
                 createSkill("skill-2", true)
         );
 
-        List<SkillDefinition> result = skillFilter.filter(skills);
+        List<SkillRuntime> result = skillFilter.filter(skills);
 
         assertEquals(0, result.size());
     }
@@ -79,19 +79,18 @@ class SkillFilterTest {
      */
     @Test
     void testFilter_EmptyList() {
-        List<SkillDefinition> result = skillFilter.filter(List.of());
+        List<SkillRuntime> result = skillFilter.filter(List.of());
         assertEquals(0, result.size());
     }
 
     // ==================== 辅助方法 ====================
 
-    private SkillDefinition createSkill(String name, boolean disableModelInvocation) {
-        return SkillDefinition.builder()
+    private SkillRuntime createSkill(String name, boolean disableModelInvocation) {
+        return SkillRuntime.builder()
                 .name(name)
-                .displayName(name)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .disableModelInvocation(disableModelInvocation)
                 .userInvocable(true)

@@ -1,48 +1,40 @@
 package org.dragon.skill.service;
 
+import org.dragon.skill.actionlog.PublishDetail;
 import org.dragon.skill.actionlog.SkillActionLogService;
 import org.dragon.skill.domain.SkillDO;
+import org.dragon.skill.domain.SkillVersionDO;
 import org.dragon.skill.enums.SkillStatus;
+import org.dragon.skill.enums.SkillVersionStatus;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillStatusException;
+import org.dragon.skill.exception.SkillVersionStatusException;
 import org.dragon.skill.store.SkillStore;
+import org.dragon.skill.store.SkillVersionStore;
 import org.dragon.util.bean.UserInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Skill 生命周期（状态管理）服务。
  *
  * <p>状态流转规则：
  * <pre>
- *          注册/更新
- *             │
- *             ▼
- *          [draft]
- *             │  发布(publish)
- *             ▼
- *          [active] ◄────── 重新发布(republish)
- *             │                    ▲
- *          下架(disable)           │
- *             │                    │
- *             ▼                    │
- *         [disabled] ──────────────┘
- *             │
- *          删除(delete)
- *             ▼
- *          [deleted]  ← 终态，不可逆
+ *   draft → active → disabled
+ *            ↑__________| (republish)
  *
- * 注：draft/active/disabled 均可执行 delete
+ *   任意状态 → deleted（软删除）
  * </pre>
  *
- * <p>状态变更作用范围：
+ * <p>版本发布时：
  * <ul>
- *   <li>publish / disable / republish：只变更最新版本记录的 status</li>
- *   <li>delete：将该 skillId 的所有版本记录 status 均改为 deleted（软删除）</li>
+ *   <li>旧 published 版本标记为 DEPRECATED</li>
+ *   <li>新版本标记为 PUBLISHED</li>
+ *   <li>skill.publishedVersionId 指向新版本</li>
+ *   <li>skill.status = ACTIVE</li>
  * </ul>
  */
 @Service
@@ -52,130 +44,142 @@ public class SkillLifecycleService {
     @Autowired
     private SkillStore skillStore;
     @Autowired
+    private SkillVersionStore skillVersionStore;
+    @Autowired
     private SkillActionLogService actionLogService;
 
     // ── 发布 ─────────────────────────────────────────────────────────
 
     /**
-     * 发布技能：draft → active。
-     * 仅对最新版本生效，同时记录 publishedAt。
+     * 发布技能。
      *
-     * @param skillId 技能业务 UUID
-     * @param user     操作者用户信息
+     * <p>将 draft 版本发布：version.status → PUBLISHED，旧版本 → DEPRECATED，
+     * skill.status → ACTIVE，skill.publishedVersionId → 新版本。
+     *
+     * @param skillId     技能 UUID
+     * @param version     要发布的版本号
+     * @param releaseNote 发版备注
+     * @param user        操作者用户信息
      */
-    public void publish(String skillId, UserInfo user) {
-        SkillDO latest = requireLatest(skillId);
-        assertStatus(latest, SkillStatus.DRAFT, "发布");
+    public void publish(String skillId, int version, String releaseNote, UserInfo user) {
+        SkillDO skill = requireNotDeleted(skillId);
 
-        latest.setStatus(SkillStatus.ACTIVE);
-        latest.setPublishedAt(LocalDateTime.now());
-        skillStore.update(latest);
+        // 获取要发布的版本
+        SkillVersionDO targetVersion = skillVersionStore.findBySkillIdAndVersion(skillId, version)
+                .orElseThrow(() -> new SkillNotFoundException(skillId + " v" + version));
+        assertVersionStatus(targetVersion, SkillVersionStatus.DRAFT, "发布");
 
-        // 记录操作日志
-        actionLogService.log(skillId, latest.getName(),
+        // 旧已发布版本标记为 DEPRECATED
+        Long oldPublishedId = skill.getPublishedVersionId();
+        if (oldPublishedId != null) {
+            SkillVersionDO oldVersion = skillVersionStore.findById(oldPublishedId).orElse(null);
+            if (oldVersion != null && oldVersion.getStatus() == SkillVersionStatus.PUBLISHED) {
+                oldVersion.setStatus(SkillVersionStatus.DEPRECATED);
+                skillVersionStore.update(oldVersion);
+            }
+        }
+
+        // 新版本标记为 PUBLISHED
+        targetVersion.setStatus(SkillVersionStatus.PUBLISHED);
+        targetVersion.setPublishedAt(LocalDateTime.now());
+        targetVersion.setReleaseNote(releaseNote);
+        skillVersionStore.update(targetVersion);
+
+        // 更新技能元信息
+        skill.setPublishedVersionId(targetVersion.getId());
+        skill.setStatus(SkillStatus.ACTIVE);
+        skillStore.update(skill);
+
+        actionLogService.log(skillId, skill.getName(),
                 org.dragon.skill.enums.SkillActionType.PUBLISH,
-                parseUserId(user.getUserId()), user.getUsername(), latest.getVersion());
+                parseUserId(user.getUserId()), user.getUsername(), version,
+                new PublishDetail(releaseNote));
     }
 
     // ── 下架 ─────────────────────────────────────────────────────────
 
     /**
-     * 下架技能：active → disabled。
-     * Agent 端不再加载 disabled 状态的技能。
-     *
-     * @param skillId 技能业务 UUID
-     * @param user     操作者用户信息
+     * 下架技能：skill.status → DISABLED。
+     * Agent 端不再加载此技能。
      */
     public void disable(String skillId, UserInfo user) {
-        SkillDO latest = requireLatest(skillId);
-        assertStatus(latest, SkillStatus.ACTIVE, "下架");
+        SkillDO skill = requireNotDeleted(skillId);
+        assertSkillStatus(skill, SkillStatus.ACTIVE, "下架");
 
-        latest.setStatus(SkillStatus.DISABLED);
-        skillStore.update(latest);
+        skill.setStatus(SkillStatus.DISABLED);
+        skillStore.update(skill);
 
-        // 记录操作日志
-        actionLogService.log(skillId, latest.getName(),
+        actionLogService.log(skillId, skill.getName(),
                 org.dragon.skill.enums.SkillActionType.DISABLE,
-                parseUserId(user.getUserId()), user.getUsername(), latest.getVersion());
+                parseUserId(user.getUserId()), user.getUsername(), null);
     }
 
     // ── 重新发布 ──────────────────────────────────────────────────────
 
     /**
-     * 重新发布：disabled → active。
-     *
-     * @param skillId 技能业务 UUID
-     * @param user     操作者用户信息
+     * 重新发布：skill.status → ACTIVE（继续使用已发布的版本）。
      */
     public void republish(String skillId, UserInfo user) {
-        SkillDO latest = requireLatest(skillId);
-        assertStatus(latest, SkillStatus.DISABLED, "重新发布");
+        SkillDO skill = requireNotDeleted(skillId);
+        assertSkillStatus(skill, SkillStatus.DISABLED, "重新发布");
 
-        latest.setStatus(SkillStatus.ACTIVE);
-        latest.setPublishedAt(LocalDateTime.now());
-        skillStore.update(latest);
+        skill.setStatus(SkillStatus.ACTIVE);
+        skillStore.update(skill);
 
-        // 记录操作日志
-        actionLogService.log(skillId, latest.getName(),
+        Integer version = skill.getPublishedVersionId() != null
+                ? skillVersionStore.findById(skill.getPublishedVersionId()).map(SkillVersionDO::getVersion).orElse(null)
+                : null;
+
+        actionLogService.log(skillId, skill.getName(),
                 org.dragon.skill.enums.SkillActionType.REPUBLISH,
-                parseUserId(user.getUserId()), user.getUsername(), latest.getVersion());
+                parseUserId(user.getUserId()), user.getUsername(), version);
     }
 
     // ── 软删除 ────────────────────────────────────────────────────────
 
     /**
-     * 软删除技能：将该 skillId 所有版本记录均标记为 deleted。
-     * draft / active / disabled 均可删除；deleted 状态再次删除视为幂等操作。
-     *
-     * @param skillId 技能业务 UUID
-     * @param user     操作者用户信息
+     * 软删除技能：skill.deletedAt = now。
      */
     public void delete(String skillId, UserInfo user) {
-        SkillDO latest = requireLatest(skillId);
-        if (SkillStatus.DELETED == latest.getStatus()) {
-            // 幂等：已删除则直接返回
-            return;
+        SkillDO skill = requireNotDeleted(skillId);
+
+        if (skill.getDeletedAt() != null) {
+            return; // 幂等
         }
 
-        // 记录操作日志（在删除之前获取 skill 信息）
-        actionLogService.log(skillId, latest.getName(),
+        skill.setDeletedAt(LocalDateTime.now());
+        skillStore.update(skill);
+
+        actionLogService.log(skillId, skill.getName(),
                 org.dragon.skill.enums.SkillActionType.DELETE,
-                parseUserId(user.getUserId()), user.getUsername(), latest.getVersion());
-
-        // 将所有版本标记为 DELETED（逐条 update）
-        List<SkillDO> allVersions = skillStore.findAllVersionsBySkillId(skillId);
-        for (SkillDO version : allVersions) {
-            if (SkillStatus.DELETED != version.getStatus()) {
-                version.setStatus(SkillStatus.DELETED);
-                skillStore.update(version);
-            }
-        }
+                parseUserId(user.getUserId()), user.getUsername(), null);
     }
 
     // ── 私有辅助方法 ─────────────────────────────────────────────────
 
-    /**
-     * 查询最新版本，若不存在则抛出 SkillNotFoundException。
-     */
-    private SkillDO requireLatest(String skillId) {
-        return skillStore.findLatestBySkillId(skillId)
+    private SkillDO requireNotDeleted(String skillId) {
+        SkillDO skill = skillStore.findBySkillId(skillId)
                 .orElseThrow(() -> new SkillNotFoundException(skillId));
+        if (skill.getDeletedAt() != null) {
+            throw new SkillNotFoundException(skillId);
+        }
+        return skill;
     }
 
-    /**
-     * 断言当前状态符合操作前提，否则抛出 SkillStatusException。
-     */
-    private void assertStatus(SkillDO skill, SkillStatus requiredStatus, String operation) {
-        if (requiredStatus != skill.getStatus()) {
-            throw new SkillStatusException(skill.getStatus(), requiredStatus, operation);
+    private void assertSkillStatus(SkillDO skill, SkillStatus required, String operation) {
+        if (required != skill.getStatus()) {
+            throw new SkillStatusException(skill.getStatus(), required, operation);
         }
     }
 
-    /** 将 String userId 转换为 Long */
+    private void assertVersionStatus(SkillVersionDO version, SkillVersionStatus required, String operation) {
+        if (required != version.getStatus()) {
+            throw new SkillVersionStatusException(version.getStatus(), required, operation);
+        }
+    }
+
     private Long parseUserId(String userId) {
-        if (userId == null || userId.isBlank()) {
-            return null;
-        }
+        if (userId == null || userId.isBlank()) return null;
         try {
             return Long.parseLong(userId);
         } catch (NumberFormatException e) {

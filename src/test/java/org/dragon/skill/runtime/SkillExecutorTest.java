@@ -51,12 +51,11 @@ class SkillExecutorTest {
     @Test
     void testExecute_InlineMode() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("git-commit")
-                .displayName("Git Commit")
                 .skillId("skill-id")
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .content("# Git Commit Prompt")
                 .build();
@@ -79,12 +78,11 @@ class SkillExecutorTest {
     @Test
     void testExecute_ForkMode() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("code-gen")
-                .displayName("Code Generator")
                 .skillId("skill-id")
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.FORK)
                 .content("# Code Gen Prompt")
                 .build();
@@ -108,7 +106,7 @@ class SkillExecutorTest {
     @Test
     void testExecute_NoMaterializationNeeded() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("simple-skill")
                 .skillId("skill-id")
                 .version(1)
@@ -162,7 +160,7 @@ class SkillExecutorTest {
     @Test
     void testExecute_ArgumentInjection() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("git-commit")
                 .skillId("skill-id")
                 .version(1)
@@ -187,7 +185,7 @@ class SkillExecutorTest {
     @Test
     void testExecute_ArgumentAppended() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("simple")
                 .skillId("skill-id")
                 .version(1)
@@ -212,7 +210,7 @@ class SkillExecutorTest {
     @Test
     void testExecute_PersistFalse() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("temp-skill")
                 .skillId("skill-id")
                 .version(1)
@@ -236,7 +234,7 @@ class SkillExecutorTest {
     @Test
     void testExecute_PersistTrue() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("persistent-skill")
                 .skillId("skill-id")
                 .version(1)
@@ -262,7 +260,7 @@ class SkillExecutorTest {
     void testExecute_PersistSummary() {
         // given
         String fullContent = "# Rules\n\n## Constraints\n- Rule 1\n- Rule 2\n\n## Guide\nSome guide text";
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("rule-skill")
                 .skillId("skill-id")
                 .version(1)
@@ -290,7 +288,7 @@ class SkillExecutorTest {
     @Test
     void testExecute_ContentCacheHit() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("cached-skill")
                 .skillId("skill-id")
                 .version(1)
@@ -316,7 +314,7 @@ class SkillExecutorTest {
     @Test
     void testExecute_ContextPatchWithTools() {
         // given
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("tooled-skill")
                 .skillId("skill-id")
                 .version(1)
@@ -339,13 +337,12 @@ class SkillExecutorTest {
 
     // ==================== 辅助方法 ====================
 
-    private SkillDefinition createSkill(String name, ExecutionContext context) {
-        return SkillDefinition.builder()
+    private SkillRuntime createSkill(String name, ExecutionContext context) {
+        return SkillRuntime.builder()
                 .name(name)
-                .displayName(name)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(context)
                 .disableModelInvocation(false)
                 .userInvocable(true)

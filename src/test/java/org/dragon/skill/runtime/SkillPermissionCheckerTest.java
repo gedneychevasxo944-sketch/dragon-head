@@ -59,7 +59,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getDenyRules()).thenReturn(List.of("dangerous-op", "deploy-prod"));
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
 
-        SkillDefinition skill = createSkill("dangerous-op");
+        SkillRuntime skill = createSkill("dangerous-op");
         SkillPermissionResult result = checker.check(skill, agentContext);
 
         assertTrue(result.isDeny());
@@ -74,7 +74,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getDenyRules()).thenReturn(List.of("deploy:*"));
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
 
-        SkillDefinition skill = createSkill("deploy-check");
+        SkillRuntime skill = createSkill("deploy-check");
         SkillPermissionResult result = checker.check(skill, agentContext);
 
         assertTrue(result.isDeny());
@@ -89,7 +89,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getDenyRules()).thenReturn(List.of("dangerous-op"));
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
 
-        SkillDefinition skill = createSkill("safe-skill");
+        SkillRuntime skill = createSkill("safe-skill");
         SkillPermissionResult result = checker.check(skill, agentContext);
 
         assertFalse(result.isDeny());
@@ -105,7 +105,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getDenyRules()).thenReturn(List.of());
         when(permissionConfig.getAllowRules()).thenReturn(List.of("git-commit", "code-review"));
 
-        SkillDefinition skill = createSkill("git-commit");
+        SkillRuntime skill = createSkill("git-commit");
         SkillPermissionResult result = checker.check(skill, agentContext);
 
         assertTrue(result.isAllow());
@@ -120,7 +120,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getDenyRules()).thenReturn(List.of());
         when(permissionConfig.getAllowRules()).thenReturn(List.of("review:*"));
 
-        SkillDefinition skill = createSkill("review-code");
+        SkillRuntime skill = createSkill("review-code");
         SkillPermissionResult result = checker.check(skill, agentContext);
 
         assertTrue(result.isAllow());
@@ -138,11 +138,10 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
 
         // 只含安全属性
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("git-commit")
-                .displayName("Git Commit")
                 .description("Generate commit message")
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .build();
 
@@ -161,7 +160,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
         when(permissionConfig.getAskStrategy()).thenReturn("auto-deny");
 
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("deploy-check")
                 .allowedTools(List.of("Bash", "Read"))
                 .executionContext(ExecutionContext.INLINE)
@@ -181,7 +180,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
         when(permissionConfig.getAskStrategy()).thenReturn("auto-deny");
 
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("code-gen")
                 .executionContext(ExecutionContext.FORK)
                 .build();
@@ -202,7 +201,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
         when(permissionConfig.getAskStrategy()).thenReturn("auto-deny");
 
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("deploy-check")
                 .allowedTools(List.of("Bash"))
                 .executionContext(ExecutionContext.INLINE)
@@ -224,7 +223,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getDenyRules()).thenReturn(List.of("/dangerous-op"));
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
 
-        SkillDefinition skill = createSkill("dangerous-op");
+        SkillRuntime skill = createSkill("dangerous-op");
         SkillPermissionResult result = checker.check(skill, agentContext);
 
         assertTrue(result.isDeny());
@@ -238,7 +237,7 @@ class SkillPermissionCheckerTest {
         when(permissionConfig.getDenyRules()).thenReturn(List.of());
         when(permissionConfig.getAllowRules()).thenReturn(List.of());
 
-        SkillDefinition skill = createSkill("any-skill");
+        SkillRuntime skill = createSkill("any-skill");
         SkillPermissionResult result = checker.check(skill, agentContext);
 
         // 无规则命中，走白名单或 ask
@@ -247,13 +246,12 @@ class SkillPermissionCheckerTest {
 
     // ==================== 辅助方法 ====================
 
-    private SkillDefinition createSkill(String name) {
-        return SkillDefinition.builder()
+    private SkillRuntime createSkill(String name) {
+        return SkillRuntime.builder()
                 .name(name)
-                .displayName(name)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .build();
     }

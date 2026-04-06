@@ -122,7 +122,7 @@ class SkillToolTest {
         String workspaceId = "ws-1";
         String sessionKey = "session-123";
 
-        SkillDefinition skill = createSkillDefinition(skillName);
+        SkillRuntime skill = createSkillRuntime(skillName);
 
         AgentTool.ToolContext context = createToolContext(skillName, args, characterId, workspaceId, sessionKey);
 
@@ -158,12 +158,11 @@ class SkillToolTest {
         String characterId = "char-1";
         String workspaceId = "ws-1";
 
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name(skillName)
-                .displayName("Code Generator")
                 .skillId("skill-id")
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.FORK)
                 .build();
 
@@ -227,9 +226,8 @@ class SkillToolTest {
     @Test
     void testExecute_DisableModelInvocation() throws Exception {
         String skillName = "manual-only";
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name(skillName)
-                .displayName("Manual Only")
                 .skillId("skill-id")
                 .version(1)
                 .disableModelInvocation(true)
@@ -253,7 +251,7 @@ class SkillToolTest {
     @Test
     void testExecute_PermissionDenied() throws Exception {
         String skillName = "dangerous-op";
-        SkillDefinition skill = createSkillDefinition(skillName);
+        SkillRuntime skill = createSkillRuntime(skillName);
         AgentTool.ToolContext context = createToolContext(skillName, null, "char-1", "ws-1", "session");
 
         when(skillRegistry.getSkills(anyString(), anyString())).thenReturn(List.of(skill));
@@ -273,7 +271,7 @@ class SkillToolTest {
     @Test
     void testExecute_ExecutionException() throws Exception {
         String skillName = "faulty-skill";
-        SkillDefinition skill = createSkillDefinition(skillName);
+        SkillRuntime skill = createSkillRuntime(skillName);
         AgentTool.ToolContext context = createToolContext(skillName, null, "char-1", "ws-1", "session");
 
         when(skillRegistry.getSkills(anyString(), anyString())).thenReturn(List.of(skill));
@@ -298,7 +296,7 @@ class SkillToolTest {
     @Test
     void testExecute_SkillNameWithLeadingSlash() throws Exception {
         String skillName = "/git-commit";
-        SkillDefinition skill = createSkillDefinition("git-commit");
+        SkillRuntime skill = createSkillRuntime("git-commit");
         AgentTool.ToolContext context = createToolContext(skillName, null, "char-1", "ws-1", "session");
 
         when(skillRegistry.getSkills(anyString(), anyString())).thenReturn(List.of(skill));
@@ -319,7 +317,7 @@ class SkillToolTest {
     @Test
     void testExecute_EmptyArgsTreatedAsNull() throws Exception {
         String skillName = "git-commit";
-        SkillDefinition skill = createSkillDefinition(skillName);
+        SkillRuntime skill = createSkillRuntime(skillName);
         AgentTool.ToolContext context = createToolContext(skillName, "", "char-1", "ws-1", "session");
 
         when(skillRegistry.getSkills(anyString(), anyString())).thenReturn(List.of(skill));
@@ -336,13 +334,12 @@ class SkillToolTest {
 
     // ==================== 辅助方法 ====================
 
-    private SkillDefinition createSkillDefinition(String name) {
-        return SkillDefinition.builder()
+    private SkillRuntime createSkillRuntime(String name) {
+        return SkillRuntime.builder()
                 .name(name)
-                .displayName(name)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .disableModelInvocation(false)
                 .userInvocable(true)

@@ -28,7 +28,7 @@ class SkillDirectoryBuilderTest {
      */
     @Test
     void testBuildDirectoryPrompt() {
-        List<SkillDefinition> skills = List.of(
+        List<SkillRuntime> skills = List.of(
                 createSkill("deploy-check", "部署前检查", "在部署前检查代码质量"),
                 createSkill("git-commit", "生成 commit", null)
         );
@@ -66,7 +66,7 @@ class SkillDirectoryBuilderTest {
      */
     @Test
     void testBuildDirectoryPrompt_WithArgumentHint() {
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("git-commit")
                 .argumentHint("<scope> <message>")
                 .description("Generate commit message")
@@ -85,7 +85,7 @@ class SkillDirectoryBuilderTest {
      */
     @Test
     void testBuildDirectoryPrompt_WithAliases() {
-        SkillDefinition skill = SkillDefinition.builder()
+        SkillRuntime skill = SkillRuntime.builder()
                 .name("git-commit")
                 .aliases(List.of("gc", "commit"))
                 .description("Generate commit message")
@@ -222,13 +222,12 @@ class SkillDirectoryBuilderTest {
 
     // ==================== 辅助方法 ====================
 
-    private SkillDefinition createSkill(String name, String displayName, String whenToUse) {
-        return SkillDefinition.builder()
+    private SkillRuntime createSkill(String name, String displayName, String whenToUse) {
+        return SkillRuntime.builder()
                 .name(name)
-                .displayName(displayName)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .whenToUse(whenToUse)
                 .description("Description for " + name)

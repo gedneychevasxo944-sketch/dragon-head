@@ -292,14 +292,6 @@ public class WorkspaceApplication {
     }
 
     /**
-     * 更新 workspace skill 绑定配置。
-     */
-    public void updateSkillBinding(String workspaceId, String skillId,
-                                   String versionType, Integer fixedVersion) {
-        skillBindingService.updateWorkspaceBinding(workspaceId, skillId, versionType, fixedVersion, UserUtils.getUserInfo());
-    }
-
-    /**
      * 查询 workspace 已圈选的所有 Skill。
      */
     public List<SkillBindingVO> listWorkspaceSkills(String workspaceId) {

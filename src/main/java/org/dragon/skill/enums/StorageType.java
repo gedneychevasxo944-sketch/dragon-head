@@ -1,5 +1,6 @@
 package org.dragon.skill.enums;
 
+import io.ebean.annotation.DbEnumValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,6 +16,9 @@ public enum StorageType {
     S3("s3");
 
     private final String value;
+
+    @DbEnumValue
+    public String getValue() { return value; }
 
     public static StorageType fromValue(String value) {
         if (value == null) return LOCAL;

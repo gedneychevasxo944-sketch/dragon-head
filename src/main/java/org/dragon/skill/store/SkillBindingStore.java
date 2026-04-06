@@ -27,7 +27,7 @@ public interface SkillBindingStore {
     void save(SkillBindingDO binding);
 
     /**
-     * 更新绑定记录（UPDATE by id），通常用于修改版本策略（versionType / fixedVersion）。
+     * 更新绑定记录（UPDATE by id）。
      *
      * @param binding 绑定领域对象（id 不可为 null）
      */
@@ -100,5 +100,13 @@ public interface SkillBindingStore {
      * @return true 表示已存在
      */
     boolean exists(String bindingType, String characterId, String workspaceId, String skillId);
+
+    /**
+     * 查询某 Skill 的所有绑定记录。
+     *
+     * @param skillId 技能 ID
+     * @return 绑定列表
+     */
+    List<SkillBindingDO> findBySkillId(String skillId);
 }
 

@@ -3,7 +3,7 @@ package org.dragon.skill.service;
 import org.dragon.skill.domain.SkillUsageDO;
 import org.dragon.skill.enums.ExecutionContext;
 import org.dragon.skill.runtime.AgentContext;
-import org.dragon.skill.runtime.SkillDefinition;
+import org.dragon.skill.runtime.SkillRuntime;
 import org.dragon.skill.store.SkillUsageStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +51,7 @@ public class SkillUsageService {
      * @param durationMs   执行耗时（毫秒）
      */
     @Async
-    public void recordSuccess(SkillDefinition skill,
+    public void recordSuccess(SkillRuntime skill,
                               AgentContext agentContext,
                               String sessionKey,
                               String args,
@@ -93,7 +93,7 @@ public class SkillUsageService {
      * @param errorMessage 错误信息
      */
     @Async
-    public void recordFailure(SkillDefinition skill,
+    public void recordFailure(SkillRuntime skill,
                               AgentContext agentContext,
                               String sessionKey,
                               String args,
