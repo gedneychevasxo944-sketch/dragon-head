@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.task.Task;
 
+import org.dragon.skill.runtime.SkillDefinition;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -140,7 +142,7 @@ public class ReActContext {
      * 当前激活的 Skill 列表（用于工具过滤）
      */
     @Builder.Default
-    private List<org.dragon.skill.registry.SkillRuntimeEntry> activeSkills = new ArrayList<>();
+    private List<SkillDefinition> activeSkills = new ArrayList<>();
 
     // ==================== 协作上下文字段 ====================
 

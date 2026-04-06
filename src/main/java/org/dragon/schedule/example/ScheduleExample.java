@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * 4. 任务状态管理（暂停、恢复、手动触发）
  */
 @Slf4j
-@Component
+//@Component
 public class ScheduleExample implements CommandLineRunner {
 
     private final CronScheduler cronScheduler;

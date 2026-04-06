@@ -7,11 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.application.SkillApplication;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
-import org.dragon.skill.dto.SkillCreateRequest;
-import org.dragon.skill.dto.SkillResponse;
-import org.dragon.skill.dto.SkillUpdateRequest;
+import org.dragon.skill.actionlog.SkillActionLogVO;
+import org.dragon.skill.dto.SkillDetailVO;
+import org.dragon.skill.dto.SkillRegisterRequest;
+import org.dragon.skill.dto.SkillRegisterResult;
+import org.dragon.skill.dto.SkillSummaryVO;
+import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,20 +42,20 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/skills")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class SkillController {
 
     private final SkillApplication skillApplication;
+    private final PermissionChecker permissionChecker;
 
-    // ==================== 14. Skill CRUD ====================
+    // ==================== Skill CRUD ====================
 
     /**
-     * 14.1 获取技能列表
+     * 获取技能列表（分页+筛选）
      * GET /api/v1/skills
      */
     @Operation(summary = "获取技能列表（分页+筛选）")
     @GetMapping
-    public ApiResponse<PageResponse<SkillResponse>> listSkills(
+    public ApiResponse<PageResponse<SkillSummaryVO>> listSkills(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
@@ -60,88 +63,131 @@ public class SkillController {
             @RequestParam(required = false) String assetState,
             @RequestParam(required = false) String runtimeStatus,
             @RequestParam(required = false) String category) {
-        PageResponse<SkillResponse> result = skillApplication.listSkills(
+        PageResponse<SkillSummaryVO> result = skillApplication.listSkills(
                 page, pageSize, search, visibility, assetState, runtimeStatus, category);
         return ApiResponse.success(result);
     }
 
     /**
-     * 14.2 创建技能
+     * 创建技能
      * POST /api/v1/skills (multipart/form-data)
      */
-    @Operation(summary = "创建技能（上传 ZIP 包）")
+    @Operation(summary = "创建技能（ZIP 包）")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<SkillResponse> createSkill(
-            @RequestPart("file") MultipartFile file,
-            @RequestPart("data") SkillCreateRequest request) {
-        SkillResponse response = skillApplication.createSkill(file, request);
+    public ApiResponse<SkillDetailVO> createSkill(
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart("data") SkillRegisterRequest request) {
+        SkillDetailVO response = skillApplication.create(file, request);
         return ApiResponse.success(response);
     }
 
     /**
-     * 14.3 获取技能详情
-     * GET /api/v1/skills/:id
+     * 获取技能详情
+     * GET /api/v1/skills/{skillId}
      */
     @Operation(summary = "获取技能详情")
-    @GetMapping("/{id}")
-    public ApiResponse<SkillResponse> getSkill(@PathVariable Long id) {
-        SkillResponse response = skillApplication.getSkill(id);
+    @GetMapping("/{skillId}")
+    public ApiResponse<SkillDetailVO> getSkill(@PathVariable String skillId) {
+        permissionChecker.checkView("SKILL", skillId);
+        SkillDetailVO response = skillApplication.getSkill(skillId);
         return ApiResponse.success(response);
     }
 
     /**
-     * 14.4 更新技能
-     * PUT /api/v1/skills/:id (multipart/form-data)
+     * 更新技能
+     * PUT /api/v1/skills/{skillId} (multipart/form-data)
      */
     @Operation(summary = "更新技能")
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<SkillResponse> updateSkill(
-            @PathVariable Long id,
+    @PutMapping(value = "/{skillId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<SkillDetailVO> updateSkill(
+            @PathVariable String skillId,
             @RequestPart(value = "file", required = false) MultipartFile file,
-            @RequestPart("data") SkillUpdateRequest request) {
-        SkillResponse response = skillApplication.updateSkill(id, file, request);
+            @RequestPart("data") SkillRegisterRequest request) {
+        permissionChecker.checkEdit("SKILL", skillId);
+        SkillDetailVO response = skillApplication.update(skillId, file, request);
         return ApiResponse.success(response);
     }
 
     /**
-     * 14.5 发布技能版本
-     * POST /api/v1/skills/:id/publish
+     * 发布技能版本
+     * POST /api/v1/skills/{skillId}/publish
      */
     @Operation(summary = "发布技能版本")
-    @PostMapping("/{id}/publish")
-    public ApiResponse<SkillResponse> publishSkill(
-            @PathVariable Long id,
+    @PostMapping("/{skillId}/publish")
+    public ApiResponse<SkillDetailVO> publishSkill(
+            @PathVariable String skillId,
             @RequestBody PublishSkillRequest request) {
-        SkillResponse response = skillApplication.publishSkill(id, request.getVersion(), request.getChangelog());
+        permissionChecker.checkPermission("SKILL", skillId, "PUBLISH");
+        SkillDetailVO response = skillApplication.publishSkill(skillId, request.getVersion(), request.getChangelog());
         return ApiResponse.success(response);
     }
 
     /**
-     * 14.6 删除技能
-     * DELETE /api/v1/skills/:id
+     * 删除技能
+     * DELETE /api/v1/skills/{skillId}
      */
     @Operation(summary = "删除技能")
-    @DeleteMapping("/{id}")
-    public ApiResponse<Map<String, Object>> deleteSkill(@PathVariable Long id) {
-        skillApplication.deleteSkill(id);
+    @DeleteMapping("/{skillId}")
+    public ApiResponse<Map<String, Object>> deleteSkill(@PathVariable String skillId) {
+        permissionChecker.checkDelete("SKILL", skillId);
+        skillApplication.deleteSkill(skillId);
         return ApiResponse.success(Map.of("success", true));
     }
 
     /**
-     * 14.7 保存技能草稿
-     * PUT /api/v1/skills/:id/draft
+     * 禁用技能
+     * POST /api/v1/skills/{skillId}/disable
      */
+    @Operation(summary = "禁用技能")
+    @PostMapping("/{skillId}/disable")
+    public ApiResponse<Void> disableSkill(@PathVariable String skillId) {
+        skillApplication.disableSkill(skillId);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 启用技能
+     * POST /api/v1/skills/{skillId}/enable
+     */
+    @Operation(summary = "启用技能")
+    @PostMapping("/{skillId}/enable")
+    public ApiResponse<Void> enableSkill(@PathVariable String skillId) {
+        skillApplication.enableSkill(skillId);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 获取技能版本列表
+     * GET /api/v1/skills/{skillId}/versions
+     */
+    @Operation(summary = "获取技能版本列表")
+    @GetMapping("/{skillId}/versions")
+    public ApiResponse<List<SkillDetailVO>> listVersions(@PathVariable String skillId) {
+        List<SkillDetailVO> response = skillApplication.listVersions(skillId);
+        return ApiResponse.success(response);
+    }
+
     @Operation(summary = "保存技能草稿")
-    @PutMapping("/{id}/draft")
-    public ApiResponse<SkillResponse> saveDraft(
-            @PathVariable Long id,
-            @RequestBody Map<String, Object> body) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> content = (Map<String, Object>) body.get("content");
-        if (content == null) {
-            content = body;
-        }
-        SkillResponse response = skillApplication.saveDraft(id, content);
+    @PutMapping("/{skillId}/draft")
+    public ApiResponse<SkillRegisterResult> saveDraft(
+            @PathVariable String skillId,
+            @RequestBody SkillRegisterRequest request) {
+        permissionChecker.checkEdit("SKILL", skillId);
+        SkillRegisterResult response = skillApplication.saveDraft(skillId, request);
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 获取技能活动日志
+     * GET /api/v1/skills/{skillId}/activity-logs
+     */
+    @Operation(summary = "获取技能活动日志")
+    @GetMapping("/{skillId}/activity-logs")
+    public ApiResponse<PageResponse<SkillActionLogVO>> getActivityLogs(
+            @PathVariable String skillId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        PageResponse<SkillActionLogVO> response = skillApplication.getActivityLogs(skillId, page, pageSize);
         return ApiResponse.success(response);
     }
 

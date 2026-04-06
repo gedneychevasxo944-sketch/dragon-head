@@ -11,7 +11,7 @@ import org.dragon.observer.Observer;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.optimization.plan.OptimizationAction;
 import org.dragon.observer.optimization.plan.OptimizationPlan;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,10 +37,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/observers")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class ObserverController {
 
     private final ObserverApplication observerApplication;
+    private final PermissionChecker permissionChecker;
 
     // ==================== 22. Observer CRUD ====================
 
@@ -80,6 +80,7 @@ public class ObserverController {
     @Operation(summary = "获取 Observer 详情")
     @GetMapping("/{id}")
     public ApiResponse<Observer> getObserver(@PathVariable String id) {
+        permissionChecker.checkView("OBSERVER", id);
         return observerApplication.getObserver(id)
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Observer not found: " + id));
@@ -94,6 +95,7 @@ public class ObserverController {
     public ApiResponse<Observer> updateObserver(
             @PathVariable String id,
             @RequestBody Observer observer) {
+        permissionChecker.checkEdit("OBSERVER", id);
         Observer updated = observerApplication.updateObserver(id, observer);
         return ApiResponse.success(updated);
     }
@@ -105,6 +107,7 @@ public class ObserverController {
     @Operation(summary = "删除 Observer")
     @DeleteMapping("/{id}")
     public ApiResponse<Map<String, Object>> deleteObserver(@PathVariable String id) {
+        permissionChecker.checkDelete("OBSERVER", id);
         observerApplication.deleteObserver(id);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -116,6 +119,7 @@ public class ObserverController {
     @Operation(summary = "手动触发 Observer 评价")
     @PostMapping("/{id}/evaluate")
     public ApiResponse<Map<String, Object>> triggerEvaluation(@PathVariable String id) {
+        permissionChecker.checkUse("OBSERVER", id);
         Map<String, Object> result = observerApplication.triggerEvaluation(id);
         return ApiResponse.success(result);
     }

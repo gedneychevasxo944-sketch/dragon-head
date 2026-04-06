@@ -4,6 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.Observer;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.CollaboratorService;
+import org.dragon.permission.service.PermissionService;
+import org.dragon.util.UserUtils;
 import org.dragon.observer.ObserverRegistry;
 import org.dragon.observer.ObserverService;
 import org.dragon.observer.actionlog.ObserverActionLog;
@@ -39,6 +43,8 @@ public class ObserverApplication {
     private final ObserverRegistry observerRegistry;
     private final ObserverService observerService;
     private final ObserverActionLogService observerActionLogService;
+    private final PermissionService permissionService;
+    private final CollaboratorService collaboratorService;
 
     // ==================== Observer CRUD ====================
 
@@ -56,8 +62,16 @@ public class ObserverApplication {
                                                 String status, String executionMode) {
         List<Observer> all = observerRegistry.listAll();
 
+        // 按用户可见性过滤
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.OBSERVER, userId);
+
         List<Observer> filtered = all.stream()
                 .filter(o -> {
+                    // 可见性过滤
+                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(o.getId())) {
+                        return false;
+                    }
                     if (search != null && !search.isBlank()) {
                         String s = search.toLowerCase();
                         boolean nameMatch = o.getName() != null && o.getName().toLowerCase().contains(s);
@@ -100,6 +114,11 @@ public class ObserverApplication {
         observer.setCreatedAt(LocalDateTime.now());
         observer.setUpdatedAt(LocalDateTime.now());
         observerRegistry.register(observer);
+
+        // 添加创建者为 Owner
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        collaboratorService.addOwnerDirectly(ResourceType.OBSERVER, observer.getId(), userId);
+
         log.info("[ObserverApplication] Created observer: {}", observer.getId());
         return observerRegistry.get(observer.getId()).orElse(observer);
     }

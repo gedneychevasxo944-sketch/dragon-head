@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.application.ConfigApplication;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,10 +33,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/config")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class ConfigController {
 
     private final ConfigApplication configApplication;
+    private final PermissionChecker permissionChecker;
 
     // ==================== 27. Config（配置中心）====================
 
@@ -69,6 +69,7 @@ public class ConfigController {
     public ApiResponse<Map<String, Object>> updateConfigItem(
             @PathVariable String id,
             @RequestBody UpdateConfigRequest request) {
+        permissionChecker.checkEdit("CONFIG", id);
         Map<String, Object> result = configApplication.updateConfigItem(
                 id, request.getValue(), request.getSaveAsDraft());
         return ApiResponse.success(result);
@@ -81,6 +82,7 @@ public class ConfigController {
     @Operation(summary = "发布配置草稿")
     @PostMapping("/items/{id}/publish")
     public ApiResponse<Map<String, Object>> publishConfigItem(@PathVariable String id) {
+        permissionChecker.checkPermission("CONFIG", id, "PUBLISH");
         Map<String, Object> result = configApplication.publishConfigItem(id);
         return ApiResponse.success(result);
     }
@@ -94,6 +96,7 @@ public class ConfigController {
     public ApiResponse<Map<String, Object>> rollbackConfigItem(
             @PathVariable String id,
             @RequestBody RollbackConfigRequest request) {
+        permissionChecker.checkEdit("CONFIG", id);
         Map<String, Object> result = configApplication.rollbackConfigItem(id, request.getChangeRecordId());
         return ApiResponse.success(result);
     }
@@ -105,6 +108,7 @@ public class ConfigController {
     @Operation(summary = "获取配置项生效链")
     @GetMapping("/items/{id}/effect-chain")
     public ApiResponse<List<Map<String, Object>>> getEffectChain(@PathVariable String id) {
+        permissionChecker.checkView("CONFIG", id);
         List<Map<String, Object>> chain = configApplication.getEffectChain(id);
         return ApiResponse.success(chain);
     }
@@ -132,6 +136,7 @@ public class ConfigController {
     @Operation(summary = "获取配置项变更影响分析")
     @GetMapping("/items/{id}/impact")
     public ApiResponse<Map<String, Object>> getImpactAnalysis(@PathVariable String id) {
+        permissionChecker.checkView("CONFIG", id);
         Map<String, Object> impact = configApplication.getImpactAnalysis(id);
         return ApiResponse.success(impact);
     }

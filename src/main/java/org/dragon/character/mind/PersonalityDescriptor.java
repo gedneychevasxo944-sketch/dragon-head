@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 性格描述对象
@@ -26,9 +27,9 @@ public class PersonalityDescriptor {
     private String name;
 
     /**
-     * 性格特征列表
+     * 性格特征列表（存储完整 Trait 内容）
      */
-    private List<String> traits;
+    private List<TraitContent> traits;
 
     /**
      * 价值观列表
@@ -58,7 +59,33 @@ public class PersonalityDescriptor {
     /**
      * 扩展字段
      */
-    private java.util.Map<String, Object> extensions;
+    private Map<String, Object> extensions;
+
+    /**
+     * Trait 内容详情
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TraitContent {
+        /**
+         * Trait ID
+         */
+        private String id;
+        /**
+         * Trait 名称
+         */
+        private String name;
+        /**
+         * Trait 分类
+         */
+        private String category;
+        /**
+         * Trait 具体内容
+         */
+        private String content;
+    }
 
     /**
      * 将性格描述转换为 LLM 系统 Prompt
@@ -74,7 +101,10 @@ public class PersonalityDescriptor {
         }
 
         if (traits != null && !traits.isEmpty()) {
-            prompt.append("性格特征：").append(String.join("、", traits)).append("。\n");
+            for (TraitContent trait : traits) {
+                prompt.append("## ").append(trait.getName()).append("\n");
+                prompt.append(trait.getContent()).append("\n\n");
+            }
         }
 
         if (values != null && !values.isEmpty()) {

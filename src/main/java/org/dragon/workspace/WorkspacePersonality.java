@@ -76,16 +76,22 @@ public class WorkspacePersonality {
      * 核心价值观
      * 工作空间最重要的价值观念列表
      */
-    private String[] coreValues;
+    private String coreValues;
 
     /**
      * 行为准则
      * 成员应遵守的行为规范
      */
-    private String[] behaviorGuidelines;
+    private String behaviorGuidelines;
 
     /**
      * 自定义属性
      */
     private Map<String, Object> customAttributes;
+
+    /**
+     * 组织特性描述（Markdown格式）
+     * 描述工作空间的组织特性、文化和协作风格
+     */
+    private String personalityDescription;
 }

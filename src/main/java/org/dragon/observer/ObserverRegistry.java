@@ -1,16 +1,13 @@
 package org.dragon.observer;
 
+import org.dragon.observer.store.ObserverStore;
+import org.dragon.store.StoreFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
-
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.stereotype.Component;
 
 /**
  * Observer 注册中心
@@ -23,20 +20,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class ObserverRegistry {
 
-    /**
-     * Observer 注册表
-     */
-    private final Map<String, Observer> registry = new ConcurrentHashMap<>();
+    private final ObserverStore observerStore;
 
     /**
      * 默认 Observer ID
      */
     private volatile String defaultObserverId;
 
-    /**
-     * 所有 Observer 列表（用于事件监听）
-     */
-    private final List<Observer> allObservers = new CopyOnWriteArrayList<>();
+    public ObserverRegistry(StoreFactory storeFactory) {
+        this.observerStore = storeFactory.get(ObserverStore.class);
+    }
 
     /**
      * 注册 Observer
@@ -55,12 +48,11 @@ public class ObserverRegistry {
         observer.setUpdatedAt(LocalDateTime.now());
 
         // 如果是第一个 Observer，设为默认
-        if (registry.isEmpty()) {
+        if (observerStore.count() == 0) {
             defaultObserverId = observer.getId();
         }
 
-        registry.put(observer.getId(), observer);
-        allObservers.add(observer);
+        observerStore.save(observer);
         log.info("[ObserverRegistry] Registered observer: {}, workspace: {}",
                 observer.getId(), observer.getWorkspaceId());
     }
@@ -71,15 +63,17 @@ public class ObserverRegistry {
      * @param observerId Observer ID
      */
     public void unregister(String observerId) {
-        Observer removed = registry.remove(observerId);
-        if (removed != null) {
-            allObservers.remove(removed);
-            log.info("[ObserverRegistry] Unregistered observer: {}", observerId);
+        if (!observerStore.exists(observerId)) {
+            return;
+        }
 
-            // 如果删除的是默认 Observer，选择下一个
-            if (defaultObserverId != null && defaultObserverId.equals(observerId)) {
-                defaultObserverId = registry.isEmpty() ? null : registry.keySet().iterator().next();
-            }
+        observerStore.delete(observerId);
+        log.info("[ObserverRegistry] Unregistered observer: {}", observerId);
+
+        // 如果删除的是默认 Observer，选择下一个
+        if (defaultObserverId != null && defaultObserverId.equals(observerId)) {
+            List<Observer> all = observerStore.findAll();
+            defaultObserverId = all.isEmpty() ? null : all.get(0).getId();
         }
     }
 
@@ -90,7 +84,7 @@ public class ObserverRegistry {
      * @return Optional Observer
      */
     public Optional<Observer> get(String observerId) {
-        return Optional.ofNullable(registry.get(observerId));
+        return observerStore.findById(observerId);
     }
 
     /**
@@ -112,9 +106,7 @@ public class ObserverRegistry {
      * @return Optional Observer
      */
     public Optional<Observer> getByWorkspace(String workspaceId) {
-        return registry.values().stream()
-                .filter(obs -> workspaceId.equals(obs.getWorkspaceId()))
-                .findFirst();
+        return observerStore.findByWorkspaceId(workspaceId).stream().findFirst();
     }
 
     /**
@@ -123,7 +115,7 @@ public class ObserverRegistry {
      * @return Observer 列表
      */
     public List<Observer> listAll() {
-        return new CopyOnWriteArrayList<>(registry.values());
+        return observerStore.findAll();
     }
 
     /**
@@ -132,9 +124,7 @@ public class ObserverRegistry {
      * @return 活跃的 Observer 列表
      */
     public List<Observer> listActive() {
-        return registry.values().stream()
-                .filter(Observer::isActive)
-                .collect(Collectors.toList());
+        return observerStore.findActive();
     }
 
     /**
@@ -147,12 +137,12 @@ public class ObserverRegistry {
             throw new IllegalArgumentException("Observer or Observer id cannot be null");
         }
 
-        if (!registry.containsKey(observer.getId())) {
+        if (!observerStore.exists(observer.getId())) {
             throw new IllegalArgumentException("Observer not found: " + observer.getId());
         }
 
         observer.setUpdatedAt(LocalDateTime.now());
-        registry.put(observer.getId(), observer);
+        observerStore.update(observer);
         log.info("[ObserverRegistry] Updated observer: {}", observer.getId());
     }
 
@@ -162,7 +152,7 @@ public class ObserverRegistry {
      * @param observerId Observer ID
      */
     public void setDefaultObserver(String observerId) {
-        if (!registry.containsKey(observerId)) {
+        if (!observerStore.exists(observerId)) {
             throw new IllegalArgumentException("Observer not found: " + observerId);
         }
         defaultObserverId = observerId;
@@ -178,6 +168,7 @@ public class ObserverRegistry {
         get(observerId).ifPresent(observer -> {
             observer.activate();
             observer.setUpdatedAt(LocalDateTime.now());
+            observerStore.update(observer);
             log.info("[ObserverRegistry] Activated observer: {}", observerId);
         });
     }
@@ -191,6 +182,7 @@ public class ObserverRegistry {
         get(observerId).ifPresent(observer -> {
             observer.pause();
             observer.setUpdatedAt(LocalDateTime.now());
+            observerStore.update(observer);
             log.info("[ObserverRegistry] Paused observer: {}", observerId);
         });
     }
@@ -201,7 +193,7 @@ public class ObserverRegistry {
      * @return 注册的 Observer 数量
      */
     public int size() {
-        return registry.size();
+        return observerStore.count();
     }
 
     /**
@@ -211,6 +203,6 @@ public class ObserverRegistry {
      * @return 是否存在
      */
     public boolean exists(String observerId) {
-        return registry.containsKey(observerId);
+        return observerStore.exists(observerId);
     }
 }

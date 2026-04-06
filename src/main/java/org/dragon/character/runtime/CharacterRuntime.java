@@ -6,8 +6,9 @@ import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.mind.Mind;
+import org.dragon.character.mind.TraitResolutionService;
 import org.dragon.config.PromptManager;
-import org.dragon.skill.registry.SkillRegistry;
+import org.dragon.skill.runtime.SkillRegistry;
 
 import lombok.Builder;
 import lombok.Data;
@@ -68,4 +69,9 @@ public class CharacterRuntime {
      * Skill 注册中心
      */
     private SkillRegistry skillRegistry;
+
+    /**
+     * Trait 解析服务
+     */
+    private TraitResolutionService traitResolutionService;
 }

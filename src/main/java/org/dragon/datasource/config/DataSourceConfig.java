@@ -46,7 +46,7 @@ public class DataSourceConfig {
                 .baselineOnMigrate(true)
                 .cleanDisabled(false)
                 .load();
-//        flyway.clean();
+        flyway.clean();
         flyway.migrate();
         return dataSource;
     }

@@ -3,7 +3,7 @@ package org.dragon.user.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.dragon.user.dto.*;
-import org.dragon.user.security.filter.JwtAuthenticationFilter.UserPrincipal;
+import org.dragon.user.security.UserPrincipal;
 import org.dragon.user.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -57,7 +57,7 @@ public class UserController {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UserPrincipal principal) {
-        userService.logout(principal.userId());
+        userService.logout(principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success("登出成功", null));
     }
 
@@ -66,7 +66,7 @@ public class UserController {
      */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserInfo>> getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
-        UserInfo user = userService.getCurrentUser(principal.userId());
+        UserInfo user = userService.getCurrentUser(principal.getUserId());
         return ResponseEntity.ok(ApiResponse.success(user));
     }
 
@@ -77,7 +77,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserInfo>> updateCurrentUser(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestBody UpdateUserRequest request) {
-        UserInfo user = userService.updateUser(principal.userId(), request);
+        UserInfo user = userService.updateUser(principal.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success(user));
     }
 
@@ -88,7 +88,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody PasswordRequest request) {
-        userService.changePassword(principal.userId(), request);
+        userService.changePassword(principal.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success("密码修改成功", null));
     }
 

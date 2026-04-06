@@ -1,395 +1,333 @@
 package org.dragon.api.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.dragon.application.MemoryApplication;
-import org.dragon.api.dto.ApiResponse;
-import org.dragon.api.dto.PageResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.dragon.api.controller.dto.memory.*;
+import org.dragon.api.controller.dto.ApiResponse;
+import org.dragon.api.controller.dto.PageResponse;
+import org.dragon.memory.core.SourceDocumentService;
+import org.dragon.memory.core.MemoryFileService;
+import org.dragon.memory.core.MemoryChunkService;
+import org.dragon.memory.core.BindingService;
+import org.dragon.memory.core.RetrievalService;
+import org.dragon.memory.core.OperationsService;
+import org.dragon.memory.core.StatsService;
+import org.dragon.permission.checker.PermissionChecker;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
- * MemoryController 记忆模块 API
+ * Memory 模块控制器
+ * 提供 Memory 模块的所有 HTTP 接口
  *
- * <p>对应前端 /memory 页面，包含数据源、文件、片段、绑定、检索、配置等接口。
- * Base URL: /api/v1/memory
- *
- * @author zhz
+ * @author binarytom
  * @version 1.0
  */
-@Tag(name = "Memory", description = "记忆模块")
 @RestController
 @RequestMapping("/api/v1/memory")
-@RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class MemoryController {
+    private final PermissionChecker permissionChecker;
+    private final SourceDocumentService sourceDocumentService;
+    private final MemoryFileService memoryFileService;
+    private final MemoryChunkService memoryChunkService;
+    private final BindingService bindingService;
+    private final RetrievalService retrievalService;
+    private final OperationsService operationsService;
+    private final StatsService statsService;
 
-    private final MemoryApplication memoryApplication;
+    public MemoryController(PermissionChecker permissionChecker,
+                           SourceDocumentService sourceDocumentService,
+                           MemoryFileService memoryFileService,
+                           MemoryChunkService memoryChunkService,
+                           BindingService bindingService,
+                           RetrievalService retrievalService,
+                           OperationsService operationsService,
+                           StatsService statsService) {
+        this.permissionChecker = permissionChecker;
+        this.sourceDocumentService = sourceDocumentService;
+        this.memoryFileService = memoryFileService;
+        this.memoryChunkService = memoryChunkService;
+        this.bindingService = bindingService;
+        this.retrievalService = retrievalService;
+        this.operationsService = operationsService;
+        this.statsService = statsService;
+    }
 
-    // ==================== 16. Source（数据源）====================
+    // ==================== 数据源管理接口 ====================
 
     /**
-     * 16.1 获取数据源列表
-     * GET /api/v1/memory/sources
+     * 获取数据源列表
      */
-    @Operation(summary = "获取记忆数据源列表")
     @GetMapping("/sources")
-    public ApiResponse<List<Map<String, Object>>> listSources(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String sourceType,
-            @RequestParam(required = false) String status) {
-        List<Map<String, Object>> sources = memoryApplication.listSources(search, sourceType, status);
-        return ApiResponse.success(sources);
+    public ApiResponse<PageResponse<SourceDocumentDTO>> getSources(@RequestParam(required = false) String search,
+                                                                   @RequestParam(required = false) String status,
+                                                                   @RequestParam(required = false) String sourceType,
+                                                                   @RequestParam(defaultValue = "1") int page,
+                                                                   @RequestParam(defaultValue = "20") int pageSize) {
+        return ApiResponse.success(sourceDocumentService.getSources(search, status, sourceType, page, pageSize));
     }
 
     /**
-     * 16.2 添加数据源
-     * POST /api/v1/memory/sources
+     * 获取数据源详情
      */
-    @Operation(summary = "添加记忆数据源")
-    @PostMapping("/sources")
-    public ApiResponse<Map<String, Object>> addSource(@RequestBody AddSourceRequest request) {
-        Map<String, Object> source = memoryApplication.addSource(
-                request.getTitle(),
-                request.getSourceType(),
-                request.getSourcePath(),
-                request.getBackend(),
-                request.getProvider());
-        return ApiResponse.success(source);
-    }
-
-    /**
-     * 16.3 获取数据源详情（含文件列表）
-     * GET /api/v1/memory/sources/:sourceId
-     */
-    @Operation(summary = "获取数据源详情（含文件列表）")
     @GetMapping("/sources/{sourceId}")
-    public ApiResponse<Map<String, Object>> getSource(@PathVariable String sourceId) {
-        return memoryApplication.getSource(sourceId)
-                .map(ApiResponse::success)
-                .orElse(ApiResponse.error(404, "Source not found: " + sourceId));
+    public ApiResponse<SourceDocumentDTO> getSource(@PathVariable String sourceId) {
+        return ApiResponse.success(sourceDocumentService.getSource(sourceId));
     }
 
     /**
-     * 16.4 触发数据源同步
-     * POST /api/v1/memory/sources/:sourceId/sync
+     * 创建数据源
      */
-    @Operation(summary = "触发数据源同步")
-    @PostMapping("/sources/{sourceId}/sync")
-    public ApiResponse<Map<String, Object>> syncSource(@PathVariable String sourceId) {
-        Map<String, Object> result = memoryApplication.syncSource(sourceId);
-        return ApiResponse.success(result);
+    @PostMapping("/sources")
+    public ApiResponse<SourceDocumentDTO> createSource(@RequestBody CreateSourceRequest request) {
+        return ApiResponse.success(sourceDocumentService.createSource(request));
     }
 
     /**
-     * 16.5 删除数据源
-     * DELETE /api/v1/memory/sources/:sourceId
+     * 更新数据源
      */
-    @Operation(summary = "删除数据源")
+    @PutMapping("/sources/{sourceId}")
+    public ApiResponse<SourceDocumentDTO> updateSource(@PathVariable String sourceId,
+                                                       @RequestBody UpdateSourceRequest request) {
+        return ApiResponse.success(sourceDocumentService.updateSource(sourceId, request));
+    }
+
+    /**
+     * 删除数据源
+     */
     @DeleteMapping("/sources/{sourceId}")
-    public ApiResponse<Map<String, Object>> deleteSource(@PathVariable String sourceId) {
-        memoryApplication.deleteSource(sourceId);
-        return ApiResponse.success(Map.of("success", true));
+    public ApiResponse<Boolean> deleteSource(@PathVariable String sourceId) {
+        return ApiResponse.success(sourceDocumentService.deleteSource(sourceId));
     }
 
-    // ==================== 17. File（记忆文件）====================
+    /**
+     * 同步数据源
+     */
+    @PostMapping("/sources/{sourceId}/sync")
+    public ApiResponse<SyncResultDTO> syncSource(@PathVariable String sourceId) {
+        return ApiResponse.success(SyncResultDTO.builder()
+                .success(true)
+                .message(sourceDocumentService.syncSource(sourceId))
+                .build());
+    }
+
+    // ==================== 记忆文件管理接口 ====================
 
     /**
-     * 17.1 获取记忆文件列表
-     * GET /api/v1/memory/files
+     * 获取文件列表
      */
-    @Operation(summary = "获取记忆文件列表")
     @GetMapping("/files")
-    public ApiResponse<PageResponse<Map<String, Object>>> listFiles(
-            @RequestParam(required = false) String sourceId,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String syncStatus,
-            @RequestParam(required = false) String healthStatus,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize) {
-        PageResponse<Map<String, Object>> result = memoryApplication.listFiles(
-                page, pageSize, sourceId, search, syncStatus);
-        return ApiResponse.success(result);
+    public ApiResponse<PageResponse<MemoryFileDTO>> getFiles(@RequestParam(required = false) String sourceId,
+                                                             @RequestParam(defaultValue = "1") int page,
+                                                             @RequestParam(defaultValue = "20") int pageSize) {
+        return ApiResponse.success(memoryFileService.getFiles(sourceId, page, pageSize));
     }
 
     /**
-     * 17.2 获取记忆文件详情
-     * GET /api/v1/memory/files/:fileId
+     * 获取文件详情
      */
-    @Operation(summary = "获取记忆文件详情")
     @GetMapping("/files/{fileId}")
-    public ApiResponse<Map<String, Object>> getFile(@PathVariable String fileId) {
-        return memoryApplication.getFile(fileId)
-                .map(ApiResponse::success)
-                .orElse(ApiResponse.error(404, "File not found: " + fileId));
+    public ApiResponse<MemoryFileDTO> getFile(@PathVariable String fileId) {
+        return ApiResponse.success(memoryFileService.getFile(fileId));
     }
 
-    // ==================== 18. Chunk（记忆片段）====================
+    /**
+     * 获取文件的片段
+     */
+    @GetMapping("/files/{fileId}/chunks")
+    public ApiResponse<PageResponse<MemoryChunkDTO>> getFileChunks(@PathVariable String fileId,
+                                                                   @RequestParam(required = false) String indexedStatus,
+                                                                   @RequestParam(defaultValue = "1") int page,
+                                                                   @RequestParam(defaultValue = "20") int pageSize) {
+        return ApiResponse.success(memoryChunkService.getChunks(fileId, null, indexedStatus, null, null, page, pageSize));
+    }
 
     /**
-     * 18.1 获取记忆片段列表
-     * GET /api/v1/memory/chunks
+     * 同步文件
      */
-    @Operation(summary = "获取记忆片段列表")
+    @PostMapping("/files/{fileId}/sync")
+    public ApiResponse<SyncResultDTO> syncFile(@PathVariable String fileId) {
+        return ApiResponse.success(SyncResultDTO.builder()
+                .success(true)
+                .message(memoryFileService.syncFile(fileId))
+                .build());
+    }
+
+    // ==================== 记忆片段管理接口 ====================
+
+    /**
+     * 获取片段列表
+     */
     @GetMapping("/chunks")
-    public ApiResponse<PageResponse<Map<String, Object>>> listChunks(
-            @RequestParam(required = false) String fileId,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String indexedStatus,
-            @RequestParam(required = false) String tags,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize) {
-        PageResponse<Map<String, Object>> result = memoryApplication.listChunks(
-                page, pageSize, fileId, search, indexedStatus);
-        return ApiResponse.success(result);
+    public ApiResponse<PageResponse<MemoryChunkDTO>> getChunks(@RequestParam(required = false) String fileId,
+                                                               @RequestParam(required = false) String sourceId,
+                                                               @RequestParam(required = false) String indexedStatus,
+                                                               @RequestParam(required = false) String tags,
+                                                               @RequestParam(required = false) String search,
+                                                               @RequestParam(defaultValue = "1") int page,
+                                                               @RequestParam(defaultValue = "20") int pageSize) {
+        return ApiResponse.success(memoryChunkService.getChunks(fileId, sourceId, indexedStatus, tags, search, page, pageSize));
     }
 
     /**
-     * 18.2 创建记忆片段
-     * POST /api/v1/memory/chunks
+     * 获取片段详情
      */
-    @Operation(summary = "创建记忆片段")
+    @GetMapping("/chunks/{chunkId}")
+    public ApiResponse<MemoryChunkDTO> getChunk(@PathVariable String chunkId) {
+        return ApiResponse.success(memoryChunkService.getChunk(chunkId));
+    }
+
+    /**
+     * 创建片段
+     */
     @PostMapping("/chunks")
-    public ApiResponse<Map<String, Object>> createChunk(@RequestBody ChunkRequest request) {
-        Map<String, Object> chunk = memoryApplication.saveChunk(
-                null,
-                request.getFileId(),
-                request.getTitle(),
-                request.getContent(),
-                request.getSummary(),
-                request.getTags());
-        return ApiResponse.success(chunk);
+    public ApiResponse<MemoryChunkDTO> createChunk(@RequestBody CreateChunkRequest request) {
+        return ApiResponse.success(memoryChunkService.createChunk(request));
     }
 
     /**
-     * 18.2 编辑记忆片段
-     * PUT /api/v1/memory/chunks/:chunkId
+     * 更新片段
      */
-    @Operation(summary = "编辑记忆片段")
     @PutMapping("/chunks/{chunkId}")
-    public ApiResponse<Map<String, Object>> updateChunk(
-            @PathVariable String chunkId,
-            @RequestBody ChunkRequest request) {
-        Map<String, Object> chunk = memoryApplication.saveChunk(
-                chunkId,
-                request.getFileId(),
-                request.getTitle(),
-                request.getContent(),
-                request.getSummary(),
-                request.getTags());
-        return ApiResponse.success(chunk);
+    public ApiResponse<MemoryChunkDTO> updateChunk(@PathVariable String chunkId,
+                                                   @RequestBody UpdateChunkRequest request) {
+        return ApiResponse.success(memoryChunkService.updateChunk(chunkId, request));
     }
 
     /**
-     * 18.3 批量打标签
-     * POST /api/v1/memory/chunks/batch-tag
+     * 删除片段
      */
-    @Operation(summary = "批量打标签")
-    @PostMapping("/chunks/batch-tag")
-    public ApiResponse<Map<String, Object>> batchTag(@RequestBody Map<String, Object> request) {
-        // 占位：批量标签操作
-        return ApiResponse.success(Map.of("success", true));
-    }
-
-    /**
-     * 18.4 批量压缩（融合）片段
-     * POST /api/v1/memory/chunks/compress
-     */
-    @Operation(summary = "批量压缩（融合）片段")
-    @PostMapping("/chunks/compress")
-    public ApiResponse<Map<String, Object>> compressChunks(@RequestBody Map<String, Object> request) {
-        // 占位：片段融合操作
-        return ApiResponse.success(Map.of("success", true));
-    }
-
-    /**
-     * 18.5 删除记忆片段
-     * DELETE /api/v1/memory/chunks/:chunkId
-     */
-    @Operation(summary = "删除记忆片段")
     @DeleteMapping("/chunks/{chunkId}")
-    public ApiResponse<Map<String, Object>> deleteChunk(@PathVariable String chunkId) {
-        memoryApplication.deleteChunk(chunkId);
-        return ApiResponse.success(Map.of("success", true));
+    public ApiResponse<Boolean> deleteChunk(@PathVariable String chunkId) {
+        return ApiResponse.success(memoryChunkService.deleteChunk(chunkId));
     }
 
-    // ==================== 19. Binding（绑定关系）====================
+    /**
+     * 批量删除片段
+     */
+    @DeleteMapping("/chunks/batch")
+    public ApiResponse<BatchOperationResultDTO> batchDeleteChunks(@RequestBody BatchDeleteChunksRequest request) {
+        return ApiResponse.success(memoryChunkService.batchDeleteChunks(request));
+    }
 
     /**
-     * 19.1 获取绑定列表
-     * GET /api/v1/memory/bindings
+     * 批量更新片段索引状态
      */
-    @Operation(summary = "获取记忆绑定关系列表")
+    @PutMapping("/chunks/batch/index")
+    public ApiResponse<BatchOperationResultDTO> batchUpdateIndexStatus(@RequestBody BatchUpdateIndexStatusRequest request) {
+        return ApiResponse.success(memoryChunkService.batchUpdateIndexStatus(request));
+    }
+
+    // ==================== 绑定关系管理接口 ====================
+
+    /**
+     * 获取绑定列表
+     */
     @GetMapping("/bindings")
-    public ApiResponse<List<Map<String, Object>>> listBindings(
-            @RequestParam(required = false) String fileId,
-            @RequestParam(required = false) String targetType,
-            @RequestParam(required = false) String targetId) {
-        List<Map<String, Object>> bindings = memoryApplication.listBindings(fileId, targetType, targetId);
-        return ApiResponse.success(bindings);
+    public ApiResponse<PageResponse<BindingDTO>> getBindings(@RequestParam(required = false) String fileId,
+                                                             @RequestParam(required = false) String targetType,
+                                                             @RequestParam(required = false) String targetId,
+                                                             @RequestParam(defaultValue = "1") int page,
+                                                             @RequestParam(defaultValue = "20") int pageSize) {
+        return ApiResponse.success(bindingService.getBindings(fileId, targetType, targetId, page, pageSize));
     }
 
     /**
-     * 19.2 创建绑定
-     * POST /api/v1/memory/bindings
+     * 创建绑定
      */
-    @Operation(summary = "创建记忆绑定")
     @PostMapping("/bindings")
-    public ApiResponse<Map<String, Object>> createBinding(@RequestBody CreateBindingRequest request) {
-        Map<String, Object> binding = memoryApplication.createBinding(
-                request.getFileId(),
-                request.getTargetType(),
-                request.getTargetId(),
-                request.getMountType(),
-                request.getSelectedChunkIds());
-        return ApiResponse.success(binding);
+    public ApiResponse<BindingDTO> createBinding(@RequestBody CreateBindingRequest request) {
+        return ApiResponse.success(bindingService.createBinding(request));
     }
 
     /**
-     * 19.3 删除绑定
-     * DELETE /api/v1/memory/bindings/:bindingId
+     * 更新绑定
      */
-    @Operation(summary = "删除记忆绑定")
+    @PutMapping("/bindings/{bindingId}")
+    public ApiResponse<BindingDTO> updateBinding(@PathVariable String bindingId,
+                                                 @RequestBody UpdateBindingRequest request) {
+        return ApiResponse.success(bindingService.updateBinding(bindingId, request));
+    }
+
+    /**
+     * 删除绑定
+     */
     @DeleteMapping("/bindings/{bindingId}")
-    public ApiResponse<Map<String, Object>> deleteBinding(@PathVariable String bindingId) {
-        memoryApplication.deleteBinding(bindingId);
-        return ApiResponse.success(Map.of("success", true));
+    public ApiResponse<Boolean> deleteBinding(@PathVariable String bindingId) {
+        return ApiResponse.success(bindingService.deleteBinding(bindingId));
     }
 
-    // ==================== 20. Retrieval（检索）====================
+    // ==================== 检索接口 ====================
 
     /**
-     * 20.1 检索记忆
-     * POST /api/v1/memory/retrieval/search
+     * 检索记忆内容
      */
-    @Operation(summary = "向量/全文混合检索记忆")
     @PostMapping("/retrieval/search")
-    public ApiResponse<List<Map<String, Object>>> search(@RequestBody SearchRequest request) {
-        List<Map<String, Object>> results = memoryApplication.search(
-                request.getQuery(),
-                request.getScopeType(),
-                request.getScopeId(),
-                request.getTopK() != null ? request.getTopK() : 10,
-                request.getMinScore() != null ? request.getMinScore() : 0.0);
-        return ApiResponse.success(results);
-    }
-
-    // ==================== 21. Config（记忆配置）====================
-
-    /**
-     * 21.1 获取 Character 记忆配置
-     * GET /api/v1/memory/config/character/:characterId
-     */
-    @Operation(summary = "获取 Character 记忆配置")
-    @GetMapping("/config/character/{characterId}")
-    public ApiResponse<Map<String, Object>> getCharacterMemoryConfig(
-            @PathVariable String characterId) {
-        Map<String, Object> config = memoryApplication.getCharacterMemoryConfig(characterId);
-        return ApiResponse.success(config);
+    public ApiResponse<RetrievalResponseDTO> search(@RequestBody RetrievalRequestDTO request) {
+        return ApiResponse.success(retrievalService.search(request));
     }
 
     /**
-     * 21.2 更新 Character 记忆配置
-     * PUT /api/v1/memory/config/character/:characterId
+     * 检索测试
      */
-    @Operation(summary = "更新 Character 记忆配置")
-    @PutMapping("/config/character/{characterId}")
-    public ApiResponse<Map<String, Object>> updateCharacterMemoryConfig(
-            @PathVariable String characterId,
-            @RequestBody Map<String, Object> config) {
-        Map<String, Object> updated = memoryApplication.updateCharacterMemoryConfig(characterId, config);
-        return ApiResponse.success(updated);
+    @PostMapping("/retrieval/test")
+    public ApiResponse<RetrievalResponseDTO> testRetrieval(@RequestBody RetrievalRequestDTO request) {
+        return ApiResponse.success(retrievalService.testRetrieval(request));
+    }
+
+    // ==================== 运维接口 ====================
+
+    /**
+     * 获取运行时状态
+     */
+    @GetMapping("/operations/status")
+    public ApiResponse<RuntimeStatusDTO> getRuntimeStatus(@RequestParam(defaultValue = "all") String scope,
+                                                          @RequestParam(required = false) String targetId) {
+        return ApiResponse.success(operationsService.getRuntimeStatus(scope, targetId));
     }
 
     /**
-     * 21.3 获取 Workspace 记忆配置
-     * GET /api/v1/memory/config/workspace/:workspaceId
+     * 执行系统检查
      */
-    @Operation(summary = "获取 Workspace 记忆配置")
-    @GetMapping("/config/workspace/{workspaceId}")
-    public ApiResponse<Map<String, Object>> getWorkspaceMemoryConfig(
-            @PathVariable String workspaceId) {
-        Map<String, Object> config = memoryApplication.getWorkspaceMemoryConfig(workspaceId);
-        return ApiResponse.success(config);
+    @PostMapping("/operations/probe")
+    public ApiResponse<ProbeResultDTO> probe(@RequestParam(defaultValue = "all") String scope,
+                                             @RequestParam(required = false) String targetId) {
+        return ApiResponse.success(operationsService.probe(scope, targetId));
     }
 
     /**
-     * 21.4 更新 Workspace 记忆配置
-     * PUT /api/v1/memory/config/workspace/:workspaceId
+     * 重建索引
      */
-    @Operation(summary = "更新 Workspace 记忆配置")
-    @PutMapping("/config/workspace/{workspaceId}")
-    public ApiResponse<Map<String, Object>> updateWorkspaceMemoryConfig(
-            @PathVariable String workspaceId,
-            @RequestBody Map<String, Object> config) {
-        Map<String, Object> updated = memoryApplication.updateWorkspaceMemoryConfig(workspaceId, config);
-        return ApiResponse.success(updated);
+    @PostMapping("/operations/reindex")
+    public ApiResponse<SyncResultDTO> reindex(@RequestParam(defaultValue = "all") String scope,
+                                              @RequestParam(required = false) String targetId,
+                                              @RequestParam(required = false) String sourceId) {
+        return ApiResponse.success(operationsService.reindex(scope, targetId, sourceId));
     }
 
     /**
-     * 21.5 获取记忆运行时状态
-     * GET /api/v1/memory/runtime-status
+     * 清除缓存
      */
-    @Operation(summary = "获取记忆运行时状态")
-    @GetMapping("/runtime-status")
-    public ApiResponse<Map<String, Object>> getRuntimeStatus() {
-        Map<String, Object> status = memoryApplication.getRuntimeStatus();
-        return ApiResponse.success(status);
+    @PostMapping("/operations/clear-cache")
+    public ApiResponse<BatchOperationResultDTO> clearCache(@RequestParam(defaultValue = "all") String scope,
+                                                          @RequestParam(required = false) String targetId) {
+        return ApiResponse.success(operationsService.clearCache(scope, targetId));
     }
 
-    // ==================== 请求体 DTO ====================
+    // ==================== 统计接口 ====================
 
-    /** 添加数据源请求 */
-    @Data
-    public static class AddSourceRequest {
-        private String title;
-        private String sourceType;
-        private String sourcePath;
-        private String backend;
-        private String provider;
+    /**
+     * 获取全局统计信息
+     */
+    @GetMapping("/stats/overview")
+    public ApiResponse<MemoryOverviewStatsDTO> getOverviewStats() {
+        return ApiResponse.success(statsService.getOverviewStats());
     }
 
-    /** 记忆片段请求 */
-    @Data
-    public static class ChunkRequest {
-        private String fileId;
-        private String title;
-        private String content;
-        private String summary;
-        private List<String> tags;
-    }
-
-    /** 创建绑定请求 */
-    @Data
-    public static class CreateBindingRequest {
-        private String fileId;
-        private String targetType;
-        private String targetId;
-        private String mountType;
-        private List<String> selectedChunkIds;
-        private List<Map<String, Object>> mountRules;
-    }
-
-    /** 检索请求 */
-    @Data
-    public static class SearchRequest {
-        private String query;
-        private String scopeType;
-        private String scopeId;
-        private Integer topK;
-        private Double minScore;
+    /**
+     * 获取数据源统计信息
+     */
+    @GetMapping("/stats/sources")
+    public ApiResponse<SourceStatsResponseDTO> getSourceStats() {
+        return ApiResponse.success(statsService.getSourceStats());
     }
 }

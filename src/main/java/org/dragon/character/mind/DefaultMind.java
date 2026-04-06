@@ -2,10 +2,8 @@ package org.dragon.character.mind;
 
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.character.mind.memory.MemoryAccess;
-import org.dragon.skill.SkillAccess;
 import org.dragon.character.mind.tag.Tag;
 import org.dragon.character.mind.tag.TagRepository;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,16 +26,41 @@ public class DefaultMind implements Mind {
 
     private final MemoryAccess memoryAccess;
 
-    private final SkillAccess skillAccess;
+    private final TraitResolutionService traitResolutionService;
+
+    public DefaultMind(String characterId,
+                       TagRepository tagRepository,
+                       MemoryAccess memoryAccess) {
+        this(characterId, tagRepository, memoryAccess, null);
+    }
 
     public DefaultMind(String characterId,
                        TagRepository tagRepository,
                        MemoryAccess memoryAccess,
-                       SkillAccess skillAccess) {
+                       TraitResolutionService traitResolutionService) {
         this.characterId = characterId;
         this.tagRepository = tagRepository;
         this.memoryAccess = memoryAccess;
-        this.skillAccess = skillAccess;
+        this.traitResolutionService = traitResolutionService;
+    }
+
+    /**
+     * 从 trait IDs 加载 PersonalityDescriptor
+     */
+    public void loadPersonalityFromTraitIds(List<String> traitIds) {
+        if (traitResolutionService == null) {
+            log.warn("[DefaultMind] TraitResolutionService not available");
+            return;
+        }
+        if (traitIds == null || traitIds.isEmpty()) {
+            return;
+        }
+        List<PersonalityDescriptor.TraitContent> contents = traitResolutionService.resolveTraits(traitIds);
+        if (this.personality == null) {
+            this.personality = PersonalityDescriptor.builder().build();
+        }
+        this.personality.setTraits(contents);
+        log.info("[DefaultMind] Loaded {} traits for character {}", contents.size(), characterId);
     }
 
     @Override
@@ -70,11 +93,6 @@ public class DefaultMind implements Mind {
     @Override
     public MemoryAccess getMemoryAccess() {
         return memoryAccess;
-    }
-
-    @Override
-    public SkillAccess getSkillAccess() {
-        return skillAccess;
     }
 
     @Override

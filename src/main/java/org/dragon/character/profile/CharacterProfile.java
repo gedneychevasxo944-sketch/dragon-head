@@ -37,11 +37,6 @@ public class CharacterProfile {
     private List<String> workspaceIds;
 
     /**
-     * 所属 Organization ID
-     */
-    private List<String> organizationIds;
-
-    /**
      * Character 名称
      */
     private String name;
@@ -56,6 +51,16 @@ public class CharacterProfile {
      * 描述
      */
     private String description;
+
+    /**
+     * 头像 URL
+     */
+    private String avatar;
+
+    /**
+     * 角色来源
+     */
+    private String source;
 
     /**
      * 心智模块配置
@@ -78,6 +83,41 @@ public class CharacterProfile {
      */
     @Builder.Default
     private Set<String> allowedTools = new HashSet<>();
+
+    /**
+     * Trait IDs
+     */
+    private List<String> traits;
+
+    /**
+     * Trait 配置
+     */
+    private Map<String, Object> traitConfigs;
+
+    /**
+     * 技能引用
+     */
+    private List<Map<String, Object>> skills;
+
+    /**
+     * Prompt 模板
+     */
+    private String promptTemplate;
+
+    /**
+     * 默认工具列表
+     */
+    private List<String> defaultTools;
+
+    /**
+     * 是否正在运行
+     */
+    private Boolean isRunning;
+
+    /**
+     * 派驻数量
+     */
+    private Integer deployedCount;
 
     /**
      * 创建时间

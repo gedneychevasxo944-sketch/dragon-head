@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.CollaboratorService;
+import org.dragon.util.UserUtils;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkspaceLifecycleService {
 
     private final WorkspaceRegistry workspaceRegistry;
+    private final CollaboratorService collaboratorService;
 
     /**
      * 创建工作空间
@@ -36,6 +41,9 @@ public class WorkspaceLifecycleService {
         if (workspace.getId() == null || workspace.getId().isEmpty()) {
             workspace.setId(UUID.randomUUID().toString());
         }
+        if (StringUtils.isBlank(workspace.getOwner())) {
+            workspace.setOwner(UserUtils.getUserId());
+        }
         workspace.setCreatedAt(LocalDateTime.now());
         workspace.setUpdatedAt(LocalDateTime.now());
 
@@ -44,6 +52,11 @@ public class WorkspaceLifecycleService {
         }
 
         workspaceRegistry.register(workspace);
+
+        // 添加创建者为 Owner
+        Long ownerId = Long.parseLong(String.valueOf(workspace.getOwner()));
+        collaboratorService.addOwnerDirectly(ResourceType.WORKSPACE, workspace.getId(), ownerId);
+
         log.info("[WorkspaceLifecycleService] Created workspace: {}", workspace.getId());
 
         return workspace;
@@ -51,19 +64,38 @@ public class WorkspaceLifecycleService {
 
     /**
      * 更新工作空间
+     * <p>
+     * 只更新传入 workspace 中非 null 的属性，保留数据库中已存在的其他属性
      *
-     * @param workspace 工作空间
+     * @param workspace 工作空间（只更新非 null 属性）
      * @return 更新后的工作空间
      */
     public Workspace updateWorkspace(Workspace workspace) {
-        workspaceRegistry.get(workspace.getId())
+        Workspace existing = workspaceRegistry.get(workspace.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspace.getId()));
 
-        workspace.setUpdatedAt(LocalDateTime.now());
-        workspaceRegistry.update(workspace);
+        // 只更新非 null 属性
+        if (workspace.getName() != null) {
+            existing.setName(workspace.getName());
+        }
+        if (workspace.getDescription() != null) {
+            existing.setDescription(workspace.getDescription());
+        }
+        if (workspace.getStatus() != null) {
+            existing.setStatus(workspace.getStatus());
+        }
+        if (workspace.getProperties() != null) {
+            existing.setProperties(workspace.getProperties());
+        }
+        if (workspace.getPersonality() != null) {
+            existing.setPersonality(workspace.getPersonality());
+        }
+
+        existing.setUpdatedAt(LocalDateTime.now());
+        workspaceRegistry.update(existing);
         log.info("[WorkspaceLifecycleService] Updated workspace: {}", workspace.getId());
 
-        return workspace;
+        return existing;
     }
 
     /**
@@ -136,5 +168,14 @@ public class WorkspaceLifecycleService {
     public void archiveWorkspace(String workspaceId) {
         workspaceRegistry.archive(workspaceId);
         log.info("[WorkspaceLifecycleService] Archived workspace: {}", workspaceId);
+    }
+
+    /**
+     * 获取活跃工作空间数量
+     *
+     * @return 活跃工作空间数量
+     */
+    public long countActiveWorkspaces() {
+        return workspaceRegistry.listByStatus(Workspace.Status.ACTIVE).size();
     }
 }

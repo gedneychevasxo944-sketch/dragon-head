@@ -9,14 +9,14 @@ import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLog;
+import org.dragon.permission.checker.PermissionChecker;
 import org.dragon.skill.dto.SkillBindingRequest;
-import org.dragon.skill.dto.SkillBindingResponse;
-import org.dragon.skill.dto.SkillBindingUpdateRequest;
+import org.dragon.skill.dto.SkillBindingResult;
+import org.dragon.skill.dto.SkillBindingVO;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,10 +46,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/workspaces")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class WorkspaceController {
 
     private final WorkspaceApiApplication workspaceApiApplication;
+    private final PermissionChecker permissionChecker;
 
     // ==================== 5. Workspace CRUD ====================
 
@@ -67,7 +67,7 @@ public class WorkspaceController {
             @RequestParam(required = false) String teamStatus,
             @RequestParam(required = false) Boolean hasObserver) {
         PageResponse<Workspace> result = workspaceApiApplication.listWorkspaces(
-                page, pageSize, search, status, hasObserver);
+                page, pageSize, search, status, teamStatus, hasObserver);
         return ApiResponse.success(result);
     }
 
@@ -89,6 +89,7 @@ public class WorkspaceController {
     @Operation(summary = "获取 Workspace 详情")
     @GetMapping("/{workspaceId}")
     public ApiResponse<Workspace> getWorkspace(@PathVariable String workspaceId) {
+        permissionChecker.checkView("WORKSPACE", workspaceId);
         return workspaceApiApplication.getWorkspace(workspaceId)
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Workspace not found: " + workspaceId));
@@ -103,6 +104,7 @@ public class WorkspaceController {
     public ApiResponse<Workspace> updateWorkspace(
             @PathVariable String workspaceId,
             @RequestBody Workspace workspace) {
+        permissionChecker.checkEdit("WORKSPACE", workspaceId);
         Workspace updated = workspaceApiApplication.updateWorkspace(workspaceId, workspace);
         return ApiResponse.success(updated);
     }
@@ -114,6 +116,7 @@ public class WorkspaceController {
     @Operation(summary = "删除 Workspace")
     @DeleteMapping("/{workspaceId}")
     public ApiResponse<Map<String, Object>> deleteWorkspace(@PathVariable String workspaceId) {
+        permissionChecker.checkDelete("WORKSPACE", workspaceId);
         workspaceApiApplication.deleteWorkspace(workspaceId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -127,6 +130,7 @@ public class WorkspaceController {
     @Operation(summary = "获取 Workspace AI 团队成员列表")
     @GetMapping("/{workspaceId}/members")
     public ApiResponse<List<WorkspaceMember>> listMembers(@PathVariable String workspaceId) {
+        permissionChecker.checkView("WORKSPACE", workspaceId);
         List<WorkspaceMember> members = workspaceApiApplication.listMembers(workspaceId);
         return ApiResponse.success(members);
     }
@@ -151,6 +155,7 @@ public class WorkspaceController {
     public ApiResponse<WorkspaceMember> addMember(
             @PathVariable String workspaceId,
             @RequestBody AddMemberRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         WorkspaceMember member = workspaceApiApplication.addMember(
                 workspaceId,
                 request.getCharacterId(),
@@ -170,6 +175,7 @@ public class WorkspaceController {
     public ApiResponse<Map<String, Object>> removeMember(
             @PathVariable String workspaceId,
             @PathVariable String memberId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.removeMember(workspaceId, memberId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -182,9 +188,9 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace 已绑定技能列表")
     @GetMapping("/{workspaceId}/skills")
-    public ApiResponse<List<SkillBindingResponse>> listWorkspaceSkills(
+    public ApiResponse<List<SkillBindingVO>> listWorkspaceSkills(
             @PathVariable String workspaceId) {
-        List<SkillBindingResponse> list = workspaceApiApplication.listWorkspaceSkills(workspaceId);
+        List<SkillBindingVO> list = workspaceApiApplication.listWorkspaceSkills(workspaceId);
         return ApiResponse.success(list);
     }
 
@@ -194,11 +200,11 @@ public class WorkspaceController {
      */
     @Operation(summary = "为 Workspace 绑定技能")
     @PostMapping("/{workspaceId}/skills")
-    public ApiResponse<SkillBindingResponse> bindSkill(
+    public ApiResponse<SkillBindingResult> bindSkill(
             @PathVariable String workspaceId,
             @RequestBody SkillBindingRequest request) {
-        SkillBindingResponse response = workspaceApiApplication.bindSkill(workspaceId, request);
-        return ApiResponse.success(response);
+        SkillBindingResult result = workspaceApiApplication.bindSkill(workspaceId, request);
+        return ApiResponse.success(result);
     }
 
     /**
@@ -209,7 +215,7 @@ public class WorkspaceController {
     @DeleteMapping("/{workspaceId}/skills/{skillId}")
     public ApiResponse<Map<String, Object>> unbindSkill(
             @PathVariable String workspaceId,
-            @PathVariable Long skillId) {
+            @PathVariable String skillId) {
         workspaceApiApplication.unbindSkill(workspaceId, skillId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -220,12 +226,13 @@ public class WorkspaceController {
      */
     @Operation(summary = "更新 Workspace 技能绑定配置")
     @PutMapping("/{workspaceId}/skills/{skillId}")
-    public ApiResponse<SkillBindingResponse> updateSkillBinding(
+    public ApiResponse<Map<String, Object>> updateSkillBinding(
             @PathVariable String workspaceId,
-            @PathVariable Long skillId,
-            @RequestBody SkillBindingUpdateRequest request) {
-        SkillBindingResponse response = workspaceApiApplication.updateSkillBinding(workspaceId, skillId, request);
-        return ApiResponse.success(response);
+            @PathVariable String skillId,
+            @RequestBody UpdateSkillBindingRequest request) {
+        workspaceApiApplication.updateSkillBinding(workspaceId, skillId,
+                request.getVersionType(), request.getFixedVersion());
+        return ApiResponse.success(Map.of("success", true));
     }
 
     // ==================== 8. Memory（记忆配置）====================
@@ -261,6 +268,7 @@ public class WorkspaceController {
     @Operation(summary = "获取 Workspace Observer 绑定信息")
     @GetMapping("/{workspaceId}/observer")
     public ApiResponse<Map<String, Object>> getObserverInfo(@PathVariable String workspaceId) {
+        permissionChecker.checkView("WORKSPACE", workspaceId);
         Map<String, Object> info = workspaceApiApplication.getObserverInfo(workspaceId);
         return ApiResponse.success(info);
     }
@@ -274,6 +282,7 @@ public class WorkspaceController {
     public ApiResponse<Map<String, Object>> bindObserver(
             @PathVariable String workspaceId,
             @RequestBody BindObserverRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.bindObserver(workspaceId, request.getObserverId(),
                 request.getEvaluationMode(), request.getAutoOptimization());
         return ApiResponse.success(Map.of("success", true));
@@ -286,6 +295,7 @@ public class WorkspaceController {
     @Operation(summary = "解绑 Workspace Observer")
     @DeleteMapping("/{workspaceId}/observer")
     public ApiResponse<Map<String, Object>> unbindObserver(@PathVariable String workspaceId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.unbindObserver(workspaceId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -412,6 +422,7 @@ public class WorkspaceController {
     @Operation(summary = "获取 Workspace 权限成员列表")
     @GetMapping("/{workspaceId}/permissions")
     public ApiResponse<List<Map<String, Object>>> listPermissions(@PathVariable String workspaceId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         List<Map<String, Object>> permissions = workspaceApiApplication.listPermissions(workspaceId);
         return ApiResponse.success(permissions);
     }
@@ -425,6 +436,7 @@ public class WorkspaceController {
     public ApiResponse<Map<String, Object>> addPermission(
             @PathVariable String workspaceId,
             @RequestBody PermissionRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.addPermission(workspaceId, request.getUserId(), request.getRole());
         return ApiResponse.success(Map.of("success", true));
     }
@@ -439,6 +451,7 @@ public class WorkspaceController {
             @PathVariable String workspaceId,
             @PathVariable String userId,
             @RequestBody PermissionRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.updatePermission(workspaceId, userId, request.getRole());
         return ApiResponse.success(Map.of("success", true));
     }
@@ -452,6 +465,7 @@ public class WorkspaceController {
     public ApiResponse<Map<String, Object>> removePermission(
             @PathVariable String workspaceId,
             @PathVariable String userId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.removePermission(workspaceId, userId);
         return ApiResponse.success(Map.of("success", true));
     }
@@ -481,5 +495,12 @@ public class WorkspaceController {
     public static class PermissionRequest {
         private String userId;
         private String role;
+    }
+
+    /** 更新技能绑定配置请求 */
+    @Data
+    public static class UpdateSkillBindingRequest {
+        private String versionType;
+        private Integer fixedVersion;
     }
 }

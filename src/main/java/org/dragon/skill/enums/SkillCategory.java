@@ -1,22 +1,33 @@
 package org.dragon.skill.enums;
 
+import io.ebean.annotation.DbEnumValue;
+import lombok.RequiredArgsConstructor;
+
 /**
- * 技能分类枚举。
- * 用于区分不同场景下的技能。
- *
- * @since 1.0
+ * Skill 分类。{@link #BUILTIN} 为系统保留类型，不允许用户创建同类型 Skill。
  */
+@RequiredArgsConstructor
 public enum SkillCategory {
-    /** 通用技能 */
-    GENERAL,
-    /** 文件操作类技能 */
-    FILE_OPERATION,
-    /** 网络请求类技能 */
-    NETWORK,
-    /** 数据处理类技能 */
-    DATA_PROCESSING,
-    /** 代码执行类技能 */
-    CODE_EXECUTION,
-    /** 系统管理类技能 */
-    SYSTEM_ADMIN
+
+    BUILTIN("builtin"),
+    DEVELOPMENT("development"),
+    DEPLOYMENT("deployment"),
+    ANALYSIS("analysis"),
+    UTILITY("utility"),
+    INTEGRATION("integration"),
+    OTHER("other");
+
+    private final String value;
+
+    @DbEnumValue
+    public String getValue() { return value; }
+
+    public static SkillCategory fromValue(String value) {
+        if (value == null) return null;
+        for (SkillCategory c : values()) {
+            if (c.value.equals(value)) return c;
+        }
+        return null;
+    }
 }
+

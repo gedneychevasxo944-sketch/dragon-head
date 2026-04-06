@@ -5,11 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLog;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.service.PermissionService;
 import org.dragon.skill.dto.SkillBindingRequest;
-import org.dragon.skill.dto.SkillBindingResponse;
-import org.dragon.skill.dto.SkillBindingUpdateRequest;
+import org.dragon.skill.dto.SkillBindingResult;
+import org.dragon.skill.dto.SkillBindingVO;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
+import org.dragon.util.UserUtils;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceApplication;
 import org.dragon.workspace.WorkspaceApplicationProvider;
@@ -44,6 +47,7 @@ public class WorkspaceApiApplication {
     private final WorkspaceApplicationProvider workspaceApplicationProvider;
     private final WorkspaceLifecycleService workspaceLifecycleService;
     private final WorkspaceMemberManagementService memberManagementService;
+    private final PermissionService permissionService;
 
     private WorkspaceApplication app(String workspaceId) {
         return workspaceApplicationProvider.getApplication(workspaceId);
@@ -58,11 +62,12 @@ public class WorkspaceApiApplication {
      * @param pageSize    每页数量
      * @param search      搜索关键词
      * @param status      状态筛选
+     * @param teamStatus  团队状态筛选 (complete/incomplete/not_initialized)
      * @param hasObserver 是否有 Observer
      * @return 分页结果
      */
     public PageResponse<Workspace> listWorkspaces(int page, int pageSize, String search,
-                                                  String status, Boolean hasObserver) {
+                                                  String status, String teamStatus, Boolean hasObserver) {
         List<Workspace> all;
         if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
             try {
@@ -75,12 +80,21 @@ public class WorkspaceApiApplication {
             all = workspaceLifecycleService.listWorkspaces();
         }
 
+        // 按用户可见性过滤
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.WORKSPACE, userId);
+
         List<Workspace> filtered = all.stream()
                 .filter(w -> {
+                    // search 筛选
                     if (search != null && !search.isBlank()) {
                         String s = search.toLowerCase();
                         boolean nameMatch = w.getName() != null && w.getName().toLowerCase().contains(s);
                         if (!nameMatch) return false;
+                    }
+                    // 可见性过滤
+                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(w.getId())) {
+                        return false;
                     }
                     return true;
                 })
@@ -191,30 +205,30 @@ public class WorkspaceApiApplication {
     /**
      * 获取已绑定技能列表。
      */
-    public List<SkillBindingResponse> listWorkspaceSkills(String workspaceId) {
-        return app(workspaceId).listWorkspaceSkills(Long.parseLong(workspaceId));
+    public List<SkillBindingVO> listWorkspaceSkills(String workspaceId) {
+        return app(workspaceId).listWorkspaceSkills(workspaceId);
     }
 
     /**
      * 绑定技能。
      */
-    public SkillBindingResponse bindSkill(String workspaceId, SkillBindingRequest request) {
-        return app(workspaceId).bindSkill(Long.parseLong(workspaceId), request);
+    public SkillBindingResult bindSkill(String workspaceId, SkillBindingRequest request) {
+        return app(workspaceId).bindSkill(workspaceId, request);
     }
 
     /**
      * 解绑技能。
      */
-    public void unbindSkill(String workspaceId, Long skillId) {
-        app(workspaceId).unbindSkill(Long.parseLong(workspaceId), skillId);
+    public void unbindSkill(String workspaceId, String skillId) {
+        app(workspaceId).unbindSkill(workspaceId, skillId);
     }
 
     /**
      * 更新技能绑定配置。
      */
-    public SkillBindingResponse updateSkillBinding(String workspaceId, Long skillId,
-                                                   SkillBindingUpdateRequest request) {
-        return app(workspaceId).updateSkillBinding(Long.parseLong(workspaceId), skillId, request);
+    public void updateSkillBinding(String workspaceId, String skillId,
+                                   String versionType, Integer fixedVersion) {
+        app(workspaceId).updateSkillBinding(workspaceId, skillId, versionType, fixedVersion);
     }
 
     // ==================== 记忆配置 ====================

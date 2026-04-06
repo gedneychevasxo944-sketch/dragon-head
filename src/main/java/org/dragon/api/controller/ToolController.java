@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.application.ToolApplication;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,10 +32,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/tools")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
 public class ToolController {
 
     private final ToolApplication toolApplication;
+    private final PermissionChecker permissionChecker;
 
     // ==================== 15. Tool CRUD ====================
 
@@ -53,7 +53,8 @@ public class ToolController {
             @RequestParam(required = false) String toolType,
             @RequestParam(required = false) String runtimeStatus,
             @RequestParam(required = false) String category) {
-        PageResponse<Map<String, Object>> result = toolApplication.listTools(page, pageSize, search);
+        PageResponse<Map<String, Object>> result = toolApplication.listTools(
+                page, pageSize, search, visibility, toolType, runtimeStatus, category);
         return ApiResponse.success(result);
     }
 
@@ -64,8 +65,12 @@ public class ToolController {
     @Operation(summary = "创建工具")
     @PostMapping
     public ApiResponse<Map<String, Object>> createTool(@RequestBody Map<String, Object> toolData) {
-        // 占位：当前工具系统为运行时注册，不支持持久化创建
-        return ApiResponse.error(501, "Tool creation via API not yet implemented. Tools are registered at runtime.");
+        // 获取工具名称进行权限检查
+        Map<String, Object> result = toolApplication.createTool(toolData);
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ApiResponse.success(result);
+        }
+        return ApiResponse.error(500, (String) result.get("error"));
     }
 
     /**
@@ -75,6 +80,7 @@ public class ToolController {
     @Operation(summary = "获取工具详情")
     @GetMapping("/{id}")
     public ApiResponse<Map<String, Object>> getTool(@PathVariable String id) {
+        permissionChecker.checkView("TOOL", id);
         return toolApplication.getTool(id)
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Tool not found: " + id));
@@ -89,7 +95,12 @@ public class ToolController {
     public ApiResponse<Map<String, Object>> updateTool(
             @PathVariable String id,
             @RequestBody Map<String, Object> toolData) {
-        return ApiResponse.error(501, "Tool update via API not yet implemented.");
+        permissionChecker.checkEdit("TOOL", id);
+        Map<String, Object> result = toolApplication.updateTool(id, toolData);
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ApiResponse.success(result);
+        }
+        return ApiResponse.error(500, (String) result.get("error"));
     }
 
     /**
@@ -101,6 +112,7 @@ public class ToolController {
     public ApiResponse<Map<String, Object>> publishTool(
             @PathVariable String id,
             @RequestBody Map<String, Object> publishData) {
+        permissionChecker.checkPermission("TOOL", id, "PUBLISH");
         return ApiResponse.error(501, "Tool version publishing not yet implemented.");
     }
 
@@ -111,6 +123,11 @@ public class ToolController {
     @Operation(summary = "删除工具")
     @DeleteMapping("/{id}")
     public ApiResponse<Map<String, Object>> deleteTool(@PathVariable String id) {
-        return ApiResponse.error(501, "Tool deletion via API not yet implemented.");
+        permissionChecker.checkDelete("TOOL", id);
+        Map<String, Object> result = toolApplication.deleteTool(id);
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ApiResponse.success(result);
+        }
+        return ApiResponse.error(500, (String) result.get("error"));
     }
 }

@@ -1,529 +1,711 @@
 package org.dragon.skill.service;
 
+import org.dragon.character.store.CharacterStore;
+import org.dragon.skill.actionlog.BindCharacterDetail;
+import org.dragon.skill.actionlog.BindWorkspaceDetail;
+import org.dragon.skill.actionlog.BindCharacterWorkspaceDetail;
+import org.dragon.skill.actionlog.UnbindDetail;
+import org.dragon.skill.actionlog.BindingUpdateDetail;
+import org.dragon.skill.actionlog.SkillActionLogService;
+import org.dragon.skill.domain.SkillBindingDO;
+import org.dragon.skill.domain.SkillDO;
 import org.dragon.skill.dto.SkillBindingRequest;
-import org.dragon.skill.dto.SkillBindingResponse;
-import org.dragon.skill.dto.SkillBindingUpdateRequest;
-import org.dragon.skill.entity.SkillBindingEntity;
-import org.dragon.skill.entity.SkillEntity;
-import org.dragon.skill.enums.BindType;
-import org.dragon.skill.enums.SkillVisibility;
+import org.dragon.skill.dto.SkillBindingResult;
+import org.dragon.skill.dto.SkillBindingVO;
+import org.dragon.skill.enums.BindingType;
+import org.dragon.skill.enums.SkillActionType;
+import org.dragon.skill.enums.SkillStatus;
+import org.dragon.skill.enums.VersionType;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillValidationException;
-import org.dragon.skill.registry.SkillRegistry;
 import org.dragon.skill.store.SkillBindingStore;
 import org.dragon.skill.store.SkillStore;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.dragon.store.StoreFactory;
+import org.dragon.util.bean.UserInfo;
+import org.dragon.workspace.store.WorkspaceStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 /**
- * Skill 统一绑定管理服务。
+ * Skill 绑定核心服务。
  *
- * 职责：
- * 1. workspace 圈选/取消圈选 skill
- * 2. character 绑定/取消绑定 skill
- * 3. 管理版本策略（useLatest / pinnedVersion）
- * 4. skill 发布新版本时，更新 useLatest=true 的关联记录
- * 5. 查询绑定关系列表
+ * <p>负责 Character / Workspace / Character+Workspace 三种绑定关系的增删查逻辑，
+ * 不暴露 HTTP 接口，由 CharacterService / WorkspaceService 调用。
  *
- * @since 1.0
+ * <p>可用 skill 并集语义：
+ * <pre>
+ * 可用 skill = 关系一（Character 自有）
+ *            ∪ 关系二（Workspace 公共）
+ *            ∪ 关系三（Character@Workspace 专属）
+ * </pre>
+ *
+ * <p>版本解析规则：
+ * <ul>
+ *   <li>{@code versionType = 'latest'}：运行时查询 skills 表，取 status='active' 的最大 version</li>
+ *   <li>{@code versionType = 'fixed'}：直接使用 fixedVersion 定位具体版本记录</li>
+ * </ul>
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
+@Transactional(rollbackFor = Exception.class)
 public class SkillBindingService {
 
-    private final SkillBindingStore skillBindingStore;
-    private final SkillStore skillStore;
-    private final SkillLoaderService loaderService;
-    private final SkillRegistry skillRegistry;
+    @Autowired private StoreFactory storeFactory;
+    @Autowired private SkillBindingStore skillBindingStore;
+    @Autowired private SkillStore        skillStore;
+    @Autowired private SkillActionLogService actionLogService;
 
-    // ==================== Workspace 操作 ====================
+    // ── 绑定 ──────────────────────────────────────────────────────────
 
     /**
-     * Workspace 圈选一个 Skill。
+     * 绑定 Skill（Character 自有）。
+     *
+     * @param characterId Character 主键
+     * @param request    绑定请求（skillId、versionType、fixedVersion）
+     * @param user       操作者用户信息
+     * @return 绑定结果
      */
-    public SkillBindingResponse bindWorkspaceSkill(Long workspaceId, SkillBindingRequest request) {
-        return bindInternal(
-                BindType.WORKSPACE,
-                workspaceId,
-                null,
-                request.getSkillId(),
-                request.getUseLatest(),
-                request.getPinnedVersion(),
-                () -> skillBindingStore.bindingExists(request.getSkillId(), BindType.WORKSPACE, workspaceId, null, false),
-                "该 Skill 已在当前 workspace 中"
-        );
+    public SkillBindingResult bindToCharacter(String characterId,
+                                              SkillBindingRequest request, UserInfo user) {
+        request.setBindingType("character");
+        request.setCharacterId(characterId);
+        request.setWorkspaceId(null);
+        return doBindCharacter(request, user);
     }
 
     /**
-     * Workspace 取消圈选一个 Skill。
+     * 绑定 Skill 到 Workspace（公共 skill 池）。
+     *
+     * @param workspaceId Workspace 主键
+     * @param request    绑定请求（skillId、versionType、fixedVersion）
+     * @param user       操作者用户信息
+     * @return 绑定结果
      */
-    public void unbindWorkspaceSkill(Long workspaceId, Long skillId) {
-        unbindInternal(
-                BindType.WORKSPACE,
-                workspaceId,
-                null,
-                skillId,
-                () -> skillBindingStore.findBinding(BindType.WORKSPACE, workspaceId, null, skillId, false),
-                "该 Skill 未在当前 workspace 中圈选"
-        );
+    public SkillBindingResult bindToWorkspace(String workspaceId,
+                                               SkillBindingRequest request, UserInfo user) {
+        request.setBindingType("workspace");
+        request.setCharacterId(null);
+        request.setWorkspaceId(workspaceId);
+        return doBindWorkspace(request, user);
     }
 
     /**
-     * 更新 Workspace Skill 关联配置。
+     * 绑定 Skill（Character 在特定 Workspace 下的专属 skill）。
+     *
+     * @param characterId Character 主键
+     * @param workspaceId Workspace 主键
+     * @param request    绑定请求（skillId、versionType、fixedVersion）
+     * @param user       操作者用户信息
+     * @return 绑定结果
      */
-    public SkillBindingResponse updateWorkspaceBinding(Long workspaceId, Long skillId, SkillBindingUpdateRequest request) {
-        return updateBindingInternal(
-                BindType.WORKSPACE,
-                workspaceId,
-                null,
-                skillId,
-                request,
-                () -> skillBindingStore.findBinding(BindType.WORKSPACE, workspaceId, null, skillId, false),
-                "该 Skill 未在当前 workspace 中圈选",
-                entity -> toSkillBindingResponse(entity, entity.getSkill())
-        );
+    public SkillBindingResult bindToCharacterInWorkspace(String characterId,
+                                                         String workspaceId,
+                                                         SkillBindingRequest request, UserInfo user) {
+        request.setBindingType("character_workspace");
+        request.setCharacterId(characterId);
+        request.setWorkspaceId(workspaceId);
+        return doBindCharacterWorkspace(request, user);
     }
 
+    // ── 解绑 ──────────────────────────────────────────────────────────
+
     /**
-     * 查询 workspace 已圈选的所有 Skill。
+     * 按绑定记录主键解绑（通用，三种类型均适用）。
+     *
+     * @param bindingId 绑定记录物理主键
+     * @param user     操作者用户信息
      */
-    public List<SkillBindingResponse> listWorkspaceSkills(Long workspaceId) {
-        return skillBindingStore.findEnabledBindings(BindType.WORKSPACE, workspaceId, null).stream()
-                .map(entity -> toSkillBindingResponse(entity, entity.getSkill()))
-                .collect(Collectors.toList());
+    public void unbind(Long bindingId, UserInfo user) {
+        SkillBindingDO binding = skillBindingStore.findById(bindingId)
+                .orElseThrow(() -> new SkillNotFoundException("binding#" + bindingId));
+        skillBindingStore.delete(bindingId);
+
+        // 记录操作日志
+        SkillDO skill = skillStore.findLatestBySkillId(binding.getSkillId()).orElse(null);
+        String skillName = skill != null ? skill.getName() : binding.getSkillId();
+        UnbindDetail detail = new UnbindDetail(
+                binding.getBindingType() != null ? binding.getBindingType().getValue() : null,
+                binding.getCharacterId(), null,
+                binding.getWorkspaceId(), null);
+        actionLogService.log(binding.getSkillId(), skillName, SkillActionType.UNBIND,
+                parseUserId(user.getUserId()), user.getUsername(), skill != null ? skill.getVersion() : null, detail);
     }
 
-    /**
-     * Skill 发布新版本后，更新所有 useLatest=true 的 workspace 关联记录。
-     */
-    public void onSkillVersionUpdatedForWorkspace(Long skillId, Integer newVersion) {
-        hotUpdateInternal(BindType.WORKSPACE, skillId, newVersion);
-    }
+    // ── 按 ID 查找后解绑（workspaceId + skillId）──────────────────────
 
     /**
-     * 查询圈选了指定 skill 的所有 workspaceId。
+     * 解绑 Workspace 下的 Skill（通过 workspaceId + skillId 查找后删除）。
+     *
+     * @param workspaceId Workspace 主键
+     * @param skillId    Skill UUID
+     * @param user       操作者用户信息
      */
-    public List<Long> getAffectedWorkspaces(Long skillId) {
-        return skillBindingStore.findWorkspaceIdsBySkillId(skillId);
-    }
-
-    // ==================== Character 操作 ====================
-
-    /**
-     * Character 绑定一个 Skill。
-     * 支持 CHARACTER（全workspace）或 CHARACTER_WORKSPACE（指定workspace）两种类型。
-     */
-    public SkillBindingResponse bindCharacterSkill(String characterId, Long workspaceId,
-                                                      SkillBindingRequest request) {
-        BindType bindType = request.getWorkspaceId() != null ? BindType.CHARACTER_WORKSPACE : BindType.CHARACTER;
-        boolean globalOnly = bindType == BindType.CHARACTER;
-
-        return bindInternal(
-                bindType,
-                workspaceId,
-                characterId,
-                request.getSkillId(),
-                request.getUseLatest(),
-                request.getPinnedVersion(),
-                () -> skillBindingStore.bindingExists(request.getSkillId(), bindType, workspaceId, characterId, globalOnly),
-                "该 Skill 已在当前 character 中绑定"
-        );
-    }
-
-    /**
-     * Character 取消绑定一个 Skill。
-     */
-    public void unbindCharacterSkill(String characterId, Long workspaceId, Long skillId) {
-        BindType bindType = workspaceId != null ? BindType.CHARACTER_WORKSPACE : BindType.CHARACTER;
-        boolean globalOnly = bindType == BindType.CHARACTER;
-
-        unbindInternal(
-                bindType,
-                workspaceId,
-                characterId,
-                skillId,
-                () -> skillBindingStore.findBinding(bindType, workspaceId, characterId, skillId, globalOnly),
-                globalOnly ? "该 Skill 未在当前 character 全局绑定下" : "该 Skill 未在当前 character+workspace 下绑定"
-        );
-    }
-
-    /**
-     * 更新 Character Skill 关联配置。
-     */
-    public SkillBindingResponse updateCharacterBinding(String characterId, Long workspaceId,
-                                                        Long skillId, SkillBindingUpdateRequest request) {
-        BindType bindType = workspaceId != null ? BindType.CHARACTER_WORKSPACE : BindType.CHARACTER;
-        boolean globalOnly = bindType == BindType.CHARACTER;
-
-        return updateBindingInternal(
-                bindType,
-                workspaceId,
-                characterId,
-                skillId,
-                request,
-                () -> skillBindingStore.findBinding(bindType, workspaceId, characterId, skillId, globalOnly),
-                globalOnly ? "该 Skill 未在当前 character 全局绑定下" : "该 Skill 未在当前 character+workspace 下绑定",
-                entity -> toSkillBindingResponse(entity, entity.getSkill())
-        );
-    }
-
-    /**
-     * 查询 character 绑定的所有 Skill。
-     */
-    public List<SkillBindingResponse> listCharacterSkills(String characterId) {
-        return skillBindingStore.findEnabledBindings(null, null, characterId).stream()
-                .map(entity -> toSkillBindingResponse(entity, entity.getSkill()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 获取 character 在特定 workspace 下的有效技能（合并优先级）。
-     * 用于加载到运行时。
-     */
-    public List<SkillBindingResponse> getEffectiveSkills(String characterId, Long workspaceId) {
-        return skillBindingStore.resolveEffectiveBinds(characterId, workspaceId).stream()
-                .map(entity -> toSkillBindingResponse(entity, entity.getSkill()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Skill 发布新版本后，更新所有 useLatest=true 的 character 关联记录。
-     */
-    public void onSkillVersionUpdatedForCharacter(Long skillId, Integer newVersion) {
-        hotUpdateInternal(BindType.CHARACTER, skillId, newVersion);
-    }
-
-    // ==================== 内部统一方法 ====================
-
-    /**
-     * 统一绑定入口。
-     */
-    private SkillBindingResponse bindInternal(BindType bindType, Long workspaceId, String characterId,
-                               Long skillId, Boolean useLatest, Integer pinnedVersion,
-                               java.util.function.Supplier<Boolean> existsChecker, String existsErrorMsg) {
-        // 1. 校验 skill
-        SkillEntity skill = validateSkill(skillId, bindType);
-
-        // 2. 检查是否已存在
-        if (existsChecker.get()) {
-            throw new SkillValidationException(existsErrorMsg);
+    public void unbindWorkspaceSkill(String workspaceId, String skillId, UserInfo user) {
+        SkillBindingDO binding = findBindingByWorkspaceAndSkill(workspaceId, skillId);
+        if (binding != null) {
+            SkillDO skill = skillStore.findLatestBySkillId(skillId).orElse(null);
+            String skillName = skill != null ? skill.getName() : skillId;
+            String workspaceName = getWorkspaceName(workspaceId);
+            UnbindDetail detail = new UnbindDetail("workspace", null, null, workspaceId, workspaceName);
+            actionLogService.log(skillId, skillName, SkillActionType.UNBIND,
+                    parseUserId(user.getUserId()), user.getUsername(), skill != null ? skill.getVersion() : null, detail);
+            skillBindingStore.delete(binding.getId());
         }
-
-        // 3. 确定版本
-        int resolvedVersion = resolvePinnedVersion(skill, useLatest, pinnedVersion);
-
-        // 4. 构建并保存实体
-        SkillBindingEntity entity = buildBindingEntity(skill, bindType, workspaceId, characterId, resolvedVersion, useLatest);
-        entity = skillBindingStore.save(entity);
-
-        // 5. 加载
-        loadSkill(skill, workspaceId, characterId, bindType, resolvedVersion);
-
-        // 6. 日志
-        logBindSuccess(bindType, workspaceId, characterId, skill.getId(), resolvedVersion, useLatest);
-
-        return toSkillBindingResponse(entity, skill);
     }
 
     /**
-     * 统一取消绑定入口。
+     * 解绑 Character 下的 Skill（通过 characterId + skillId 查找后删除）。
+     *
+     * @param characterId Character 主键
+     * @param skillId    Skill UUID
+     * @param user       操作者用户信息
      */
-    private void unbindInternal(BindType bindType, Long workspaceId, String characterId, Long skillId,
-                                java.util.function.Supplier<java.util.Optional<SkillBindingEntity>> finder, String notFoundErrorMsg) {
-        SkillBindingEntity entity = finder.get()
-                .orElseThrow(() -> new SkillNotFoundException(notFoundErrorMsg));
-
-        skillBindingStore.delete(entity.getId());
-        unregister(entity.getSkill().getName(), workspaceId, characterId, bindType);
-
-        logUnbindSuccess(bindType, workspaceId, characterId, skillId);
-    }
-
-    /**
-     * 统一更新绑定配置入口。
-     */
-    private <T> T updateBindingInternal(BindType bindType, Long workspaceId, String characterId, Long skillId,
-                                        Object request,
-                                        java.util.function.Supplier<java.util.Optional<SkillBindingEntity>> finder, String notFoundErrorMsg,
-                                        Function<SkillBindingEntity, T> responseConverter) {
-        SkillBindingEntity entity = finder.get()
-                .orElseThrow(() -> new SkillNotFoundException(notFoundErrorMsg));
-
-        boolean needReload = updateVersionAndEnabled(entity, entity.getSkill(), request, workspaceId, characterId, bindType);
-        entity = skillBindingStore.update(entity);
-
-        if (needReload) {
-            reloadSkill(entity.getSkill(), workspaceId, characterId, bindType);
+    public void unbindCharacterSkill(String characterId, String skillId, UserInfo user) {
+        SkillBindingDO binding = findBindingByCharacterAndSkill(characterId, skillId);
+        if (binding != null) {
+            SkillDO skill = skillStore.findLatestBySkillId(skillId).orElse(null);
+            String skillName = skill != null ? skill.getName() : skillId;
+            String characterName = getCharacterName(characterId);
+            UnbindDetail detail = new UnbindDetail("character", characterId, characterName, null, null);
+            actionLogService.log(skillId, skillName, SkillActionType.UNBIND,
+                    parseUserId(user.getUserId()), user.getUsername(), skill != null ? skill.getVersion() : null, detail);
+            skillBindingStore.delete(binding.getId());
         }
-
-        return responseConverter.apply(entity);
     }
 
     /**
-     * 统一热更新入口。
+     * 解绑 Character 在特定 Workspace 下的专属 Skill（通过 characterId + workspaceId + skillId 查找后删除）。
+     *
+     * @param characterId Character 主键
+     * @param workspaceId Workspace 主键
+     * @param skillId    Skill UUID
+     * @param user       操作者用户信息
      */
-    private void hotUpdateInternal(BindType bindType, Long skillId, Integer newVersion) {
-        // 1. 更新 pinnedVersion
-        skillBindingStore.updatePinnedVersionForLatestFollowers(skillId, newVersion);
-
-        // 2. 过滤订阅者
-        List<SkillBindingEntity> followers = skillBindingStore.findAllUseLatestBySkillId(skillId).stream()
-                .filter(bind -> bindType == BindType.WORKSPACE
-                        ? bind.getBindType() == BindType.WORKSPACE
-                        : (bind.getBindType() == BindType.CHARACTER || bind.getBindType() == BindType.CHARACTER_WORKSPACE))
-                .toList();
-
-        if (followers.isEmpty()) {
-            log.info("Skill [{}] 无 useLatest=true 的 {} 订阅，跳过热更新", skillId, bindType);
-            return;
+    public void unbindCharacterWorkspaceSkill(String characterId, String workspaceId, String skillId, UserInfo user) {
+        SkillBindingDO binding = findBindingByCharacterWorkspaceAndSkill(characterId, workspaceId, skillId);
+        if (binding != null) {
+            SkillDO skill = skillStore.findLatestBySkillId(skillId).orElse(null);
+            String skillName = skill != null ? skill.getName() : skillId;
+            String characterName = getCharacterName(characterId);
+            String workspaceName = getWorkspaceName(workspaceId);
+            UnbindDetail detail = new UnbindDetail("character_workspace", characterId, characterName, workspaceId, workspaceName);
+            actionLogService.log(skillId, skillName, SkillActionType.UNBIND,
+                    parseUserId(user.getUserId()), user.getUsername(), skill != null ? skill.getVersion() : null, detail);
+            skillBindingStore.delete(binding.getId());
         }
+    }
 
-        log.info("Skill [{}] 新版本 {} 触发热更新，影响 {} 个 {}", skillId, newVersion, followers.size(), bindType);
+    // ── 按 ID 查找后更新绑定策略 ──────────────────────────────────────
 
-        // 3. 执行热更新
-        SkillEntity skill = skillStore.findById(skillId).orElse(null);
-        if (skill == null) return;
+    /**
+     * 更新 Workspace 绑定策略（通过 workspaceId + skillId 查找后更新）。
+     *
+     * @param workspaceId  Workspace 主键
+     * @param skillId     Skill 业务 UUID
+     * @param versionType 版本策略（latest/fixed）
+     * @param fixedVersion 固定版本号（versionType=fixed 时必填）
+     * @param user       操作者用户信息
+     */
+    public void updateWorkspaceBinding(String workspaceId, String skillId,
+                                       String versionType, Integer fixedVersion, UserInfo user) {
+        SkillBindingDO binding = findBindingByWorkspaceAndSkill(workspaceId, skillId);
+        if (binding == null) {
+            throw new SkillNotFoundException("workspace=" + workspaceId + ", skillId=" + skillId);
+        }
+        doUpdateBinding(binding, "workspace", versionType, fixedVersion, user);
+    }
 
-        for (SkillBindingEntity bind : followers) {
-            String targetId = bindType == BindType.WORKSPACE
-                    ? String.valueOf(bind.getWorkspaceId())
-                    : bind.getCharacterId();
+    /**
+     * 更新 Character 绑定策略（通过 characterId + skillId 查找后更新）。
+     *
+     * @param characterId  Character 主键
+     * @param skillId     Skill 业务 UUID
+     * @param versionType 版本策略（latest/fixed）
+     * @param fixedVersion 固定版本号（versionType=fixed 时必填）
+     * @param user       操作者用户信息
+     */
+    public void updateCharacterBinding(String characterId, String skillId,
+                                       String versionType, Integer fixedVersion, UserInfo user) {
+        SkillBindingDO binding = findBindingByCharacterAndSkill(characterId, skillId);
+        if (binding == null) {
+            throw new SkillNotFoundException("characterId=" + characterId + ", skillId=" + skillId);
+        }
+        doUpdateBinding(binding, "character", versionType, fixedVersion, user);
+    }
 
-            try {
-                loadSkillForBindType(skill, bind.getWorkspaceId(), bind.getCharacterId(), bindType, newVersion);
-                log.info("{} [{}] Skill 热更新完成", bindType, targetId);
-            } catch (Exception e) {
-                log.error("{} [{}] Skill 热更新失败: {}", bindType, targetId, e.getMessage());
+    /**
+     * 更新 Character 在特定 Workspace 下的专属 Skill 绑定策略。
+     *
+     * @param characterId  Character 主键
+     * @param workspaceId Workspace 主键
+     * @param skillId    Skill 业务 UUID
+     * @param versionType 版本策略（latest/fixed）
+     * @param fixedVersion 固定版本号（versionType=fixed 时必填）
+     * @param user       操作者用户信息
+     */
+    public void updateCharacterWorkspaceBinding(String characterId, String workspaceId, String skillId,
+                                                String versionType, Integer fixedVersion, UserInfo user) {
+        SkillBindingDO binding = findBindingByCharacterWorkspaceAndSkill(characterId, workspaceId, skillId);
+        if (binding == null) {
+            throw new SkillNotFoundException("characterId=" + characterId + ", workspaceId=" + workspaceId + ", skillId=" + skillId);
+        }
+        doUpdateBinding(binding, "character_workspace", versionType, fixedVersion, user);
+    }
+
+    // ── 查询 ──────────────────────────────────────────────────────────
+
+    /**
+     * 查询 Character 自有的 Skill 绑定列表（含 skill 基本信息）。
+     *
+     * @param characterId Character 主键
+     * @return 绑定 VO 列表
+     */
+    @Transactional(readOnly = true)
+    public List<SkillBindingVO> listByCharacter(String characterId) {
+        List<SkillBindingDO> bindings = skillBindingStore.findByCharacterId(characterId);
+        return assembleVOList(bindings);
+    }
+
+    /**
+     * 查询 Workspace 公共 Skill 绑定列表（含 skill 基本信息）。
+     *
+     * @param workspaceId Workspace 主键
+     * @return 绑定 VO 列表
+     */
+    @Transactional(readOnly = true)
+    public List<SkillBindingVO> listByWorkspace(String workspaceId) {
+        List<SkillBindingDO> bindings = skillBindingStore.findByWorkspaceId(workspaceId);
+        return assembleVOList(bindings);
+    }
+
+    /**
+     * 查询 Character 在某 Workspace 下的专属 Skill 绑定列表（含 skill 基本信息）。
+     *
+     * @param characterId Character 主键
+     * @param workspaceId Workspace 主键
+     * @return 绑定 VO 列表
+     */
+    @Transactional(readOnly = true)
+    public List<SkillBindingVO> listByCharacterInWorkspace(String characterId, String workspaceId) {
+        List<SkillBindingDO> bindings =
+                skillBindingStore.findByCharacterIdAndWorkspaceId(characterId, workspaceId);
+        return assembleVOList(bindings);
+    }
+
+    /**
+     * 查询 Character 在某 Workspace 下的全量可用 Skill（三种关系的并集）。
+     *
+     * <p>并集结果中同一 skillId 可能来自多种关系（如既是 character 自有，又在 workspace 中），
+     * 此处保留全部绑定记录，调用方（Agent 运行时）可按需去重或取优先级最高的策略。
+     *
+     * @param characterId Character 主键
+     * @param workspaceId Workspace 主键
+     * @return 全量可用 skill 绑定 VO 列表
+     */
+    @Transactional(readOnly = true)
+    public List<SkillBindingVO> listAvailableSkills(String characterId, String workspaceId) {
+        List<SkillBindingDO> bindings =
+                skillBindingStore.findAvailableByCharacterAndWorkspace(characterId, workspaceId);
+        return assembleVOList(bindings);
+    }
+
+    /**
+     * 解析某条绑定记录对应的实际 Skill 版本。
+     *
+     * <ul>
+     *   <li>versionType = 'latest'：取 skills 表中 status='active' 的最大 version</li>
+     *   <li>versionType = 'fixed'：直接取 fixedVersion 指定的版本记录</li>
+     * </ul>
+     *
+     * @param binding 绑定记录
+     * @return 对应的 SkillDO，若未找到则抛出 SkillNotFoundException
+     */
+    @Transactional(readOnly = true)
+    public SkillDO resolveSkillVersion(SkillBindingDO binding) {
+        String skillId = binding.getSkillId();
+        if (VersionType.FIXED == binding.getVersionType()) {
+            return skillStore.findBySkillIdAndVersion(skillId, binding.getFixedVersion())
+                    .orElseThrow(() -> new SkillNotFoundException(
+                            skillId + " v" + binding.getFixedVersion()));
+        } else {
+            return skillStore.findLatestActiveBySkillId(skillId)
+                    .orElseThrow(() -> new SkillNotFoundException(
+                            skillId + " (no active version)"));
+        }
+    }
+
+    // ── 私有核心方法 ──────────────────────────────────────────────────
+
+    /**
+     * 绑定通用执行逻辑（Character 自有）。
+     */
+    private SkillBindingResult doBindCharacter(SkillBindingRequest request, UserInfo user) {
+        SkillBindingResult result = doBind(request);
+
+        // 记录操作日志
+        if (result != null && result.getSkillId() != null) {
+            SkillDO skill = skillStore.findLatestBySkillId(result.getSkillId()).orElse(null);
+            String skillName = skill != null ? skill.getName() : result.getSkillId();
+            String characterName = getCharacterName(request.getCharacterId());
+            BindCharacterDetail detail = new BindCharacterDetail(
+                    request.getCharacterId(), characterName,
+                    request.getVersionType(), request.getFixedVersion());
+            actionLogService.log(result.getSkillId(), skillName, SkillActionType.BIND_CHARACTER,
+                    parseUserId(user.getUserId()), user.getUsername(), skill != null ? skill.getVersion() : null, detail);
+        }
+        return result;
+    }
+
+    /**
+     * 绑定通用执行逻辑（Workspace 公共）。
+     */
+    private SkillBindingResult doBindWorkspace(SkillBindingRequest request, UserInfo user) {
+        SkillBindingResult result = doBind(request);
+
+        // 记录操作日志
+        if (result != null && result.getSkillId() != null) {
+            SkillDO skill = skillStore.findLatestBySkillId(result.getSkillId()).orElse(null);
+            String skillName = skill != null ? skill.getName() : result.getSkillId();
+            String workspaceName = getWorkspaceName(request.getWorkspaceId());
+            BindWorkspaceDetail detail = new BindWorkspaceDetail(
+                    request.getWorkspaceId(), workspaceName,
+                    request.getVersionType(), request.getFixedVersion());
+            actionLogService.log(result.getSkillId(), skillName, SkillActionType.BIND_WORKSPACE,
+                    parseUserId(user.getUserId()), user.getUsername(), skill != null ? skill.getVersion() : null, detail);
+        }
+        return result;
+    }
+
+    /**
+     * 绑定通用执行逻辑（Character@Workspace 专属）。
+     */
+    private SkillBindingResult doBindCharacterWorkspace(SkillBindingRequest request, UserInfo user) {
+        SkillBindingResult result = doBind(request);
+
+        // 记录操作日志
+        if (result != null && result.getSkillId() != null) {
+            SkillDO skill = skillStore.findLatestBySkillId(result.getSkillId()).orElse(null);
+            String skillName = skill != null ? skill.getName() : result.getSkillId();
+            String characterName = getCharacterName(request.getCharacterId());
+            String workspaceName = getWorkspaceName(request.getWorkspaceId());
+            BindCharacterWorkspaceDetail detail = new BindCharacterWorkspaceDetail(
+                    request.getCharacterId(), characterName,
+                    request.getWorkspaceId(), workspaceName,
+                    request.getVersionType(), request.getFixedVersion());
+            actionLogService.log(result.getSkillId(), skillName, SkillActionType.BIND_CHARACTER_WORKSPACE,
+                    parseUserId(user.getUserId()), user.getUsername(), skill != null ? skill.getVersion() : null, detail);
+        }
+        return result;
+    }
+
+    /**
+     * 绑定通用执行逻辑（核心实现）。
+     * <ol>
+     *   <li>参数校验（versionType=fixed 时 fixedVersion 必填）</li>
+     *   <li>校验 skill 存在且处于 active 状态</li>
+     *   <li>防重复绑定（幂等返回已有绑定结果）</li>
+     *   <li>INSERT 绑定记录</li>
+     * </ol>
+     */
+    private SkillBindingResult doBind(SkillBindingRequest request) {
+        // 1. 参数校验
+        validateRequest(request);
+
+        // 2. 校验 skill 可用性，并解析实际版本号
+        int resolvedVersion = validateAndResolveVersion(request);
+
+        // 3. 防重复绑定（幂等）
+        if (skillBindingStore.exists(request.getBindingType(),
+                request.getCharacterId(), request.getWorkspaceId(), request.getSkillId())) {
+            // 查出已有记录的 id，用于返回 bindingId
+            SkillBindingDO existing = findExistingBinding(request);
+            if (existing != null) {
+                return new SkillBindingResult(
+                        existing.getId(),
+                        existing.getBindingType() != null ? existing.getBindingType().getValue() : null,
+                        existing.getSkillId(),
+                        existing.getVersionType() != null ? existing.getVersionType().getValue() : null,
+                        resolvedVersion);
             }
         }
-    }
 
-    // ==================== 公共辅助方法 ====================
+        // 4. 构建并插入绑定记录
+        SkillBindingDO binding = buildBinding(request);
+        skillBindingStore.save(binding);
 
-    /**
-     * 校验 skill。
-     */
-    private SkillEntity validateSkill(Long skillId, BindType bindType) {
-        SkillEntity skill = skillStore.findById(skillId)
-                .orElseThrow(() -> new SkillNotFoundException("Skill 不存在: id=" + skillId));
-
-        if (skill.getVisibility() == SkillVisibility.PRIVATE) {
-            String errorMsg = bindType == BindType.WORKSPACE
-                    ? "私有 Skill 不可被 workspace 圈选"
-                    : "私有 Skill 不可被 character 绑定";
-            throw new SkillValidationException(errorMsg);
-        }
-        if (!skill.getEnabled()) {
-            String errorMsg = bindType == BindType.WORKSPACE
-                    ? "该 Skill 当前已被全局禁用，无法圈选"
-                    : "该 Skill 当前已被全局禁用，无法绑定";
-            throw new SkillValidationException(errorMsg);
-        }
-        return skill;
+        return new SkillBindingResult(
+                binding.getId(),
+                binding.getBindingType() != null ? binding.getBindingType().getValue() : null,
+                binding.getSkillId(),
+                binding.getVersionType() != null ? binding.getVersionType().getValue() : null,
+                resolvedVersion);
     }
 
     /**
-     * 确定锁定版本。
+     * 参数合法性校验。
      */
-    private int resolvePinnedVersion(SkillEntity skill, Boolean useLatest, Integer pinnedVersion) {
-        if (Boolean.TRUE.equals(useLatest)) {
+    private void validateRequest(SkillBindingRequest request) {
+        if ("fixed".equals(request.getVersionType()) && request.getFixedVersion() == null) {
+            throw new SkillValidationException("versionType 为 fixed 时，fixedVersion 不能为空");
+        }
+        switch (request.getBindingType()) {
+            case "character":
+                if (request.getCharacterId() == null) {
+                    throw new SkillValidationException("bindingType=character 时，characterId 不能为空");
+                }
+                break;
+            case "workspace":
+                if (request.getWorkspaceId() == null) {
+                    throw new SkillValidationException("bindingType=workspace 时，workspaceId 不能为空");
+                }
+                break;
+            case "character_workspace":
+                if (request.getCharacterId() == null || request.getWorkspaceId() == null) {
+                    throw new SkillValidationException(
+                            "bindingType=character_workspace 时，characterId 和 workspaceId 均不能为空");
+                }
+                break;
+            default:
+                throw new SkillValidationException("不支持的 bindingType：" + request.getBindingType());
+        }
+    }
+
+    /**
+     * 校验 skill 可用性并返回实际版本号。
+     * <ul>
+     *   <li>versionType='latest'：必须存在至少一个 active 版本</li>
+     *   <li>versionType='fixed'：指定版本必须存在且 status='active'</li>
+     * </ul>
+     *
+     * @return 实际解析到的版本号（供 SkillBindingResult 展示，不影响绑定本身）
+     */
+    private int validateAndResolveVersion(SkillBindingRequest request) {
+        String skillId = request.getSkillId();
+        if ("fixed".equals(request.getVersionType())) {
+            SkillDO skill = skillStore.findBySkillIdAndVersion(skillId, request.getFixedVersion())
+                    .orElseThrow(() -> new SkillNotFoundException(
+                            skillId + " v" + request.getFixedVersion()));
+            if (SkillStatus.ACTIVE != skill.getStatus()) {
+                throw new SkillValidationException(
+                        "skill [" + skillId + "] v" + request.getFixedVersion()
+                                + " 状态为 " + skill.getStatus() + "，只能绑定 active 状态的版本");
+            }
+            return skill.getVersion();
+        } else {
+            SkillDO skill = skillStore.findLatestActiveBySkillId(skillId)
+                    .orElseThrow(() -> new SkillNotFoundException(
+                            skillId + " (no active version)"));
             return skill.getVersion();
         }
-        if (pinnedVersion == null) {
-            throw new SkillValidationException("useLatest=false 时必须指定 pinnedVersion");
-        }
-        if (pinnedVersion > skill.getVersion()) {
-            throw new SkillValidationException("指定版本 " + pinnedVersion + " 超过当前最新版本 " + skill.getVersion());
-        }
-        return pinnedVersion;
+    }
+
+    /** 构建 SkillBindingDO */
+    private SkillBindingDO buildBinding(SkillBindingRequest request) {
+        SkillBindingDO binding = new SkillBindingDO();
+        binding.setBindingType(BindingType.fromValue(request.getBindingType()));
+        binding.setCharacterId(request.getCharacterId());
+        binding.setWorkspaceId(request.getWorkspaceId());
+        binding.setSkillId(request.getSkillId());
+        binding.setVersionType(VersionType.fromValue(request.getVersionType()));
+        binding.setFixedVersion(VersionType.FIXED.name().equalsIgnoreCase(request.getVersionType())
+                ? request.getFixedVersion() : null);
+        binding.setCreatedAt(LocalDateTime.now());
+        binding.setUpdatedAt(LocalDateTime.now());
+        return binding;
     }
 
     /**
-     * 构建绑定实体。
+     * 查找已有的重复绑定记录（exists() 返回 true 后调用，用于取出 id）。
+     * 根据 bindingType 选择合适的 store 查询方法。
      */
-    private SkillBindingEntity buildBindingEntity(SkillEntity skill, BindType bindType,
-                                                  Long workspaceId, String characterId,
-                                                  int pinnedVersion, Boolean useLatest) {
-        return SkillBindingEntity.builder()
-                .skill(skill)
-                .bindType(bindType)
-                .workspaceId(workspaceId)
-                .characterId(characterId)
-                .pinnedVersion(pinnedVersion)
-                .useLatest(useLatest)
-                .enabled(true)
-                .build();
+    private SkillBindingDO findExistingBinding(SkillBindingRequest request) {
+        List<SkillBindingDO> candidates;
+        switch (request.getBindingType()) {
+            case "character":
+                candidates = skillBindingStore.findByCharacterId(request.getCharacterId());
+                break;
+            case "workspace":
+                candidates = skillBindingStore.findByWorkspaceId(request.getWorkspaceId());
+                break;
+            case "character_workspace":
+                candidates = skillBindingStore.findByCharacterIdAndWorkspaceId(
+                        request.getCharacterId(), request.getWorkspaceId());
+                break;
+            default:
+                return null;
+        }
+        return candidates.stream()
+                .filter(b -> b.getSkillId().equals(request.getSkillId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    // ── 辅助方法：按 ID 查找绑定 ─────────────────────────────────────
+
+    /**
+     * 通过 workspaceId + skillId 查找绑定记录。
+     */
+    private SkillBindingDO findBindingByWorkspaceAndSkill(String workspaceId, String skillId) {
+        List<SkillBindingDO> candidates = skillBindingStore.findByWorkspaceId(workspaceId);
+        return candidates.stream()
+                .filter(b -> skillId.equals(b.getSkillId()))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
-     * 加载 skill（根据 bindType 调用不同方法）。
+     * 通过 characterId + skillId 查找绑定记录。
      */
-    private void loadSkill(SkillEntity skill, Long workspaceId, String characterId, BindType bindType, int pinnedVersion) {
+    private SkillBindingDO findBindingByCharacterAndSkill(String characterId, String skillId) {
+        List<SkillBindingDO> candidates = skillBindingStore.findByCharacterId(characterId);
+        return candidates.stream()
+                .filter(b -> skillId.equals(b.getSkillId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 通过 characterId + workspaceId + skillId 查找绑定记录。
+     */
+    private SkillBindingDO findBindingByCharacterWorkspaceAndSkill(String characterId, String workspaceId, String skillId) {
+        List<SkillBindingDO> candidates = skillBindingStore.findByCharacterIdAndWorkspaceId(characterId, workspaceId);
+        return candidates.stream()
+                .filter(b -> skillId.equals(b.getSkillId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 通用绑定更新逻辑。
+     */
+    private void doUpdateBinding(SkillBindingDO binding, String bindingType,
+                                String newVersionType, Integer newFixedVersion, UserInfo user) {
+        if ("fixed".equals(newVersionType) && newFixedVersion == null) {
+            throw new SkillValidationException("versionType 为 fixed 时，fixedVersion 不能为空");
+        }
+
+        // 记录操作日志
+        SkillDO skill = skillStore.findLatestBySkillId(binding.getSkillId()).orElse(null);
+        String skillName = skill != null ? skill.getName() : binding.getSkillId();
+        String oldVersionType = binding.getVersionType() != null ? binding.getVersionType().name().toLowerCase() : "latest";
+        Integer oldFixedVersion = binding.getFixedVersion();
+        String characterName = getCharacterName(binding.getCharacterId());
+        String workspaceName = getWorkspaceName(binding.getWorkspaceId());
+        BindingUpdateDetail detail = new BindingUpdateDetail(
+                bindingType, binding.getCharacterId(), characterName,
+                binding.getWorkspaceId(), workspaceName,
+                oldVersionType, oldFixedVersion,
+                newVersionType, newFixedVersion);
+        actionLogService.log(binding.getSkillId(), skillName, SkillActionType.BINDING_UPDATE,
+                parseUserId(user.getUserId()), user.getUsername(), skill != null ? skill.getVersion() : null, detail);
+
+        // 执行更新
+        binding.setVersionType(VersionType.fromValue(newVersionType));
+        binding.setFixedVersion("fixed".equals(newVersionType) ? newFixedVersion : null);
+        binding.setUpdatedAt(LocalDateTime.now());
+        skillBindingStore.update(binding);
+    }
+
+    // ── VO 聚合组装 ───────────────────────────────────────────────────
+
+    /**
+     * 将绑定 DO 列表组装为 VO 列表。
+     * 对每条绑定，按其版本策略查询对应的 Skill 信息，填充到 VO 中。
+     * 若某条绑定对应的 Skill 不存在或无 active 版本，则跳过（不抛异常，保证列表查询健壮性）。
+     */
+    private List<SkillBindingVO> assembleVOList(List<SkillBindingDO> bindings) {
+        List<SkillBindingVO> result = new ArrayList<>();
+        for (SkillBindingDO binding : bindings) {
+            try {
+                Optional<SkillDO> skillOpt = resolveSkillForVO(binding);
+                skillOpt.ifPresent(skill -> result.add(toVO(binding, skill)));
+            } catch (Exception ignored) {
+                // skill 已删除或版本不存在时跳过，不中断整个列表
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 按绑定的版本策略解析对应的 Skill 记录（返回 Optional，不抛异常）。
+     */
+    private Optional<SkillDO> resolveSkillForVO(SkillBindingDO binding) {
+        if (VersionType.FIXED == binding.getVersionType()) {
+            return skillStore.findBySkillIdAndVersion(
+                    binding.getSkillId(), binding.getFixedVersion());
+        } else {
+            return skillStore.findLatestActiveBySkillId(binding.getSkillId());
+        }
+    }
+
+    /**
+     * 将 SkillBindingDO + SkillDO 组装为 SkillBindingVO。
+     */
+    private SkillBindingVO toVO(SkillBindingDO binding, SkillDO skill) {
+        SkillBindingVO vo = new SkillBindingVO();
+        // 绑定信息
+        vo.setBindingId(binding.getId());
+        vo.setBindingType(binding.getBindingType() != null ? binding.getBindingType().getValue() : null);
+        vo.setCharacterId(binding.getCharacterId());
+        vo.setWorkspaceId(binding.getWorkspaceId());
+        // Skill 基本信息
+        vo.setSkillId(skill.getSkillId());
+        vo.setSkillName(skill.getName());
+        vo.setSkillDisplayName(skill.getDisplayName());
+        vo.setSkillDescription(skill.getDescription());
+        vo.setSkillStatus(skill.getStatus() != null ? skill.getStatus().getValue() : null);
+        // 版本策略
+        vo.setVersionType(binding.getVersionType() != null ? binding.getVersionType().getValue() : null);
+        vo.setDisplayVersion(skill.getVersion());
+        // 时间
+        vo.setCreatedAt(binding.getCreatedAt());
+        return vo;
+    }
+
+    /** 将 String userId 转换为 Long */
+    private Long parseUserId(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return null;
+        }
         try {
-            if (bindType == BindType.WORKSPACE) {
-                loaderService.loadSkillForWorkspace(skill, workspaceId, pinnedVersion);
-            } else {
-                loaderService.loadSkillForCharacter(characterId, workspaceId, skill, pinnedVersion);
-            }
-        } catch (Exception e) {
-            if (bindType == BindType.WORKSPACE) {
-                log.warn("Skill 加载失败: workspaceId={}, skillId={}", workspaceId, skill.getId());
-            } else {
-                log.warn("Character Skill 加载失败: characterId={}, skillId={}", characterId, skill.getId());
-            }
+            return Long.parseLong(userId);
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
-    /**
-     * 热更新时加载 skill（根据 bindType 调用不同方法）。
-     */
-    private void loadSkillForBindType(SkillEntity skill, Long workspaceId, String characterId, BindType bindType, int version) {
-        if (bindType == BindType.WORKSPACE) {
-            loaderService.loadSkillForWorkspace(skill, workspaceId, version);
-        } else {
-            loaderService.loadSkillForCharacter(characterId, workspaceId, skill, version);
-        }
+    /** 通过 StoreFactory 获取 CharacterStore */
+    private CharacterStore getCharacterStore() {
+        return storeFactory.get(CharacterStore.class);
     }
 
-    /**
-     * 注销注册。
-     */
-    private void unregister(String skillName, Long workspaceId, String characterId, BindType bindType) {
-        if (bindType == BindType.WORKSPACE) {
-            skillRegistry.unregisterForWorkspace(skillName, workspaceId);
-        } else {
-            skillRegistry.unregisterForCharacter(characterId, skillName, workspaceId);
-        }
+    /** 通过 StoreFactory 获取 WorkspaceStore */
+    private WorkspaceStore getWorkspaceStore() {
+        return storeFactory.get(WorkspaceStore.class);
     }
 
-    /**
-     * 重新加载 skill。
-     */
-    private void reloadSkill(SkillEntity skill, Long workspaceId, String characterId, BindType bindType) {
-        try {
-            if (bindType == BindType.WORKSPACE) {
-                loaderService.loadSkillForWorkspace(skill, workspaceId, skill.getVersion());
-            } else {
-                loaderService.loadSkillForCharacter(characterId, workspaceId, skill, skill.getVersion());
-            }
-        } catch (Exception e) {
-            String targetType = bindType == BindType.WORKSPACE ? "workspace" : "character";
-            log.error("Skill 重新加载失败: {}Id={}, skillId={}",
-                    targetType, bindType == BindType.WORKSPACE ? workspaceId : characterId, skill.getId());
+    /** 根据 characterId 获取 Character 名称 */
+    private String getCharacterName(String characterId) {
+        if (characterId == null) {
+            return null;
         }
+        return getCharacterStore().findById(characterId)
+                .map(org.dragon.character.Character::getName)
+                .orElse(null);
     }
 
-    /**
-     * 更新版本策略和启用状态。
-     */
-    private boolean updateVersionAndEnabled(SkillBindingEntity entity, SkillEntity skill,
-                                           Object request, Long workspaceId, String characterId, BindType bindType) {
-        boolean needReload = false;
-
-        // 获取请求参数
-        Boolean useLatest = getUseLatest(request);
-        Integer pinnedVersion = getPinnedVersion(request);
-        Boolean enabled = getEnabled(request);
-
-        // 更新版本策略
-        if (useLatest != null) {
-            entity.setUseLatest(useLatest);
-            if (Boolean.TRUE.equals(useLatest)) {
-                entity.setPinnedVersion(skill.getVersion());
-                needReload = true;
-            }
+    /** 根据 workspaceId 获取 Workspace 名称 */
+    private String getWorkspaceName(String workspaceId) {
+        if (workspaceId == null) {
+            return null;
         }
-
-        if (pinnedVersion != null && Boolean.FALSE.equals(entity.getUseLatest())) {
-            if (pinnedVersion > skill.getVersion()) {
-                throw new SkillValidationException("指定版本超过当前最新版本 " + skill.getVersion());
-            }
-            entity.setPinnedVersion(pinnedVersion);
-            needReload = true;
-        }
-
-        // 更新启用状态
-        if (enabled != null) {
-            boolean wasEnabled = entity.getEnabled();
-            entity.setEnabled(enabled);
-            if (!wasEnabled && enabled) {
-                needReload = true;
-            } else if (wasEnabled && !enabled) {
-                unregister(skill.getName(), workspaceId, characterId, bindType);
-            }
-        }
-
-        return needReload;
-    }
-
-    private Boolean getUseLatest(Object request) {
-        if (request instanceof SkillBindingUpdateRequest) {
-            return ((SkillBindingUpdateRequest) request).getUseLatest();
-        }
-        return null;
-    }
-
-    private Integer getPinnedVersion(Object request) {
-        if (request instanceof SkillBindingUpdateRequest) {
-            return ((SkillBindingUpdateRequest) request).getPinnedVersion();
-        }
-        return null;
-    }
-
-    private Boolean getEnabled(Object request) {
-        if (request instanceof SkillBindingUpdateRequest) {
-            return ((SkillBindingUpdateRequest) request).getEnabled();
-        }
-        return null;
-    }
-
-    // ==================== 日志方法 ====================
-
-    private void logBindSuccess(BindType bindType, Long workspaceId, String characterId, Long skillId,
-                                int pinnedVersion, Boolean useLatest) {
-        if (bindType == BindType.WORKSPACE) {
-            log.info("Workspace 圈选 Skill 成功: workspaceId={}, skillId={}, version={}, useLatest={}",
-                    workspaceId, skillId, pinnedVersion, useLatest);
-        } else {
-            log.info("Character 绑定 Skill 成功: characterId={}, workspaceId={}, skillId={}, version={}, useLatest={}",
-                    characterId, workspaceId, skillId, pinnedVersion, useLatest);
-        }
-    }
-
-    private void logUnbindSuccess(BindType bindType, Long workspaceId, String characterId, Long skillId) {
-        if (bindType == BindType.WORKSPACE) {
-            log.info("Workspace 取消圈选 Skill: workspaceId={}, skillId={}", workspaceId, skillId);
-        } else {
-            log.info("Character 取消绑定 Skill: characterId={}, workspaceId={}, skillId={}", characterId, workspaceId, skillId);
-        }
-    }
-
-    // ==================== 响应转换方法 ====================
-
-    private SkillBindingResponse toSkillBindingResponse(SkillBindingEntity entity, SkillEntity skill) {
-        boolean hasNewVersion = !entity.getUseLatest() && skill.getVersion() > entity.getPinnedVersion();
-
-        return SkillBindingResponse.builder()
-                .id(entity.getId())
-                .workspaceId(entity.getWorkspaceId())
-                .characterId(entity.getCharacterId())
-                .skillId(skill.getId())
-                .skillName(skill.getName())
-                .skillDescription(skill.getSkillDescription())
-                .category(skill.getCategory() != null ? skill.getCategory().name() : null)
-                .pinnedVersion(entity.getPinnedVersion())
-                .useLatest(entity.getUseLatest())
-                .latestVersion(skill.getVersion())
-                .hasNewVersion(hasNewVersion)
-                .enabled(entity.getEnabled())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .build();
+        return getWorkspaceStore().findById(workspaceId)
+                .map(org.dragon.workspace.Workspace::getName)
+                .orElse(null);
     }
 }
