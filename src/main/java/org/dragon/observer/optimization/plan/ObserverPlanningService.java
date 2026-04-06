@@ -10,7 +10,7 @@ import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.config.PromptKeys;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
 import org.dragon.observer.optimization.OptimizationExecutor;
@@ -47,7 +47,7 @@ public class ObserverPlanningService {
     private final OptimizationExecutor optimizationExecutor;
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final CharacterCaller characterCaller;
-    private final PromptManager promptManager;
+    private final ConfigApplication configApplication;
     private final StoreFactory storeFactory;
     private final Gson gson = new Gson();
 

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.datasource.entity.TraitEntity;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.permission.service.CollaboratorService;
 import org.dragon.store.StoreFactory;
 import org.dragon.studio.store.TraitStore;
@@ -25,6 +26,7 @@ public class TraitService {
 
     private final StoreFactory storeFactory;
     private final CollaboratorService collaboratorService;
+    private final AssetPublishStatusService publishStatusService;
 
     private TraitStore getStore() {
         return storeFactory.get(TraitStore.class);
@@ -49,6 +51,9 @@ public class TraitService {
         // 添加创建者为 Owner
         Long userId = Long.parseLong(UserUtils.getUserId());
         collaboratorService.addOwnerDirectly(ResourceType.TRAIT, String.valueOf(trait.getId()), userId);
+
+        // 初始化发布状态（默认为 DRAFT）
+        publishStatusService.initializeStatus(ResourceType.TRAIT, String.valueOf(trait.getId()), String.valueOf(userId));
 
         return toMap(trait);
     }

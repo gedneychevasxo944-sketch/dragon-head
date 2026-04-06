@@ -1,8 +1,10 @@
 package org.dragon.skill.config;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,16 +12,14 @@ import java.util.List;
 /**
  * Skill 权限控制配置（对齐 TS {@code SkillTool.checkPermissions} 机制）。
  *
- * <p>从 {@code application.yml} 的 {@code skill.permission} 节读取，示例：
+ * <p>从 ConfigStore 读取配置，示例：
  * <pre>
- * skill:
- *   permission:
- *     deny-rules:
- *       - "deploy-prod"   # 精确拒绝
- *       - "deploy:*"      # 前缀通配拒绝
- *     allow-rules:
- *       - "git-commit"
- *     ask-strategy: auto-deny   # auto-deny | event
+ * skill.permission.deny-rules:
+ *   - "deploy-prod"   # 精确拒绝
+ *   - "deploy:*"      # 前缀通配拒绝
+ * skill.permission.allow-rules:
+ *   - "git-commit"
+ * skill.permission.ask-strategy: auto-deny   # auto-deny | event
  * </pre>
  *
  * <h3>规则格式（与 TS 保持一致）</h3>
@@ -36,33 +36,20 @@ import java.util.List;
  * </ul>
  */
 @Data
-@Configuration
-@ConfigurationProperties(prefix = "skill.permission")
+@Component
 public class SkillPermissionConfig {
 
-    /**
-     * deny 规则列表（优先级最高，命中则拒绝）。
-     * 默认为空列表。
-     */
     private List<String> denyRules = new ArrayList<>();
-
-    /**
-     * allow 规则列表（deny 未命中后检查，命中则放行）。
-     * 默认为空列表。
-     */
     private List<String> allowRules = new ArrayList<>();
-
-    /**
-     * ASK 处置策略。
-     *
-     * <ul>
-     *   <li>{@code auto-deny} — 默认，直接拒绝并返回错误（适合 CI/CD 或无 UI 环境）</li>
-     *   <li>{@code event}     — 发布 {@code SkillPermissionEvent}，由框架层接收后处理</li>
-     * </ul>
-     */
     private String askStrategy = "auto-deny";
 
-    // ── 便捷方法 ─────────────────────────────────────────────────────────
+    @Autowired
+    public SkillPermissionConfig(ConfigApplication configApplication) {
+        InheritanceContext ctx = InheritanceContext.forGlobal();
+        this.denyRules = configApplication.getListValue("skill.permission.deny-rules", ctx, new ArrayList<>());
+        this.allowRules = configApplication.getListValue("skill.permission.allow-rules", ctx, new ArrayList<>());
+        this.askStrategy = configApplication.getStringValue("skill.permission.ask-strategy", ctx, "auto-deny");
+    }
 
     /**
      * 是否使用事件驱动 ASK 策略。

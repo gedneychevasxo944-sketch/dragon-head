@@ -9,10 +9,7 @@ import java.util.UUID;
 
 import org.dragon.observer.collector.dto.ObservationDataset;
 import org.dragon.store.StoreFactory;
-import org.dragon.observer.collector.dto.CharacterObservationSnapshot;
 import org.dragon.observer.collector.dto.WorkspaceObservationSnapshot;
-import org.dragon.observer.collector.dto.MemoryObservationSnapshot;
-import org.dragon.observer.collector.dto.SkillObservationSnapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

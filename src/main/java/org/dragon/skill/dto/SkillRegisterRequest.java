@@ -95,6 +95,9 @@ public class SkillRegisterRequest {
     @Pattern(regexp = "^(public|private)$", message = "visibility 只允许 public 或 private")
     private String visibility;
 
+    /** 标签列表，用于技能分类/场景归纳 */
+    private List<String> tags;
+
     /**
      * 附加文件列表（可为空）。
      * 每个文件必须通过 SkillValidationService 校验（大小、扩展名白名单）。

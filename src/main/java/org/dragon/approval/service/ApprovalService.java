@@ -1,25 +1,29 @@
-package org.dragon.permission.service;
+package org.dragon.approval.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.permission.dto.ApprovalRequestDTO;
+import org.dragon.approval.dto.ApprovalRequestDTO;
+import org.dragon.approval.enums.ApprovalStatus;
+import org.dragon.approval.enums.ApprovalType;
+import org.dragon.approval.store.ApprovalStore;
 import org.dragon.datasource.entity.ApprovalRequestEntity;
-import org.dragon.permission.enums.ApprovalStatus;
-import org.dragon.permission.enums.ApprovalType;
-import org.dragon.permission.store.ApprovalStore;
-import org.dragon.store.StoreFactory;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.store.StoreFactory;
 import org.dragon.user.store.UserStore;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * ApprovalService 审批服务
- * 负责处理发布、取消发布、添加/移除协作者的审批流程
+ *
+ * <p>负责处理发布、取消发布、添加/移除协作者的审批流程
+ * <p>使用策略模式处理不同审批类型的业务逻辑
  */
 @Slf4j
 @Service
@@ -27,12 +31,30 @@ public class ApprovalService {
 
     private final ApprovalStore approvalStore;
     private final UserStore userStore;
-    private final CollaboratorService collaboratorService;
+    private final Map<ApprovalType, ApprovalStrategy> strategies;
 
-    public ApprovalService(StoreFactory storeFactory, @Lazy CollaboratorService collaboratorService) {
+    /**
+     * 需要审批的资源类型映射
+     */
+    private static final Map<ApprovalType, List<ResourceType>> APPROVAL_REQUIRED_TYPES = new EnumMap<>(ApprovalType.class);
+
+    static {
+        APPROVAL_REQUIRED_TYPES.put(ApprovalType.PUBLISH, List.of(ResourceType.SKILL, ResourceType.TEMPLATE));
+        APPROVAL_REQUIRED_TYPES.put(ApprovalType.UNPUBLISH, List.of(ResourceType.TEMPLATE));
+        APPROVAL_REQUIRED_TYPES.put(ApprovalType.ADD_COLLABORATOR, null); // 所有资源类型
+        APPROVAL_REQUIRED_TYPES.put(ApprovalType.REMOVE_COLLABORATOR, null); // 所有资源类型
+    }
+
+    public ApprovalService(StoreFactory storeFactory, @Lazy UserStore userStore,
+                           List<ApprovalStrategy> strategyList) {
         this.approvalStore = storeFactory.get(ApprovalStore.class);
-        this.userStore = storeFactory.get(UserStore.class);
-        this.collaboratorService = collaboratorService;
+        this.userStore = userStore;
+
+        // 初始化策略映射
+        this.strategies = new EnumMap<>(ApprovalType.class);
+        for (ApprovalStrategy strategy : strategyList) {
+            this.strategies.put(strategy.getType(), strategy);
+        }
     }
 
     /**
@@ -90,7 +112,8 @@ public class ApprovalService {
         request.setProcessedComment(comment);
         approvalStore.update(request);
 
-        executeAfterApproval(request);
+        // 执行审批通过后的业务操作（策略模式）
+        executeStrategy(request, approverId, comment, true);
 
         log.info("[ApprovalService] Approved request: id={}, approverId={}", requestId, approverId);
     }
@@ -117,7 +140,33 @@ public class ApprovalService {
         request.setProcessedComment(comment);
         approvalStore.update(request);
 
+        // 执行审批拒绝后的业务操作（策略模式）
+        executeStrategy(request, approverId, comment, false);
+
         log.info("[ApprovalService] Rejected request: id={}, approverId={}", requestId, approverId);
+    }
+
+    /**
+     * 执行策略
+     */
+    private void executeStrategy(ApprovalRequestEntity request, Long approverId, String comment, boolean approved) {
+        ApprovalStrategy strategy = strategies.get(request.getApprovalType());
+        if (strategy == null) {
+            log.warn("[ApprovalService] No strategy found for approval type: {}", request.getApprovalType());
+            return;
+        }
+
+        ApprovalContext context = ApprovalContext.builder()
+                .request(request)
+                .approverId(approverId)
+                .comment(comment)
+                .build();
+
+        if (approved) {
+            strategy.onApprove(context);
+        } else {
+            strategy.onReject(context);
+        }
     }
 
     /**
@@ -151,17 +200,11 @@ public class ApprovalService {
      * 检查是否需要审批
      */
     public boolean requiresApproval(ResourceType type, ApprovalType approvalType) {
-        switch (approvalType) {
-            case PUBLISH:
-                return type == ResourceType.SKILL || type == ResourceType.TEMPLATE;
-            case UNPUBLISH:
-                return type == ResourceType.TEMPLATE;
-            case ADD_COLLABORATOR:
-            case REMOVE_COLLABORATOR:
-                return true;
-            default:
-                return false;
+        List<ResourceType> requiredTypes = APPROVAL_REQUIRED_TYPES.get(approvalType);
+        if (requiredTypes == null) {
+            return true; // null 表示所有资源类型都需要审批
         }
+        return requiredTypes.contains(type);
     }
 
     /**
@@ -174,41 +217,6 @@ public class ApprovalService {
         return approvalStore.findAll().stream()
                 .filter(r -> r.getStatus() == ApprovalStatus.PENDING)
                 .count();
-    }
-
-    /**
-     * 执行审批通过后的操作
-     */
-    private void executeAfterApproval(ApprovalRequestEntity request) {
-        switch (request.getApprovalType()) {
-            case ADD_COLLABORATOR:
-                if (request.getTargetUserId() != null) {
-                    collaboratorService.addMemberDirectly(
-                            request.getResourceType(),
-                            request.getResourceId(),
-                            request.getRequesterId(),
-                            request.getTargetUserId()
-                    );
-                }
-                break;
-            case REMOVE_COLLABORATOR:
-                if (request.getTargetUserId() != null) {
-                    collaboratorService.removeMemberDirectly(
-                            request.getResourceType(),
-                            request.getResourceId(),
-                            request.getTargetUserId()
-                    );
-                }
-                break;
-            case PUBLISH:
-            case UNPUBLISH:
-                // TODO: 调用可见性服务修改发布状态
-                log.info("[ApprovalService] Publish/Unpublish approved for: type={}, assetId={}",
-                        request.getResourceType(), request.getResourceId());
-                break;
-            default:
-                log.warn("[ApprovalService] Unknown approval type: {}", request.getApprovalType());
-        }
     }
 
     private ApprovalRequestDTO toDTO(ApprovalRequestEntity entity) {

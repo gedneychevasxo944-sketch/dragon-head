@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum SkillVisibility {
 
     PUBLIC("public"),
-    PRIVATE("private");
+    PRIVATE("private"),
+    WORKSPACE("workspace");
 
     private final String value;
 

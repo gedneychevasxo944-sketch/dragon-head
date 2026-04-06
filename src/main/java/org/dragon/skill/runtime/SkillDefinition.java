@@ -103,6 +103,11 @@ public class SkillDefinition {
      */
     private PersistMode persistMode;
 
+    // ── 标签 ────────────────────────────────────────────────────────
+
+    /** 标签列表，用于技能分类/场景归纳 */
+    private List<String> tags;
+
     // ── 存储元信息（执行工作区物化用） ──────────────────────────────
 
     /**

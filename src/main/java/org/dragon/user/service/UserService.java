@@ -20,8 +20,14 @@ import java.util.UUID;
 @Service
 public class UserService {
 
-    private static final int MAX_LOGIN_FAIL_COUNT = 5;
-    private static final int LOCK_MINUTES = 15;
+    private static final int DEFAULT_MAX_LOGIN_FAIL_COUNT = 5;
+    private static final int DEFAULT_LOCK_MINUTES = 15;
+    /** @deprecated use DEFAULT_MAX_LOGIN_FAIL_COUNT */
+    @Deprecated
+    public static final int MAX_LOGIN_FAIL_COUNT = DEFAULT_MAX_LOGIN_FAIL_COUNT;
+    /** @deprecated use DEFAULT_LOCK_MINUTES */
+    @Deprecated
+    public static final int LOCK_MINUTES = DEFAULT_LOCK_MINUTES;
 
     private final UserStore userStore;
     private final TokenStore tokenStore;

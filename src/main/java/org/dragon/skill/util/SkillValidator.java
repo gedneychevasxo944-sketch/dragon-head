@@ -33,9 +33,13 @@ public final class SkillValidator {
 
     // ── 限制常量 ─────────────────────────────────────────────────────
 
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.validator.max-single-file-bytes")
     public static final long MAX_SINGLE_FILE_BYTES = 2L * 1024 * 1024;   // 2 MB
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.validator.max-zip-file-bytes")
     public static final long MAX_ZIP_FILE_BYTES    = 10L * 1024 * 1024;  // 10 MB
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.validator.max-unzip-total-bytes")
     public static final long MAX_UNZIP_TOTAL_BYTES = 50L * 1024 * 1024;  // 50 MB
+    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.validator.max-file-count")
     public static final int  MAX_FILE_COUNT        = 100;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(

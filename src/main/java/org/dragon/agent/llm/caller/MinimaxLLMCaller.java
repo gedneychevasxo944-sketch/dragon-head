@@ -6,7 +6,9 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
-import org.springframework.beans.factory.annotation.Value;
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -30,24 +32,22 @@ public class MinimaxLLMCaller implements LLMCaller {
 
     private final HttpClient httpClient;
     private final Gson gson;
+    private final String apiKey;
+    private final String baseUrl;
+    private final String defaultModel;
+    private final String groupId;
 
-    @Value("${llm.minimax.apiKey:}")
-    private String apiKey;
-
-    @Value("${llm.minimax.baseUrl:https://api.minimax.chat}")
-    private String baseUrl;
-
-    @Value("${llm.minimax.model:abab6.5s-chat}")
-    private String defaultModel;
-
-    @Value("${llm.minimax.groupId:}")
-    private String groupId;
-
-    public MinimaxLLMCaller() {
+    @Autowired
+    public MinimaxLLMCaller(ConfigApplication configApplication) {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
         this.gson = new Gson();
+        InheritanceContext ctx = InheritanceContext.forGlobal();
+        this.apiKey = configApplication.getStringValue("llm.minimax.apiKey", ctx, "");
+        this.baseUrl = configApplication.getStringValue("llm.minimax.baseUrl", ctx, "https://api.minimax.chat");
+        this.defaultModel = configApplication.getStringValue("llm.minimax.model", ctx, "abab6.5s-chat");
+        this.groupId = configApplication.getStringValue("llm.minimax.groupId", ctx, "");
     }
 
     @Override

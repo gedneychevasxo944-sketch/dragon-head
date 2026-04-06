@@ -1,4 +1,4 @@
-package org.dragon.permission.enums;
+package org.dragon.approval.enums;
 
 /**
  * 审批状态

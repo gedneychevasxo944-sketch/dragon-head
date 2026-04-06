@@ -566,7 +566,7 @@ CREATE TABLE skills (
 
     -- 分类和可见性
     category                 VARCHAR(50)  COMMENT '技能分类',
-    visibility               VARCHAR(10)  NOT NULL DEFAULT 'private' COMMENT '可见性（public/private）',
+    visibility               VARCHAR(20)  NOT NULL DEFAULT 'private' COMMENT '可见性（public/private/workspace）',
 
     -- 创建者和编辑者
     creator_type             VARCHAR(10)  NOT NULL DEFAULT 'personal' COMMENT '创建者类型（personal/official）',

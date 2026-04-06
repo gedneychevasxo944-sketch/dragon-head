@@ -55,7 +55,7 @@ public class DefaultTaskBridge implements TaskBridge {
         Character character = characterRegistry.get(characterId)
                 .orElseThrow(() -> new IllegalStateException("Character not found: " + characterId));
 
-        // 绑定运行时依赖（ReActExecutor, PromptManager 等）
+        // 绑定运行时依赖（ReActExecutor, ConfigApplication 等）
         characterRuntimeBinder.bind(character, workspaceId);
 
         // 更新任务状态为 RUNNING
