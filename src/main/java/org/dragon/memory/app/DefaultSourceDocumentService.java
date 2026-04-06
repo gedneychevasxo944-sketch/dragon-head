@@ -1,5 +1,6 @@
 package org.dragon.memory.app;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.api.controller.dto.memory.SourceDocumentDTO;
 import org.dragon.api.controller.dto.memory.CreateSourceRequest;
@@ -70,7 +71,7 @@ public class DefaultSourceDocumentService implements SourceDocumentService {
                 .sourceType(request.getSourceType())
                 .backend(request.getBackend())
                 .provider(request.getProvider())
-                .enabled(request.isEnabled())
+                .enabled(BooleanUtils.isTrue(request.getEnabled()))
                 .status("active")
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
