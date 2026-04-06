@@ -1,5 +1,6 @@
 package org.dragon.config.store;
 
+import org.dragon.config.enums.ConfigLevel;
 import org.dragon.store.Store;
 
 import java.util.List;
@@ -10,39 +11,59 @@ import java.util.Optional;
  *
  * <p>扁平化存储结构：
  * <ul>
- *   <li>id = {scopeBits}:{workspaceId}:{characterId}:{toolId}:{skillId}:{configKey}</li>
- *   <li>通过 scopeBits 位掩码标识激活的层级</li>
+ *   <li>id = {scopeBit}:{workspaceId}:{characterId}:{toolId}:{skillId}:{memoryId}:{configKey}</li>
+ *   <li>通过 ConfigLevel 标识粒度</li>
  * </ul>
  */
 public interface ConfigStore extends Store {
 
     /**
-     * 保存配置（使用扁平化结构）
+     * 保存配置
      *
+     * @param level 粒度
+     * @param workspaceId Workspace ID
+     * @param characterId Character ID
+     * @param toolId Tool ID
+     * @param skillId Skill ID
+     * @param memoryId Memory ID
      * @param configKey 配置键
      * @param value 配置值
-     * @param scopeBits 层级位掩码
-     * @param workspaceId Workspace ID
-     * @param characterId Character ID
-     * @param toolId Tool ID
-     * @param skillId Skill ID
      */
-    void set(String configKey, Object value, int scopeBits,
-             String workspaceId, String characterId, String toolId, String skillId);
+    void set(ConfigLevel level, String workspaceId, String characterId,
+             String toolId, String skillId, String memoryId,
+             String configKey, Object value);
 
     /**
-     * 查询配置（使用扁平化结构）
+     * 查询配置
      *
-     * @param configKey 配置键
-     * @param scopeBits 层级位掩码
+     * @param level 粒度
      * @param workspaceId Workspace ID
      * @param characterId Character ID
      * @param toolId Tool ID
      * @param skillId Skill ID
+     * @param memoryId Memory ID
+     * @param configKey 配置键
      * @return 配置值
      */
-    Optional<Object> get(String configKey, int scopeBits,
-                         String workspaceId, String characterId, String toolId, String skillId);
+    Optional<Object> get(ConfigLevel level, String workspaceId, String characterId,
+                         String toolId, String skillId, String memoryId,
+                         String configKey);
+
+    /**
+     * 查询配置（简化版，只有 workspaceId）
+     */
+    Optional<Object> get(ConfigLevel level, String workspaceId, String configKey);
+
+    /**
+     * 查询配置（只有 workspaceId 和 characterId）
+     */
+    Optional<Object> get(ConfigLevel level, String workspaceId, String characterId, String configKey);
+
+    /**
+     * 删除配置
+     */
+    void delete(ConfigLevel level, String workspaceId, String characterId,
+                String toolId, String skillId, String memoryId, String configKey);
 
     /**
      * 清空所有配置
@@ -57,15 +78,24 @@ public interface ConfigStore extends Store {
     List<ConfigStoreItem> listAll();
 
     /**
+     * 获取指定粒度的所有配置项
+     *
+     * @param level 粒度
+     * @return 配置项列表
+     */
+    List<ConfigStoreItem> listByLevel(ConfigLevel level);
+
+    /**
      * 配置存储项（用于列表查询）
      */
     record ConfigStoreItem(
-            String configKey,
-            int scopeBits,
+            ConfigLevel level,
             String workspaceId,
             String characterId,
             String toolId,
             String skillId,
+            String memoryId,
+            String configKey,
             Object value
     ) {}
 }

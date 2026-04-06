@@ -1,6 +1,7 @@
 package org.dragon.config.store;
 
 import io.ebean.Database;
+import org.dragon.config.enums.ConfigLevel;
 import org.dragon.datasource.entity.ConfigEntity;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
@@ -13,12 +14,6 @@ import java.util.Optional;
 
 /**
  * MySqlConfigStore 配置存储 MySQL 实现
- *
- * <p>适配扁平化的 ConfigEntity 结构：
- * <ul>
- *   <li>id = {scopeBits}:{workspaceId}:{characterId}:{toolId}:{skillId}:{configKey}</li>
- *   <li>通过 scopeBits 位掩码标识激活的层级</li>
- * </ul>
  */
 @StoreTypeAnn(StoreType.MYSQL)
 public class MySqlConfigStore implements ConfigStore {
@@ -30,9 +25,11 @@ public class MySqlConfigStore implements ConfigStore {
     }
 
     @Override
-    public void set(String configKey, Object value, int scopeBits,
-                    String workspaceId, String characterId, String toolId, String skillId) {
-        String id = ConfigEntity.buildId(scopeBits, workspaceId, characterId, toolId, skillId, configKey);
+    public void set(ConfigLevel level, String workspaceId, String characterId,
+                    String toolId, String skillId, String memoryId,
+                    String configKey, Object value) {
+        String id = ConfigEntity.buildId(level.getScopeBit(), workspaceId, characterId,
+                toolId, skillId, memoryId, configKey);
         ConfigEntity existing = mysqlDb.find(ConfigEntity.class, id);
 
         if (existing != null) {
@@ -42,11 +39,12 @@ public class MySqlConfigStore implements ConfigStore {
         } else {
             ConfigEntity entity = ConfigEntity.builder()
                     .id(id)
-                    .scopeBits(scopeBits)
+                    .scopeBit(level.getScopeBit())
                     .workspaceId(workspaceId)
                     .characterId(characterId)
                     .toolId(toolId)
                     .skillId(skillId)
+                    .memoryId(memoryId)
                     .configKey(configKey)
                     .configValue(value)
                     .status("PUBLISHED")
@@ -59,11 +57,34 @@ public class MySqlConfigStore implements ConfigStore {
     }
 
     @Override
-    public Optional<Object> get(String configKey, int scopeBits,
-                               String workspaceId, String characterId, String toolId, String skillId) {
-        String id = ConfigEntity.buildId(scopeBits, workspaceId, characterId, toolId, skillId, configKey);
+    public Optional<Object> get(ConfigLevel level, String workspaceId, String characterId,
+                                 String toolId, String skillId, String memoryId,
+                                 String configKey) {
+        String id = ConfigEntity.buildId(level.getScopeBit(), workspaceId, characterId,
+                toolId, skillId, memoryId, configKey);
         ConfigEntity entity = mysqlDb.find(ConfigEntity.class, id);
         return Optional.ofNullable(entity != null ? entity.getConfigValue() : null);
+    }
+
+    @Override
+    public Optional<Object> get(ConfigLevel level, String workspaceId, String configKey) {
+        return get(level, workspaceId, null, null, null, null, configKey);
+    }
+
+    @Override
+    public Optional<Object> get(ConfigLevel level, String workspaceId, String characterId, String configKey) {
+        return get(level, workspaceId, characterId, null, null, null, configKey);
+    }
+
+    @Override
+    public void delete(ConfigLevel level, String workspaceId, String characterId,
+                       String toolId, String skillId, String memoryId, String configKey) {
+        String id = ConfigEntity.buildId(level.getScopeBit(), workspaceId, characterId,
+                toolId, skillId, memoryId, configKey);
+        ConfigEntity entity = mysqlDb.find(ConfigEntity.class, id);
+        if (entity != null) {
+            mysqlDb.delete(entity);
+        }
     }
 
     @Override
@@ -74,15 +95,29 @@ public class MySqlConfigStore implements ConfigStore {
     @Override
     public List<ConfigStoreItem> listAll() {
         List<ConfigEntity> entities = mysqlDb.find(ConfigEntity.class).findList();
+        return convertToItems(entities);
+    }
+
+    @Override
+    public List<ConfigStoreItem> listByLevel(ConfigLevel level) {
+        List<ConfigEntity> entities = mysqlDb.find(ConfigEntity.class)
+                .where()
+                .eq("scope_bit", level.getScopeBit())
+                .findList();
+        return convertToItems(entities);
+    }
+
+    private List<ConfigStoreItem> convertToItems(List<ConfigEntity> entities) {
         List<ConfigStoreItem> items = new ArrayList<>();
         for (ConfigEntity entity : entities) {
             items.add(new ConfigStoreItem(
-                    entity.getConfigKey(),
-                    entity.getScopeBits(),
+                    ConfigLevel.fromScopeBit(entity.getScopeBit()),
                     entity.getWorkspaceId(),
                     entity.getCharacterId(),
                     entity.getToolId(),
                     entity.getSkillId(),
+                    entity.getMemoryId(),
+                    entity.getConfigKey(),
                     entity.getConfigValue()
             ));
         }

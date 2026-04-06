@@ -11,31 +11,37 @@ import org.dragon.config.enums.ConfigLevel;
 import java.time.LocalDateTime;
 
 /**
- * 配置实体（简化版）
+ * OBSERVER 配置实体
  *
- * <p>使用固定的 scopeBit 标识粒度，各层级 ID 扁平化存储。
+ * <p>对应 config_store_observer 表，OBSERVER 体系的配置存储。
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "config_store", indexes = {
+@Table(name = "config_store_observer", indexes = {
         @Index(name = "idx_scope_bit", columnList = "scope_bit"),
-        @Index(name = "idx_config_key", columnList = "config_key"),
-        @Index(name = "idx_lookup", columnList = "scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key")
+        @Index(name = "idx_observer", columnList = "observer_id"),
+        @Index(name = "idx_config_key", columnList = "config_key")
 })
-public class ConfigEntity {
+public class ObserverConfigEntity {
 
     @Id
     @Column(name = "id", length = 255)
     private String id;
 
     /**
-     * 粒度标识（1-30）
+     * 粒度标识（131-205，OBSERVER 粒度）
      */
     @Column(name = "scope_bit", nullable = false)
     private Integer scopeBit;
+
+    /**
+     * OBSERVER ID
+     */
+    @Column(name = "observer_id", length = 64, nullable = false)
+    private String observerId;
 
     // ==================== 扁平化层级 ID 存储 ====================
 
@@ -100,10 +106,12 @@ public class ConfigEntity {
     /**
      * 构建数据库主键
      */
-    public static String buildId(Integer scopeBit, String workspaceId, String characterId,
-                                 String toolId, String skillId, String memoryId, String configKey) {
-        return String.format("%d:%s:%s:%s:%s:%s:%s",
+    public static String buildId(Integer scopeBit, String observerId, String workspaceId,
+                                 String characterId, String toolId, String skillId,
+                                 String memoryId, String configKey) {
+        return String.format("%d:%s:%s:%s:%s:%s:%s:%s",
                 scopeBit,
+                observerId,
                 workspaceId != null ? workspaceId : "",
                 characterId != null ? characterId : "",
                 toolId != null ? toolId : "",
@@ -121,7 +129,7 @@ public class ConfigEntity {
             updatedAt = LocalDateTime.now();
         }
         if (id == null) {
-            id = buildId(scopeBit, workspaceId, characterId, toolId, skillId, memoryId, configKey);
+            id = buildId(scopeBit, observerId, workspaceId, characterId, toolId, skillId, memoryId, configKey);
         }
     }
 
