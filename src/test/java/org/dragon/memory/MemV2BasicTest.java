@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * @author binarytom
  * @version 1.0
  */
-@SpringBootTest(classes = MemoryAutoConfiguration.class)
+@SpringBootTest
 public class MemV2BasicTest {
 
     @Autowired
