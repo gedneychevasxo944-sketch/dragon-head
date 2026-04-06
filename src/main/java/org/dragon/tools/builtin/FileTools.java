@@ -213,7 +213,6 @@ public class FileTools {
 
                     StringBuilder sb = new StringBuilder();
                     int matchCount = 0;
-                    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("filetools.max-matches")
                     final int MAX_MATCHES = 50;
 
                     try {

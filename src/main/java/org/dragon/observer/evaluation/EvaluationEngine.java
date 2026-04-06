@@ -9,10 +9,7 @@ import java.util.UUID;
 
 import org.dragon.observer.collector.dto.ObservationDataset;
 import org.dragon.store.StoreFactory;
-import org.dragon.observer.collector.dto.CharacterObservationSnapshot;
 import org.dragon.observer.collector.dto.WorkspaceObservationSnapshot;
-import org.dragon.observer.collector.dto.MemoryObservationSnapshot;
-import org.dragon.observer.collector.dto.SkillObservationSnapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -98,9 +95,7 @@ public class EvaluationEngine {
         private double satisfactionWeight = 0.15;
 
         // 标准阈值
-        // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("evaluation.max-duration-ms")
         private long maxDurationMs = 60000; // 60秒
-        // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("evaluation.max-tokens")
         private int maxTokens = 100000;
 
         // Getters and setters

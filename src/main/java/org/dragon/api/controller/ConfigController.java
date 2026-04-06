@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
+import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.enums.ConfigScopeType;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.config.service.ConfigEffectService;
@@ -64,7 +65,8 @@ public class ConfigController {
             return ApiResponse.success(PageResponse.of(List.of(), 0, page, pageSize));
         }
 
-        List<ConfigApplication.ConfigItemVO> items = configApplication.listConfigItems(type, scopeId);
+        InheritanceContext context = buildContext(type, scopeId);
+        List<ConfigApplication.ConfigItemVO> items = configApplication.listConfigItems(context);
 
         // 过滤搜索关键词
         if (search != null && !search.isBlank()) {
@@ -101,8 +103,9 @@ public class ConfigController {
             return ApiResponse.error(400, "Invalid config id format");
         }
 
-        configApplication.setConfigValue(parsed.scopeType, parsed.scopeId, parsed.configKey, parsed.targetId, request.getValue());
-        return ApiResponse.success(toMap(configApplication.getEffectiveValue(parsed.scopeType, parsed.scopeId, parsed.configKey, parsed.targetId)));
+        configApplication.setConfigValue(parsed.configKey, request.getValue(), parsed.scopeType, parsed.scopeId);
+        InheritanceContext context = buildContext(parsed.scopeType, parsed.scopeId);
+        return ApiResponse.success(toMap(configApplication.getEffectiveConfig(parsed.configKey, context)));
     }
 
     /**
@@ -282,6 +285,35 @@ public class ConfigController {
 
     private record ParsedConfigId(ConfigScopeType scopeType, String scopeId, String configKey, String targetId) {}
 
+    /**
+     * 根据 scopeType 和 scopeId 构建 InheritanceContext
+     */
+    private InheritanceContext buildContext(ConfigScopeType scopeType, String scopeId) {
+        if (scopeType == null || scopeId == null) {
+            return InheritanceContext.forGlobal();
+        }
+        return switch (scopeType) {
+            case GLOBAL -> InheritanceContext.forGlobal();
+            case WORKSPACE -> InheritanceContext.forWorkspace(null, scopeId);
+            case CHARACTER -> InheritanceContext.forCharacter(null, null, scopeId);
+            case STUDIO -> {
+                List<org.dragon.config.context.InheritanceContext.ContextScope> scopes = new ArrayList<>();
+                scopes.add(org.dragon.config.context.InheritanceContext.ContextScope.of(ConfigScopeType.GLOBAL, "-"));
+                scopes.add(org.dragon.config.context.InheritanceContext.ContextScope.of(ConfigScopeType.STUDIO, scopeId));
+                yield InheritanceContext.builder().scopes(scopes).build();
+            }
+            case TOOL -> {
+                // TOOL 上下文需要 workspace 信息，但这里只有 toolId，返回基本上下文
+                yield InheritanceContext.forGlobal();
+            }
+            case SKILL -> {
+                // SKILL 上下文需要 workspace 信息，但这里只有 skillId，返回基本上下文
+                yield InheritanceContext.forGlobal();
+            }
+            default -> InheritanceContext.forGlobal();
+        };
+    }
+
     private Map<String, Object> toMap(ConfigApplication.ConfigItemVO item) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", item.getConfigKeyFull());
@@ -298,14 +330,12 @@ public class ConfigController {
 
     private Map<String, Object> toMap(ConfigEffectService.EffectiveConfig config) {
         Map<String, Object> map = new HashMap<>();
-        map.put("scopeType", config.getScopeType().name());
-        map.put("scopeId", config.getScopeId());
         map.put("configKey", config.getConfigKey());
         map.put("effectiveValue", config.getEffectiveValue());
         map.put("valueType", config.getValueType());
         map.put("source", config.getSource());
         map.put("isInherited", config.isInherited());
-        map.put("displayStatus", config.getDisplayStatus().name());
+        map.put("displayStatus", config.getDisplayStatus() != null ? config.getDisplayStatus().name() : null);
         return map;
     }
 }

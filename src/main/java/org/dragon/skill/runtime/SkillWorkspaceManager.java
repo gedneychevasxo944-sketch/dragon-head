@@ -1,5 +1,7 @@
 package org.dragon.skill.runtime;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.skill.domain.StorageInfoVO;
 import org.dragon.skill.exception.SkillValidationException;
 import org.dragon.skill.service.SkillStorageService;
@@ -8,7 +10,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -58,17 +59,27 @@ import java.util.stream.Stream;
 public class SkillWorkspaceManager {
 
     /** 模板目录根路径，存放只读的 Skill 包文件 */
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.workspace.template-dir")
-    @Value("${skill.workspace.template-dir:/var/skill-cache}")
-    private String templateBaseDir;
+    private final String templateBaseDir;
 
     /** 执行目录根路径，存放每次执行的独立工作目录 */
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.workspace.exec-dir")
-    @Value("${skill.workspace.exec-dir:/tmp/skill-exec}")
-    private String execBaseDir;
+    private final String execBaseDir;
 
     @Autowired
     private SkillStorageService storageService;
+
+    @Autowired
+    public SkillWorkspaceManager(ConfigApplication configApplication) {
+        this.templateBaseDir = configApplication.getStringValue(
+                "skill.workspace.template-dir",
+                InheritanceContext.forGlobal(),
+                "/var/skill-cache"
+        );
+        this.execBaseDir = configApplication.getStringValue(
+                "skill.workspace.exec-dir",
+                InheritanceContext.forGlobal(),
+                "/tmp/skill-exec"
+        );
+    }
 
     /**
      * 模板层 Caffeine 缓存：key = "skillId:version" → 模板目录绝对路径。

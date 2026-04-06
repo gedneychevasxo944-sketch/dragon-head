@@ -1,8 +1,10 @@
 package org.dragon.skill.service;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.skill.domain.StorageInfoVO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -35,9 +37,7 @@ import java.util.Map;
 public class S3SkillStorageService implements SkillStorageService {
 
     /** S3 bucket 名称 */
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.storage.s3.bucket")
-    @Value("${skill.storage.s3.bucket}")
-    private String s3Bucket;
+    private final String s3Bucket;
 
     // 注入 AWS SDK S3 客户端，例如：
     // @Autowired
@@ -46,6 +46,15 @@ public class S3SkillStorageService implements SkillStorageService {
     // 或 AWS SDK v1：
     // @Autowired
     // private com.amazonaws.services.s3.AmazonS3 s3Client;
+
+    @Autowired
+    public S3SkillStorageService(ConfigApplication configApplication) {
+        this.s3Bucket = configApplication.getStringValue(
+                "skill.storage.s3.bucket",
+                InheritanceContext.forGlobal(),
+                ""
+        );
+    }
 
     // ── 公共 API ─────────────────────────────────────────────────────
 

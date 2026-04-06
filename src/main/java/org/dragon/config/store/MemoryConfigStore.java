@@ -5,19 +5,16 @@ import org.dragon.store.StoreTypeAnn;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * 内存配置存储实现
- * 使用 ConcurrentHashMap 存储，支持命名空间和 workspace 维度配置
+ * 使用 ConcurrentHashMap 存储，适配扁平化 ConfigEntity 结构
  *
- * <p>存储结构：使用组合键 "workspace|entityType|entityId|key" 作为单层 Map 的 key
+ * <p>存储结构：使用组合键 "{scopeBits}:{workspaceId}:{characterId}:{toolId}:{skillId}:{configKey}"
  */
 @Slf4j
 @StoreTypeAnn(StoreType.MEMORY)
@@ -25,92 +22,22 @@ public class MemoryConfigStore implements ConfigStore {
 
     /**
      * 存储结构: compositeKey -> value
-     * compositeKey 格式: "workspace|entityType|entityId|key"
-     * 空值用空字符串表示
      */
     private final ConcurrentMap<String, Object> store = new ConcurrentHashMap<>();
 
     @Override
-    public void set(ConfigKey configKey, Object value) {
-        if (configKey == null || configKey.getKey() == null) {
-            throw new IllegalArgumentException("configKey and key cannot be null");
-        }
-        String compositeKey = buildKey(configKey);
+    public void set(String configKey, Object value, int scopeBits,
+                    String workspaceId, String characterId, String toolId, String skillId) {
+        String compositeKey = buildFlatKey(scopeBits, workspaceId, characterId, toolId, skillId, configKey);
         store.put(compositeKey, value);
-        log.debug("Config set: {} = {}", configKey, value);
+        log.debug("Config set: {} = {}", compositeKey, value);
     }
 
     @Override
-    public Optional<Object> get(ConfigKey configKey) {
-        if (configKey == null || configKey.getKey() == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(store.get(buildKey(configKey)));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T get(ConfigKey configKey, T defaultValue) {
-        return (T) get(configKey).orElse(defaultValue);
-    }
-
-    @Override
-    public void delete(ConfigKey configKey) {
-        if (configKey == null || configKey.getKey() == null) {
-            return;
-        }
-        store.remove(buildKey(configKey));
-        log.debug("Config deleted: {}", configKey);
-    }
-
-    @Override
-    public boolean exists(ConfigKey configKey) {
-        if (configKey == null || configKey.getKey() == null) {
-            return false;
-        }
-        return store.containsKey(buildKey(configKey));
-    }
-
-    @Override
-    public Map<String, Object> getAll(ConfigKey configKey) {
-        if (configKey == null) {
-            return Collections.emptyMap();
-        }
-
-        String prefix = buildPrefix(configKey);
-        Map<String, Object> result = new HashMap<>();
-
-        store.forEach((key, value) -> {
-            if (key.startsWith(prefix)) {
-                String suffix = key.substring(prefix.length());
-                // 提取最后一个部分作为配置键
-                String[] parts = suffix.split("\\|", 2);
-                if (parts.length > 1) {
-                    result.put(parts[1], value);
-                }
-            }
-        });
-
-        return result;
-    }
-
-    @Override
-    public void deleteAll(ConfigKey configKey) {
-        if (configKey == null) {
-            return;
-        }
-
-        String prefix = buildPrefix(configKey);
-        List<String> keysToRemove = new ArrayList<>();
-
-        store.forEach((key, value) -> {
-            if (key.startsWith(prefix)) {
-                keysToRemove.add(key);
-            }
-        });
-
-        keysToRemove.forEach(store::remove);
-        log.debug("Config deleted all with prefix: {}", prefix);
+    public Optional<Object> get(String configKey, int scopeBits,
+                                String workspaceId, String characterId, String toolId, String skillId) {
+        String compositeKey = buildFlatKey(scopeBits, workspaceId, characterId, toolId, skillId, configKey);
+        return Optional.ofNullable(store.get(compositeKey));
     }
 
     @Override
@@ -119,28 +46,37 @@ public class MemoryConfigStore implements ConfigStore {
         log.info("All config cleared");
     }
 
-    // ==================== 私有辅助方法 ====================
-
-    /**
-     * 构建组合键
-     * 格式: workspace|entityType|entityId|key
-     * 空值用空字符串表示
-     */
-    private String buildKey(ConfigKey configKey) {
-        String workspace = configKey.getScopeId() != null ? configKey.getScopeId() : "";
-        String entityType = configKey.getTargetType() != null ? configKey.getTargetType() : "";
-        String entityId = configKey.getTargetId() != null ? configKey.getTargetId() : "";
-        String key = configKey.getKey() != null ? configKey.getKey() : "";
-        return workspace + "|" + entityType + "|" + entityId + "|" + key;
+    @Override
+    public List<ConfigStoreItem> listAll() {
+        List<ConfigStoreItem> items = new ArrayList<>();
+        store.forEach((key, value) -> {
+            String[] parts = key.split(":", 6);
+            if (parts.length >= 6) {
+                items.add(new ConfigStoreItem(
+                        parts[5],
+                        Integer.parseInt(parts[0]),
+                        parts[1].isEmpty() ? null : parts[1],
+                        parts[2].isEmpty() ? null : parts[2],
+                        parts[3].isEmpty() ? null : parts[3],
+                        parts[4].isEmpty() ? null : parts[4],
+                        value
+                ));
+            }
+        });
+        return items;
     }
 
     /**
-     * 构建前缀（用于批量查询和删除）
+     * 构建扁平化组合键
      */
-    private String buildPrefix(ConfigKey configKey) {
-        String workspace = configKey.getScopeId() != null ? configKey.getScopeId() : "";
-        String entityType = configKey.getTargetType() != null ? configKey.getTargetType() : "";
-        String entityId = configKey.getTargetId() != null ? configKey.getTargetId() : "";
-        return workspace + "|" + entityType + "|" + entityId + "|";
+    private String buildFlatKey(int scopeBits, String workspaceId, String characterId,
+                                String toolId, String skillId, String configKey) {
+        return String.format("%d:%s:%s:%s:%s:%s",
+                scopeBits,
+                workspaceId != null ? workspaceId : "",
+                characterId != null ? characterId : "",
+                toolId != null ? toolId : "",
+                skillId != null ? skillId : "",
+                configKey);
     }
 }

@@ -10,7 +10,7 @@ import org.dragon.agent.llm.LLMResponse;
 import org.dragon.agent.llm.caller.LLMCaller;
 import org.dragon.character.Character;
 import org.dragon.config.PromptKeys;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.task.Task;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.workspace.service.task.arrangement.dto.PromptWriterInput;
@@ -39,7 +39,7 @@ public class ReActExecutor {
 
     private final LLMCaller llmCaller;
     private final Gson gson;
-    private final PromptManager promptManager;
+    private final ConfigApplication configApplication;
     private final ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider;
     private final ObjectProvider<CharacterCaller> characterCallerProvider;
     private final ThoughtPromptAssembler thoughtPromptAssembler;
@@ -50,7 +50,7 @@ public class ReActExecutor {
     private final SkillRegistry skillRegistry;
 
     public ReActExecutor(LLMCaller llmCaller,
-                         PromptManager promptManager,
+                         ConfigApplication configApplication,
                          ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider,
                          ObjectProvider<CharacterCaller> characterCallerProvider,
                          ThoughtPromptAssembler thoughtPromptAssembler,
@@ -60,7 +60,7 @@ public class ReActExecutor {
                          ToolRegistry toolRegistry,
                         SkillRegistry skillRegistry) {
         this.llmCaller = llmCaller;
-        this.promptManager = promptManager;
+        this.configApplication = configApplication;
         this.builtInCharacterFactoryProvider = builtInCharacterFactoryProvider;
         this.characterCallerProvider = characterCallerProvider;
         this.gson = new Gson();
@@ -265,7 +265,7 @@ public class ReActExecutor {
      * 尝试通过 PromptWriter 动态装配 Prompt
      */
     private String tryBuildDynamicThoughtPrompt(ReActContext context) {
-        if (promptManager == null) {
+        if (configApplication == null) {
             return null;
         }
 
@@ -288,7 +288,7 @@ public class ReActExecutor {
             }
 
             // 获取模板
-            String template = promptManager.getPrompt(workspaceId, context.getCharacterId(), PromptKeys.REACT_EXECUTE);
+            String template = configApplication.getPrompt(workspaceId, context.getCharacterId(), PromptKeys.REACT_EXECUTE);
             if (template == null || template.isEmpty()) {
                 return null;
             }

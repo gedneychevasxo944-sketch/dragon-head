@@ -6,9 +6,10 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.springframework.context.annotation.Primary;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -33,24 +34,20 @@ public class KimiLLMCaller implements LLMCaller {
 
     private final HttpClient httpClient;
     private final Gson gson;
+    private final String apiKey;
+    private final String baseUrl;
+    private final String defaultModel;
 
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.kimi.apiKey")
-    @Value("${llm.kimi.apiKey:}")
-    private String apiKey;
-
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.kimi.baseUrl")
-    @Value("${llm.kimi.baseUrl:https://api.moonshot.cn/v1}")
-    private String baseUrl;
-
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.kimi.model")
-    @Value("${llm.kimi.model:moonshot-v1-8k-online}")
-    private String defaultModel;
-
-    public KimiLLMCaller() {
+    @Autowired
+    public KimiLLMCaller(ConfigApplication configApplication) {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
         this.gson = new Gson();
+        InheritanceContext ctx = InheritanceContext.forGlobal();
+        this.apiKey = configApplication.getStringValue("llm.kimi.apiKey", ctx, "");
+        this.baseUrl = configApplication.getStringValue("llm.kimi.baseUrl", ctx, "https://api.moonshot.cn/v1");
+        this.defaultModel = configApplication.getStringValue("llm.kimi.model", ctx, "moonshot-v1-8k-online");
     }
 
     @Override

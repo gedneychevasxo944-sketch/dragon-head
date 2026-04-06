@@ -36,10 +36,10 @@ PromptKeys.REACT_EXECUTE
 PromptKeys.REACT_TASK_DECOMPOSE
 ```
 
-通过 `PromptManager` 获取：
+通过 `ConfigApplication` 获取：
 
 ```java
-String systemPrompt = promptManager.getWorkspacePrompt(
+String systemPrompt = configApplication.getWorkspacePrompt(
     workspaceId, PromptKeys.REACT_EXECUTE, defaultVal);
 ```
 

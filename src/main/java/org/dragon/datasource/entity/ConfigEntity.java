@@ -6,31 +6,34 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dragon.config.enums.ScopeBits;
 
 import java.time.LocalDateTime;
 
 /**
- * ConfigEntity 配置存储实体
+ * 配置实体（扁平化存储）
  *
- * <p>一张 Config 表通过 scope_type 字段区分不同作用域，支持：
+ * <p>使用 scopeBits 位掩码表示激活的层级，各层级 ID 打平存储。
+ *
+ * <p>存储示例：
  * <ul>
- *   <li>GLOBAL：全局配置</li>
- *   <li>STUDIO：用户级配置</li>
- *   <li>WORKSPACE：工作空间配置</li>
- *   <li>CHARACTER/OBSERVER/SKILL/TOOL：资产配置</li>
- *   <li>MEMORY：记忆配置（隶属于 Character 或 Workspace）</li>
- *   <li>MEMBER：成员配置</li>
- *   <li>WORKSPACE_REF_OVERRIDE：Workspace 引用覆盖（最高优先级）</li>
+ *   <li>Global: scopeBits=GLOBAL, globalId="-", 其他ID=null</li>
+ *   <li>Workspace: scopeBits=GLOBAL|WORKSPACE, workspaceId="ws1", 其他ID=null</li>
+ *   <li>Workspace+Character: scopeBits=GLOBAL|WORKSPACE|CHARACTER, workspaceId="ws1", characterId="char1"</li>
+ *   <li>Workspace+Character+Tool: scopeBits=GLOBAL|WORKSPACE|CHARACTER|TOOL, workspaceId="ws1", characterId="char1", toolId="tool1"</li>
  * </ul>
  *
- * <p>config_key 格式：{scopeType}:{scopeId}:{targetType}:{targetId}:{configKey}
- *
- * <p>示例：
+ * <p>scopeBits 位定义：
  * <ul>
- *   <li>GLOBAL:-:self:-:jwt.secret</li>
- *   <li>WORKSPACE:ws_456:self:-:maxSteps</li>
- *   <li>WORKSPACE:ws_456:CHARACTER:char_123:maxSteps</li>
- *   <li>CHARACTER:char_789:self:-:systemPrompt</li>
+ *   <li>Bit 0 (1): GLOBAL - 全局配置</li>
+ *   <li>Bit 1 (2): STUDIO - 用户/租户级别</li>
+ *   <li>Bit 2 (4): WORKSPACE - 工作空间级别</li>
+ *   <li>Bit 3 (8): CHARACTER - 角色级别</li>
+ *   <li>Bit 4 (16): TOOL - 工具级别</li>
+ *   <li>Bit 5 (32): SKILL - 技能级别</li>
+ *   <li>Bit 6 (64): MEMORY - 记忆级别</li>
+ *   <li>Bit 7 (128): OBSERVER - 观察者级别</li>
+ *   <li>Bit 8 (256): MEMBER - 成员级别</li>
  * </ul>
  */
 @Data
@@ -39,90 +42,102 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "config_store", indexes = {
-        @Index(name = "idx_scope", columnList = "scope_type, scope_id"),
-        @Index(name = "idx_config_key", columnList = "config_key(64)"),
-        @Index(name = "idx_reference", columnList = "reference_type, reference_id"),
-        @Index(name = "idx_owner", columnList = "owner_type, owner_id"),
-        @Index(name = "idx_status", columnList = "status")
+        @Index(name = "idx_scope_bits", columnList = "scope_bits"),
+        @Index(name = "idx_config_key", columnList = "config_key"),
+        @Index(name = "idx_workspace_character", columnList = "workspace_id, character_id")
 })
 public class ConfigEntity {
 
     @Id
+    @Column(name = "id", length = 255)
     private String id;
 
-    // ===== 作用域字段 =====
-
     /**
-     * 作用域类型：GLOBAL, STUDIO, WORKSPACE, CHARACTER, MEMORY, OBSERVER, MEMBER, SKILL, TOOL, WORKSPACE_REF_OVERRIDE
+     * 层级位掩码，表示激活的层级组合
+     * 例如: GLOBAL|WORKSPACE|CHARACTER = 0b00001101 = 13
      */
-    @Column(name = "scope_type", nullable = false, length = 32)
-    private String scopeType;
+    @Column(name = "scope_bits", nullable = false)
+    private Integer scopeBits;
+
+    // ==================== 扁平化层级 ID 存储 ====================
 
     /**
-     * 作用域 ID（如 workspaceId、studioId 等）
+     * GLOBAL 时使用，固定为 "-"
      */
-    @Column(name = "scope_id", length = 64)
-    private String scopeId;
+    @Column(name = "global_id", length = 64)
+    private String globalId;
 
     /**
-     * 目标类型：self（自有配置）或 CHARACTER/SKILL/OBSERVER/TOOL/MEMBER（引用配置）
+     * STUDIO 时使用
      */
-    @Column(name = "target_type", length = 32)
-    private String targetType;
+    @Column(name = "studio_id", length = 64)
+    private String studioId;
 
     /**
-     * 目标 ID
+     * WORKSPACE 时使用
      */
-    @Column(name = "target_id", length = 64)
-    private String targetId;
+    @Column(name = "workspace_id", length = 64)
+    private String workspaceId;
 
     /**
-     * 配置键（不含 scope/target 前缀，只含最后的配置名）
+     * CHARACTER 时使用
+     */
+    @Column(name = "character_id", length = 64)
+    private String characterId;
+
+    /**
+     * TOOL 时使用
+     */
+    @Column(name = "tool_id", length = 64)
+    private String toolId;
+
+    /**
+     * SKILL 时使用
+     */
+    @Column(name = "skill_id", length = 64)
+    private String skillId;
+
+    /**
+     * MEMORY 时使用
+     */
+    @Column(name = "memory_id", length = 64)
+    private String memoryId;
+
+    /**
+     * OBSERVER 时使用
+     */
+    @Column(name = "observer_id", length = 64)
+    private String observerId;
+
+    /**
+     * MEMBER 时使用
+     */
+    @Column(name = "member_id", length = 64)
+    private String memberId;
+
+    // ==================== 配置值 ====================
+
+    /**
+     * 配置键（只存 key 名字，如 "maxSteps"）
      */
     @Column(name = "config_key", nullable = false, length = 255)
     private String configKey;
 
     /**
-     * 配置值（JSON 格式存储）
+     * 配置值（JSON 格式）
      */
     @DbJson
     @Column(name = "config_value", columnDefinition = "JSON")
     private Object configValue;
 
-    // ===== 引用关系字段 =====
-
     /**
-     * 被引用资产类型：CHARACTER, SKILL, TOOL, OBSERVER 等
-     * 用于 workspace_ref_override 或 skill_tool_usage 场景
+     * 值类型：STRING, NUMBER, BOOLEAN, LIST, OBJECT
      */
-    @Column(name = "reference_type", length = 32)
-    private String referenceType;
+    @Column(name = "value_type", length = 32)
+    private String valueType;
 
     /**
-     * 被引用资产 ID
-     */
-    @Column(name = "reference_id", length = 64)
-    private String referenceId;
-
-    // ===== 归属关系字段 =====
-
-    /**
-     * 所属者类型：CHARACTER, WORKSPACE
-     * 用于 Memory 等子资源的归属追踪
-     */
-    @Column(name = "owner_type", length = 32)
-    private String ownerType;
-
-    /**
-     * 所属者 ID
-     */
-    @Column(name = "owner_id", length = 64)
-    private String ownerId;
-
-    // ===== 生命周期字段 =====
-
-    /**
-     * 状态：DRAFT（草稿）、PUBLISHED（已发布）
+     * 状态：DRAFT, PUBLISHED
      */
     @Column(name = "status", length = 20)
     @Builder.Default
@@ -147,11 +162,66 @@ public class ConfigEntity {
     @Column(name = "published_by", length = 100)
     private String publishedBy;
 
-    // ===== 审计字段 =====
-
+    /**
+     * 创建时间
+     */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * 更新时间
+     */
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // ==================== 辅助方法 ====================
+
+    /**
+     * 检查是否包含 GLOBAL
+     */
+    public boolean isGlobal() {
+        return scopeBits != null && ScopeBits.hasBit(scopeBits, ScopeBits.GLOBAL);
+    }
+
+    /**
+     * 检查是否包含 WORKSPACE
+     */
+    public boolean isWorkspace() {
+        return scopeBits != null && ScopeBits.hasBit(scopeBits, ScopeBits.WORKSPACE);
+    }
+
+    /**
+     * 检查是否包含 CHARACTER
+     */
+    public boolean isCharacter() {
+        return scopeBits != null && ScopeBits.hasBit(scopeBits, ScopeBits.CHARACTER);
+    }
+
+    /**
+     * 检查是否包含 TOOL
+     */
+    public boolean isTool() {
+        return scopeBits != null && ScopeBits.hasBit(scopeBits, ScopeBits.TOOL);
+    }
+
+    /**
+     * 检查是否包含 SKILL
+     */
+    public boolean isSkill() {
+        return scopeBits != null && ScopeBits.hasBit(scopeBits, ScopeBits.SKILL);
+    }
+
+    /**
+     * 构建数据库主键
+     */
+    public static String buildId(int scopeBits, String workspaceId, String characterId,
+                                   String toolId, String skillId, String configKey) {
+        return String.format("%d:%s:%s:%s:%s:%s",
+                scopeBits,
+                workspaceId != null ? workspaceId : "",
+                characterId != null ? characterId : "",
+                toolId != null ? toolId : "",
+                skillId != null ? skillId : "",
+                configKey);
+    }
 }

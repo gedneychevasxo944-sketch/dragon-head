@@ -6,7 +6,9 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
-import org.springframework.beans.factory.annotation.Value;
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -30,24 +32,20 @@ public class DeepseekLLMCaller implements LLMCaller {
 
     private final HttpClient httpClient;
     private final Gson gson;
+    private final String apiKey;
+    private final String baseUrl;
+    private final String defaultModel;
 
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.deepseek.apiKey")
-    @Value("${llm.deepseek.apiKey:}")
-    private String apiKey;
-
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.deepseek.baseUrl")
-    @Value("${llm.deepseek.baseUrl:https://api.deepseek.com}")
-    private String baseUrl;
-
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("llm.deepseek.model")
-    @Value("${llm.deepseek.model:deepseek-chat}")
-    private String defaultModel;
-
-    public DeepseekLLMCaller() {
+    @Autowired
+    public DeepseekLLMCaller(ConfigApplication configApplication) {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
         this.gson = new Gson();
+        InheritanceContext ctx = InheritanceContext.forGlobal();
+        this.apiKey = configApplication.getStringValue("llm.deepseek.apiKey", ctx, "");
+        this.baseUrl = configApplication.getStringValue("llm.deepseek.baseUrl", ctx, "https://api.deepseek.com");
+        this.defaultModel = configApplication.getStringValue("llm.deepseek.model", ctx, "deepseek-chat");
     }
 
     @Override

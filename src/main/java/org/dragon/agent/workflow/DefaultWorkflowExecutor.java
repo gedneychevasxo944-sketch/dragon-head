@@ -214,7 +214,6 @@ public class DefaultWorkflowExecutor implements WorkflowExecutor {
      */
     private Object executeLoop(Workflow.Node node, WorkflowState state) throws Exception {
         Workflow.LoopConfig loopConfig = node.getLoopConfig();
-        // TODO [ConfigStore Migration]: 迁移到 ConfigStore WORKFLOW scope，使用 ConfigKey.of("workflow.max-iterations")
         int maxIterations = loopConfig != null ? loopConfig.getMaxIterations() : 10;
 
         Object loopResult = null;

@@ -1,5 +1,6 @@
 package org.dragon.skill.runtime;
 
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.skill.config.SkillPermissionConfig;
 import org.dragon.skill.enums.ExecutionContext;
 import org.dragon.skill.enums.SkillCategory;
@@ -31,6 +32,9 @@ import static org.mockito.Mockito.when;
 class SkillPermissionCheckerTest {
 
     @Mock
+    private ConfigApplication configApplication;
+
+    @Mock
     private SkillPermissionConfig permissionConfig;
 
     @Mock
@@ -41,7 +45,7 @@ class SkillPermissionCheckerTest {
 
     @BeforeEach
     void setUp() {
-        checker = new SkillPermissionChecker(permissionConfig, eventPublisher);
+        checker = new SkillPermissionChecker(configApplication, permissionConfig, eventPublisher);
         agentContext = AgentContext.builder()
                 .characterId("char-1")
                 .workspaceId("ws-1")

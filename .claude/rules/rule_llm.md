@@ -31,11 +31,11 @@ public interface LLMCaller {
 @Service
 public class XxxService {
     private final LLMCaller llmCaller;
-    private final PromptManager promptManager;
+    private final ConfigApplication configApplication;
 
     public void doSomething() {
-        // 构建 LLMRequest，system prompt 从 PromptManager 获取
-        String systemPrompt = promptManager.getGlobalPrompt(PromptKeys.XXX, defaultVal);
+        // 构建 LLMRequest，system prompt 从 ConfigApplication 获取
+        String systemPrompt = configApplication.getGlobalPrompt(PromptKeys.XXX, defaultVal);
 
         LLMRequest request = LLMRequest.builder()
                 .model(modelId)

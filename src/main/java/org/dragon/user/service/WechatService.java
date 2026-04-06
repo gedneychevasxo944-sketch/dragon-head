@@ -1,5 +1,7 @@
 package org.dragon.user.service;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.store.StoreFactory;
 import org.dragon.user.dto.LoginResponse;
 import org.dragon.user.dto.UserInfo;
@@ -8,7 +10,7 @@ import org.dragon.datasource.entity.UserTokenEntity;
 import org.dragon.user.security.service.JwtService;
 import org.dragon.user.store.TokenStore;
 import org.dragon.user.store.UserStore;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,19 +28,16 @@ public class WechatService {
     private final UserStore userStore;
     private final TokenStore tokenStore;
     private final JwtService jwtService;
+    private final String appId;
+    private final String appSecret;
 
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("wechat.app-id")
-    @Value("${wechat.app-id:}")
-    private String appId;
-
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("wechat.app-secret")
-    @Value("${wechat.app-secret:}")
-    private String appSecret;
-
-    public WechatService(StoreFactory storeFactory, JwtService jwtService) {
+    @Autowired
+    public WechatService(StoreFactory storeFactory, JwtService jwtService, ConfigApplication configApplication) {
         this.userStore = storeFactory.get(UserStore.class);
         this.tokenStore = storeFactory.get(TokenStore.class);
         this.jwtService = jwtService;
+        this.appId = configApplication.getStringValue("wechat.app-id", InheritanceContext.forGlobal(), "");
+        this.appSecret = configApplication.getStringValue("wechat.app-secret", InheritanceContext.forGlobal(), "");
     }
 
     /**

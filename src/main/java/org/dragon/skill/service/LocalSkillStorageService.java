@@ -1,9 +1,10 @@
 package org.dragon.skill.service;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.skill.domain.StorageInfoVO;
 import org.dragon.skill.exception.SkillValidationException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -32,9 +33,15 @@ import java.util.Map;
 public class LocalSkillStorageService implements SkillStorageService {
 
     /** 本地存储根目录，默认 /data/skills */
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("skill.storage.local.base-path")
-    @Value("${skill.storage.local.base-path:/data/skills}")
-    private String localBasePath;
+    private final String localBasePath;
+
+    public LocalSkillStorageService(ConfigApplication configApplication) {
+        this.localBasePath = configApplication.getStringValue(
+                "skill.storage.local.base-path",
+                InheritanceContext.forGlobal(),
+                "/data/skills"
+        );
+    }
 
     // ── 公共 API ─────────────────────────────────────────────────────
 

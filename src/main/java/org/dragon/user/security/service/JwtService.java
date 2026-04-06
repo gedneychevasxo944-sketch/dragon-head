@@ -2,6 +2,9 @@ package org.dragon.user.security.service;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,17 +20,16 @@ import java.util.Map;
 @Component
 public class JwtService {
 
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("jwt.secret")
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    private final String jwtSecret;
+    private final long accessTokenValidity; // 秒
+    private final long refreshTokenValidity; // 秒
 
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("jwt.access-token-validity")
-    @Value("${jwt.access-token-validity:7200}")
-    private long accessTokenValidity; // 秒
-
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("jwt.refresh-token-validity")
-    @Value("${jwt.refresh-token-validity:604800}")
-    private long refreshTokenValidity; // 秒
+    @Autowired
+    public JwtService(ConfigApplication configApplication) {
+        this.jwtSecret = configApplication.getStringValue("jwt.secret", InheritanceContext.forGlobal(), "");
+        this.accessTokenValidity = configApplication.getLongValue("jwt.access-token-validity", InheritanceContext.forGlobal(), 7200L);
+        this.refreshTokenValidity = configApplication.getLongValue("jwt.refresh-token-validity", InheritanceContext.forGlobal(), 604800L);
+    }
 
     /**
      * 生成AccessToken

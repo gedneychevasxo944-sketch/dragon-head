@@ -1,5 +1,6 @@
 package org.dragon.config;
 
+import org.dragon.config.service.ConfigApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -21,10 +22,10 @@ public class PromptInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(PromptInitializer.class);
 
-    private final PromptManager promptManager;
+    private final ConfigApplication configApplication;
 
-    public PromptInitializer(PromptManager promptManager) {
-        this.promptManager = promptManager;
+    public PromptInitializer(ConfigApplication configApplication) {
+        this.configApplication = configApplication;
     }
 
     @Override
@@ -62,27 +63,27 @@ public class PromptInitializer implements CommandLineRunner {
         // Observer Suggestion Prompt
         String observerSuggestion = loadPromptFromFile("prompts/observer-suggestion-prompt.txt");
         if (observerSuggestion != null) {
-            promptManager.setGlobalPrompt(PromptKeys.OBSERVER_SUGGESTION, observerSuggestion);
+            configApplication.setGlobalPrompt(PromptKeys.OBSERVER_SUGGESTION, observerSuggestion);
         } else {
             // 使用内联默认
-            promptManager.setGlobalPrompt(PromptKeys.OBSERVER_SUGGESTION,
+            configApplication.setGlobalPrompt(PromptKeys.OBSERVER_SUGGESTION,
                     "你是一个专业的AI优化顾问，擅长分析AI角色的行为模式并提供改进建议。请根据提供的数据生成具体、可执行的优化建议。");
         }
 
         // Observer Personality Enhancement Prompt
         String personalityEnhancement = loadPromptFromFile("prompts/observer-personality-enhancement-prompt.txt");
         if (personalityEnhancement != null) {
-            promptManager.setGlobalPrompt(PromptKeys.OBSERVER_PERSONALITY_ENHANCEMENT, personalityEnhancement);
+            configApplication.setGlobalPrompt(PromptKeys.OBSERVER_PERSONALITY_ENHANCEMENT, personalityEnhancement);
         }
     }
 
     private void initReActPrompts() {
         // ReAct Task Decompose Prompt
-        promptManager.setGlobalPrompt(PromptKeys.REACT_TASK_DECOMPOSE,
+        configApplication.setGlobalPrompt(PromptKeys.REACT_TASK_DECOMPOSE,
                 "你是一个组织调度专家，负责把复杂任务拆解为可执行的子任务。");
 
         // ReAct Execute Prompt
-        promptManager.setGlobalPrompt(PromptKeys.REACT_EXECUTE,
+        configApplication.setGlobalPrompt(PromptKeys.REACT_EXECUTE,
                 """
                 你是 ReAct 执行阶段的 PromptWriter，需要基于给定的模板、任务上下文、历史思考、动作、观察结果和工具信息，生成当前这一轮真正给执行模型使用的提示词。
                 生成要求：
@@ -97,17 +98,17 @@ public class PromptInitializer implements CommandLineRunner {
 
     private void initCharacterPrompts() {
         // Character Default System Prompt
-        promptManager.setGlobalPrompt(PromptKeys.CHARACTER_SYSTEM,
+        configApplication.setGlobalPrompt(PromptKeys.CHARACTER_SYSTEM,
                 "你是一个专业的AI数字员工，有自己的性格特点和价值观。");
 
         // Character Task Prompt
-        promptManager.setGlobalPrompt(PromptKeys.CHARACTER_TASK,
+        configApplication.setGlobalPrompt(PromptKeys.CHARACTER_TASK,
                 "请根据要求完成以下任务：");
     }
 
     private void initHrPrompts() {
         // HR 雇佣决策 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.HR_HIRE_DECISION,
+        configApplication.setGlobalPrompt(PromptKeys.HR_HIRE_DECISION,
                 """
                 请评估是否应该雇佣以下 Character 到工作空间：
 
@@ -123,11 +124,11 @@ public class PromptInitializer implements CommandLineRunner {
                 """);
 
         // HR 雇佣选择 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.HR_HIRE_SELECT,
+        configApplication.setGlobalPrompt(PromptKeys.HR_HIRE_SELECT,
                 "请从以下候选 Character 中选择一个最合适雇佣的：");
 
         // HR 解雇决策 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.HR_FIRE_DECISION,
+        configApplication.setGlobalPrompt(PromptKeys.HR_FIRE_DECISION,
                 """
                 请评估是否应该解雇工作空间中的以下 Character：
 
@@ -142,7 +143,7 @@ public class PromptInitializer implements CommandLineRunner {
                 """);
 
         // HR 生成职责描述 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.HR_DUTY_GENERATE,
+        configApplication.setGlobalPrompt(PromptKeys.HR_DUTY_GENERATE,
                 """
                 请为以下 Character 生成一个合适的职责描述：
 
@@ -153,7 +154,7 @@ public class PromptInitializer implements CommandLineRunner {
                 """);
 
         // 通用选择 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.SELECTION_GENERIC,
+        configApplication.setGlobalPrompt(PromptKeys.SELECTION_GENERIC,
                 "请从以下候选中选择一个最合适的：");
     }
 
@@ -161,9 +162,9 @@ public class PromptInitializer implements CommandLineRunner {
         // MemberSelector 选择成员 Prompt
         String memberSelectorSelect = loadPromptFromFile("prompts/member-selector-select-prompt.txt");
         if (memberSelectorSelect != null) {
-            promptManager.setGlobalPrompt(PromptKeys.MEMBER_SELECTOR_SELECT, memberSelectorSelect);
+            configApplication.setGlobalPrompt(PromptKeys.MEMBER_SELECTOR_SELECT, memberSelectorSelect);
         } else {
-            promptManager.setGlobalPrompt(PromptKeys.MEMBER_SELECTOR_SELECT,
+            configApplication.setGlobalPrompt(PromptKeys.MEMBER_SELECTOR_SELECT,
                     "请从以下候选成员中选择最合适的执行者来完成指定任务。考虑技能匹配度、历史成功率和工作负载。");
         }
     }
@@ -172,43 +173,43 @@ public class PromptInitializer implements CommandLineRunner {
         // ProjectManager 任务拆解 Prompt
         String projectManagerDecompose = loadPromptFromFile("prompts/project-manager-decompose-prompt.txt");
         if (projectManagerDecompose != null) {
-            promptManager.setGlobalPrompt(PromptKeys.PROJECT_MANAGER_DECOMPOSE, projectManagerDecompose);
+            configApplication.setGlobalPrompt(PromptKeys.PROJECT_MANAGER_DECOMPOSE, projectManagerDecompose);
         } else {
-            promptManager.setGlobalPrompt(PromptKeys.PROJECT_MANAGER_DECOMPOSE,
+            configApplication.setGlobalPrompt(PromptKeys.PROJECT_MANAGER_DECOMPOSE,
                     "请将以下任务拆解为可执行的子任务。");
         }
     }
 
     private void initCharacterCollaborationPrompts() {
         // Character 协作 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.CHARACTER_COLLABORATION,
+        configApplication.setGlobalPrompt(PromptKeys.CHARACTER_COLLABORATION,
                 "你是一个专业的 AI 助手，正在与其他 Character 协作完成任务。");
 
         // Character 追问用户 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.CHARACTER_ASK_USER,
+        configApplication.setGlobalPrompt(PromptKeys.CHARACTER_ASK_USER,
                 "你需要向用户询问更多信息以完成任务。请用简洁清晰的语言提问。");
 
         // Character 等待依赖 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.CHARACTER_WAIT_DEPENDENCY,
+        configApplication.setGlobalPrompt(PromptKeys.CHARACTER_WAIT_DEPENDENCY,
                 "当前任务需要等待其他任务完成后才能继续执行。");
 
         // Character 协作状态决策 Prompt
         String collaborationDecision = loadPromptFromFile("prompts/character-collaboration-decision-prompt.txt");
         if (collaborationDecision != null) {
-            promptManager.setGlobalPrompt(PromptKeys.CHARACTER_COLLABORATION_DECISION, collaborationDecision);
+            configApplication.setGlobalPrompt(PromptKeys.CHARACTER_COLLABORATION_DECISION, collaborationDecision);
         } else {
-            promptManager.setGlobalPrompt(PromptKeys.CHARACTER_COLLABORATION_DECISION,
+            configApplication.setGlobalPrompt(PromptKeys.CHARACTER_COLLABORATION_DECISION,
                     "你是一个专业的 AI 协作助手，需要根据当前协作上下文判断任务状态。");
         }
 
         // ProjectManager 续跑决策 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.PROJECT_MANAGER_CONTINUATION_DECISION,
+        configApplication.setGlobalPrompt(PromptKeys.PROJECT_MANAGER_CONTINUATION_DECISION,
                 "请判断任务应该继续执行还是等待用户输入。");
     }
 
     private void initTaskResumePrompts() {
         // Task 续跑摘要 Prompt
-        promptManager.setGlobalPrompt(PromptKeys.TASK_RESUME_SUMMARY,
+        configApplication.setGlobalPrompt(PromptKeys.TASK_RESUME_SUMMARY,
                 "请总结以下任务的执行进度和上下文，以便继续执行：");
     }
 

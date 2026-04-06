@@ -2,7 +2,7 @@
 
 ## 核心原则
 
-所有 Prompt 的定义、注册和读取，必须通过 `org.dragon.config` 包下的三个核心类完成，**禁止在业务代码中硬编码 prompt 字符串**。
+所有 Prompt 的定义、注册和读取，必须通过 `org.dragon.config` 包下的组件完成，**禁止在业务代码中硬编码 prompt 字符串**。
 
 ## 核心组件
 
@@ -21,7 +21,7 @@ public static final String MY_MODULE_ACTION = "myModule.action";
 
 ```java
 // 错误示例 —— 禁止在业务代码中直接写字符串
-promptManager.getGlobalPrompt("my hardcoded prompt key", defaultVal);
+configApplication.getGlobalPrompt("my hardcoded prompt key", defaultVal);
 ```
 
 ### 1.2 Prompt 初始化 → PromptInitializer
@@ -36,33 +36,34 @@ promptManager.getGlobalPrompt("my hardcoded prompt key", defaultVal);
 // 正确示例 —— 长 prompt 走文件
 String myPrompt = loadPromptFromFile("prompts/my-module-action-prompt.txt");
 if (myPrompt != null) {
-    promptManager.setGlobalPrompt(PromptKeys.MY_MODULE_ACTION, myPrompt);
+    configApplication.setGlobalPrompt(PromptKeys.MY_MODULE_ACTION, myPrompt);
 }
 
 // 正确示例 —— 短 prompt 内联
-promptManager.setGlobalPrompt(PromptKeys.MY_MODULE_ACTION, "请完成以下任务：");
+configApplication.setGlobalPrompt(PromptKeys.MY_MODULE_ACTION, "请完成以下任务：");
 ```
 
-### 1.3 Prompt 使用 → PromptManager
+### 1.3 Prompt 使用 → ConfigApplication
 
-**文件路径：** `org.dragon.config.PromptManager`
+**文件路径：** `org.dragon.config.service.ConfigApplication`
 
-- 业务代码中获取 prompt 必须调用 PromptManager 的方法
-- 优先级由高到低：`Character > Organization > Workspace > Global`
-- 根据上下文选择合适的重载方法
+- 业务代码中获取 prompt 必须调用 ConfigApplication 的方法
+- 优先级由高到低：`Character > Workspace > Global`
+- 根据上下文选择合适的方法
 
 ```java
-// 获取 Character 级别 prompt（最高优先级）
-promptManager.getCharacterPrompt(workspaceId, characterId, PromptKeys.XXX, defaultVal);
+// 使用 InheritanceContext 获取 prompt
+InheritanceContext context = InheritanceContext.forCharacter(null, workspaceId, characterId);
+String prompt = configApplication.getPrompt(PromptKeys.XXX, context);
 
 // 获取 Workspace 级别 prompt
-promptManager.getWorkspacePrompt(workspaceId, PromptKeys.XXX, defaultVal);
+configApplication.getWorkspacePrompt(workspaceId, PromptKeys.XXX, defaultVal);
 
 // 获取全局 prompt（最低优先级）
-promptManager.getGlobalPrompt(PromptKeys.XXX, defaultVal);
+configApplication.getGlobalPrompt(PromptKeys.XXX, defaultVal);
 ```
 
-**禁止绕过 PromptManager 直接操作 ConfigStore 读写 prompt。**
+**禁止绕过 ConfigApplication 直接操作 ConfigStore 读写 prompt。**
 
 ## Prompt 文件放置
 
@@ -84,4 +85,4 @@ src/main/resources/prompts/
 1. 在 `PromptKeys` 中定义常量（带 Javadoc）
 2. 在 `PromptInitializer` 中添加 `init{Module}Prompts()` 方法
 3. 创建对应的 `prompts/{module}-{action}-prompt.txt` 文件（如需长 prompt）
-4. 在业务代码中通过 `PromptManager` 获取使用
+4. 在业务代码中通过 `ConfigApplication` 获取使用

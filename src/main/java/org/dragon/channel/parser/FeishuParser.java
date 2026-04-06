@@ -10,9 +10,10 @@ import org.dragon.channel.entity.MentionConfig;
 import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.channel.enums.FileSource;
 import org.dragon.channel.file.FeishuImStorageAdapter;
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.util.GsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -29,12 +30,19 @@ import java.util.Map;
 @Component
 public class FeishuParser {
 
-    // TODO [ConfigStore Migration]: 迁移到 ConfigStore GLOBAL scope，使用 ConfigKey.of("channel.feishu.robotOpenId")
-    @Value("${channel.feishu.robotOpenId}")
-    private String robotOpenId;
+    private final String robotOpenId;
 
     @Autowired
     private FeishuImStorageAdapter feishuImStorageAdapter;
+
+    @Autowired
+    public FeishuParser(ConfigApplication configApplication) {
+        this.robotOpenId = configApplication.getStringValue(
+                "channel.feishu.robotOpenId",
+                InheritanceContext.forGlobal(),
+                ""
+        );
+    }
 
     public NormalizedMessage parseInbound(P2MessageReceiveV1 p2MessageReceiveV1, String channelName) {
         EventMessage message = p2MessageReceiveV1.getEvent().getMessage();

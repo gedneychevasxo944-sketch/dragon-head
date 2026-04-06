@@ -6,7 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * 调度模块配置属性
  */
-// TODO [ConfigStore Migration]: 评估是否迁移到 ConfigStore GLOBAL scope（部分配置如 threadPool/corePoolSize 适合迁移）
 @Data
 @ConfigurationProperties(prefix = "dragon.schedule")
 public class ScheduleProperties {
