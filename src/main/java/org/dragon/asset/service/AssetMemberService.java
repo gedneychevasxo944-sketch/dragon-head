@@ -2,6 +2,7 @@ package org.dragon.asset.service;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.dragon.asset.dto.AssetMemberDTO;
 import org.dragon.asset.dto.CollaboratorDTO;
 import org.dragon.asset.store.AssetMemberStore;
 import org.dragon.datasource.entity.AssetMemberEntity;
@@ -30,6 +31,15 @@ public class AssetMemberService {
     public AssetMemberService(StoreFactory storeFactory) {
         this.assetMemberStore = storeFactory.get(AssetMemberStore.class);
         this.userStore = storeFactory.get(UserStore.class);
+    }
+
+    /**
+     * 获取用户的所有资产成员关系（包含 owner 和 collaborator）
+     */
+    public List<AssetMemberDTO> getMyAssets(Long userId) {
+        return assetMemberStore.findByUserId(userId).stream()
+                .map(this::toAssetMemberDTO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -171,6 +181,20 @@ public class AssetMemberService {
                 .inviterName(inviterName)
                 .invitedAt(member.getInvitedAt())
                 .accepted(member.getAccepted())
+                .build();
+    }
+
+    private AssetMemberDTO toAssetMemberDTO(AssetMemberEntity member) {
+        return AssetMemberDTO.builder()
+                .id(member.getId())
+                .resourceType(member.getResourceType())
+                .resourceId(member.getResourceId())
+                .role(member.getRole())
+                .invitedBy(member.getInvitedBy())
+                .invitedAt(member.getInvitedAt())
+                .acceptedAt(member.getAcceptedAt())
+                .accepted(member.getAccepted())
+                .createdAt(member.getCreatedAt())
                 .build();
     }
 }

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.dragon.api.dto.ApiResponse;
+import org.dragon.asset.dto.AssetMemberDTO;
 import org.dragon.asset.dto.CollaboratorDTO;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.CollaboratorService;
@@ -49,6 +50,18 @@ public class CollaboratorController {
             @AuthenticationPrincipal UserPrincipal principal) {
         List<InvitationDTO> invitations = assetMemberService.getPendingInvitations(principal.getUserId());
         return ApiResponse.success(invitations);
+    }
+
+    /**
+     * 获取我的资产列表
+     * GET /api/v1/collaborators/my-assets
+     */
+    @Operation(summary = "获取我的资产列表")
+    @GetMapping("/my-assets")
+    public ApiResponse<List<AssetMemberDTO>> getMyAssets(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        List<AssetMemberDTO> assets = assetMemberService.getMyAssets(principal.getUserId());
+        return ApiResponse.success(assets);
     }
 
     /**

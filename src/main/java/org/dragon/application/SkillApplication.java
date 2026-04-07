@@ -6,7 +6,7 @@ import org.dragon.api.dto.PageResponse;
 import org.dragon.skill.actionlog.SkillActionLogService;
 import org.dragon.skill.actionlog.SkillActionLogVO;
 import org.dragon.asset.service.AssetPublishStatusService;
-import org.dragon.permission.service.CollaboratorService;
+import org.dragon.asset.service.CollaboratorService;
 import org.dragon.skill.dto.SkillDetailVO;
 import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillQueryRequest;
