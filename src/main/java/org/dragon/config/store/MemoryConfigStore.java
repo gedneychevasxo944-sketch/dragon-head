@@ -130,4 +130,10 @@ public class MemoryConfigStore implements ConfigStore {
                 value
         );
     }
+
+    @Override
+    public ConfigMetadata getMetadata(String configKey) {
+        // MemoryStore 不存储元数据，返回 null
+        return null;
+    }
 }

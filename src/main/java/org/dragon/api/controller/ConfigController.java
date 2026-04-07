@@ -8,6 +8,7 @@ import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.dto.ConfigItemVO;
+import org.dragon.config.dto.EffectChainVO;
 import org.dragon.config.enums.ConfigLevel;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.config.service.ConfigEffectService;
@@ -43,32 +44,32 @@ public class ConfigController {
     @Operation(summary = "获取配置项列表（分页+筛选）")
     @GetMapping("/items")
     public ApiResponse<PageResponse<Map<String, Object>>> listConfigItems(
-            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String scopeType,
+            @RequestParam(required = false) String scopeId,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String workspaceId,
-            @RequestParam(required = false) String characterId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        log.info("[ConfigController] listConfigItems level={} workspaceId={} characterId={}", level, workspaceId, characterId);
+        log.info("[ConfigController] listConfigItems scopeType={} scopeId={}", scopeType, scopeId);
 
-        if (level == null || level.isBlank()) {
+        if (scopeType == null || scopeType.isBlank()) {
             return ApiResponse.success(PageResponse.of(List.of(), 0, page, pageSize));
         }
 
         ConfigLevel configLevel;
         try {
-            configLevel = ConfigLevel.valueOf(level.toUpperCase());
+            configLevel = ConfigLevel.valueOf(scopeType.toUpperCase());
         } catch (IllegalArgumentException e) {
             return ApiResponse.success(PageResponse.of(List.of(), 0, page, pageSize));
         }
 
-        InheritanceContext context = buildContext(configLevel, workspaceId, characterId);
+        InheritanceContext context = buildContext(configLevel, scopeId, null);
         List<ConfigItemVO> items = configApplication.listConfigItems(context);
 
         // 过滤搜索关键词
         if (search != null && !search.isBlank()) {
             items = items.stream()
-                    .filter(item -> item.getConfigKey().toLowerCase().contains(search.toLowerCase()))
+                    .filter(item -> item.getKey().toLowerCase().contains(search.toLowerCase()) ||
+                            (item.getName() != null && item.getName().toLowerCase().contains(search.toLowerCase())))
                     .toList();
         }
 
@@ -81,6 +82,29 @@ public class ConfigController {
                         .toList();
 
         return ApiResponse.success(PageResponse.of(pageData, total, page, pageSize));
+    }
+
+    /**
+     * 获取配置生效链
+     * GET /api/v1/config/items/{configKey}/effect-chain
+     */
+    @Operation(summary = "获取配置生效链")
+    @GetMapping("/items/{configKey}/effect-chain")
+    public ApiResponse<List<EffectChainVO>> getEffectChain(
+            @PathVariable String configKey,
+            @RequestParam String scopeType,
+            @RequestParam(required = false) String scopeId) {
+        log.info("[ConfigController] getEffectChain key={} scopeType={} scopeId={}", configKey, scopeType, scopeId);
+
+        ConfigLevel configLevel;
+        try {
+            configLevel = ConfigLevel.valueOf(scopeType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(400, "Invalid scopeType");
+        }
+
+        List<EffectChainVO> chain = configApplication.getEffectChain(configKey, configLevel, scopeId);
+        return ApiResponse.success(chain);
     }
 
     /**
@@ -181,13 +205,22 @@ public class ConfigController {
 
     private Map<String, Object> toMap(ConfigItemVO item) {
         Map<String, Object> map = new HashMap<>();
-        map.put("configKey", item.getConfigKey());
-        map.put("level", item.getLevel() != null ? item.getLevel().name() : null);
+        map.put("id", item.getId());
+        map.put("key", item.getKey());
+        map.put("name", item.getName());
+        map.put("description", item.getDescription());
+        map.put("scopeType", item.getScopeType());
+        map.put("scopeId", item.getScopeId());
+        map.put("dataType", item.getDataType());
+        map.put("defaultValue", item.getDefaultValue());
+        map.put("currentValue", item.getCurrentValue());
         map.put("effectiveValue", item.getEffectiveValue());
-        map.put("storeValue", item.getStoreValue());
         map.put("displayStatus", item.getDisplayStatus());
         map.put("source", item.getSource());
-        map.put("valueType", item.getValueType());
+        map.put("validationRules", item.getValidationRules());
+        map.put("options", item.getOptions());
+        map.put("lastModified", item.getLastModified());
+        map.put("modifiedBy", item.getModifiedBy());
         return map;
     }
 

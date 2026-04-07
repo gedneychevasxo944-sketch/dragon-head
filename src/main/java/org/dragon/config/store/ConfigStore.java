@@ -86,6 +86,14 @@ public interface ConfigStore extends Store {
     List<ConfigStoreItem> listByLevel(ConfigLevel level);
 
     /**
+     * 获取指定配置键在 GLOBAL 级别的元数据
+     *
+     * @param configKey 配置键
+     * @return 元数据（name, description, validationRules, options）
+     */
+    ConfigMetadata getMetadata(String configKey);
+
+    /**
      * 配置存储项（用于列表查询）
      */
     record ConfigStoreItem(
@@ -97,5 +105,17 @@ public interface ConfigStore extends Store {
             String memoryId,
             String configKey,
             Object value
+    ) {}
+
+    /**
+     * 配置元数据（从 GLOBAL 级别行获取）
+     */
+    record ConfigMetadata(
+            String name,
+            String description,
+            String validationRules,
+            String options,
+            String valueType,
+            Object defaultValue
     ) {}
 }

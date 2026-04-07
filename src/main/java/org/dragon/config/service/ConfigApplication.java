@@ -1,16 +1,18 @@
 package org.dragon.config.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.dto.ConfigItemVO;
+import org.dragon.config.dto.EffectChainVO;
 import org.dragon.config.dto.ImpactAnalysis;
 import org.dragon.config.enums.ConfigLevel;
 import org.dragon.config.store.ConfigStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * ConfigApplication 配置应用服务
@@ -19,13 +21,26 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ConfigApplication {
 
-    private final ConfigStore configStore;
     private final ConfigEffectService configEffectService;
     private final ConfigImpactAnalyzer configImpactAnalyzer;
     private final ConfigPromptService configPromptService;
+    private final StoreFactory storeFactory;
+
+    public ConfigApplication(ConfigEffectService configEffectService,
+                             ConfigImpactAnalyzer configImpactAnalyzer,
+                             ConfigPromptService configPromptService,
+                             StoreFactory storeFactory) {
+        this.configEffectService = configEffectService;
+        this.configImpactAnalyzer = configImpactAnalyzer;
+        this.configPromptService = configPromptService;
+        this.storeFactory = storeFactory;
+    }
+
+    private ConfigStore configStore() {
+        return storeFactory.get(ConfigStore.class);
+    }
 
     // ==================== 配置查询 ====================
 
@@ -33,7 +48,7 @@ public class ConfigApplication {
      * 获取配置项列表（含 displayStatus）
      */
     public List<ConfigItemVO> listConfigItems(InheritanceContext context) {
-        List<ConfigStore.ConfigStoreItem> allItems = configStore.listAll();
+        List<ConfigStore.ConfigStoreItem> allItems = configStore().listAll();
         List<ConfigItemVO> result = new ArrayList<>();
 
         for (ConfigStore.ConfigStoreItem item : allItems) {
@@ -49,13 +64,13 @@ public class ConfigApplication {
             }
 
             result.add(ConfigItemVO.builder()
-                    .configKey(item.configKey())
-                    .level(item.level())
+                    .key(item.configKey())
+                    .scopeType(item.level().name())
                     .effectiveValue(ec.getEffectiveValue())
-                    .storeValue(item.value())
+                    .currentValue(item.value())
                     .displayStatus(displayStatus)
                     .source(ec.getSource())
-                    .valueType(ec.getValueType())
+                    .dataType(ec.getValueType())
                     .build());
         }
 
@@ -69,13 +84,120 @@ public class ConfigApplication {
         return configEffectService.getEffectiveConfig(configKey, context);
     }
 
+    /**
+     * 获取配置生效链（继承链可视化）
+     *
+     * @param configKey 配置键
+     * @param targetLevel 目标层级
+     * @param scopeId 作用域 ID（如 workspaceId）
+     * @return 生效链节点列表
+     */
+    public List<EffectChainVO> getEffectChain(String configKey, ConfigLevel targetLevel, String scopeId) {
+        List<EffectChainVO> chain = new ArrayList<>();
+
+        // 获取继承链（从具体到全局）
+        List<ConfigLevel> inheritanceChain = getInheritanceChain(targetLevel);
+        int order = 1;
+
+        for (ConfigLevel level : inheritanceChain) {
+            // 构建上下文获取该层的值
+            InheritanceContext levelContext = buildContextForLevel(level, scopeId);
+            Optional<Object> storeValue = configStore().get(
+                    level,
+                    levelContext.getWorkspaceId(),
+                    levelContext.getCharacterId(),
+                    levelContext.getToolId(),
+                    levelContext.getSkillId(),
+                    levelContext.getMemoryId(),
+                    configKey
+            );
+
+            chain.add(EffectChainVO.builder()
+                    .scopeType(level.name())
+                    .scopeId(levelContext.getWorkspaceId())
+                    .scopeName(resolveScopeName(level, levelContext.getWorkspaceId()))
+                    .value(storeValue.orElse(null))
+                    .isOverride(level == targetLevel)
+                    .isEmpty(!storeValue.isPresent())
+                    .order(order++)
+                    .build());
+        }
+
+        return chain;
+    }
+
+    /**
+     * 获取配置的继承链（从具体到全局）
+     */
+    private List<ConfigLevel> getInheritanceChain(ConfigLevel targetLevel) {
+        List<ConfigLevel> chain = new ArrayList<>();
+        chain.add(targetLevel);
+
+        for (ConfigLevel candidate : ConfigLevel.values()) {
+            if (candidate == targetLevel) {
+                continue;
+            }
+            if (targetLevel.isDescendantOf(candidate) && !hasIntermediateAncestor(targetLevel, candidate)) {
+                chain.add(candidate);
+            }
+        }
+
+        return chain;
+    }
+
+    /**
+     * 检查 level 和 candidate 之间是否有其他祖先
+     */
+    private boolean hasIntermediateAncestor(ConfigLevel level, ConfigLevel candidate) {
+        for (ConfigLevel other : ConfigLevel.values()) {
+            if (other == level || other == candidate) {
+                continue;
+            }
+            if (level.isDescendantOf(other) && other.isDescendantOf(candidate)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 根据层级构建上下文
+     */
+    private InheritanceContext buildContextForLevel(ConfigLevel level, String scopeId) {
+        return switch (level) {
+            case GLOBAL_WORKSPACE -> InheritanceContext.forGlobalWorkspace(scopeId);
+            case GLOBAL_CHARACTER -> InheritanceContext.forGlobalCharacter(scopeId);
+            case GLOBAL_SKILL -> InheritanceContext.forGlobalSkill(scopeId);
+            case GLOBAL_TOOL -> InheritanceContext.forGlobalTool(scopeId);
+            case GLOBAL_MEMORY -> InheritanceContext.forGlobalMemory(scopeId);
+            case GLOBAL_WS_CHAR -> InheritanceContext.forGlobalWsChar(scopeId, null);
+            case GLOBAL_WS_SKILL -> InheritanceContext.forGlobalWsSkill(scopeId, null);
+            case GLOBAL_WS_TOOL -> InheritanceContext.forGlobalWsTool(scopeId, null);
+            case GLOBAL_CHAR_TOOL -> InheritanceContext.forGlobalCharTool(scopeId, null);
+            case GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forGlobalWsCharTool(scopeId, null, null);
+            case STUDIO_WORKSPACE -> InheritanceContext.forStudioWorkspace(scopeId);
+            case STUDIO_WS_CHAR -> InheritanceContext.forStudioWsChar(scopeId, null);
+            default -> InheritanceContext.builder().level(level).workspaceId(scopeId).build();
+        };
+    }
+
+    /**
+     * 解析作用域名称
+     */
+    private String resolveScopeName(ConfigLevel level, String scopeId) {
+        if (scopeId == null) {
+            return "全局";
+        }
+        return scopeId;
+    }
+
     // ==================== 配置设置 ====================
 
     /**
      * 设置配置值
      */
     public void setConfigValue(String configKey, Object value, InheritanceContext context) {
-        configStore.set(
+        configStore().set(
                 context.getLevel(),
                 context.getWorkspaceId(),
                 context.getCharacterId(),
@@ -92,7 +214,7 @@ public class ConfigApplication {
      * 设置配置值（简化版，只有 workspaceId）
      */
     public void setConfigValue(String configKey, Object value, ConfigLevel level, String workspaceId) {
-        configStore.set(level, workspaceId, null, null, null, null, configKey, value);
+        configStore().set(level, workspaceId, null, null, null, null, configKey, value);
         log.info("[ConfigApplication] Config set: {} = {} at {}", configKey, value, level);
     }
 
@@ -100,7 +222,7 @@ public class ConfigApplication {
      * 设置配置值（只有 workspaceId 和 characterId）
      */
     public void setConfigValue(String configKey, Object value, ConfigLevel level, String workspaceId, String characterId) {
-        configStore.set(level, workspaceId, characterId, null, null, null, configKey, value);
+        configStore().set(level, workspaceId, characterId, null, null, null, configKey, value);
         log.info("[ConfigApplication] Config set: {} = {} at {}", configKey, value, level);
     }
 
@@ -110,7 +232,7 @@ public class ConfigApplication {
     public void setConfigValue(String configKey, Object value, ConfigLevel level,
                               String workspaceId, String characterId, String toolId,
                               String skillId, String memoryId) {
-        configStore.set(level, workspaceId, characterId, toolId, skillId, memoryId, configKey, value);
+        configStore().set(level, workspaceId, characterId, toolId, skillId, memoryId, configKey, value);
         log.info("[ConfigApplication] Config set: {} = {} at {}", configKey, value, level);
     }
 
@@ -118,7 +240,7 @@ public class ConfigApplication {
      * 删除配置
      */
     public void deleteConfigValue(String configKey, InheritanceContext context) {
-        configStore.delete(
+        configStore().delete(
                 context.getLevel(),
                 context.getWorkspaceId(),
                 context.getCharacterId(),

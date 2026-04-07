@@ -1,6 +1,5 @@
 package org.dragon.datasource.entity;
 
-import io.ebean.annotation.DbJson;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -59,12 +58,43 @@ public class ConfigEntity {
     @Column(name = "config_key", nullable = false, length = 255)
     private String configKey;
 
-    @DbJson
-    @Column(name = "config_value", columnDefinition = "JSON")
+    @Column(name = "config_value", columnDefinition = "TEXT")
     private Object configValue;
 
     @Column(name = "value_type", length = 32)
     private String valueType;
+
+    // ==================== 元数据字段 ====================
+
+    /**
+     * 配置项名称
+     */
+    @Column(name = "name", length = 128)
+    private String name;
+
+    /**
+     * 配置项描述
+     */
+    @Column(name = "description", length = 500)
+    private String description;
+
+    /**
+     * 校验规则（JSON 数组格式）
+     */
+    @Column(name = "validation_rules", columnDefinition = "JSON")
+    private String validationRules;
+
+    /**
+     * 枚举选项（JSON 数组格式，用于 ENUM 类型）
+     */
+    @Column(name = "options", columnDefinition = "JSON")
+    private String options;
+
+    /**
+     * 修改人
+     */
+    @Column(name = "modified_by", length = 100)
+    private String modifiedBy;
 
     // ==================== 状态和版本 ====================
 

@@ -567,22 +567,22 @@ VALUES ('5::::::prompt/character.collaborationDecision', 5, NULL, NULL, NULL, NU
 
 ### 协作上下文信息
 
-当前协作会话 ID: ${collaborationSessionId}
+当前协作会话 ID: \$\{collaborationSessionId\}
 
 参与者状态:
-${participantStates}
+\$\{participantStates\}
 
 阻塞中的参与者:
-${blockedParticipants}
+\$\{blockedParticipants\}
 
-协作会话状态: ${sessionStatus}
+协作会话状态: \$\{sessionStatus\}
 
 最近协作消息:
-${latestSessionMessages}
+\$\{latestSessionMessages\}
 
-同级 Character IDs: ${peerCharacterIds}
+同级 Character IDs: \$\{peerCharacterIds\}
 
-依赖任务 IDs: ${dependencyTaskIds}
+依赖任务 IDs: \$\{dependencyTaskIds\}
 
 ### 决策判断标准
 

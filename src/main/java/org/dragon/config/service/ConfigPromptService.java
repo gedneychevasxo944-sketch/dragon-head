@@ -1,10 +1,10 @@
 package org.dragon.config.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.enums.ConfigLevel;
 import org.dragon.config.store.ConfigStore;
+import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,11 +12,19 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ConfigPromptService {
 
-    private final ConfigStore configStore;
     private final ConfigEffectService configEffectService;
+    private final StoreFactory storeFactory;
+
+    public ConfigPromptService(ConfigEffectService configEffectService, StoreFactory storeFactory) {
+        this.configEffectService = configEffectService;
+        this.storeFactory = storeFactory;
+    }
+
+    private ConfigStore configStore() {
+        return storeFactory.get(ConfigStore.class);
+    }
 
     /**
      * 获取 Prompt - 使用继承链查询
@@ -101,7 +109,7 @@ public class ConfigPromptService {
      * 设置全局 Prompt
      */
     public void setGlobalPrompt(String promptKey, String content) {
-        configStore.set(ConfigLevel.GLOBAL_WORKSPACE, null, null, null, null, null, "prompt/" + promptKey, content);
+        configStore().set(ConfigLevel.GLOBAL_WORKSPACE, null, null, null, null, null, "prompt/" + promptKey, content);
         log.info("[ConfigPromptService] Set global prompt: {}", promptKey);
     }
 
@@ -109,7 +117,7 @@ public class ConfigPromptService {
      * 设置 Workspace 级别 Prompt
      */
     public void setWorkspacePrompt(String workspace, String promptKey, String content) {
-        configStore.set(ConfigLevel.GLOBAL_WORKSPACE, workspace, null, null, null, null, "prompt/" + promptKey, content);
+        configStore().set(ConfigLevel.GLOBAL_WORKSPACE, workspace, null, null, null, null, "prompt/" + promptKey, content);
         log.info("[ConfigPromptService] Set workspace prompt: workspace={}, key={}", workspace, promptKey);
     }
 
@@ -117,7 +125,7 @@ public class ConfigPromptService {
      * 设置 Workspace+Character 级别 Prompt
      */
     public void setWorkspaceCharacterPrompt(String workspace, String characterId, String promptKey, String content) {
-        configStore.set(ConfigLevel.GLOBAL_WS_CHAR, workspace, characterId, null, null, null, "prompt/" + promptKey, content);
+        configStore().set(ConfigLevel.GLOBAL_WS_CHAR, workspace, characterId, null, null, null, "prompt/" + promptKey, content);
         log.info("[ConfigPromptService] Set workspace+character prompt: workspace={}, char={}, key={}", workspace, characterId, promptKey);
     }
 }

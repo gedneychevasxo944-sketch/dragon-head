@@ -45,10 +45,22 @@
       "Bash(ls /Users/yijunwang/code/dragon-head/*.xml /Users/yijunwang/code/dragon-head/*.gradle)",
       "Bash(mvn flyway:migrate -q -Dflyway.url=\"jdbc:mysql://localhost:3306/adeptify?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true\" -Dflyway.user=root -Dflyway.password=123456)",
       "Bash(./mvnw clean:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(ls -la src/main/resources/db/migration/V102*)",
+      "Bash(git status:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git rebase:*)",
+      "Bash(awk 'NR<=82{print; next} /domain: \"[^\"]+\",/{next} {print}' /Users/yijunwang/code/adeptify-fe/src/app/config/_mock/data.ts)",
+      "Bash(mv /tmp/data_temp.ts /Users/yijunwang/code/adeptify-fe/src/app/config/_mock/data.ts)",
+      "Bash(grep -n '\\\\${' /Users/yijunwang/code/dragon-head/src/main/resources/db/migration/V102__config_store_initial_data.sql)"
     ],
     "additionalDirectories": [
-      "/Users/yijunwang/.claude/plans"
+      "/Users/yijunwang/.claude/plans",
+      "/Users/yijunwang/code/adeptify-fe/src/app/config/_mock",
+      "/Users/yijunwang/code/adeptify-fe/src/app/config/_components",
+      "/Users/yijunwang/code/adeptify-fe/src/app/config/browser",
+      "/Users/yijunwang/code/adeptify-fe/src/app/config/structured",
+      "/Users/yijunwang/code/adeptify-fe/demo/config"
     ]
   },
   "enabledPlugins": {

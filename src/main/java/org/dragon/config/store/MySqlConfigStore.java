@@ -6,6 +6,7 @@ import org.dragon.datasource.entity.ConfigEntity;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Optional;
 /**
  * MySqlConfigStore 配置存储 MySQL 实现
  */
+@Component
 @StoreTypeAnn(StoreType.MYSQL)
 public class MySqlConfigStore implements ConfigStore {
 
@@ -122,5 +124,23 @@ public class MySqlConfigStore implements ConfigStore {
             ));
         }
         return items;
+    }
+
+    @Override
+    public ConfigMetadata getMetadata(String configKey) {
+        // GLOBAL level has scopeBit = 1
+        String id = ConfigEntity.buildId(1, null, null, null, null, null, configKey);
+        ConfigEntity entity = mysqlDb.find(ConfigEntity.class, id);
+        if (entity != null) {
+            return new ConfigMetadata(
+                    entity.getName(),
+                    entity.getDescription(),
+                    entity.getValidationRules(),
+                    entity.getOptions(),
+                    entity.getValueType(),
+                    entity.getConfigValue()
+            );
+        }
+        return null;
     }
 }

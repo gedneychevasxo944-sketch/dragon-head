@@ -933,7 +933,7 @@ CREATE TABLE IF NOT EXISTS config_store (
 
     -- 配置值
     config_key VARCHAR(255) NOT NULL COMMENT '配置键',
-    config_value JSON COMMENT '配置值',
+    config_value mediumtext COMMENT '配置值',
     value_type VARCHAR(32) COMMENT '值类型：STRING, NUMBER, BOOLEAN, LIST, OBJECT',
 
     -- 状态和版本
