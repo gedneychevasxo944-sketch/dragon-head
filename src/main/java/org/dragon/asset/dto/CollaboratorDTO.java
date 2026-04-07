@@ -1,4 +1,4 @@
-package org.dragon.permission.dto;
+package org.dragon.asset.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

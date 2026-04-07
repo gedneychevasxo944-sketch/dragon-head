@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.approval.enums.ApprovalType;
 import org.dragon.approval.service.ApprovalContext;
 import org.dragon.approval.service.ApprovalStrategy;
-import org.dragon.permission.service.CollaboratorService;
+import org.dragon.asset.service.AssetMemberService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AddCollaboratorStrategy implements ApprovalStrategy {
 
-    private final CollaboratorService collaboratorService;
+    private final AssetMemberService assetMemberService;
 
     @Override
     public ApprovalType getType() {
@@ -34,7 +34,7 @@ public class AddCollaboratorStrategy implements ApprovalStrategy {
                 context.getRequest().getTargetUserId());
 
         if (context.getRequest().getTargetUserId() != null) {
-            collaboratorService.addMemberDirectly(
+            assetMemberService.addMemberDirectly(
                     context.getRequest().getResourceType(),
                     context.getRequest().getResourceId(),
                     context.getRequest().getRequesterId(),

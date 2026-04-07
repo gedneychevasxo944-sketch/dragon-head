@@ -1,4 +1,4 @@
-package org.dragon.permission.store;
+package org.dragon.asset.store;
 
 import org.dragon.datasource.entity.AssetMemberEntity;
 import org.dragon.store.Store;

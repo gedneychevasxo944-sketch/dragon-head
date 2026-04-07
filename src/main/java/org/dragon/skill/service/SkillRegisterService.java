@@ -3,7 +3,7 @@ package org.dragon.skill.service;
 import org.dragon.skill.actionlog.SkillActionLogService;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.asset.service.AssetPublishStatusService;
-import org.dragon.permission.service.CollaboratorService;
+import org.dragon.asset.service.AssetMemberService;
 import org.dragon.skill.domain.ParsedSkillContent;
 import org.dragon.skill.domain.SkillDO;
 import org.dragon.skill.domain.StorageInfoVO;
@@ -56,7 +56,7 @@ public class SkillRegisterService {
     @Autowired private SkillStorageService storageService;
     @Autowired private SkillStore          skillStore;
     @Autowired private SkillActionLogService actionLogService;
-    @Autowired private CollaboratorService collaboratorService;
+    @Autowired private AssetMemberService assetMemberService;
     @Autowired private AssetPublishStatusService publishStatusService;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -79,7 +79,7 @@ public class SkillRegisterService {
         Long operatorId = parseUserId(user.getUserId());
         String operatorName = user.getUsername();
         SkillRegisterResult result = doSave(skillId, 1, null, null, zipFile, request, operatorId, operatorName);
-        collaboratorService.addOwnerDirectly(ResourceType.SKILL, skillId, operatorId);
+        assetMemberService.addOwnerDirectly(ResourceType.SKILL, skillId, operatorId);
                 // 初始化发布状态（默认为 DRAFT）
                 
         publishStatusService.initializeStatus(ResourceType.SKILL, skillId, String.valueOf(operatorId));

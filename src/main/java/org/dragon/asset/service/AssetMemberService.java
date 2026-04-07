@@ -1,17 +1,15 @@
-package org.dragon.permission.service;
+package org.dragon.asset.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.permission.dto.CollaboratorDTO;
-import org.dragon.permission.dto.InvitationDTO;
+
+import org.dragon.asset.dto.CollaboratorDTO;
+import org.dragon.asset.store.AssetMemberStore;
 import org.dragon.datasource.entity.AssetMemberEntity;
-import org.dragon.approval.enums.ApprovalType;
+import org.dragon.permission.dto.InvitationDTO;
 import org.dragon.permission.enums.Role;
-import org.dragon.approval.service.ApprovalService;
-import org.dragon.permission.store.AssetMemberStore;
-import org.dragon.store.StoreFactory;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.store.StoreFactory;
 import org.dragon.user.store.UserStore;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,57 +17,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * CollaboratorService 协作者服务
- * 负责管理资产的协作者关系
+ * AssetMemberService 资产成员服务
+ * 负责管理资产的 owner 和 collaborator 基础 CRUD 操作
  */
 @Slf4j
 @Service
-public class CollaboratorService {
+public class AssetMemberService {
 
     private final AssetMemberStore assetMemberStore;
     private final UserStore userStore;
-    private final ApprovalService approvalService;
 
-    public CollaboratorService(StoreFactory storeFactory, @Lazy ApprovalService approvalService) {
+    public AssetMemberService(StoreFactory storeFactory) {
         this.assetMemberStore = storeFactory.get(AssetMemberStore.class);
         this.userStore = storeFactory.get(UserStore.class);
-        this.approvalService = approvalService;
-    }
-
-    /**
-     * 邀请协作者
-     */
-    public void inviteCollaborator(ResourceType type, String assetId, Long ownerId, Long collaboratorId, String reason) {
-        if (assetMemberStore.exists(type, assetId, collaboratorId)) {
-            throw new IllegalArgumentException("该用户已是协作者");
-        }
-
-        if (approvalService.requiresApproval(type, ApprovalType.ADD_COLLABORATOR)) {
-            approvalService.createApprovalRequest(type, assetId, ApprovalType.ADD_COLLABORATOR, ownerId, collaboratorId, reason);
-        } else {
-            addMemberDirectly(type, assetId, ownerId, collaboratorId);
-        }
-    }
-
-    /**
-     * 直接添加协作者（审批通过后调用）
-     */
-    public void addMemberDirectly(ResourceType type, String assetId, Long ownerId, Long collaboratorId) {
-        LocalDateTime now = LocalDateTime.now();
-        AssetMemberEntity member = AssetMemberEntity.builder()
-                .resourceType(type)
-                .resourceId(assetId)
-                .userId(collaboratorId)
-                .role(Role.COLLABORATOR)
-                .invitedBy(String.valueOf(ownerId))
-                .invitedAt(now)
-                .acceptedAt(now)
-                .accepted(true)
-                .createdAt(now)
-                .updatedAt(now)
-                .build();
-        assetMemberStore.save(member);
-        log.info("[CollaboratorService] Added collaborator: type={}, assetId={}, collaboratorId={}", type, assetId, collaboratorId);
     }
 
     /**
@@ -90,18 +50,28 @@ public class CollaboratorService {
                 .updatedAt(now)
                 .build();
         assetMemberStore.save(member);
-        log.info("[CollaboratorService] Added owner: type={}, assetId={}, ownerId={}", type, assetId, ownerId);
+        log.info("[AssetMemberService] Added owner: type={}, assetId={}, ownerId={}", type, assetId, ownerId);
     }
 
     /**
-     * 移除协作者
+     * 直接添加协作者（审批通过后调用）
      */
-    public void removeCollaborator(ResourceType type, String assetId, Long ownerId, Long collaboratorId) {
-        if (approvalService.requiresApproval(type, ApprovalType.REMOVE_COLLABORATOR)) {
-            approvalService.createApprovalRequest(type, assetId, ApprovalType.REMOVE_COLLABORATOR, ownerId, collaboratorId, "移除协作者");
-        } else {
-            removeMemberDirectly(type, assetId, collaboratorId);
-        }
+    public void addMemberDirectly(ResourceType type, String assetId, Long ownerId, Long collaboratorId) {
+        LocalDateTime now = LocalDateTime.now();
+        AssetMemberEntity member = AssetMemberEntity.builder()
+                .resourceType(type)
+                .resourceId(assetId)
+                .userId(collaboratorId)
+                .role(Role.COLLABORATOR)
+                .invitedBy(String.valueOf(ownerId))
+                .invitedAt(now)
+                .acceptedAt(now)
+                .accepted(true)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        assetMemberStore.save(member);
+        log.info("[AssetMemberService] Added collaborator: type={}, assetId={}, collaboratorId={}", type, assetId, collaboratorId);
     }
 
     /**
@@ -111,7 +81,7 @@ public class CollaboratorService {
         assetMemberStore.findByResourceAndUser(type, assetId, collaboratorId)
                 .ifPresent(m -> {
                     assetMemberStore.delete(m.getId());
-                    log.info("[CollaboratorService] Removed collaborator: type={}, assetId={}, collaboratorId={}", type, assetId, collaboratorId);
+                    log.info("[AssetMemberService] Removed collaborator: type={}, assetId={}, collaboratorId={}", type, assetId, collaboratorId);
                 });
     }
 
@@ -124,7 +94,7 @@ public class CollaboratorService {
                     m.setAccepted(true);
                     m.setAcceptedAt(LocalDateTime.now());
                     assetMemberStore.update(m);
-                    log.info("[CollaboratorService] Accepted invitation: type={}, resourceId={}, userId={}", type, resourceId, userId);
+                    log.info("[AssetMemberService] Accepted invitation: type={}, resourceId={}, userId={}", type, resourceId, userId);
                 });
     }
 
@@ -135,7 +105,7 @@ public class CollaboratorService {
         assetMemberStore.findByResourceAndUser(type, resourceId, userId)
                 .ifPresent(m -> {
                     assetMemberStore.delete(m.getId());
-                    log.info("[CollaboratorService] Rejected invitation: type={}, resourceId={}, userId={}", type, resourceId, userId);
+                    log.info("[AssetMemberService] Rejected invitation: type={}, resourceId={}, userId={}", type, resourceId, userId);
                 });
     }
 

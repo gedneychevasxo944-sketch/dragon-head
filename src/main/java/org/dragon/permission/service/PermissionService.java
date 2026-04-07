@@ -5,7 +5,7 @@ import org.dragon.datasource.entity.AssetMemberEntity;
 import org.dragon.datasource.entity.PermissionPolicyEntity;
 import org.dragon.permission.enums.Permission;
 import org.dragon.permission.enums.Role;
-import org.dragon.permission.store.AssetMemberStore;
+import org.dragon.asset.store.AssetMemberStore;
 import org.dragon.permission.store.PermissionPolicyStore;
 import org.dragon.store.StoreFactory;
 import org.dragon.permission.enums.ResourceType;

@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.asset.service.AssetPublishStatusService;
-import org.dragon.permission.service.CollaboratorService;
+import org.dragon.asset.service.AssetMemberService;
 import org.dragon.util.UserUtils;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkspaceLifecycleService {
 
     private final WorkspaceRegistry workspaceRegistry;
-    private final CollaboratorService collaboratorService;
+    private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
 
     /**
@@ -57,7 +57,7 @@ public class WorkspaceLifecycleService {
 
         // 添加创建者为 Owner
         Long ownerId = Long.parseLong(String.valueOf(workspace.getOwner()));
-        collaboratorService.addOwnerDirectly(ResourceType.WORKSPACE, workspace.getId(), ownerId);
+        assetMemberService.addOwnerDirectly(ResourceType.WORKSPACE, workspace.getId(), ownerId);
 
         // 初始化发布状态（默认为 DRAFT）
         publishStatusService.initializeStatus(ResourceType.WORKSPACE, workspace.getId(), String.valueOf(ownerId));

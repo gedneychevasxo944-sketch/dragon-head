@@ -6,7 +6,7 @@ import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.Observer;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.asset.service.AssetPublishStatusService;
-import org.dragon.permission.service.CollaboratorService;
+import org.dragon.asset.service.AssetMemberService;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.util.UserUtils;
 import org.dragon.observer.ObserverRegistry;
@@ -45,7 +45,7 @@ public class ObserverApplication {
     private final ObserverService observerService;
     private final ObserverActionLogService observerActionLogService;
     private final PermissionService permissionService;
-    private final CollaboratorService collaboratorService;
+    private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
 
     // ==================== Observer CRUD ====================
@@ -119,7 +119,7 @@ public class ObserverApplication {
 
         // 添加创建者为 Owner
         Long userId = Long.parseLong(UserUtils.getUserId());
-        collaboratorService.addOwnerDirectly(ResourceType.OBSERVER, observer.getId(), userId);
+        assetMemberService.addOwnerDirectly(ResourceType.OBSERVER, observer.getId(), userId);
 
         // 初始化发布状态（默认为 DRAFT）
         publishStatusService.initializeStatus(ResourceType.OBSERVER, observer.getId(), String.valueOf(userId));

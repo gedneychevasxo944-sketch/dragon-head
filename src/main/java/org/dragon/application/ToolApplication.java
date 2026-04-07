@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.permission.enums.ResourceType;
-import org.dragon.permission.service.CollaboratorService;
+import org.dragon.asset.service.AssetMemberService;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.tools.ToolRegistry;
 import org.dragon.util.UserUtils;
@@ -32,7 +32,7 @@ public class ToolApplication {
 
     private final ToolRegistry toolRegistry;
     private final PermissionService permissionService;
-    private final CollaboratorService collaboratorService;
+    private final AssetMemberService assetMemberService;
 
     /**
      * 分页获取工具列表。
@@ -137,7 +137,7 @@ public class ToolApplication {
             if (toolName != null) {
                 try {
                     Long userId = Long.parseLong(UserUtils.getUserId());
-                    collaboratorService.addOwnerDirectly(ResourceType.TOOL, toolName, userId);
+                    assetMemberService.addOwnerDirectly(ResourceType.TOOL, toolName, userId);
                     log.info("[ToolApplication] Added owner for tool: {}", toolName);
                 } catch (Exception e) {
                     log.warn("[ToolApplication] Failed to add owner for tool: {}", toolName, e);
