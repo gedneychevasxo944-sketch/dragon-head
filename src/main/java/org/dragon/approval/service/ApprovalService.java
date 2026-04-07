@@ -39,7 +39,10 @@ public class ApprovalService {
     private static final Map<ApprovalType, List<ResourceType>> APPROVAL_REQUIRED_TYPES = new EnumMap<>(ApprovalType.class);
 
     static {
-        APPROVAL_REQUIRED_TYPES.put(ApprovalType.PUBLISH, List.of(ResourceType.SKILL, ResourceType.TEMPLATE));
+        APPROVAL_REQUIRED_TYPES.put(ApprovalType.PUBLISH,
+                List.of(ResourceType.CHARACTER, ResourceType.SKILL, ResourceType.OBSERVER,
+                        ResourceType.TEMPLATE, ResourceType.TRAIT, ResourceType.WORKSPACE,
+                        ResourceType.COMMONSENSE));
         APPROVAL_REQUIRED_TYPES.put(ApprovalType.UNPUBLISH, List.of(ResourceType.TEMPLATE));
         APPROVAL_REQUIRED_TYPES.put(ApprovalType.ADD_COLLABORATOR, null); // 所有资源类型
         APPROVAL_REQUIRED_TYPES.put(ApprovalType.REMOVE_COLLABORATOR, null); // 所有资源类型
