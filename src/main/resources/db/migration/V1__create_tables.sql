@@ -1,9 +1,26 @@
--- V1: Create all business tables for MySQL storage
--- Generated from Entity classes
+-- ============================================================================
+-- Dragon Head 数据库最终版 Schema
+-- 整合自 V1/V99/V101 所有 Migration，冷启动专用
+--
+-- 包含所有代码层 Entity 对应的表：
+--   - V1 基础表（含 visibility/permission 列）
+--   - V99 新增表（character, model_instance, observer, tool, trait, approval_request, asset_member, permission_policy）
+--   - V101 新增表（skill_action_log, asset_publish_status, config_store, config_store_observer）
+--
+-- 废弃表（已删除）：
+--   - config_definitions（V101 删除，代码无对应 Entity）
+--   - skill_bind（旧表，代码未使用）
+--   - skill/skill_binding（V99 版本，与 skills/skill_bindings 重复，代码使用后者）
+-- ============================================================================
+
+use adeptify;
+
+-- ============================================================================
+-- V1: 核心业务表
+-- ============================================================================
 
 -- Chat message table
-use adeptify;
-CREATE TABLE chat_message (
+CREATE TABLE IF NOT EXISTS chat_message (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     sender_id VARCHAR(64) NOT NULL,
@@ -31,7 +48,7 @@ CREATE TABLE chat_message (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Chat session table
-CREATE TABLE chat_session (
+CREATE TABLE IF NOT EXISTS chat_session (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     task_id VARCHAR(64),
@@ -51,12 +68,13 @@ CREATE TABLE chat_session (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Workspace table
-CREATE TABLE workspace (
+CREATE TABLE IF NOT EXISTS workspace (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     owner VARCHAR(64) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'INACTIVE',
+    visibility VARCHAR(32) NOT NULL DEFAULT 'PRIVATE' COMMENT 'PUBLIC or PRIVATE',
     properties JSON,
     personality JSON,
     created_at DATETIME,
@@ -66,12 +84,13 @@ CREATE TABLE workspace (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Workspace member table
-CREATE TABLE workspace_member (
+CREATE TABLE IF NOT EXISTS workspace_member (
     id VARCHAR(128) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     character_id VARCHAR(64) NOT NULL,
     role VARCHAR(64),
     layer VARCHAR(32) DEFAULT 'NORMAL',
+    permission VARCHAR(32) NOT NULL DEFAULT 'VIEW' COMMENT 'VIEW, USE, EDIT, ADMIN, OWNER',
     tags JSON,
     weight DOUBLE DEFAULT 1.0,
     priority INT DEFAULT 0,
@@ -86,7 +105,7 @@ CREATE TABLE workspace_member (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Task table
-CREATE TABLE task (
+CREATE TABLE IF NOT EXISTS task (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     parent_task_id VARCHAR(64),
@@ -133,7 +152,7 @@ CREATE TABLE task (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Material table
-CREATE TABLE material (
+CREATE TABLE IF NOT EXISTS material (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -154,7 +173,7 @@ CREATE TABLE material (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Parsed material content table
-CREATE TABLE parsed_material_content (
+CREATE TABLE IF NOT EXISTS parsed_material_content (
     id VARCHAR(64) PRIMARY KEY,
     material_id VARCHAR(64) NOT NULL,
     text_content TEXT,
@@ -168,7 +187,7 @@ CREATE TABLE parsed_material_content (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Workflow table
-CREATE TABLE workflow (
+CREATE TABLE IF NOT EXISTS workflow (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     nodes JSON,
@@ -179,7 +198,7 @@ CREATE TABLE workflow (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Workflow state table
-CREATE TABLE workflow_state (
+CREATE TABLE IF NOT EXISTS workflow_state (
     execution_id VARCHAR(64) PRIMARY KEY,
     workflow_id VARCHAR(64) NOT NULL,
     character_id VARCHAR(64),
@@ -198,7 +217,7 @@ CREATE TABLE workflow_state (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Evaluation record table
-CREATE TABLE evaluation_record (
+CREATE TABLE IF NOT EXISTS evaluation_record (
     id VARCHAR(64) PRIMARY KEY,
     target_type VARCHAR(32) NOT NULL,
     target_id VARCHAR(64) NOT NULL,
@@ -230,7 +249,7 @@ CREATE TABLE evaluation_record (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Modification log table
-CREATE TABLE modification_log (
+CREATE TABLE IF NOT EXISTS modification_log (
     id VARCHAR(64) PRIMARY KEY,
     target_type VARCHAR(32) NOT NULL,
     target_id VARCHAR(64) NOT NULL,
@@ -249,7 +268,7 @@ CREATE TABLE modification_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Optimization plan table
-CREATE TABLE optimization_plan (
+CREATE TABLE IF NOT EXISTS optimization_plan (
     id VARCHAR(64) PRIMARY KEY,
     observer_id VARCHAR(64) NOT NULL,
     evaluation_id VARCHAR(64),
@@ -275,7 +294,7 @@ CREATE TABLE optimization_plan (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Optimization plan item table
-CREATE TABLE optimization_plan_item (
+CREATE TABLE IF NOT EXISTS optimization_plan_item (
     id VARCHAR(64) PRIMARY KEY,
     plan_id VARCHAR(64) NOT NULL,
     sequence INT NOT NULL DEFAULT 0,
@@ -297,7 +316,7 @@ CREATE TABLE optimization_plan_item (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Optimization action table
-CREATE TABLE optimization_action (
+CREATE TABLE IF NOT EXISTS optimization_action (
     id VARCHAR(64) PRIMARY KEY,
     evaluation_id VARCHAR(64),
     target_type VARCHAR(32) NOT NULL,
@@ -320,7 +339,7 @@ CREATE TABLE optimization_action (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Cron definition table
-CREATE TABLE cron_definition (
+CREATE TABLE IF NOT EXISTS cron_definition (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -348,7 +367,7 @@ CREATE TABLE cron_definition (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Execution history table
-CREATE TABLE execution_history (
+CREATE TABLE IF NOT EXISTS execution_history (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     execution_id VARCHAR(64) NOT NULL UNIQUE,
     cron_id VARCHAR(64),
@@ -374,7 +393,7 @@ CREATE TABLE execution_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Channel config table
-CREATE TABLE channel_config (
+CREATE TABLE IF NOT EXISTS channel_config (
     id VARCHAR(64) PRIMARY KEY,
     channel_type VARCHAR(32) NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -388,7 +407,7 @@ CREATE TABLE channel_config (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Channel binding table
-CREATE TABLE channel_binding (
+CREATE TABLE IF NOT EXISTS channel_binding (
     id VARCHAR(128) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     channel_name VARCHAR(32) NOT NULL,
@@ -406,7 +425,7 @@ CREATE TABLE channel_binding (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Character duty table
-CREATE TABLE character_duty (
+CREATE TABLE IF NOT EXISTS character_duty (
     id VARCHAR(128) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     character_id VARCHAR(64) NOT NULL,
@@ -420,7 +439,7 @@ CREATE TABLE character_duty (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Common sense folder table
-CREATE TABLE common_sense_folder (
+CREATE TABLE IF NOT EXISTS common_sense_folder (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     parent_id VARCHAR(64),
@@ -434,7 +453,7 @@ CREATE TABLE common_sense_folder (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Common sense table
-CREATE TABLE common_sense (
+CREATE TABLE IF NOT EXISTS common_sense (
     id VARCHAR(64) PRIMARY KEY,
     workspace_id VARCHAR(64) NOT NULL,
     folder_id VARCHAR(64),
@@ -461,7 +480,7 @@ CREATE TABLE common_sense (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Observer action log table
-CREATE TABLE observer_action_log (
+CREATE TABLE IF NOT EXISTS observer_action_log (
     id VARCHAR(64) PRIMARY KEY,
     target_type VARCHAR(32) NOT NULL,
     target_id VARCHAR(64) NOT NULL,
@@ -474,10 +493,12 @@ CREATE TABLE observer_action_log (
     INDEX idx_log_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ==================== V2: User & Config Tables ====================
+-- ============================================================================
+-- V1: User & Config 表
+-- ============================================================================
 
 -- User table
-CREATE TABLE adeptify_user (
+CREATE TABLE IF NOT EXISTS adeptify_user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(64) NOT NULL UNIQUE,
     phone VARCHAR(32) UNIQUE,
@@ -496,8 +517,8 @@ CREATE TABLE adeptify_user (
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- User token table for refresh token management
-CREATE TABLE user_token (
+-- User token table
+CREATE TABLE IF NOT EXISTS user_token (
     id VARCHAR(64) PRIMARY KEY,
     user_id BIGINT NOT NULL,
     refresh_token VARCHAR(512) NOT NULL,
@@ -512,7 +533,7 @@ CREATE TABLE user_token (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- SMS verification code table
-CREATE TABLE sms_code (
+CREATE TABLE IF NOT EXISTS sms_code (
     id VARCHAR(64) PRIMARY KEY,
     phone VARCHAR(32) NOT NULL,
     code VARCHAR(8) NOT NULL,
@@ -524,30 +545,12 @@ CREATE TABLE sms_code (
     INDEX idx_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Config store table
-CREATE TABLE config_store (
-    id VARCHAR(255) PRIMARY KEY,
-    workspace VARCHAR(64),
-    entity_type VARCHAR(64),
-    entity_id VARCHAR(64),
-    config_key VARCHAR(255) NOT NULL,
-    config_value JSON,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
-    INDEX idx_config_workspace (workspace),
-    INDEX idx_config_entity (entity_type, entity_id),
-    INDEX idx_config_key (config_key)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Add visibility and permission columns to existing tables
-ALTER TABLE workspace ADD COLUMN visibility VARCHAR(32) NOT NULL DEFAULT 'PRIVATE' COMMENT 'PUBLIC or PRIVATE';
-ALTER TABLE workspace_member ADD COLUMN permission VARCHAR(32) NOT NULL DEFAULT 'VIEW' COMMENT 'VIEW, USE, EDIT, ADMIN, OWNER';
-
--- V4: Create skills, skill_bindings, skill_usage_logs tables
--- 对应 SkillEntity, SkillBindingEntity, SkillUsageEntity
+-- ============================================================================
+-- V1: Skill 表（含完整版本设计）
+-- ============================================================================
 
 -- Skills 表（版本设计：每次更新 INSERT 新记录，skillId 不变，version +1）
-CREATE TABLE skills (
+CREATE TABLE IF NOT EXISTS skills (
     id                       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '物理主键（自增）',
     skill_id                 VARCHAR(64)  NOT NULL COMMENT '技能唯一标识（UUID，同一技能所有版本相同）',
     name                     VARCHAR(100) NOT NULL COMMENT '技能名称',
@@ -587,6 +590,9 @@ CREATE TABLE skills (
     persist                  TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否持续留存（0否1是）',
     persist_mode             VARCHAR(10)  COMMENT '留存模式（full/summary）',
 
+    -- 标签
+    tags                     JSON COMMENT '标签列表，用于技能分类/场景归纳，如 ["数据分析","API","工具类"]',
+
     -- 时间戳
     created_at               DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '本条记录创建时间',
     published_at             DATETIME     DEFAULT NULL COMMENT '发布时间',
@@ -601,7 +607,7 @@ CREATE TABLE skills (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='技能信息表（含版本历史，每次更新插入新记录）';
 
 -- Skill 绑定关系表（三种维度：character / workspace / character_workspace）
-CREATE TABLE skill_bindings (
+CREATE TABLE IF NOT EXISTS skill_bindings (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
 
     -- 绑定类型
@@ -636,7 +642,7 @@ CREATE TABLE skill_bindings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Skill 绑定关系表（Character/Workspace/Character+Workspace 三种关系）';
 
 -- Skill 使用记录表
-CREATE TABLE skill_usage_logs (
+CREATE TABLE IF NOT EXISTS skill_usage_logs (
     id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
 
     -- Skill 信息
@@ -668,3 +674,317 @@ CREATE TABLE skill_usage_logs (
     INDEX idx_session (session_key),
     INDEX idx_invoked_at (invoked_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Skill 调用记录表';
+
+-- ============================================================================
+-- V99: Registry 表（Character, Model, Observer, Tool）
+-- ============================================================================
+
+-- Character table
+CREATE TABLE IF NOT EXISTS `character` (
+    id VARCHAR(64) PRIMARY KEY,
+    workspace_ids JSON,
+    organization_ids JSON,
+    name VARCHAR(255),
+    version INT DEFAULT 0,
+    description TEXT,
+    avatar VARCHAR(512),
+    source VARCHAR(64),
+    allowed_tools JSON,
+    traits JSON,
+    trait_configs JSON,
+    skills JSON,
+    prompt_template TEXT,
+    default_tools JSON,
+    is_running BOOLEAN,
+    deployed_count INT DEFAULT 0,
+    mind_config JSON,
+    extensions TEXT,
+    status VARCHAR(32),
+    created_at DATETIME,
+    updated_at DATETIME,
+    INDEX idx_character_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Model instance table
+CREATE TABLE IF NOT EXISTS model_instance (
+    id VARCHAR(64) PRIMARY KEY,
+    provider VARCHAR(32),
+    model_name VARCHAR(128),
+    endpoint VARCHAR(512),
+    credentials JSON,
+    default_params JSON,
+    enabled BOOLEAN DEFAULT TRUE,
+    description TEXT,
+    priority INT DEFAULT 0,
+    INDEX idx_model_provider (provider),
+    INDEX idx_model_enabled (enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Observer table
+CREATE TABLE IF NOT EXISTS observer (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(255),
+    description TEXT,
+    workspace_id VARCHAR(64),
+    status VARCHAR(32) NOT NULL DEFAULT 'INACTIVE',
+    evaluation_mode VARCHAR(32),
+    optimization_threshold DOUBLE,
+    consecutive_low_score_threshold INT DEFAULT 3,
+    common_sense_enabled BOOLEAN DEFAULT TRUE,
+    auto_optimization_enabled BOOLEAN DEFAULT TRUE,
+    periodic_evaluation_hours INT DEFAULT 24,
+    properties JSON,
+    planner_character_ids JSON,
+    reviewer_character_ids JSON,
+    supported_target_types JSON,
+    manual_approval_required BOOLEAN DEFAULT TRUE,
+    schedule_cron VARCHAR(64),
+    plan_window_hours INT DEFAULT 24,
+    max_plan_items INT DEFAULT 50,
+    created_at DATETIME,
+    updated_at DATETIME,
+    INDEX idx_observer_workspace (workspace_id),
+    INDEX idx_observer_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tool table
+CREATE TABLE IF NOT EXISTS tool (
+    name VARCHAR(128) PRIMARY KEY,
+    description TEXT,
+    parameter_schema TEXT,
+    enabled BOOLEAN DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- V99: Trait 表
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS trait (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    category VARCHAR(64) NOT NULL,
+    description VARCHAR(512),
+    content TEXT NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    used_by_count INT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME,
+    INDEX idx_trait_category (category),
+    INDEX idx_trait_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Trait 初始数据
+INSERT INTO trait (name, category, description, content, enabled, used_by_count, create_time) VALUES
+('结构化思维', 'personality', '倾向于用逻辑和结构化的方式处理信息和问题', '你倾向于用逻辑和结构化的方式处理信息和问题。在分析和解决问题时，你会先梳理框架，再填充细节。', true, 0, NOW()),
+('数据驱动', 'personality', '决策基于数据分析而非直觉', '你是一个数据驱动的人，决策时会优先考虑数据和分析结果，而非直觉。你会用数据来验证假设和支持结论。', true, 0, NOW()),
+('风险管理意识', 'personality', '主动识别和评估潜在风险', '你具有强烈的风险管理意识，会主动识别和评估潜在风险。在做决策前，你会考虑各种可能的风险因素。', true, 0, NOW()),
+('批判性思维', 'personality', '不轻信信息，善于质疑和分析', '你具有批判性思维，不轻信信息，善于质疑和分析。你会对信息进行深入思考，而非盲目接受。', true, 0, NOW()),
+('高效协作', 'personality', '擅长与他人合作，共同完成任务', '你擅长与他人合作，能够有效协调团队资源，共同完成复杂任务。你注重沟通和分工配合。', true, 0, NOW()),
+('温暖同理', 'personality', '能够理解和感受他人情绪', '你能够理解和感受他人情绪，与人交流时富有同理心。你善于倾听，能感知对方的真实需求。', true, 0, NOW()),
+('耐心引导', 'personality', '不急躁，愿意花时间解释和引导', '你耐心细致，不急躁，愿意花时间解释和引导他人。你相信循序渐进的力量。', true, 0, NOW()),
+('创意发散', 'personality', '思维活跃，善于产生新颖想法', '你思维活跃，善于产生新颖的想法和创意。你不拘泥于常规，能够提供独特的视角和解决方案。', true, 0, NOW()),
+('简洁表达', 'personality', '追求简洁明了的表达方式', '你追求简洁明了的表达方式，用最精炼的语言传达核心信息。你相信简洁是智慧的灵魂。', true, 0, NOW()),
+('代码质量优先', 'config', '严格遵循代码规范和最佳实践', '你严格遵循代码规范和最佳实践，注重代码的可读性、可维护性和性能。你会进行代码审查并提出改进建议。', true, 0, NOW()),
+('性能意识', 'config', '关注系统性能和资源效率', '你关注系统性能和资源效率，会从性能角度审视设计和实现。你善于发现和解决性能瓶颈。', true, 0, NOW()),
+('学术严谨', 'config', '引用规范，内容经过验证', '你注重学术严谨性，引用规范，内容经过验证。你会确保信息的准确性和可靠性。', true, 0, NOW()),
+('用户中心', 'personality', '始终以用户价值为出发点', '你始终以用户价值为出发点，在做决策时会优先考虑用户需求和使用体验。你相信为用户创造价值是核心目标。', true, 0, NOW()),
+('迭代思维', 'personality', '小步快跑，持续改进', '你信奉迭代思维，倾向于小步快跑、持续改进。你相信完美的方案是通过不断迭代打磨出来的。', true, 0, NOW()),
+('全渠道营销', 'config', '覆盖多个营销渠道的整合能力', '你具备全渠道营销能力，能够整合和协调多个营销渠道的策略和执行。你熟悉各渠道的特点和最佳实践。', true, 0, NOW()),
+('品牌叙事', 'personality', '擅长讲故事，建立情感连接', '你擅长讲故事，能够通过叙事建立与受众的情感连接。你善于用故事来传达品牌价值和理念。', true, 0, NOW());
+
+-- ============================================================================
+-- V99: Approval & RBAC 表
+-- ============================================================================
+
+-- Approval request table
+CREATE TABLE IF NOT EXISTS approval_request (
+    id VARCHAR(64) PRIMARY KEY,
+    resource_type VARCHAR(32) NOT NULL,
+    resource_id VARCHAR(64) NOT NULL,
+    approval_type VARCHAR(32) NOT NULL,
+    requester_id BIGINT NOT NULL,
+    requester_name VARCHAR(255),
+    approver_id BIGINT,
+    approver_name VARCHAR(255),
+    target_user_id BIGINT COMMENT 'For ADD_COLLABORATOR and REMOVE_COLLABORATOR approval types',
+    reason TEXT,
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    requested_at DATETIME NOT NULL,
+    processed_at DATETIME,
+    processed_comment TEXT,
+    INDEX idx_approval_resource (resource_type, resource_id),
+    INDEX idx_approval_requester (requester_id),
+    INDEX idx_approval_approver (approver_id),
+    INDEX idx_approval_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- asset_member: User's membership/role on an asset
+CREATE TABLE IF NOT EXISTS asset_member (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    resource_type VARCHAR(32) NOT NULL COMMENT 'WORKSPACE, CHARACTER, SKILL, etc.',
+    resource_id VARCHAR(64) NOT NULL COMMENT 'ID of the resource',
+    user_id BIGINT NOT NULL COMMENT 'User ID',
+    role VARCHAR(32) NOT NULL COMMENT 'OWNER, ADMIN, COLLABORATOR, MEMBER',
+    invited_by VARCHAR(64) COMMENT 'User ID who invited this member',
+    invited_at DATETIME COMMENT 'When the invitation was sent',
+    accepted_at DATETIME COMMENT 'When the invitation was accepted',
+    accepted BOOLEAN DEFAULT FALSE COMMENT 'Whether invitation is accepted',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_asset_member (resource_type, resource_id, user_id),
+    INDEX idx_asset_member_resource (resource_type, resource_id),
+    INDEX idx_asset_member_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- permission_policy: Permissions granted by role+resource_type
+CREATE TABLE IF NOT EXISTS permission_policy (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    resource_type VARCHAR(32) NOT NULL COMMENT 'Specific type or * for all',
+    role VARCHAR(32) NOT NULL COMMENT 'OWNER, ADMIN, COLLABORATOR, MEMBER',
+    permission JSON NOT NULL COMMENT 'Array of permissions',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_policy (role, resource_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Permission policy 种子数据
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WILDCARD', 'OWNER', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR", "TRANSFER"]');
+
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WORKSPACE', 'ADMIN', '["VIEW", "USE", "EDIT", "MANAGE_COLLABORATOR"]'),
+('CHARACTER', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('SKILL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('TOOL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('OBSERVER', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "MANAGE_COLLABORATOR"]'),
+('CONFIG', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]'),
+('MODEL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('TEMPLATE', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('COMMONSENSE', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]'),
+('TRAIT', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]');
+
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WILDCARD', 'COLLABORATOR', '["VIEW", "USE"]');
+
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WORKSPACE', 'MEMBER', '["VIEW"]'),
+('CHARACTER', 'MEMBER', '["VIEW"]'),
+('OBSERVER', 'MEMBER', '["VIEW"]'),
+('CONFIG', 'MEMBER', '["VIEW"]'),
+('COMMONSENSE', 'MEMBER', '["VIEW"]');
+
+-- ============================================================================
+-- V101: Skill Action Log 表
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS skill_action_log (
+    id              VARCHAR(64) PRIMARY KEY COMMENT '主键 UUID',
+    skill_id        VARCHAR(64) NOT NULL COMMENT '技能 UUID',
+    skill_name      VARCHAR(100) COMMENT '技能名称（冗余，便于展示）',
+    action_type     VARCHAR(50) NOT NULL COMMENT '动作类型',
+    operator_id     BIGINT UNSIGNED COMMENT '操作人 ID',
+    operator_name   VARCHAR(100) COMMENT '操作人名称（冗余）',
+    version         INT UNSIGNED COMMENT '涉及版本号',
+    detail          JSON COMMENT '操作详情，结构因 action_type 而异',
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+
+    INDEX idx_skill_action (skill_id, action_type),
+    INDEX idx_skill_time (skill_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Skill 操作日志表';
+
+-- ============================================================================
+-- V101: Asset Publish Status 表
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS asset_publish_status (
+    id VARCHAR(64) PRIMARY KEY COMMENT '主键 UUID',
+    resource_type VARCHAR(32) NOT NULL COMMENT '资源类型：CHARACTER, SKILL, OBSERVER, MODEL, TEMPLATE',
+    resource_id VARCHAR(64) NOT NULL COMMENT '资源 ID',
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' COMMENT '发布状态：DRAFT, PUBLISHED, ARCHIVED',
+    version INT DEFAULT 1 COMMENT '发布版本号',
+    published_at DATETIME COMMENT '发布时间',
+    published_by VARCHAR(100) COMMENT '发布人 ID',
+    archived_at DATETIME COMMENT '归档时间',
+    archived_by VARCHAR(100) COMMENT '归档人 ID',
+    snapshot JSON COMMENT '发布时的资产快照',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
+    updated_at DATETIME NOT NULL COMMENT '更新时间',
+
+    UNIQUE KEY uk_aps_resource (resource_type, resource_id),
+    INDEX idx_aps_status (status),
+    INDEX idx_aps_published_by (published_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- V101: Config Store 表（简化版）
+-- ============================================================================
+
+-- ConfigStore 主表（scopeBit 1-30：系统级1-15 + 用户级16-30）
+CREATE TABLE IF NOT EXISTS config_store (
+    id VARCHAR(255) PRIMARY KEY COMMENT '格式: {scopeBit}:{workspaceId}:{characterId}:{toolId}:{skillId}:{memoryId}:{configKey}',
+    scope_bit INT NOT NULL COMMENT '粒度标识：1-30（系统级1-15 + 用户级16-30）',
+
+    -- 扁平化层级 ID 存储
+    workspace_id VARCHAR(64) COMMENT 'WORKSPACE ID',
+    character_id VARCHAR(64) COMMENT 'CHARACTER ID',
+    tool_id VARCHAR(64) COMMENT 'TOOL ID',
+    skill_id VARCHAR(64) COMMENT 'SKILL ID',
+    memory_id VARCHAR(64) COMMENT 'MEMORY ID',
+
+    -- 配置值
+    config_key VARCHAR(255) NOT NULL COMMENT '配置键',
+    config_value JSON COMMENT '配置值',
+    value_type VARCHAR(32) COMMENT '值类型：STRING, NUMBER, BOOLEAN, LIST, OBJECT',
+
+    -- 状态和版本
+    status VARCHAR(20) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PUBLISHED',
+    version INT DEFAULT 1 COMMENT '版本号',
+    published_at DATETIME COMMENT '发布时间',
+    published_by VARCHAR(100) COMMENT '发布人',
+
+    -- 时间戳
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+
+    -- 索引
+    INDEX idx_scope_bit (scope_bit),
+    INDEX idx_config_key (config_key(64)),
+    INDEX idx_lookup (scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key(64)),
+    INDEX idx_workspace (workspace_id),
+    INDEX idx_character (character_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ConfigStore OBSERVER 表（scopeBit 131-205：OBSERVER 粒度）
+CREATE TABLE IF NOT EXISTS config_store_observer (
+    id VARCHAR(255) PRIMARY KEY COMMENT '格式: {scopeBit}:{observerId}:{workspaceId}:{characterId}:{toolId}:{skillId}:{memoryId}:{configKey}',
+    scope_bit INT NOT NULL COMMENT '粒度标识：131-205（OBSERVER 粒度）',
+    observer_id VARCHAR(64) NOT NULL COMMENT 'OBSERVER ID',
+
+    -- 扁平化层级 ID 存储
+    workspace_id VARCHAR(64) COMMENT 'WORKSPACE ID',
+    character_id VARCHAR(64) COMMENT 'CHARACTER ID',
+    tool_id VARCHAR(64) COMMENT 'TOOL ID',
+    skill_id VARCHAR(64) COMMENT 'SKILL ID',
+    memory_id VARCHAR(64) COMMENT 'MEMORY ID',
+
+    -- 配置值
+    config_key VARCHAR(255) NOT NULL COMMENT '配置键',
+    config_value JSON COMMENT '配置值',
+    value_type VARCHAR(32) COMMENT '值类型：STRING, NUMBER, BOOLEAN, LIST, OBJECT',
+
+    -- 状态和版本
+    status VARCHAR(20) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PUBLISHED',
+    version INT DEFAULT 1 COMMENT '版本号',
+    published_at DATETIME COMMENT '发布时间',
+    published_by VARCHAR(100) COMMENT '发布人',
+
+    -- 时间戳
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+
+    -- 索引
+    INDEX idx_scope_bit (scope_bit),
+    INDEX idx_observer (observer_id),
+    INDEX idx_config_key (config_key(64)),
+    INDEX idx_lookup (observer_id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key(64))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -4,30 +4,26 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.config.context.InheritanceContext;
-import org.dragon.config.context.InheritanceContext.ContextScope;
-import org.dragon.config.enums.ConfigScopeType;
-import org.dragon.config.enums.ScopeBits;
+import org.dragon.config.enums.ConfigLevel;
 import org.dragon.config.store.ConfigStore;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
  * ConfigEffectService 配置生效值服务
  *
- * <p>负责配置的继承链计算和生效值查询
+ * <p>负责配置的继承链计算和生效值查询。
  *
- * <p>继承链顺序（从低到高）：
- * GLOBAL &lt; STUDIO &lt; WORKSPACE &lt; CHARACTER &lt; TOOL &lt; SKILL
- *
- * <p>配置查找算法：
- * <ol>
- *   <li>获取继承链（从具体到全局）</li>
- *   <li>遍历继承链，在 config_store 中查找</li>
- *   <li>若找到，返回 storeValue，source = 查到的 scope</li>
- *   <li>若未找到，返回 NOT_SET（默认值查找 TODO: 实现）</li>
- * </ol>
+ * <p>继承链计算：
+ * <ul>
+ *   <li>从具体粒度到全局粒度遍历</li>
+ *   <li>使用 ConfigLevel.isDescendantOf() 检查继承关系</li>
+ *   <li>第一个匹配的配置值即为生效值</li>
+ * </ul>
  */
 @Slf4j
 @Service
@@ -47,63 +43,103 @@ public class ConfigEffectService {
      * @return 生效值结果
      */
     public EffectiveConfig getEffectiveConfig(String configKey, InheritanceContext context) {
-        if (context == null || context.getScopes() == null || context.getScopes().isEmpty()) {
+        if (context == null || context.getLevel() == null) {
             return buildNotSet(configKey);
         }
 
-        // 遍历继承链（从具体到全局）
-        for (ContextScope scope : context.getInheritanceChain()) {
-            Optional<Object> storeValue = getStoreValue(configKey, scope, context);
+        ConfigLevel targetLevel = context.getLevel();
+
+        // 获取继承链（从具体到全局）
+        List<ConfigLevel> chain = getInheritanceChain(targetLevel);
+        log.debug("[ConfigEffectService] Inheritance chain for {}: {}", targetLevel, chain);
+
+        // 遍历继承链查找配置
+        for (ConfigLevel level : chain) {
+            Optional<Object> storeValue = getStoreValue(configKey, level, context);
             if (storeValue.isPresent()) {
+                log.debug("[ConfigEffectService] Found value at level {}: {}", level, storeValue.get());
                 return EffectiveConfig.builder()
                         .configKey(configKey)
                         .effectiveValue(storeValue.get())
                         .valueType(determineValueType(storeValue.get()))
-                        .source(scope.getScopeType().name())
-                        .isInherited(scope != context.getMostSpecificScope())
+                        .source(level.name())
+                        .isInherited(level != targetLevel)
                         .displayStatus(DisplayStatus.SET)
                         .build();
             }
         }
 
-        // 查找默认值（Phase 4 实现）
-        return findDefault(configKey);
+        // 未找到，返回 NOT_SET
+        log.debug("[ConfigEffectService] No value found for key: {}", configKey);
+        return buildNotSet(configKey);
+    }
+
+    /**
+     * 获取继承链（从具体到全局）
+     *
+     * <p>通过 AND 运算检查继承关系
+     */
+    private List<ConfigLevel> getInheritanceChain(ConfigLevel targetLevel) {
+        List<ConfigLevel> chain = new ArrayList<>();
+        chain.add(targetLevel);
+
+        // 找到所有祖先层级
+        for (ConfigLevel candidate : ConfigLevel.values()) {
+            if (candidate == targetLevel) {
+                continue;
+            }
+            // candidate 是 targetLevel 的祖先当且仅当：
+            // 1. targetLevel 继承 candidate
+            // 2. candidate 不继承任何其他更远的祖先（避免重复添加）
+            if (targetLevel.isDescendantOf(candidate) && !hasIntermediateAncestor(targetLevel, candidate)) {
+                chain.add(candidate);
+            }
+        }
+
+        return chain;
+    }
+
+    /**
+     * 检查 level 和 candidate 之间是否有其他祖先
+     */
+    private boolean hasIntermediateAncestor(ConfigLevel level, ConfigLevel candidate) {
+        for (ConfigLevel other : ConfigLevel.values()) {
+            if (other == level || other == candidate) {
+                continue;
+            }
+            // 如果 level 继承 other，other 继承 candidate，说明 other 是中间祖先
+            if (level.isDescendantOf(other) && other.isDescendantOf(candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * 从存储中获取配置值
      */
-    private Optional<Object> getStoreValue(String configKey, ContextScope scope, InheritanceContext context) {
-        int scopeBits = ScopeBits.of(scope.getScopeType());
-        String workspaceId = extractScopeId(context, ConfigScopeType.WORKSPACE);
-        String characterId = extractScopeId(context, ConfigScopeType.CHARACTER);
-        String toolId = extractScopeId(context, ConfigScopeType.TOOL);
-        String skillId = extractScopeId(context, ConfigScopeType.SKILL);
-
-        return configStore.get(configKey, scopeBits, workspaceId, characterId, toolId, skillId);
+    private Optional<Object> getStoreValue(String configKey, ConfigLevel level, InheritanceContext context) {
+        return configStore.get(
+                level,
+                context.getWorkspaceId(),
+                context.getCharacterId(),
+                context.getToolId(),
+                context.getSkillId(),
+                context.getMemoryId(),
+                configKey
+        );
     }
 
     /**
-     * 从上下文中提取指定类型的 scopeId
+     * 判断值的类型
      */
-    private String extractScopeId(InheritanceContext context, ConfigScopeType type) {
-        if (context == null || context.getScopes() == null) {
-            return null;
-        }
-        for (ContextScope scope : context.getScopes()) {
-            if (scope.getScopeType() == type) {
-                return scope.getScopeId();
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 查找默认值（Phase 4 实现）
-     */
-    private EffectiveConfig findDefault(String configKey) {
-        // TODO: Phase 4 实现默认值查找
-        return buildNotSet(configKey);
+    private String determineValueType(Object value) {
+        if (value == null) return "STRING";
+        if (value instanceof Number) return "NUMBER";
+        if (value instanceof Boolean) return "BOOLEAN";
+        if (value instanceof List) return "LIST";
+        if (value instanceof java.util.Map) return "OBJECT";
+        return "STRING";
     }
 
     private EffectiveConfig buildNotSet(String configKey) {
@@ -118,18 +154,6 @@ public class ConfigEffectService {
     }
 
     /**
-     * 判断值的类型
-     */
-    private String determineValueType(Object value) {
-        if (value == null) return "STRING";
-        if (value instanceof Number) return "NUMBER";
-        if (value instanceof Boolean) return "BOOLEAN";
-        if (value instanceof java.util.List) return "LIST";
-        if (value instanceof java.util.Map) return "OBJECT";
-        return "STRING";
-    }
-
-    /**
      * 生效值结果
      */
     @Data
@@ -141,7 +165,7 @@ public class ConfigEffectService {
         private Object effectiveValue;
         /** 值类型 */
         private String valueType;
-        /** 值来源：GLOBAL, STUDIO, WORKSPACE, CHARACTER, DEFAULT */
+        /** 值来源 */
         private String source;
         /** 是否继承自父级 */
         private boolean isInherited;
