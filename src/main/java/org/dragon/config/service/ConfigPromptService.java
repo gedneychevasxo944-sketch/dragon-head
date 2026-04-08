@@ -49,7 +49,7 @@ public class ConfigPromptService {
      * @return prompt或默认值
      */
     public String getGlobalPrompt(String promptKey, String defaultValue) {
-        String value = getPrompt(promptKey, InheritanceContext.builder().level(ConfigLevel.GLOBAL_WORKSPACE).build());
+        String value = getPrompt(promptKey, InheritanceContext.builder().level(ConfigLevel.GLOBAL).build());
         return value != null ? value : defaultValue;
     }
 
@@ -109,7 +109,7 @@ public class ConfigPromptService {
      * 设置全局 Prompt
      */
     public void setGlobalPrompt(String promptKey, String content) {
-        configStore().set(ConfigLevel.GLOBAL_WORKSPACE, null, null, null, null, null, "prompt/" + promptKey, content);
+        configStore().set(ConfigLevel.GLOBAL, null, null, null, null, null, "prompt/" + promptKey, content);
         log.info("[ConfigPromptService] Set global prompt: {}", promptKey);
     }
 

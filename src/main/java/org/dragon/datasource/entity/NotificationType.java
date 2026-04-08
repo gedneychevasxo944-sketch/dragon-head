@@ -1,4 +1,4 @@
-package org.dragon.notification.dto;
+package org.dragon.datasource.entity;
 
 /**
  * NotificationType 通知类型枚举

@@ -1,8 +1,7 @@
 package org.dragon.notification.store;
 
 import io.ebean.Database;
-import org.dragon.notification.dto.NotificationEntity;
-import org.dragon.notification.dto.NotificationType;
+import org.dragon.datasource.entity.NotificationEntity;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -67,11 +66,11 @@ public class MySqlNotificationStore implements NotificationStore {
     }
 
     @Override
-    public List<NotificationEntity> findByUserIdAndType(Long userId, NotificationType type) {
+    public List<NotificationEntity> findByUserIdAndType(Long userId, String type) {
         return mysqlDb.find(NotificationEntity.class)
                 .where()
                 .eq("userId", userId)
-                .eq("type", type.name())
+                .eq("type", type)
                 .orderBy()
                 .desc("createdAt")
                 .findList();

@@ -2,8 +2,8 @@ package org.dragon.notification.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.notification.dto.NotificationDTO;
-import org.dragon.notification.dto.NotificationEntity;
-import org.dragon.notification.dto.NotificationType;
+import org.dragon.datasource.entity.NotificationEntity;
+import org.dragon.datasource.entity.NotificationType;
 import org.dragon.notification.store.NotificationStore;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;

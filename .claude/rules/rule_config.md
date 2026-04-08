@@ -60,7 +60,7 @@ private boolean enabled;
 | `dragon.config` | 配置中心 | `dragon.config.enabled=true` |
 | `llm.xxx` | LLM 配置 | `llm.kimi.apiKey=${KIMI_API_KEY:}` |
 | `channel.xxx` | 渠道配置 | `channel.feishu.appId=cli_xxx` |
-| `jwt.xxx` | JWT 配置 | `jwt.secret=${JWT_SECRET:}` |
+| `jwt.xxx` | JWT 配置 | `jwt.secret=${JWT_SECRET:adeptify-256-bit-secret-key-for-jwt-signing}` |
 | `sms.xxx` | 短信配置 | `sms.aliyun.access-key=${ALIYUN_ACCESS_KEY:}` |
 | `wechat.xxx` | 微信配置 | `wechat.app-id=${WECHAT_APP_ID:}` |
 | `skill.xxx` | Skill 配置 | `skill.storage.backend=local` |
@@ -81,7 +81,7 @@ llm.kimi.apiKey=your-actual-api-key
 默认值通过 `:defaultValue` 语法指定：
 
 ```properties
-jwt.secret=${JWT_SECRET:default-secret-if-not-set}
+jwt.secret=${JWT_SECRET:adeptify-256-bit-secret-key-for-jwt-signing}
 jwt.access-token-validity=${JWT_ACCESS_VALIDITY:7200}
 ```
 

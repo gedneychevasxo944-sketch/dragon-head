@@ -1,4 +1,4 @@
-package org.dragon.notification.dto;
+package org.dragon.datasource.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

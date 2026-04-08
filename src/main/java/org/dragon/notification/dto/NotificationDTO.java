@@ -1,5 +1,6 @@
 package org.dragon.notification.dto;
 
+import org.dragon.datasource.entity.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

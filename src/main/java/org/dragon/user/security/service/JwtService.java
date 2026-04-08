@@ -2,8 +2,6 @@ package org.dragon.user.security.service;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import org.dragon.config.context.InheritanceContext;
-import org.dragon.config.service.ConfigApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -25,10 +23,13 @@ public class JwtService {
     private final long refreshTokenValidity; // 秒
 
     @Autowired
-    public JwtService(ConfigApplication configApplication) {
-        this.jwtSecret = configApplication.getStringValue("jwt.secret", InheritanceContext.forGlobal(), "");
-        this.accessTokenValidity = configApplication.getLongValue("jwt.access-token-validity", InheritanceContext.forGlobal(), 7200L);
-        this.refreshTokenValidity = configApplication.getLongValue("jwt.refresh-token-validity", InheritanceContext.forGlobal(), 604800L);
+    public JwtService(
+            @Value("${jwt.secret}") String jwtSecret,
+            @Value("${jwt.access-token-validity:7200}") long accessTokenValidity,
+            @Value("${jwt.refresh-token-validity:604800}") long refreshTokenValidity) {
+        this.jwtSecret = jwtSecret;
+        this.accessTokenValidity = accessTokenValidity;
+        this.refreshTokenValidity = refreshTokenValidity;
     }
 
     /**

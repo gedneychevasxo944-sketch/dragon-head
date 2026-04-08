@@ -1,7 +1,6 @@
 package org.dragon.notification.store;
 
-import org.dragon.notification.dto.NotificationEntity;
-import org.dragon.notification.dto.NotificationType;
+import org.dragon.datasource.entity.NotificationEntity;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import org.springframework.stereotype.Component;
@@ -64,9 +63,9 @@ public class MemoryNotificationStore implements NotificationStore {
     }
 
     @Override
-    public List<NotificationEntity> findByUserIdAndType(Long userId, NotificationType type) {
+    public List<NotificationEntity> findByUserIdAndType(Long userId, String type) {
         return store.values().stream()
-                .filter(n -> userId.equals(n.getUserId()) && type == n.getType())
+                .filter(n -> userId.equals(n.getUserId()) && type.equals(n.getType()))
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .collect(Collectors.toList());
     }

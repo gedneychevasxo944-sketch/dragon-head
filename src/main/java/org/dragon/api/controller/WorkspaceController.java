@@ -142,8 +142,51 @@ public class WorkspaceController {
     @Operation(summary = "获取团队席位列表")
     @GetMapping("/{workspaceId}/team-positions")
     public ApiResponse<List<Map<String, Object>>> listTeamPositions(@PathVariable String workspaceId) {
-        // 占位：团队席位系统待实现
-        return ApiResponse.success(List.of());
+        List<Map<String, Object>> positions = workspaceApiApplication.listTeamPositions(workspaceId);
+        return ApiResponse.success(positions);
+    }
+
+    /**
+     * 6.3 添加岗位
+     * POST /api/v1/workspaces/:workspaceId/team-positions
+     */
+    @Operation(summary = "添加团队岗位")
+    @PostMapping("/{workspaceId}/team-positions")
+    public ApiResponse<Map<String, Object>> addTeamPosition(
+            @PathVariable String workspaceId,
+            @RequestBody AddPositionRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
+        Map<String, Object> position = workspaceApiApplication.addTeamPosition(workspaceId, request);
+        return ApiResponse.success(position);
+    }
+
+    /**
+     * 6.4 更新岗位
+     * PUT /api/v1/workspaces/:workspaceId/team-positions/:positionId
+     */
+    @Operation(summary = "更新团队岗位")
+    @PutMapping("/{workspaceId}/team-positions/{positionId}")
+    public ApiResponse<Map<String, Object>> updateTeamPosition(
+            @PathVariable String workspaceId,
+            @PathVariable String positionId,
+            @RequestBody UpdatePositionRequest request) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
+        Map<String, Object> position = workspaceApiApplication.updateTeamPosition(workspaceId, positionId, request);
+        return ApiResponse.success(position);
+    }
+
+    /**
+     * 6.5 删除岗位
+     * DELETE /api/v1/workspaces/:workspaceId/team-positions/:positionId
+     */
+    @Operation(summary = "删除团队岗位")
+    @DeleteMapping("/{workspaceId}/team-positions/{positionId}")
+    public ApiResponse<Map<String, Object>> deleteTeamPosition(
+            @PathVariable String workspaceId,
+            @PathVariable String positionId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
+        workspaceApiApplication.deleteTeamPosition(workspaceId, positionId);
+        return ApiResponse.success(Map.of("success", true));
     }
 
     /**
@@ -502,5 +545,21 @@ public class WorkspaceController {
     public static class UpdateSkillBindingRequest {
         private String versionType;
         private Integer fixedVersion;
+    }
+
+    /** 添加岗位请求 */
+    @Data
+    public static class AddPositionRequest {
+        private String roleName;
+        private String rolePackage;
+        private String purpose;
+        private String scope;
+    }
+
+    /** 更新岗位请求 */
+    @Data
+    public static class UpdatePositionRequest {
+        private String assignedCharacterId;
+        private Boolean enabled;
     }
 }

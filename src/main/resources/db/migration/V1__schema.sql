@@ -1,22 +1,24 @@
 -- ============================================================================
--- Dragon Head 数据库最终版 Schema
--- 整合自 V1/V99/V101 所有 Migration，冷启动专用
+-- Dragon Head 数据库 Schema
+-- 版本: V1
+-- 说明: 整合所有 migration 的表结构，冷启动专用
 --
--- 包含所有代码层 Entity 对应的表：
---   - V1 基础表（含 visibility/permission 列）
---   - V99 新增表（character, model_instance, observer, tool, trait, approval_request, asset_member, permission_policy）
---   - V101 新增表（skill_action_log, asset_publish_status, config_store, config_store_observer）
---
--- 废弃表（已删除）：
---   - config_definitions（V101 删除，代码无对应 Entity）
---   - skill_bind（旧表，代码未使用）
---   - skill/skill_binding（V99 版本，与 skills/skill_bindings 重复，代码使用后者）
+-- 包含:
+--   - V1 核心业务表（chat_message, chat_session, workspace, task, material 等）
+--   - V1 User & Config 表（adeptify_user, user_token, sms_code 等）
+--   - V1 Skill 表（skills, skill_bindings, skill_usage_logs）
+--   - V99 Registry 表（character, model_instance, observer, tool, trait）
+--   - V99 Approval & RBAC 表（approval_request, asset_member, permission_policy）
+--   - V101 Skill Action Log 表（skill_action_log, asset_publish_status, config_store, config_store_observer）
+--   - V103 Config Center Enhancement（config_store 元数据字段）
+--   - V104 Asset Association 表（asset_association）
+--   - V105 Notification 表（notification）
 -- ============================================================================
 
 use adeptify;
 
 -- ============================================================================
--- V1: 核心业务表
+-- 核心业务表
 -- ============================================================================
 
 -- Chat message table
@@ -494,7 +496,7 @@ CREATE TABLE IF NOT EXISTS observer_action_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- V1: User & Config 表
+-- User & Config 表
 -- ============================================================================
 
 -- User table
@@ -546,7 +548,7 @@ CREATE TABLE IF NOT EXISTS sms_code (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- V1: Skill 表（含完整版本设计）
+-- Skill 表（含完整版本设计）
 -- ============================================================================
 
 -- Skills 表（版本设计：每次更新 INSERT 新记录，skillId 不变，version +1）
@@ -676,7 +678,7 @@ CREATE TABLE IF NOT EXISTS skill_usage_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Skill 调用记录表';
 
 -- ============================================================================
--- V99: Registry 表（Character, Model, Observer, Tool）
+-- Registry 表（Character, Model, Observer, Tool）
 -- ============================================================================
 
 -- Character table
@@ -756,7 +758,7 @@ CREATE TABLE IF NOT EXISTS tool (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- V99: Trait 表
+-- Trait 表
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS trait (
@@ -773,27 +775,8 @@ CREATE TABLE IF NOT EXISTS trait (
     INDEX idx_trait_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Trait 初始数据
-INSERT INTO trait (name, category, description, content, enabled, used_by_count, create_time) VALUES
-('结构化思维', 'personality', '倾向于用逻辑和结构化的方式处理信息和问题', '你倾向于用逻辑和结构化的方式处理信息和问题。在分析和解决问题时，你会先梳理框架，再填充细节。', true, 0, NOW()),
-('数据驱动', 'personality', '决策基于数据分析而非直觉', '你是一个数据驱动的人，决策时会优先考虑数据和分析结果，而非直觉。你会用数据来验证假设和支持结论。', true, 0, NOW()),
-('风险管理意识', 'personality', '主动识别和评估潜在风险', '你具有强烈的风险管理意识，会主动识别和评估潜在风险。在做决策前，你会考虑各种可能的风险因素。', true, 0, NOW()),
-('批判性思维', 'personality', '不轻信信息，善于质疑和分析', '你具有批判性思维，不轻信信息，善于质疑和分析。你会对信息进行深入思考，而非盲目接受。', true, 0, NOW()),
-('高效协作', 'personality', '擅长与他人合作，共同完成任务', '你擅长与他人合作，能够有效协调团队资源，共同完成复杂任务。你注重沟通和分工配合。', true, 0, NOW()),
-('温暖同理', 'personality', '能够理解和感受他人情绪', '你能够理解和感受他人情绪，与人交流时富有同理心。你善于倾听，能感知对方的真实需求。', true, 0, NOW()),
-('耐心引导', 'personality', '不急躁，愿意花时间解释和引导', '你耐心细致，不急躁，愿意花时间解释和引导他人。你相信循序渐进的力量。', true, 0, NOW()),
-('创意发散', 'personality', '思维活跃，善于产生新颖想法', '你思维活跃，善于产生新颖的想法和创意。你不拘泥于常规，能够提供独特的视角和解决方案。', true, 0, NOW()),
-('简洁表达', 'personality', '追求简洁明了的表达方式', '你追求简洁明了的表达方式，用最精炼的语言传达核心信息。你相信简洁是智慧的灵魂。', true, 0, NOW()),
-('代码质量优先', 'config', '严格遵循代码规范和最佳实践', '你严格遵循代码规范和最佳实践，注重代码的可读性、可维护性和性能。你会进行代码审查并提出改进建议。', true, 0, NOW()),
-('性能意识', 'config', '关注系统性能和资源效率', '你关注系统性能和资源效率，会从性能角度审视设计和实现。你善于发现和解决性能瓶颈。', true, 0, NOW()),
-('学术严谨', 'config', '引用规范，内容经过验证', '你注重学术严谨性，引用规范，内容经过验证。你会确保信息的准确性和可靠性。', true, 0, NOW()),
-('用户中心', 'personality', '始终以用户价值为出发点', '你始终以用户价值为出发点，在做决策时会优先考虑用户需求和使用体验。你相信为用户创造价值是核心目标。', true, 0, NOW()),
-('迭代思维', 'personality', '小步快跑，持续改进', '你信奉迭代思维，倾向于小步快跑、持续改进。你相信完美的方案是通过不断迭代打磨出来的。', true, 0, NOW()),
-('全渠道营销', 'config', '覆盖多个营销渠道的整合能力', '你具备全渠道营销能力，能够整合和协调多个营销渠道的策略和执行。你熟悉各渠道的特点和最佳实践。', true, 0, NOW()),
-('品牌叙事', 'personality', '擅长讲故事，建立情感连接', '你擅长讲故事，能够通过叙事建立与受众的情感连接。你善于用故事来传达品牌价值和理念。', true, 0, NOW());
-
 -- ============================================================================
--- V99: Approval & RBAC 表
+-- Approval & RBAC 表
 -- ============================================================================
 
 -- Approval request table
@@ -847,34 +830,8 @@ CREATE TABLE IF NOT EXISTS permission_policy (
     UNIQUE KEY uk_policy (role, resource_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Permission policy 种子数据
-INSERT INTO permission_policy (resource_type, role, permission) VALUES
-('WILDCARD', 'OWNER', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR", "TRANSFER"]');
-
-INSERT INTO permission_policy (resource_type, role, permission) VALUES
-('WORKSPACE', 'ADMIN', '["VIEW", "USE", "EDIT", "MANAGE_COLLABORATOR"]'),
-('CHARACTER', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
-('SKILL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
-('TOOL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
-('OBSERVER', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "MANAGE_COLLABORATOR"]'),
-('CONFIG', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]'),
-('MODEL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
-('TEMPLATE', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
-('COMMONSENSE', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]'),
-('TRAIT', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]');
-
-INSERT INTO permission_policy (resource_type, role, permission) VALUES
-('WILDCARD', 'COLLABORATOR', '["VIEW", "USE"]');
-
-INSERT INTO permission_policy (resource_type, role, permission) VALUES
-('WORKSPACE', 'MEMBER', '["VIEW"]'),
-('CHARACTER', 'MEMBER', '["VIEW"]'),
-('OBSERVER', 'MEMBER', '["VIEW"]'),
-('CONFIG', 'MEMBER', '["VIEW"]'),
-('COMMONSENSE', 'MEMBER', '["VIEW"]');
-
 -- ============================================================================
--- V101: Skill Action Log 表
+-- Skill Action Log 表
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS skill_action_log (
@@ -893,7 +850,7 @@ CREATE TABLE IF NOT EXISTS skill_action_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Skill 操作日志表';
 
 -- ============================================================================
--- V101: Asset Publish Status 表
+-- Asset Publish Status 表
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS asset_publish_status (
@@ -916,7 +873,7 @@ CREATE TABLE IF NOT EXISTS asset_publish_status (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- V101: Config Store 表（简化版）
+-- Config Store 表
 -- ============================================================================
 
 -- ConfigStore 主表（scopeBit 1-30：系统级1-15 + 用户级16-30）
@@ -936,8 +893,15 @@ CREATE TABLE IF NOT EXISTS config_store (
     config_value mediumtext COMMENT '配置值',
     value_type VARCHAR(32) COMMENT '值类型：STRING, NUMBER, BOOLEAN, LIST, OBJECT',
 
+    -- 元数据字段（V103 添加）
+    name VARCHAR(128) DEFAULT NULL COMMENT '配置项名称',
+    description VARCHAR(500) DEFAULT NULL COMMENT '配置项描述',
+    validation_rules JSON DEFAULT NULL COMMENT '校验规则JSON数组',
+    options JSON DEFAULT NULL COMMENT '枚举选项JSON数组',
+    modified_by VARCHAR(100) DEFAULT NULL,
+
     -- 状态和版本
-    status VARCHAR(20) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PUBLISHED',
+    `status` VARCHAR(20) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PUBLISHED',
     version INT DEFAULT 1 COMMENT '版本号',
     published_at DATETIME COMMENT '发布时间',
     published_by VARCHAR(100) COMMENT '发布人',
@@ -951,7 +915,8 @@ CREATE TABLE IF NOT EXISTS config_store (
     INDEX idx_config_key (config_key(64)),
     INDEX idx_lookup (scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key(64)),
     INDEX idx_workspace (workspace_id),
-    INDEX idx_character (character_id)
+    INDEX idx_character (character_id),
+    INDEX idx_config_key_name (config_key(64), name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ConfigStore OBSERVER 表（scopeBit 131-205：OBSERVER 粒度）
@@ -988,3 +953,44 @@ CREATE TABLE IF NOT EXISTS config_store_observer (
     INDEX idx_config_key (config_key(64)),
     INDEX idx_lookup (observer_id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key(64))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- Asset Association 表（V104 新增）
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS asset_association (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    association_type VARCHAR(32) NOT NULL COMMENT '关联类型：CHARACTER_WORKSPACE, MEMORY_CHARACTER, MEMORY_WORKSPACE, TOOL_SKILL, OBSERVER_WORKSPACE',
+    source_type VARCHAR(32) NOT NULL COMMENT '源资产类型',
+    source_id VARCHAR(64) NOT NULL COMMENT '源资产ID',
+    target_type VARCHAR(32) NOT NULL COMMENT '目标资产类型',
+    target_id VARCHAR(64) NOT NULL COMMENT '目标资产ID',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
+    updated_at DATETIME NOT NULL COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY uk_association (association_type, source_type, source_id, target_type, target_id),
+    INDEX idx_source (source_type, source_id),
+    INDEX idx_target (target_type, target_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='资产关联表';
+
+-- ============================================================================
+-- Notification 表（V105 新增）
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS notification (
+    id VARCHAR(64) NOT NULL COMMENT '主键(UUID)',
+    user_id BIGINT NOT NULL COMMENT '通知接收用户ID',
+    type VARCHAR(32) NOT NULL COMMENT '通知类型：APPROVAL_REQUEST, APPROVAL_RESULT, COLLABORATOR_INVITE, SYSTEM',
+    title VARCHAR(128) NOT NULL COMMENT '通知标题',
+    content TEXT COMMENT '通知内容',
+    link VARCHAR(256) COMMENT '点击跳转链接',
+    source_type VARCHAR(32) COMMENT '来源类型（如 APPROVAL）',
+    source_id VARCHAR(64) COMMENT '来源ID（如审批请求ID）',
+    is_read TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已读：0-未读，1-已读',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    INDEX idx_notification_user (user_id),
+    INDEX idx_notification_user_type (user_id, type),
+    INDEX idx_notification_user_read (user_id, is_read),
+    INDEX idx_notification_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知表';

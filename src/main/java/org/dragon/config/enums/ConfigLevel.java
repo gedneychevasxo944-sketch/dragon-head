@@ -18,6 +18,9 @@ public enum ConfigLevel {
     // ==================== 系统级粒度 (scopeBit 1-15) ====================
     // 继承链：GLOBAL -> XXX
 
+    /** 纯全局配置 */
+    GLOBAL(1, "GLOBAL"),
+
     GLOBAL_WORKSPACE(5, "GLOBAL -> WORKSPACE"),
     GLOBAL_CHARACTER(9, "GLOBAL -> CHARACTER"),
     GLOBAL_SKILL(17, "GLOBAL -> SKILL"),

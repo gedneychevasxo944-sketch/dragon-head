@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.config.enums.ConfigLevel;
+import org.dragon.config.enums.ScopeBits;
 
 import java.time.LocalDateTime;
 
@@ -132,6 +133,7 @@ public class ConfigEntity {
      */
     public static String buildId(Integer scopeBit, String workspaceId, String characterId,
                                  String toolId, String skillId, String memoryId, String configKey) {
+        validateScopeBitFields(scopeBit, workspaceId, characterId, toolId, skillId, memoryId);
         return String.format("%d:%s:%s:%s:%s:%s:%s",
                 scopeBit,
                 workspaceId != null ? workspaceId : "",
@@ -140,6 +142,37 @@ public class ConfigEntity {
                 skillId != null ? skillId : "",
                 memoryId != null ? memoryId : "",
                 configKey);
+    }
+
+    /**
+     * 验证 scopeBit 与字段是否匹配
+     *
+     * @throws IllegalArgumentException 当 scopeBit 包含某层级 bit 但对应字段为空时
+     */
+    public static void validateScopeBitFields(Integer scopeBit, String workspaceId, String characterId,
+                                              String toolId, String skillId, String memoryId) {
+        if (scopeBit == null) {
+            return;
+        }
+        if (ScopeBits.isDescendantOf(scopeBit, ScopeBits.WORKSPACE) && isBlank(workspaceId)) {
+            throw new IllegalArgumentException("scopeBit 包含 WORKSPACE bit，但 workspaceId 为空");
+        }
+        if (ScopeBits.isDescendantOf(scopeBit, ScopeBits.CHARACTER) && isBlank(characterId)) {
+            throw new IllegalArgumentException("scopeBit 包含 CHARACTER bit，但 characterId 为空");
+        }
+        if (ScopeBits.isDescendantOf(scopeBit, ScopeBits.TOOL) && isBlank(toolId)) {
+            throw new IllegalArgumentException("scopeBit 包含 TOOL bit，但 toolId 为空");
+        }
+        if (ScopeBits.isDescendantOf(scopeBit, ScopeBits.SKILL) && isBlank(skillId)) {
+            throw new IllegalArgumentException("scopeBit 包含 SKILL bit，但 skillId 为空");
+        }
+        if (ScopeBits.isDescendantOf(scopeBit, ScopeBits.MEMORY) && isBlank(memoryId)) {
+            throw new IllegalArgumentException("scopeBit 包含 MEMORY bit，但 memoryId 为空");
+        }
+    }
+
+    private static boolean isBlank(String str) {
+        return str == null || str.trim().isEmpty();
     }
 
     @PrePersist

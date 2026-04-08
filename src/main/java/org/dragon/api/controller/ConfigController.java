@@ -45,11 +45,16 @@ public class ConfigController {
     @GetMapping("/items")
     public ApiResponse<PageResponse<Map<String, Object>>> listConfigItems(
             @RequestParam(required = false) String scopeType,
-            @RequestParam(required = false) String scopeId,
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String characterId,
+            @RequestParam(required = false) String toolId,
+            @RequestParam(required = false) String skillId,
+            @RequestParam(required = false) String memoryId,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        log.info("[ConfigController] listConfigItems scopeType={} scopeId={}", scopeType, scopeId);
+        log.info("[ConfigController] listConfigItems scopeType={} workspaceId={} characterId={} toolId={} skillId={} memoryId={}",
+                scopeType, workspaceId, characterId, toolId, skillId, memoryId);
 
         if (scopeType == null || scopeType.isBlank()) {
             return ApiResponse.success(PageResponse.of(List.of(), 0, page, pageSize));
@@ -62,7 +67,7 @@ public class ConfigController {
             return ApiResponse.success(PageResponse.of(List.of(), 0, page, pageSize));
         }
 
-        InheritanceContext context = buildContext(configLevel, scopeId, null);
+        InheritanceContext context = buildContext(configLevel, workspaceId, characterId, toolId, skillId, memoryId);
         List<ConfigItemVO> items = configApplication.listConfigItems(context);
 
         // 过滤搜索关键词
@@ -93,8 +98,13 @@ public class ConfigController {
     public ApiResponse<List<EffectChainVO>> getEffectChain(
             @PathVariable String configKey,
             @RequestParam String scopeType,
-            @RequestParam(required = false) String scopeId) {
-        log.info("[ConfigController] getEffectChain key={} scopeType={} scopeId={}", configKey, scopeType, scopeId);
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String characterId,
+            @RequestParam(required = false) String toolId,
+            @RequestParam(required = false) String skillId,
+            @RequestParam(required = false) String memoryId) {
+        log.info("[ConfigController] getEffectChain key={} scopeType={} workspaceId={} characterId={} toolId={} skillId={} memoryId={}",
+                configKey, scopeType, workspaceId, characterId, toolId, skillId, memoryId);
 
         ConfigLevel configLevel;
         try {
@@ -103,7 +113,8 @@ public class ConfigController {
             return ApiResponse.error(400, "Invalid scopeType");
         }
 
-        List<EffectChainVO> chain = configApplication.getEffectChain(configKey, configLevel, scopeId);
+        InheritanceContext context = buildContext(configLevel, workspaceId, characterId, toolId, skillId, memoryId);
+        List<EffectChainVO> chain = configApplication.getEffectChain(configKey, context);
         return ApiResponse.success(chain);
     }
 
@@ -127,7 +138,7 @@ public class ConfigController {
                 request.getMemoryId()
         );
 
-        InheritanceContext context = buildContext(request.getLevel(), request.getWorkspaceId(), request.getCharacterId());
+        InheritanceContext context = buildContext(request.getLevel(), request.getWorkspaceId(), request.getCharacterId(), request.getToolId(), request.getSkillId(), request.getMemoryId());
         return ApiResponse.success(toMap(configApplication.getEffectiveConfig(request.getConfigKey(), context)));
     }
 
@@ -141,7 +152,10 @@ public class ConfigController {
             @RequestParam String configKey,
             @RequestParam String level,
             @RequestParam(required = false) String workspaceId,
-            @RequestParam(required = false) String characterId) {
+            @RequestParam(required = false) String characterId,
+            @RequestParam(required = false) String toolId,
+            @RequestParam(required = false) String skillId,
+            @RequestParam(required = false) String memoryId) {
         log.info("[ConfigController] getEffectiveValue key={} level={}", configKey, level);
 
         ConfigLevel configLevel;
@@ -151,7 +165,7 @@ public class ConfigController {
             return ApiResponse.error(400, "Invalid level");
         }
 
-        InheritanceContext context = buildContext(configLevel, workspaceId, characterId);
+        InheritanceContext context = buildContext(configLevel, workspaceId, characterId, toolId, skillId, memoryId);
         ConfigEffectService.EffectiveConfig ec = configApplication.getEffectiveConfig(configKey, context);
 
         return ApiResponse.success(toMap(ec));
@@ -177,28 +191,70 @@ public class ConfigController {
     /**
      * 根据 level 和 IDs 构建 InheritanceContext
      */
-    private InheritanceContext buildContext(ConfigLevel level, String workspaceId, String characterId) {
+    private InheritanceContext buildContext(ConfigLevel level, String workspaceId, String characterId,
+                                             String toolId, String skillId, String memoryId) {
         if (level == null) {
-            return InheritanceContext.builder().level(ConfigLevel.GLOBAL_WORKSPACE).build();
+            return InheritanceContext.builder().level(ConfigLevel.GLOBAL).build();
         }
 
         return switch (level) {
+            // 系统级粒度
             case GLOBAL_WORKSPACE -> InheritanceContext.forGlobalWorkspace(workspaceId);
             case GLOBAL_CHARACTER -> InheritanceContext.forGlobalCharacter(characterId != null ? characterId : workspaceId);
-            case GLOBAL_SKILL -> InheritanceContext.forGlobalSkill(workspaceId);
-            case GLOBAL_TOOL -> InheritanceContext.forGlobalTool(workspaceId);
-            case GLOBAL_MEMORY -> InheritanceContext.forGlobalMemory(workspaceId);
+            case GLOBAL_SKILL -> InheritanceContext.forGlobalSkill(skillId != null ? skillId : workspaceId);
+            case GLOBAL_TOOL -> InheritanceContext.forGlobalTool(toolId != null ? toolId : workspaceId);
+            case GLOBAL_MEMORY -> InheritanceContext.forGlobalMemory(memoryId != null ? memoryId : workspaceId);
             case GLOBAL_WS_CHAR -> InheritanceContext.forGlobalWsChar(workspaceId, characterId);
-            case GLOBAL_WS_SKILL -> InheritanceContext.forGlobalWsSkill(workspaceId, characterId);
-            case GLOBAL_WS_TOOL -> InheritanceContext.forGlobalWsTool(workspaceId, characterId);
-            case GLOBAL_CHAR_TOOL -> InheritanceContext.forGlobalCharTool(workspaceId, characterId);
-            case GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forGlobalWsCharTool(workspaceId, characterId, null);
+            case GLOBAL_WS_SKILL -> InheritanceContext.forGlobalWsSkill(workspaceId, skillId);
+            case GLOBAL_WS_TOOL -> InheritanceContext.forGlobalWsTool(workspaceId, toolId);
+            case GLOBAL_WS_MEMORY -> InheritanceContext.forGlobalWsMemory(workspaceId, memoryId);
+            case GLOBAL_CHAR_TOOL -> InheritanceContext.forGlobalCharTool(characterId, toolId);
+            case GLOBAL_CHAR_SKILL -> InheritanceContext.forGlobalCharSkill(characterId, skillId);
+            case GLOBAL_CHAR_MEMORY -> InheritanceContext.forGlobalCharMemory(characterId, memoryId);
+            case GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forGlobalWsCharTool(workspaceId, characterId, toolId);
+            case GLOBAL_WS_CHAR_SKILL -> InheritanceContext.forGlobalWsCharSkill(workspaceId, characterId, skillId);
+            case GLOBAL_WS_CHAR_MEMORY -> InheritanceContext.forGlobalWsCharMemory(workspaceId, characterId, memoryId);
+
+            // STUDIO 粒度
             case STUDIO_WORKSPACE -> InheritanceContext.forStudioWorkspace(workspaceId);
+            case STUDIO_CHARACTER -> InheritanceContext.forStudioCharacter(characterId);
+            case STUDIO_SKILL -> InheritanceContext.forStudioSkill(skillId);
+            case STUDIO_TOOL -> InheritanceContext.forStudioTool(toolId);
+            case STUDIO_MEMORY -> InheritanceContext.forStudioMemory(memoryId);
             case STUDIO_WS_CHAR -> InheritanceContext.forStudioWsChar(workspaceId, characterId);
-            case STUDIO_WS_CHAR_TOOL -> InheritanceContext.forStudioWsCharTool(workspaceId, characterId, null);
+            case STUDIO_WS_SKILL -> InheritanceContext.forStudioWsSkill(workspaceId, skillId);
+            case STUDIO_WS_MEMORY -> InheritanceContext.forStudioWsMemory(workspaceId, memoryId);
+            case STUDIO_WS_TOOL -> InheritanceContext.forStudioWsTool(workspaceId, toolId);
+            case STUDIO_CHAR_TOOL -> InheritanceContext.forStudioCharTool(characterId, toolId);
+            case STUDIO_CHAR_SKILL -> InheritanceContext.forStudioCharSkill(characterId, skillId);
+            case STUDIO_CHAR_MEMORY -> InheritanceContext.forStudioCharMemory(characterId, memoryId);
+            case STUDIO_WS_CHAR_TOOL -> InheritanceContext.forStudioWsCharTool(workspaceId, characterId, toolId);
+            case STUDIO_WS_CHAR_SKILL -> InheritanceContext.forStudioWsCharSkill(workspaceId, characterId, skillId);
+            case STUDIO_WS_CHAR_MEMORY -> InheritanceContext.forStudioWsCharMemory(workspaceId, characterId, memoryId);
+
+            // OBSERVER 粒度
+            case OBSERVER_GLOBAL_WORKSPACE -> InheritanceContext.forObserverGlobalWorkspace(workspaceId);
+            case OBSERVER_GLOBAL_CHARACTER -> InheritanceContext.forObserverGlobalCharacter(characterId);
+            case OBSERVER_GLOBAL_SKILL -> InheritanceContext.forObserverGlobalSkill(skillId);
+            case OBSERVER_GLOBAL_TOOL -> InheritanceContext.forObserverGlobalTool(toolId);
+            case OBSERVER_GLOBAL_MEMORY -> InheritanceContext.forObserverGlobalMemory(memoryId);
+            case OBSERVER_GLOBAL_WS_CHAR -> InheritanceContext.forObserverGlobalWsChar(workspaceId, characterId);
+            case OBSERVER_GLOBAL_WS_SKILL -> InheritanceContext.forObserverGlobalWsSkill(workspaceId, skillId);
+            case OBSERVER_GLOBAL_WS_MEMORY -> InheritanceContext.forObserverGlobalWsMemory(workspaceId, memoryId);
+            case OBSERVER_GLOBAL_WS_TOOL -> InheritanceContext.forObserverGlobalWsTool(workspaceId, toolId);
+            case OBSERVER_GLOBAL_CHAR_TOOL -> InheritanceContext.forObserverGlobalCharTool(characterId, toolId);
+            case OBSERVER_GLOBAL_CHAR_SKILL -> InheritanceContext.forObserverGlobalCharSkill(characterId, skillId);
+            case OBSERVER_GLOBAL_CHAR_MEMORY -> InheritanceContext.forObserverGlobalCharMemory(characterId, memoryId);
+            case OBSERVER_GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forObserverGlobalWsCharTool(workspaceId, characterId, toolId);
+            case OBSERVER_GLOBAL_WS_CHAR_SKILL -> InheritanceContext.forObserverGlobalWsCharSkill(workspaceId, characterId, skillId);
+            case OBSERVER_GLOBAL_WS_CHAR_MEMORY -> InheritanceContext.forObserverGlobalWsCharMemory(workspaceId, characterId, memoryId);
+
             default -> InheritanceContext.builder().level(level)
                     .workspaceId(workspaceId)
                     .characterId(characterId)
+                    .toolId(toolId)
+                    .skillId(skillId)
+                    .memoryId(memoryId)
                     .build();
         };
     }

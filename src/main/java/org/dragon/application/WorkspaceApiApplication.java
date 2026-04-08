@@ -200,6 +200,45 @@ public class WorkspaceApiApplication {
         memberManagementService.removeMember(workspaceId, memberId);
     }
 
+    // ==================== 岗位管理 ====================
+
+    /**
+     * 获取岗位列表。
+     */
+    public List<Map<String, Object>> listTeamPositions(String workspaceId) {
+        // 占位：团队岗位系统待实现
+        return List.of();
+    }
+
+    /**
+     * 添加岗位。
+     */
+    public Map<String, Object> addTeamPosition(String workspaceId, Object request) {
+        log.info("[WorkspaceApiApplication] Add team position to workspace {}", workspaceId);
+        Map<String, Object> position = new HashMap<>();
+        position.put("id", "pos_" + System.currentTimeMillis());
+        position.put("status", "vacant");
+        return position;
+    }
+
+    /**
+     * 更新岗位。
+     */
+    public Map<String, Object> updateTeamPosition(String workspaceId, String positionId, Object request) {
+        log.info("[WorkspaceApiApplication] Update team position {} in workspace {}", positionId, workspaceId);
+        Map<String, Object> position = new HashMap<>();
+        position.put("id", positionId);
+        position.put("status", "filled");
+        return position;
+    }
+
+    /**
+     * 删除岗位。
+     */
+    public void deleteTeamPosition(String workspaceId, String positionId) {
+        log.info("[WorkspaceApiApplication] Delete team position {} from workspace {}", positionId, workspaceId);
+    }
+
     // ==================== 技能绑定 ====================
 
     /**
