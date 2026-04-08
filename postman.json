@@ -1,0 +1,2107 @@
+{
+  "info": {
+    "name": "Dragon Head API",
+    "description": "Dragon Head API 集合 - 支持 Bearer Token 认证",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "{{YOUR_JWT_TOKEN_HERE}}",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "User - 用户认证",
+      "item": [
+        {
+          "name": "用户注册",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "register"]
+            },
+            "description": "用户注册"
+          }
+        },
+        {
+          "name": "密码登录",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/login/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "login", "password"]
+            },
+            "description": "密码登录"
+          }
+        },
+        {
+          "name": "刷新Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "refresh-token"]
+            },
+            "description": "刷新Token"
+          }
+        },
+        {
+          "name": "登出",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "logout"]
+            },
+            "description": "登出"
+          }
+        },
+        {
+          "name": "获取当前用户信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me"]
+            },
+            "description": "获取当前用户信息"
+          }
+        },
+        {
+          "name": "更新当前用户信息",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nickname\": \"newnickname\",\n  \"email\": \"newemail@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "me"]
+            },
+            "description": "更新当前用户信息"
+          }
+        },
+        {
+          "name": "修改密码",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"oldpassword\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "password"]
+            },
+            "description": "修改密码"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat - AI对话",
+      "item": [
+        {
+          "name": "发送消息",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"session-123\",\n  \"message\": \"你好，请帮我完成一个任务\",\n  \"characterId\": \"char-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "messages"]
+            },
+            "description": "向 AI 发送消息并获取回复"
+          }
+        },
+        {
+          "name": "获取会话历史",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/sessions/:sessionId/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "sessions", ":sessionId", "messages"],
+              "variable": [
+                {
+                  "key": "sessionId",
+                  "value": "session-123",
+                  "description": "会话ID"
+                }
+              ]
+            },
+            "description": "获取会话历史消息"
+          }
+        },
+        {
+          "name": "获取AI连接状态",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "chat", "status"]
+            },
+            "description": "获取 AI 连接状态"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workspace - 工作空间",
+      "item": [
+        {
+          "name": "获取Workspace列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"},
+                {"key": "search", "value": ""},
+                {"key": "status", "value": ""},
+                {"key": "teamStatus", "value": ""},
+                {"key": "hasObserver", "value": ""}
+              ]
+            },
+            "description": "获取 Workspace 列表（分页+筛选）"
+          }
+        },
+        {
+          "name": "创建Workspace",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试工作空间\",\n  \"owner\": \"test-owner\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces"]
+            },
+            "description": "创建 Workspace"
+          }
+        },
+        {
+          "name": "获取Workspace详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId"],
+              "variable": [
+                {
+                  "key": "workspaceId",
+                  "value": "ws-001",
+                  "description": "工作空间ID"
+                }
+              ]
+            },
+            "description": "获取 Workspace 详情"
+          }
+        },
+        {
+          "name": "更新Workspace设置",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"更新后的工作空间名称\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "settings"],
+              "variable": [
+                {
+                  "key": "workspaceId",
+                  "value": "ws-001",
+                  "description": "工作空间ID"
+                }
+              ]
+            },
+            "description": "更新 Workspace 设置"
+          }
+        },
+        {
+          "name": "删除Workspace",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId"],
+              "variable": [
+                {
+                  "key": "workspaceId",
+                  "value": "ws-001",
+                  "description": "工作空间ID"
+                }
+              ]
+            },
+            "description": "删除 Workspace"
+          }
+        },
+        {
+          "name": "获取成员列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "members"],
+              "variable": [
+                {
+                  "key": "workspaceId",
+                  "value": "ws-001",
+                  "description": "工作空间ID"
+                }
+              ]
+            },
+            "description": "获取 Workspace AI 团队成员列表"
+          }
+        },
+        {
+          "name": "获取团队席位列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/team-positions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "team-positions"],
+              "variable": [
+                {
+                  "key": "workspaceId",
+                  "value": "ws-001",
+                  "description": "工作空间ID"
+                }
+              ]
+            },
+            "description": "获取团队席位列表"
+          }
+        },
+        {
+          "name": "添加成员",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"characterId\": \"char-001\",\n  \"role\": \"Developer\",\n  \"position\": \"Backend\",\n  \"level\": 1,\n  \"sourceType\": \"internal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "members"],
+              "variable": [
+                {
+                  "key": "workspaceId",
+                  "value": "ws-001",
+                  "description": "工作空间ID"
+                }
+              ]
+            },
+            "description": "添加 Workspace 成员"
+          }
+        },
+        {
+          "name": "移除成员",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/members/:memberId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "members", ":memberId"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"},
+                {"key": "memberId", "value": "member-001"}
+              ]
+            },
+            "description": "移除 Workspace 成员"
+          }
+        },
+        {
+          "name": "获取已绑定技能列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/skills",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "skills"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "获取 Workspace 已绑定技能列表"
+          }
+        },
+        {
+          "name": "绑定技能",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skillId\": \"skill-001\",\n  \"versionType\": \"LATEST\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/skills",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "skills"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "为 Workspace 绑定技能"
+          }
+        },
+        {
+          "name": "解绑技能",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/skills/:skillId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "skills", ":skillId"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"},
+                {"key": "skillId", "value": "skill-001"}
+              ]
+            },
+            "description": "解绑 Workspace 技能"
+          }
+        },
+        {
+          "name": "获取记忆配置信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/memory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "memory"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "获取 Workspace 记忆配置信息"
+          }
+        },
+        {
+          "name": "触发记忆同步",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/memory/sync",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "memory", "sync"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "触发 Workspace 记忆同步"
+          }
+        },
+        {
+          "name": "获取Observer信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/observer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "observer"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "获取 Workspace Observer 绑定信息"
+          }
+        },
+        {
+          "name": "绑定Observer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observerId\": \"obs-001\",\n  \"evaluationMode\": \"AUTO\",\n  \"autoOptimization\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/observer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "observer"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "为 Workspace 绑定 Observer"
+          }
+        },
+        {
+          "name": "解绑Observer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/observer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "observer"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "解绑 Workspace Observer"
+          }
+        },
+        {
+          "name": "获取任务列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/tasks?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "tasks"],
+              "query": [
+                {"key": "status", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "获取 Workspace 任务列表"
+          }
+        },
+        {
+          "name": "获取审计日志",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/audit-logs?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "audit-logs"],
+              "query": [
+                {"key": "targetType", "value": ""},
+                {"key": "actionType", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "获取 Workspace 审计日志"
+          }
+        },
+        {
+          "name": "获取素材列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/materials",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "materials"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "获取 Workspace 素材列表"
+          }
+        },
+        {
+          "name": "上传素材",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "file", "type": "file", "description": "上传的文件"}
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/materials",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "materials"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "上传 Workspace 素材"
+          }
+        },
+        {
+          "name": "删除素材",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/materials/:materialId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "materials", ":materialId"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"},
+                {"key": "materialId", "value": "material-001"}
+              ]
+            },
+            "description": "删除 Workspace 素材"
+          }
+        },
+        {
+          "name": "获取权限成员列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "permissions"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "获取 Workspace 权限成员列表"
+          }
+        },
+        {
+          "name": "添加成员权限",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user-001\",\n  \"role\": \"VIEWER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "permissions"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"}
+              ]
+            },
+            "description": "添加 Workspace 成员权限"
+          }
+        },
+        {
+          "name": "更新成员权限",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"EDITOR\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/permissions/:userId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "permissions", ":userId"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"},
+                {"key": "userId", "value": "user-001"}
+              ]
+            },
+            "description": "更新 Workspace 成员权限"
+          }
+        },
+        {
+          "name": "移除成员权限",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/workspaces/:workspaceId/permissions/:userId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "workspaces", ":workspaceId", "permissions", ":userId"],
+              "variable": [
+                {"key": "workspaceId", "value": "ws-001"},
+                {"key": "userId", "value": "user-001"}
+              ]
+            },
+            "description": "移除 Workspace 成员权限"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Studio - 角色管理",
+      "item": [
+        {
+          "name": "获取角色列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/characters?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "characters"],
+              "query": [
+                {"key": "search", "value": ""},
+                {"key": "status", "value": ""},
+                {"key": "source", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取角色列表（分页+筛选）"
+          }
+        },
+        {
+          "name": "创建角色",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试角色\",\n  \"description\": \"这是一个测试角色\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/characters",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "characters"]
+            },
+            "description": "创建角色"
+          }
+        },
+        {
+          "name": "获取角色详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/characters/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "characters", ":id"],
+              "variable": [
+                {"key": "id", "value": "char-001"}
+              ]
+            },
+            "description": "获取角色详情"
+          }
+        },
+        {
+          "name": "更新角色",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"更新后的角色名称\",\n  \"description\": \"更新后的描述\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/characters/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "characters", ":id"],
+              "variable": [
+                {"key": "id", "value": "char-001"}
+              ]
+            },
+            "description": "更新角色"
+          }
+        },
+        {
+          "name": "删除角色",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/characters/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "characters", ":id"],
+              "variable": [
+                {"key": "id", "value": "char-001"}
+              ]
+            },
+            "description": "删除角色"
+          }
+        },
+        {
+          "name": "独立运行角色",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"你好，请介绍一下自己\",\n  \"sessionId\": \"session-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/characters/:id/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "characters", ":id", "run"],
+              "variable": [
+                {"key": "id", "value": "char-001"}
+              ]
+            },
+            "description": "独立运行角色（发送消息）"
+          }
+        },
+        {
+          "name": "获取Trait列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/traits?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "traits"],
+              "query": [
+                {"key": "search", "value": ""},
+                {"key": "category", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取 Trait 列表"
+          }
+        },
+        {
+          "name": "创建Trait",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试Trait\",\n  \"category\": \"personality\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/traits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "traits"]
+            },
+            "description": "创建 Trait"
+          }
+        },
+        {
+          "name": "获取内置角色模板列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/templates?category=ai",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "templates"],
+              "query": [
+                {"key": "category", "value": ""}
+              ]
+            },
+            "description": "获取内置角色模板列表"
+          }
+        },
+        {
+          "name": "派驻角色到Workspace",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"characterId\": \"char-001\",\n  \"workspaceId\": \"ws-001\",\n  \"role\": \"Developer\",\n  \"position\": \"Backend\",\n  \"level\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/deployments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "deployments"]
+            },
+            "description": "派驻角色到 Workspace"
+          }
+        },
+        {
+          "name": "撤销派驻",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/studio/deployments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "studio", "deployments", ":id"],
+              "variable": [
+                {"key": "id", "value": "deploy-001"}
+              ]
+            },
+            "description": "撤销派驻"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Skill - 技能管理",
+      "item": [
+        {
+          "name": "获取技能列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/skills?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "skills"],
+              "query": [
+                {"key": "search", "value": ""},
+                {"key": "visibility", "value": ""},
+                {"key": "assetState", "value": ""},
+                {"key": "runtimeStatus", "value": ""},
+                {"key": "category", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取技能列表（分页+筛选）"
+          }
+        },
+        {
+          "name": "创建技能",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "file", "type": "file", "description": "技能ZIP包"}
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/skills",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "skills"]
+            },
+            "description": "创建技能（ZIP 包）"
+          }
+        },
+        {
+          "name": "获取技能详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/skills/:skillId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "skills", ":skillId"],
+              "variable": [
+                {"key": "skillId", "value": "skill-001"}
+              ]
+            },
+            "description": "获取技能详情"
+          }
+        },
+        {
+          "name": "发布技能版本",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"1.0.0\",\n  \"changelog\": \"初始版本发布\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/skills/:skillId/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "skills", ":skillId", "publish"],
+              "variable": [
+                {"key": "skillId", "value": "skill-001"}
+              ]
+            },
+            "description": "发布技能版本"
+          }
+        },
+        {
+          "name": "删除技能",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/skills/:skillId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "skills", ":skillId"],
+              "variable": [
+                {"key": "skillId", "value": "skill-001"}
+              ]
+            },
+            "description": "删除技能"
+          }
+        },
+        {
+          "name": "禁用技能",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/skills/:skillId/disable",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "skills", ":skillId", "disable"],
+              "variable": [
+                {"key": "skillId", "value": "skill-001"}
+              ]
+            },
+            "description": "禁用技能"
+          }
+        },
+        {
+          "name": "启用技能",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/skills/:skillId/enable",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "skills", ":skillId", "enable"],
+              "variable": [
+                {"key": "skillId", "value": "skill-001"}
+              ]
+            },
+            "description": "启用技能"
+          }
+        },
+        {
+          "name": "获取技能版本列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/skills/:skillId/versions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "skills", ":skillId", "versions"],
+              "variable": [
+                {"key": "skillId", "value": "skill-001"}
+              ]
+            },
+            "description": "获取技能版本列表"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tool - 工具管理",
+      "item": [
+        {
+          "name": "获取工具列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tools?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tools"],
+              "query": [
+                {"key": "search", "value": ""},
+                {"key": "visibility", "value": ""},
+                {"key": "toolType", "value": ""},
+                {"key": "runtimeStatus", "value": ""},
+                {"key": "category", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取工具列表（分页+筛选）"
+          }
+        },
+        {
+          "name": "创建工具",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试工具\",\n  \"description\": \"这是一个测试工具\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tools",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tools"]
+            },
+            "description": "创建工具"
+          }
+        },
+        {
+          "name": "获取工具详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tools/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tools", ":id"],
+              "variable": [
+                {"key": "id", "value": "tool-001"}
+              ]
+            },
+            "description": "获取工具详情"
+          }
+        },
+        {
+          "name": "发布工具版本",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"1.0.0\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tools/:id/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tools", ":id", "publish"],
+              "variable": [
+                {"key": "id", "value": "tool-001"}
+              ]
+            },
+            "description": "发布工具版本"
+          }
+        },
+        {
+          "name": "删除工具",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tools/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tools", ":id"],
+              "variable": [
+                {"key": "id", "value": "tool-001"}
+              ]
+            },
+            "description": "删除工具"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memory - 记忆管理",
+      "item": [
+        {
+          "name": "获取数据源列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/memory/sources?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "memory", "sources"],
+              "query": [
+                {"key": "search", "value": ""},
+                {"key": "status", "value": ""},
+                {"key": "sourceType", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取数据源列表"
+          }
+        },
+        {
+          "name": "创建数据源",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试数据源\",\n  \"sourceType\": \"FILE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/memory/sources",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "memory", "sources"]
+            },
+            "description": "创建数据源"
+          }
+        },
+        {
+          "name": "同步数据源",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/memory/sources/:sourceId/sync",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "memory", "sources", ":sourceId", "sync"],
+              "variable": [
+                {"key": "sourceId", "value": "source-001"}
+              ]
+            },
+            "description": "同步数据源"
+          }
+        },
+        {
+          "name": "检索记忆内容",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"测试查询\",\n  \"topK\": 5,\n  \"targetType\": \"WORKSPACE\",\n  \"targetId\": \"ws-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/memory/retrieval/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "memory", "retrieval", "search"]
+            },
+            "description": "检索记忆内容"
+          }
+        },
+        {
+          "name": "获取片段列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/memory/chunks?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "memory", "chunks"],
+              "query": [
+                {"key": "fileId", "value": ""},
+                {"key": "sourceId", "value": ""},
+                {"key": "indexedStatus", "value": ""},
+                {"key": "tags", "value": ""},
+                {"key": "search", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取片段列表"
+          }
+        },
+        {
+          "name": "创建片段",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"测试片段内容\",\n  \"sourceId\": \"source-001\",\n  \"metadata\": {}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/memory/chunks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "memory", "chunks"]
+            },
+            "description": "创建片段"
+          }
+        },
+        {
+          "name": "获取绑定列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/memory/bindings?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "memory", "bindings"],
+              "query": [
+                {"key": "fileId", "value": ""},
+                {"key": "targetType", "value": ""},
+                {"key": "targetId", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取绑定列表"
+          }
+        },
+        {
+          "name": "获取全局统计信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/memory/stats/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "memory", "stats", "overview"]
+            },
+            "description": "获取全局统计信息"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Observer - 观测者",
+      "item": [
+        {
+          "name": "获取Observer列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers/observers?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers", "observers"],
+              "query": [
+                {"key": "search", "value": ""},
+                {"key": "targetType", "value": ""},
+                {"key": "status", "value": ""},
+                {"key": "executionMode", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取 Observer 列表"
+          }
+        },
+        {
+          "name": "创建Observer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试Observer\",\n  \"type\": \"EVALUATION\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers"]
+            },
+            "description": "创建 Observer"
+          }
+        },
+        {
+          "name": "获取Observer详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers", ":id"],
+              "variable": [
+                {"key": "id", "value": "obs-001"}
+              ]
+            },
+            "description": "获取 Observer 详情"
+          }
+        },
+        {
+          "name": "更新Observer",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"更新后的Observer名称\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers", ":id"],
+              "variable": [
+                {"key": "id", "value": "obs-001"}
+              ]
+            },
+            "description": "更新 Observer"
+          }
+        },
+        {
+          "name": "删除Observer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers", ":id"],
+              "variable": [
+                {"key": "id", "value": "obs-001"}
+              ]
+            },
+            "description": "删除 Observer"
+          }
+        },
+        {
+          "name": "手动触发评价",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers/:id/evaluate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers", ":id", "evaluate"],
+              "variable": [
+                {"key": "id", "value": "obs-001"}
+              ]
+            },
+            "description": "手动触发 Observer 评价"
+          }
+        },
+        {
+          "name": "审批优化计划",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": true,\n  \"comment\": \"同意执行\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers/:observerId/plans/:planId/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers", ":observerId", "plans", ":planId", "approve"],
+              "variable": [
+                {"key": "observerId", "value": "obs-001"},
+                {"key": "planId", "value": "plan-001"}
+              ]
+            },
+            "description": "审批优化计划"
+          }
+        },
+        {
+          "name": "执行优化计划",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers/:observerId/plans/:planId/execute",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers", ":observerId", "plans", ":planId", "execute"],
+              "variable": [
+                {"key": "observerId", "value": "obs-001"},
+                {"key": "planId", "value": "plan-001"}
+              ]
+            },
+            "description": "执行优化计划"
+          }
+        },
+        {
+          "name": "回滚优化动作",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/observers/:observerId/actions/:actionId/rollback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "observers", ":observerId", "actions", ":actionId", "rollback"],
+              "variable": [
+                {"key": "observerId", "value": "obs-001"},
+                {"key": "actionId", "value": "action-001"}
+              ]
+            },
+            "description": "回滚优化动作"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session - 会话管理",
+      "item": [
+        {
+          "name": "开始会话",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/:sessionId/start?workspaceId=ws-001&characterId=char-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", ":sessionId", "start"],
+              "query": [
+                {"key": "workspaceId", "value": "ws-001"},
+                {"key": "characterId", "value": "char-001"}
+              ],
+              "variable": [
+                {"key": "sessionId", "value": "session-001"}
+              ]
+            },
+            "description": "开始会话"
+          }
+        },
+        {
+          "name": "获取会话",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/:sessionId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", ":sessionId"],
+              "variable": [
+                {"key": "sessionId", "value": "session-001"}
+              ]
+            },
+            "description": "获取会话"
+          }
+        },
+        {
+          "name": "检查点会话",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/:sessionId/checkpoint",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", ":sessionId", "checkpoint"],
+              "variable": [
+                {"key": "sessionId", "value": "session-001"}
+              ]
+            },
+            "description": "检查点会话"
+          }
+        },
+        {
+          "name": "刷新到长期记忆",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/:sessionId/flush",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", ":sessionId", "flush"],
+              "variable": [
+                {"key": "sessionId", "value": "session-001"}
+              ]
+            },
+            "description": "将会话刷新到长期记忆"
+          }
+        },
+        {
+          "name": "关闭会话",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/:sessionId/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", ":sessionId", "close"],
+              "variable": [
+                {"key": "sessionId", "value": "session-001"}
+              ]
+            },
+            "description": "关闭会话"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lab - 实验室",
+      "item": [
+        {
+          "name": "获取场景列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/scenes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "scenes"]
+            },
+            "description": "获取场景插件列表"
+          }
+        },
+        {
+          "name": "创建场景",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"测试场景\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/scenes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "scenes"]
+            },
+            "description": "创建场景"
+          }
+        },
+        {
+          "name": "获取任务网络列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "tasks"],
+              "query": [
+                {"key": "status", "value": ""},
+                {"key": "priority", "value": ""}
+              ]
+            },
+            "description": "获取任务网络列表"
+          }
+        },
+        {
+          "name": "获取系统拓扑图",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/topology",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "topology"],
+              "query": [
+                {"key": "nodeTypes", "value": ""},
+                {"key": "edgeTypes", "value": ""},
+                {"key": "workspaceId", "value": ""}
+              ]
+            },
+            "description": "获取系统拓扑图数据"
+          }
+        },
+        {
+          "name": "获取行为演练场景列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/arena/scenarios",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "arena", "scenarios"]
+            },
+            "description": "获取行为演练场景列表"
+          }
+        },
+        {
+          "name": "运行行为演练场景",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/arena/scenarios/:scenarioId/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "arena", "scenarios", ":scenarioId", "run"],
+              "variable": [
+                {"key": "scenarioId", "value": "scenario-001"}
+              ]
+            },
+            "description": "运行行为演练场景"
+          }
+        },
+        {
+          "name": "获取演练运行结果",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/arena/runs/:runId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "arena", "runs", ":runId"],
+              "variable": [
+                {"key": "runId", "value": "run-001"}
+              ]
+            },
+            "description": "获取演练运行结果"
+          }
+        },
+        {
+          "name": "获取技能图列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/skill-graphs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "skill-graphs"]
+            },
+            "description": "获取技能图列表"
+          }
+        },
+        {
+          "name": "执行技能图",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lab/skill-graphs/:id/execute",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "lab", "skill-graphs", ":id", "execute"],
+              "variable": [
+                {"key": "id", "value": "graph-001"}
+              ]
+            },
+            "description": "执行技能图"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logs - 日志",
+      "item": [
+        {
+          "name": "获取事件日志列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logs/events?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "logs", "events"],
+              "query": [
+                {"key": "targetType", "value": ""},
+                {"key": "targetId", "value": ""},
+                {"key": "eventType", "value": ""},
+                {"key": "severity", "value": ""},
+                {"key": "search", "value": ""},
+                {"key": "dateStart", "value": ""},
+                {"key": "dateEnd", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取事件日志列表"
+          }
+        },
+        {
+          "name": "获取链路追踪列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logs/traces?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "logs", "traces"],
+              "query": [
+                {"key": "targetType", "value": ""},
+                {"key": "targetId", "value": ""},
+                {"key": "traceId", "value": ""},
+                {"key": "status", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取链路追踪列表"
+          }
+        },
+        {
+          "name": "获取系统健康状态",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logs/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "logs", "health"],
+              "query": [
+                {"key": "targetType", "value": ""},
+                {"key": "status", "value": ""}
+              ]
+            },
+            "description": "获取系统健康状态列表"
+          }
+        },
+        {
+          "name": "获取审计记录",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logs/audit?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "logs", "audit"],
+              "query": [
+                {"key": "targetType", "value": ""},
+                {"key": "operator", "value": ""},
+                {"key": "action", "value": ""},
+                {"key": "dateStart", "value": ""},
+                {"key": "dateEnd", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取审计记录列表"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification - 通知",
+      "item": [
+        {
+          "name": "获取通知列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications"],
+              "query": [
+                {"key": "limit", "value": "20"}
+              ]
+            },
+            "description": "获取我的通知列表"
+          }
+        },
+        {
+          "name": "获取未读通知数量",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "unread-count"]
+            },
+            "description": "获取未读通知数量"
+          }
+        },
+        {
+          "name": "标记单条已读",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/:id/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", ":id", "read"],
+              "variable": [
+                {"key": "id", "value": "notif-001"}
+              ]
+            },
+            "description": "标记单条通知为已读"
+          }
+        },
+        {
+          "name": "标记所有已读",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "read-all"]
+            },
+            "description": "标记所有通知为已读"
+          }
+        },
+        {
+          "name": "删除通知",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", ":id"],
+              "variable": [
+                {"key": "id", "value": "notif-001"}
+              ]
+            },
+            "description": "删除通知"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Config - 配置",
+      "item": [
+        {
+          "name": "获取配置项列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/config/items?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "config", "items"],
+              "query": [
+                {"key": "scopeType", "value": ""},
+                {"key": "scopeId", "value": ""},
+                {"key": "search", "value": ""},
+                {"key": "page", "value": "1"},
+                {"key": "pageSize", "value": "20"}
+              ]
+            },
+            "description": "获取配置项列表（分页+筛选）"
+          }
+        },
+        {
+          "name": "更新配置项",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"configKey\": \"dragon.feature.enabled\",\n  \"value\": true,\n  \"level\": \"GLOBAL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/config/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "config", "items"]
+            },
+            "description": "更新配置项"
+          }
+        },
+        {
+          "name": "获取配置生效值",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/config/effective?configKey=dragon.feature.enabled&level=GLOBAL",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "config", "effective"],
+              "query": [
+                {"key": "configKey", "value": "dragon.feature.enabled"},
+                {"key": "level", "value": "GLOBAL"}
+              ]
+            },
+            "description": "获取配置生效值"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Collaborator - 协作",
+      "item": [
+        {
+          "name": "获取我收到的邀请列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/collaborators/invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "collaborators", "invitations"]
+            },
+            "description": "获取我收到的邀请列表"
+          }
+        },
+        {
+          "name": "接受邀请",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/collaborators/invitations/:id/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "collaborators", "invitations", ":id", "accept"],
+              "variable": [
+                {"key": "id", "value": "invite-001"}
+              ]
+            },
+            "description": "接受邀请"
+          }
+        },
+        {
+          "name": "拒绝邀请",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/collaborators/invitations/:id/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "collaborators", "invitations", ":id", "reject"],
+              "variable": [
+                {"key": "id", "value": "invite-001"}
+              ]
+            },
+            "description": "拒绝邀请"
+          }
+        },
+        {
+          "name": "获取资产协作者列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/collaborators/assets/:type/:id/collaborators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "collaborators", "assets", ":type", ":id", "collaborators"],
+              "variable": [
+                {"key": "type", "value": "WORKSPACE"},
+                {"key": "id", "value": "ws-001"}
+              ]
+            },
+            "description": "获取资产的协作者列表"
+          }
+        },
+        {
+          "name": "邀请协作者",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"collaboratorId\": 12345,\n  \"reason\": \"协作开发\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/collaborators/assets/:type/:id/collaborators",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "collaborators", "assets", ":type", ":id", "collaborators"],
+              "variable": [
+                {"key": "type", "value": "WORKSPACE"},
+                {"key": "id", "value": "ws-001"}
+              ]
+            },
+            "description": "邀请协作者"
+          }
+        },
+        {
+          "name": "移除协作者",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/collaborators/assets/:type/:id/collaborators/:collaboratorId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "collaborators", "assets", ":type", ":id", "collaborators", ":collaboratorId"],
+              "variable": [
+                {"key": "type", "value": "WORKSPACE"},
+                {"key": "id", "value": "ws-001"},
+                {"key": "collaboratorId", "value": "12345"}
+              ]
+            },
+            "description": "移除协作者"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Approval - 审批",
+      "item": [
+        {
+          "name": "获取我发出的审批请求",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approvals/my-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "approvals", "my-requests"]
+            },
+            "description": "获取我发出的审批请求"
+          }
+        },
+        {
+          "name": "获取待我审批的请求",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approvals/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "approvals", "pending"]
+            },
+            "description": "获取需要我审批的待处理请求"
+          }
+        },
+        {
+          "name": "审批通过",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"同意\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approvals/:id/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "approvals", ":id", "approve"],
+              "variable": [
+                {"key": "id", "value": "approval-001"}
+              ]
+            },
+            "description": "审批通过"
+          }
+        },
+        {
+          "name": "审批拒绝",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"拒绝原因\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approvals/:id/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "approvals", ":id", "reject"],
+              "variable": [
+                {"key": "id", "value": "approval-001"}
+              ]
+            },
+            "description": "审批拒绝"
+          }
+        },
+        {
+          "name": "创建发布审批申请",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"SKILL\",\n  \"resourceId\": \"skill-001\",\n  \"reason\": \"发布新版本\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approvals/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "approvals", "publish"]
+            },
+            "description": "创建发布审批申请"
+          }
+        }
+      ]
+    }
+  ]
+}
