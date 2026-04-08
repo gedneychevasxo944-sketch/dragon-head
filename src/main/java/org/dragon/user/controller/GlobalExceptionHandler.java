@@ -1,5 +1,6 @@
 package org.dragon.user.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.dragon.user.dto.ApiResponse;
 import org.dragon.memory.exception.MemoryException;
 import org.dragon.memory.exception.MemoryNotFoundException;
@@ -19,11 +20,13 @@ import java.util.Map;
 /**
  * 全局异常处理器
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException e) {
+        log.error("[GlobalExceptionHandler] IllegalArgumentException: {}", e.getMessage(), e);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(400, e.getMessage()));
@@ -31,6 +34,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalState(IllegalStateException e) {
+        log.error("[GlobalExceptionHandler] IllegalStateException: {}", e.getMessage(), e);
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(ApiResponse.error(503, e.getMessage()));
@@ -38,6 +42,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException e) {
+        log.error("[GlobalExceptionHandler] AccessDeniedException: {}", e.getMessage(), e);
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(403, "权限不足"));
@@ -52,6 +57,8 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
+        log.error("[GlobalExceptionHandler] MethodArgumentNotValidException: validation failed, errors={}",
+                errors, ex);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(400, "参数验证失败"));
@@ -59,6 +66,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MemoryException.class)
     public ResponseEntity<ApiResponse<Void>> handleMemoryException(MemoryException e) {
+        log.error("[GlobalExceptionHandler] MemoryException: {}", e.getMessage(), e);
         if (e instanceof MemoryNotFoundException) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
@@ -80,6 +88,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception e) {
+        log.error("[GlobalExceptionHandler] Unhandled Exception: {}", e.getMessage(), e);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(500, "服务器内部错误: " + e.getMessage()));

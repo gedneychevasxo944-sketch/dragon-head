@@ -3,6 +3,7 @@ package org.dragon.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
+import org.dragon.api.dto.TeamPositionResponse;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.permission.enums.ResourceType;
@@ -20,6 +21,8 @@ import org.dragon.workspace.material.Material;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
 import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
+import org.dragon.workspace.service.teampositions.WorkspaceTeamPositionsManagementService;
+import org.dragon.workspace.member.TeamPosition;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,6 +50,7 @@ public class WorkspaceApiApplication {
     private final WorkspaceApplicationProvider workspaceApplicationProvider;
     private final WorkspaceLifecycleService workspaceLifecycleService;
     private final WorkspaceMemberManagementService memberManagementService;
+    private final WorkspaceTeamPositionsManagementService teamPositionsManagementService;
     private final PermissionService permissionService;
 
     private WorkspaceApplication app(String workspaceId) {
@@ -205,38 +209,43 @@ public class WorkspaceApiApplication {
     /**
      * 获取岗位列表。
      */
-    public List<Map<String, Object>> listTeamPositions(String workspaceId) {
-        // 占位：团队岗位系统待实现
-        return List.of();
+    public List<TeamPositionResponse> listTeamPositions(String workspaceId) {
+        List<TeamPosition> positions = teamPositionsManagementService.listPositions(workspaceId);
+        return teamPositionsManagementService.toResponseList(positions);
     }
 
     /**
      * 添加岗位。
      */
-    public Map<String, Object> addTeamPosition(String workspaceId, Object request) {
-        log.info("[WorkspaceApiApplication] Add team position to workspace {}", workspaceId);
-        Map<String, Object> position = new HashMap<>();
-        position.put("id", "pos_" + System.currentTimeMillis());
-        position.put("status", "vacant");
-        return position;
+    public TeamPositionResponse addTeamPosition(String workspaceId,
+            org.dragon.api.controller.WorkspaceController.AddPositionRequest request) {
+        TeamPosition position = teamPositionsManagementService.addPosition(
+                workspaceId,
+                request.getRoleName(),
+                request.getRolePackage(),
+                request.getPurpose(),
+                request.getScope());
+        return teamPositionsManagementService.toResponse(position);
     }
 
     /**
      * 更新岗位。
      */
-    public Map<String, Object> updateTeamPosition(String workspaceId, String positionId, Object request) {
-        log.info("[WorkspaceApiApplication] Update team position {} in workspace {}", positionId, workspaceId);
-        Map<String, Object> position = new HashMap<>();
-        position.put("id", positionId);
-        position.put("status", "filled");
-        return position;
+    public TeamPositionResponse updateTeamPosition(String workspaceId, String positionId,
+            org.dragon.api.controller.WorkspaceController.UpdatePositionRequest request) {
+        TeamPosition position = teamPositionsManagementService.updatePosition(
+                workspaceId,
+                positionId,
+                request.getAssignedCharacterId(),
+                request.getEnabled());
+        return teamPositionsManagementService.toResponse(position);
     }
 
     /**
      * 删除岗位。
      */
     public void deleteTeamPosition(String workspaceId, String positionId) {
-        log.info("[WorkspaceApiApplication] Delete team position {} from workspace {}", positionId, workspaceId);
+        teamPositionsManagementService.deletePosition(workspaceId, positionId);
     }
 
     // ==================== 技能绑定 ====================
