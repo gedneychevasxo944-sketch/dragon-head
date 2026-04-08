@@ -18,7 +18,7 @@ import java.util.List;
  */
 @Data
 @Entity
-@Table(name = "source_document")
+@Table(name = "mem_source_document")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
