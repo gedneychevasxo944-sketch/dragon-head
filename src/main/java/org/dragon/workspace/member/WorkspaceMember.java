@@ -124,21 +124,29 @@ public class WorkspaceMember {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ResourceQuota {
+
         /**
          * Token 预算配额
          */
-        private Integer tokenBudget;
+        @Builder.Default
+        private Integer tokenBudget = 10000000;
 
         /**
          * 并发任务限制
          */
         @Builder.Default
-        private Integer maxConcurrentTasks = 5;
+        private Integer maxTasks = 5;
 
         /**
          * 每日最大使用时长（分钟）
          */
         @Builder.Default
         private Integer maxDailyMinutes = 480;
+
+        /**
+         * 最大内存占用
+         */
+        @Builder.Default
+        private String maxMemory = "1GB";
     }
 }

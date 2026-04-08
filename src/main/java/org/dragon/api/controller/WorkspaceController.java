@@ -16,6 +16,7 @@ import org.dragon.skill.dto.SkillBindingVO;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
+import org.dragon.api.dto.TeamPositionResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -141,8 +142,8 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取团队席位列表")
     @GetMapping("/{workspaceId}/team-positions")
-    public ApiResponse<List<Map<String, Object>>> listTeamPositions(@PathVariable String workspaceId) {
-        List<Map<String, Object>> positions = workspaceApiApplication.listTeamPositions(workspaceId);
+    public ApiResponse<List<TeamPositionResponse>> listTeamPositions(@PathVariable String workspaceId) {
+        List<TeamPositionResponse> positions = workspaceApiApplication.listTeamPositions(workspaceId);
         return ApiResponse.success(positions);
     }
 
@@ -152,11 +153,11 @@ public class WorkspaceController {
      */
     @Operation(summary = "添加团队岗位")
     @PostMapping("/{workspaceId}/team-positions")
-    public ApiResponse<Map<String, Object>> addTeamPosition(
+    public ApiResponse<TeamPositionResponse> addTeamPosition(
             @PathVariable String workspaceId,
             @RequestBody AddPositionRequest request) {
         permissionChecker.checkManage("WORKSPACE", workspaceId);
-        Map<String, Object> position = workspaceApiApplication.addTeamPosition(workspaceId, request);
+        TeamPositionResponse position = workspaceApiApplication.addTeamPosition(workspaceId, request);
         return ApiResponse.success(position);
     }
 
@@ -166,12 +167,12 @@ public class WorkspaceController {
      */
     @Operation(summary = "更新团队岗位")
     @PutMapping("/{workspaceId}/team-positions/{positionId}")
-    public ApiResponse<Map<String, Object>> updateTeamPosition(
+    public ApiResponse<TeamPositionResponse> updateTeamPosition(
             @PathVariable String workspaceId,
             @PathVariable String positionId,
             @RequestBody UpdatePositionRequest request) {
         permissionChecker.checkManage("WORKSPACE", workspaceId);
-        Map<String, Object> position = workspaceApiApplication.updateTeamPosition(workspaceId, positionId, request);
+        TeamPositionResponse position = workspaceApiApplication.updateTeamPosition(workspaceId, positionId, request);
         return ApiResponse.success(position);
     }
 
