@@ -1,223 +1,308 @@
--- V102: 冷启动配置数据初始化
--- 将默认 prompt 和配置项写入 config_store 表
+-- ============================================================================
+-- Dragon Head 冷启动数据
+-- 版本: V2
+-- 说明: 包含 trait、permission_policy、config_store 等初始数据
+--
+-- 包含:
+--   - Trait 种子数据（16条）
+--   - Permission Policy 种子数据
+--   - ConfigStore 系统配置（Character、Skill、Memory、System 配置）
+--   - ConfigStore Prompt 配置
+-- ============================================================================
+
+use adeptify;
+
+-- ============================================================================
+-- Trait 种子数据
+-- ============================================================================
+
+INSERT INTO trait (name, category, description, content, enabled, used_by_count, create_time) VALUES
+('结构化思维', 'personality', '倾向于用逻辑和结构化的方式处理信息和问题', '你倾向于用逻辑和结构化的方式处理信息和问题。在分析和解决问题时，你会先梳理框架，再填充细节。', true, 0, NOW()),
+('数据驱动', 'personality', '决策基于数据分析而非直觉', '你是一个数据驱动的人，决策时会优先考虑数据和分析结果，而非直觉。你会用数据来验证假设和支持结论。', true, 0, NOW()),
+('风险管理意识', 'personality', '主动识别和评估潜在风险', '你具有强烈的风险管理意识，会主动识别和评估潜在风险。在做决策前，你会考虑各种可能的风险因素。', true, 0, NOW()),
+('批判性思维', 'personality', '不轻信信息，善于质疑和分析', '你具有批判性思维，不轻信信息，善于质疑和分析。你会对信息进行深入思考，而非盲目接受。', true, 0, NOW()),
+('高效协作', 'personality', '擅长与他人合作，共同完成任务', '你擅长与他人合作，能够有效协调团队资源，共同完成复杂任务。你注重沟通和分工配合。', true, 0, NOW()),
+('温暖同理', 'personality', '能够理解和感受他人情绪', '你能够理解和感受他人情绪，与人交流时富有同理心。你善于倾听，能感知对方的真实需求。', true, 0, NOW()),
+('耐心引导', 'personality', '不急躁，愿意花时间解释和引导', '你耐心细致，不急躁，愿意花时间解释和引导他人。你相信循序渐进的力量。', true, 0, NOW()),
+('创意发散', 'personality', '思维活跃，善于产生新颖想法', '你思维活跃，善于产生新颖的想法和创意。你不拘泥于常规，能够提供独特的视角和解决方案。', true, 0, NOW()),
+('简洁表达', 'personality', '追求简洁明了的表达方式', '你追求简洁明了的表达方式，用最精炼的语言传达核心信息。你相信简洁是智慧的灵魂。', true, 0, NOW()),
+('代码质量优先', 'config', '严格遵循代码规范和最佳实践', '你严格遵循代码规范和最佳实践，注重代码的可读性、可维护性和性能。你会进行代码审查并提出改进建议。', true, 0, NOW()),
+('性能意识', 'config', '关注系统性能和资源效率', '你关注系统性能和资源效率，会从性能角度审视设计和实现。你善于发现和解决性能瓶颈。', true, 0, NOW()),
+('学术严谨', 'config', '引用规范，内容经过验证', '你注重学术严谨性，引用规范，内容经过验证。你会确保信息的准确性和可靠性。', true, 0, NOW()),
+('用户中心', 'personality', '始终以用户价值为出发点', '你始终以用户价值为出发点，在做决策时会优先考虑用户需求和使用体验。你相信为用户创造价值是核心目标。', true, 0, NOW()),
+('迭代思维', 'personality', '小步快跑，持续改进', '你信奉迭代思维，倾向于小步快跑、持续改进。你相信完美的方案是通过不断迭代打磨出来的。', true, 0, NOW()),
+('全渠道营销', 'config', '覆盖多个营销渠道的整合能力', '你具备全渠道营销能力，能够整合和协调多个营销渠道的策略和执行。你熟悉各渠道的特点和最佳实践。', true, 0, NOW()),
+('品牌叙事', 'personality', '擅长讲故事，建立情感连接', '你擅长讲故事，能够通过叙事建立与受众的情感连接。你善于用故事来传达品牌价值和理念。', true, 0, NOW());
+
+-- ============================================================================
+-- Permission Policy 种子数据
+-- ============================================================================
+
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WILDCARD', 'OWNER', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR", "TRANSFER"]');
+
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WORKSPACE', 'ADMIN', '["VIEW", "USE", "EDIT", "MANAGE_COLLABORATOR"]'),
+('CHARACTER', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('SKILL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('TOOL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('OBSERVER', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "MANAGE_COLLABORATOR"]'),
+('CONFIG', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]'),
+('MODEL', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('TEMPLATE', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE", "PUBLISH", "MANAGE_COLLABORATOR"]'),
+('COMMONSENSE', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]'),
+('TRAIT', 'ADMIN', '["VIEW", "USE", "EDIT", "DELETE"]');
+
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WILDCARD', 'COLLABORATOR', '["VIEW", "USE"]');
+
+INSERT INTO permission_policy (resource_type, role, permission) VALUES
+('WORKSPACE', 'MEMBER', '["VIEW"]'),
+('CHARACTER', 'MEMBER', '["VIEW"]'),
+('OBSERVER', 'MEMBER', '["VIEW"]'),
+('CONFIG', 'MEMBER', '["VIEW"]'),
+('COMMONSENSE', 'MEMBER', '["VIEW"]');
+
+-- ============================================================================
+-- ConfigStore 系统配置
+-- ============================================================================
 
 -- ID 格式: {scopeBit}:{workspaceId}:{characterId}:{toolId}:{skillId}:{memoryId}:{configKey}
--- GLOBAL_WORKSPACE level (scopeBit=5), 所有层级 ID 为空
+-- scopeBit=5: GLOBAL_WORKSPACE level，所有层级 ID 为空
+-- scopeBit=9: GLOBAL -> CHARACTER level
+-- scopeBit=17: GLOBAL -> SKILL level
+-- scopeBit=65: GLOBAL -> MEMORY level
 
--- ==================== 系统配置项默认值 ====================
--- 从旧 config_definitions 表迁移
+-- ==================== Character 配置 (scopeBit=9) ====================
 
--- Character 配置 (scopeBit=9, GLOBAL -> CHARACTER)
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('9:::::maxSteps', 9, NULL, NULL, NULL, NULL, NULL, 'maxSteps', 10, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::maxSteps', 1, NULL, NULL, NULL, NULL, NULL, 'maxSteps', '10', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('9:::::maxIterations', 9, NULL, NULL, NULL, NULL, NULL, 'maxIterations', 10, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::maxIterations', 1, NULL, NULL, NULL, NULL, NULL, 'maxIterations', '10', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('9:::::enableMemorySearch', 9, NULL, NULL, NULL, NULL, NULL, 'enableMemorySearch', true, 'BOOLEAN', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::enableMemorySearch', 1, NULL, NULL, NULL, NULL, NULL, 'enableMemorySearch', 'true', 'BOOLEAN', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('9:::::enableToolUse', 9, NULL, NULL, NULL, NULL, NULL, 'enableToolUse', true, 'BOOLEAN', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::enableToolUse', 1, NULL, NULL, NULL, NULL, NULL, 'enableToolUse', 'true', 'BOOLEAN', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- Skill 配置 (scopeBit=17, GLOBAL -> SKILL)
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('17:::::maxSingleFileBytes', 17, NULL, NULL, NULL, NULL, NULL, 'maxSingleFileBytes', 2097152, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+-- ==================== Skill 配置 (scopeBit=17) ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('17:::::maxZipFileBytes', 17, NULL, NULL, NULL, NULL, NULL, 'maxZipFileBytes', 10485760, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::maxSingleFileBytes', 1, NULL, NULL, NULL, NULL, NULL, 'maxSingleFileBytes', '2097152', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('17:::::maxUnzipTotalBytes', 17, NULL, NULL, NULL, NULL, NULL, 'maxUnzipTotalBytes', 52428800, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::maxZipFileBytes', 1, NULL, NULL, NULL, NULL, NULL, 'maxZipFileBytes', '10485760', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('17:::::maxFileCount', 17, NULL, NULL, NULL, NULL, NULL, 'maxFileCount', 100, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::maxUnzipTotalBytes', 1, NULL, NULL, NULL, NULL, NULL, 'maxUnzipTotalBytes', '52428800', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('17:::::askTimeoutMs', 17, NULL, NULL, NULL, NULL, NULL, 'askTimeoutMs', 30000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
--- Memory 配置 (scopeBit=65, GLOBAL -> MEMORY)
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('65:::::similarityThreshold', 65, NULL, NULL, NULL, NULL, NULL, 'similarityThreshold', 0.7, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
--- 系统级配置 (scopeBit=5, GLOBAL -> WORKSPACE)
--- 包括: schedule, workflow, evaluation, bash, web, exec, filetools, tool, sandbox, user, sms, workspace, registry
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::schedule.defaultSeconds', 5, NULL, NULL, NULL, NULL, NULL, 'schedule.defaultSeconds', 0, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::maxFileCount', 1, NULL, NULL, NULL, NULL, NULL, 'maxFileCount', '100', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::workflow.maxIterations', 5, NULL, NULL, NULL, NULL, NULL, 'workflow.maxIterations', 10, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::askTimeoutMs', 1, NULL, NULL, NULL, NULL, NULL, 'askTimeoutMs', '30000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- ==================== Memory 配置 (scopeBit=65) ====================
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::similarityThreshold', 1, NULL, NULL, NULL, NULL, NULL, 'similarityThreshold', '0.7', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- ==================== 系统级配置 (scopeBit=5) ====================
+
+-- Schedule 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::schedule.defaultSeconds', 1, NULL, NULL, NULL, NULL, NULL, 'schedule.defaultSeconds', '0', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Workflow 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::workflow.maxIterations', 1, NULL, NULL, NULL, NULL, NULL, 'workflow.maxIterations', '10', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Evaluation 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::evaluation.maxDurationMs', 1, NULL, NULL, NULL, NULL, NULL, 'evaluation.maxDurationMs', '100000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::evaluation.maxDurationMs', 5, NULL, NULL, NULL, NULL, NULL, 'evaluation.maxDurationMs', 100000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::evaluation.maxTokens', 1, NULL, NULL, NULL, NULL, NULL, 'evaluation.maxTokens', '100000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Bash 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::bash.defaultJobTtlMs', 1, NULL, NULL, NULL, NULL, NULL, 'bash.defaultJobTtlMs', '1800000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::evaluation.maxTokens', 5, NULL, NULL, NULL, NULL, NULL, 'evaluation.maxTokens', 100000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::bash.minJobTtlMs', 1, NULL, NULL, NULL, NULL, NULL, 'bash.minJobTtlMs', '60000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::bash.defaultJobTtlMs', 5, NULL, NULL, NULL, NULL, NULL, 'bash.defaultJobTtlMs', 1800000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::bash.maxJobTtlMs', 1, NULL, NULL, NULL, NULL, NULL, 'bash.maxJobTtlMs', '10800000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::bash.minJobTtlMs', 5, NULL, NULL, NULL, NULL, NULL, 'bash.minJobTtlMs', 60000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::bash.defaultMaxOutputChars', 1, NULL, NULL, NULL, NULL, NULL, 'bash.defaultMaxOutputChars', '50000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::bash.maxJobTtlMs', 5, NULL, NULL, NULL, NULL, NULL, 'bash.maxJobTtlMs', 10800000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::bash.defaultTailChars', 1, NULL, NULL, NULL, NULL, NULL, 'bash.defaultTailChars', '2000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Web 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::web.maxBodyChars', 1, NULL, NULL, NULL, NULL, NULL, 'web.maxBodyChars', '50000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::bash.defaultMaxOutputChars', 5, NULL, NULL, NULL, NULL, NULL, 'bash.defaultMaxOutputChars', 50000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::web.requestTimeout', 1, NULL, NULL, NULL, NULL, NULL, 'web.requestTimeout', '30', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::bash.defaultTailChars', 5, NULL, NULL, NULL, NULL, NULL, 'bash.defaultTailChars', 2000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::web.searchTimeout', 1, NULL, NULL, NULL, NULL, NULL, 'web.searchTimeout', '15', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Exec 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::exec.defaultTimeoutSeconds', 1, NULL, NULL, NULL, NULL, NULL, 'exec.defaultTimeoutSeconds', '120', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::web.maxBodyChars', 5, NULL, NULL, NULL, NULL, NULL, 'web.maxBodyChars', 50000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::exec.maxOutputLength', 1, NULL, NULL, NULL, NULL, NULL, 'exec.maxOutputLength', '50000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- FileTools 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::filetools.maxMatches', 1, NULL, NULL, NULL, NULL, NULL, 'filetools.maxMatches', '50', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Tool 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::tool.maxDetailEntries', 1, NULL, NULL, NULL, NULL, NULL, 'tool.maxDetailEntries', '8', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Sandbox 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::sandbox.workspaceRoot', 1, NULL, NULL, NULL, NULL, NULL, 'sandbox.workspaceRoot', '~/.dragon/sandboxes', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::web.requestTimeout', 5, NULL, NULL, NULL, NULL, NULL, 'web.requestTimeout', 30, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::sandbox.dockerImage', 1, NULL, NULL, NULL, NULL, NULL, 'sandbox.dockerImage', 'dragonhead-sandbox', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::web.searchTimeout', 5, NULL, NULL, NULL, NULL, NULL, 'web.searchTimeout', 15, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::sandbox.containerPrefix', 1, NULL, NULL, NULL, NULL, NULL, 'sandbox.containerPrefix', 'dragon-sbx-', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::exec.defaultTimeoutSeconds', 5, NULL, NULL, NULL, NULL, NULL, 'exec.defaultTimeoutSeconds', 120, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::sandbox.idleHours', 1, NULL, NULL, NULL, NULL, NULL, 'sandbox.idleHours', '24', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::exec.maxOutputLength', 5, NULL, NULL, NULL, NULL, NULL, 'exec.maxOutputLength', 50000, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::sandbox.maxAgeDays', 1, NULL, NULL, NULL, NULL, NULL, 'sandbox.maxAgeDays', '7', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::filetools.maxMatches', 5, NULL, NULL, NULL, NULL, NULL, 'filetools.maxMatches', 50, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::sandbox.cdpPort', 1, NULL, NULL, NULL, NULL, NULL, 'sandbox.cdpPort', '9222', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::tool.maxDetailEntries', 5, NULL, NULL, NULL, NULL, NULL, 'tool.maxDetailEntries', 8, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::sandbox.vncPort', 1, NULL, NULL, NULL, NULL, NULL, 'sandbox.vncPort', '5900', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sandbox.workspaceRoot', 5, NULL, NULL, NULL, NULL, NULL, 'sandbox.workspaceRoot', '~/.dragon/sandboxes', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::sandbox.novncPort', 1, NULL, NULL, NULL, NULL, NULL, 'sandbox.novncPort', '6080', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- User 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::user.maxLoginFailCount', 1, NULL, NULL, NULL, NULL, NULL, 'user.maxLoginFailCount', '5', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sandbox.dockerImage', 5, NULL, NULL, NULL, NULL, NULL, 'sandbox.dockerImage', 'dragonhead-sandbox', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::user.lockMinutes', 1, NULL, NULL, NULL, NULL, NULL, 'user.lockMinutes', '15', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- SMS 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::sms.codeValidityMinutes', 1, NULL, NULL, NULL, NULL, NULL, 'sms.codeValidityMinutes', '5', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sandbox.containerPrefix', 5, NULL, NULL, NULL, NULL, NULL, 'sandbox.containerPrefix', 'dragon-sbx-', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::sms.sendCooldownSeconds', 1, NULL, NULL, NULL, NULL, NULL, 'sms.sendCooldownSeconds', '60', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Workspace 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::workspace.workingStyle', 1, NULL, NULL, NULL, NULL, NULL, 'workspace.workingStyle', 'COLLABORATIVE', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sandbox.idleHours', 5, NULL, NULL, NULL, NULL, NULL, 'sandbox.idleHours', 24, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::workspace.decisionPattern', 1, NULL, NULL, NULL, NULL, NULL, 'workspace.decisionPattern', 'CONSULTATIVE', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sandbox.maxAgeDays', 5, NULL, NULL, NULL, NULL, NULL, 'sandbox.maxAgeDays', 7, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::workspace.riskTolerance', 1, NULL, NULL, NULL, NULL, NULL, 'workspace.riskTolerance', '0.5', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Registry 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::registry.defaultCharacterId', 1, NULL, NULL, NULL, NULL, NULL, 'registry.defaultCharacterId', '', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sandbox.cdpPort', 5, NULL, NULL, NULL, NULL, NULL, 'sandbox.cdpPort', 9222, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::registry.defaultModelId', 1, NULL, NULL, NULL, NULL, NULL, 'registry.defaultModelId', '', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sandbox.vncPort', 5, NULL, NULL, NULL, NULL, NULL, 'sandbox.vncPort', 5900, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::registry.defaultObserverId', 1, NULL, NULL, NULL, NULL, NULL, 'registry.defaultObserverId', '', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- Observer 配置
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
+VALUES ('1::::::observer.optimizationThreshold', 1, NULL, NULL, NULL, NULL, NULL, 'observer.optimizationThreshold', '0.6', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sandbox.novncPort', 5, NULL, NULL, NULL, NULL, NULL, 'sandbox.novncPort', 6080, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::observer.consecutiveLowScoreThreshold', 1, NULL, NULL, NULL, NULL, NULL, 'observer.consecutiveLowScoreThreshold', '3', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::user.maxLoginFailCount', 5, NULL, NULL, NULL, NULL, NULL, 'user.maxLoginFailCount', 5, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::observer.periodicEvaluationHours', 1, NULL, NULL, NULL, NULL, NULL, 'observer.periodicEvaluationHours', '24', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::user.lockMinutes', 5, NULL, NULL, NULL, NULL, NULL, 'user.lockMinutes', 15, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::observer.manualApprovalRequired', 1, NULL, NULL, NULL, NULL, NULL, 'observer.manualApprovalRequired', 'true', 'BOOLEAN', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sms.codeValidityMinutes', 5, NULL, NULL, NULL, NULL, NULL, 'sms.codeValidityMinutes', 5, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::observer.planWindowHours', 1, NULL, NULL, NULL, NULL, NULL, 'observer.planWindowHours', '24', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::sms.sendCooldownSeconds', 5, NULL, NULL, NULL, NULL, NULL, 'sms.sendCooldownSeconds', 60, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
+VALUES ('1::::::observer.maxPlanItems', 1, NULL, NULL, NULL, NULL, NULL, 'observer.maxPlanItems', '50', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::workspace.workingStyle', 5, NULL, NULL, NULL, NULL, NULL, 'workspace.workingStyle', 'COLLABORATIVE', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+-- ============================================================================
+-- ConfigStore Prompt 配置
+-- ============================================================================
+
+-- ==================== Observer 模块 Prompts ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::workspace.decisionPattern', 5, NULL, NULL, NULL, NULL, NULL, 'workspace.decisionPattern', 'CONSULTATIVE', 'STRING', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::workspace.riskTolerance', 5, NULL, NULL, NULL, NULL, NULL, 'workspace.riskTolerance', 0.5, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::registry.defaultCharacterId', 5, NULL, NULL, NULL, NULL, NULL, 'registry.defaultCharacterId', NULL, 'STRING', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::registry.defaultModelId', 5, NULL, NULL, NULL, NULL, NULL, 'registry.defaultModelId', NULL, 'STRING', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::registry.defaultObserverId', 5, NULL, NULL, NULL, NULL, NULL, 'registry.defaultObserverId', NULL, 'STRING', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
--- Observer 配置 (scopeBit=5, GLOBAL_WORKSPACE - OBSERVER 作为功能类别，不是继承层级)
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::observer.optimizationThreshold', 5, NULL, NULL, NULL, NULL, NULL, 'observer.optimizationThreshold', 0.6, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::observer.consecutiveLowScoreThreshold', 5, NULL, NULL, NULL, NULL, NULL, 'observer.consecutiveLowScoreThreshold', 3, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::observer.periodicEvaluationHours', 5, NULL, NULL, NULL, NULL, NULL, 'observer.periodicEvaluationHours', 24, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::observer.manualApprovalRequired', 5, NULL, NULL, NULL, NULL, NULL, 'observer.manualApprovalRequired', true, 'BOOLEAN', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::observer.planWindowHours', 5, NULL, NULL, NULL, NULL, NULL, 'observer.planWindowHours', 24, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::observer.maxPlanItems', 5, NULL, NULL, NULL, NULL, NULL, 'observer.maxPlanItems', 50, 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
-
--- ==================== Observer 模块 ====================
-
-INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/observer.suggestion', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/observer.suggestion',
+VALUES ('1::::::prompt/observer.suggestion', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/observer.suggestion',
 '# Observer LLM Optimization Suggestion Prompt
 
 ## Role
@@ -279,7 +364,7 @@ VALUES ('5::::::prompt/observer.suggestion', 5, NULL, NULL, NULL, NULL, NULL, 'p
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/observer.personalityEnhancement', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/observer.personalityEnhancement',
+VALUES ('1::::::prompt/observer.personalityEnhancement', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/observer.personalityEnhancement',
 '# Observer LLM Personality Enhancement Prompt
 
 ## Role
@@ -332,16 +417,16 @@ VALUES ('5::::::prompt/observer.personalityEnhancement', 5, NULL, NULL, NULL, NU
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== ReAct 模块 ====================
+-- ==================== ReAct 模块 Prompts ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/react.taskDecompose', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/react.taskDecompose',
+VALUES ('1::::::prompt/react.taskDecompose', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/react.taskDecompose',
 '你是一个组织调度专家，负责把复杂任务拆解为可执行的子任务。',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/react.execute', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/react.execute',
+VALUES ('1::::::prompt/react.execute', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/react.execute',
 '你是 ReAct 执行阶段的 PromptWriter，需要基于给定的模板、任务上下文、历史思考、动作、观察结果和工具信息，生成当前这一轮真正给执行模型使用的提示词。
 生成要求：
 1. 提示词必须明确用户目标、当前进度以及最新观察结果。
@@ -353,24 +438,24 @@ VALUES ('5::::::prompt/react.execute', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== Character 模块 ====================
+-- ==================== Character 模块 Prompts ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/character.system', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/character.system',
+VALUES ('1::::::prompt/character.system', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/character.system',
 '你是一个专业的AI数字员工，有自己的性格特点和价值观。',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/character.task', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/character.task',
+VALUES ('1::::::prompt/character.task', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/character.task',
 '请根据要求完成以下任务：',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== HR 模块 ====================
+-- ==================== HR 模块 Prompts ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/hr.hire.decision', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/hr.hire.decision',
+VALUES ('1::::::prompt/hr.hire.decision', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/hr.hire.decision',
 '请评估是否应该雇佣以下 Character 到工作空间：
 
 Character 名称: %s
@@ -386,13 +471,13 @@ Character 描述: %s
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/hr.hire.select', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/hr.hire.select',
+VALUES ('1::::::prompt/hr.hire.select', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/hr.hire.select',
 '请从以下候选 Character 中选择一个最合适雇佣的：',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/hr.fire.decision', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/hr.fire.decision',
+VALUES ('1::::::prompt/hr.fire.decision', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/hr.fire.decision',
 '请评估是否应该解雇工作空间中的以下 Character：
 
 Character ID: %s
@@ -407,7 +492,7 @@ Character ID: %s
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/hr.duty.generate', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/hr.duty.generate',
+VALUES ('1::::::prompt/hr.duty.generate', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/hr.duty.generate',
 '请为以下 Character 生成一个合适的职责描述：
 
 Character 名称: %s
@@ -417,18 +502,18 @@ Character 描述: %s
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== 选择模块 ====================
+-- ==================== 选择模块 Prompt ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/selection.generic', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/selection.generic',
+VALUES ('1::::::prompt/selection.generic', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/selection.generic',
 '请从以下候选中选择一个最合适的：',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== MemberSelector 模块 ====================
+-- ==================== MemberSelector 模块 Prompt ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/memberSelector.select', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/memberSelector.select',
+VALUES ('1::::::prompt/memberSelector.select', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/memberSelector.select',
 '# MemberSelector 选择成员 Prompt
 
 ## Role
@@ -478,10 +563,10 @@ VALUES ('5::::::prompt/memberSelector.select', 5, NULL, NULL, NULL, NULL, NULL, 
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== ProjectManager 模块 ====================
+-- ==================== ProjectManager 模块 Prompt ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/projectManager.decompose', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/projectManager.decompose',
+VALUES ('1::::::prompt/projectManager.decompose', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/projectManager.decompose',
 '# ProjectManager 任务拆解 Prompt
 
 ## Role
@@ -534,28 +619,28 @@ VALUES ('5::::::prompt/projectManager.decompose', 5, NULL, NULL, NULL, NULL, NUL
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== Character 协作模块 ====================
+-- ==================== Character 协作模块 Prompts ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/character.collaboration', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/character.collaboration',
+VALUES ('1::::::prompt/character.collaboration', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/character.collaboration',
 '你是一个专业的 AI 助手，正在与其他 Character 协作完成任务。',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/character.askUser', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/character.askUser',
+VALUES ('1::::::prompt/character.askUser', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/character.askUser',
 '你需要向用户询问更多信息以完成任务。请用简洁清晰的语言提问。',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/character.waitDependency', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/character.waitDependency',
+VALUES ('1::::::prompt/character.waitDependency', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/character.waitDependency',
 '当前任务需要等待其他任务完成后才能继续执行。',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/character.collaborationDecision', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/character.collaborationDecision',
+VALUES ('1::::::prompt/character.collaborationDecision', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/character.collaborationDecision',
 '## 协作状态决策规则
 
 你是一个专业的 AI 协作助手，正在参与一个多 Character 协作任务。你需要根据当前协作上下文，主动判断任务应该：
@@ -567,22 +652,22 @@ VALUES ('5::::::prompt/character.collaborationDecision', 5, NULL, NULL, NULL, NU
 
 ### 协作上下文信息
 
-当前协作会话 ID: \$\{collaborationSessionId\}
+当前协作会话 ID: ${collaborationSessionId}
 
 参与者状态:
-\$\{participantStates\}
+${participantStates}
 
 阻塞中的参与者:
-\$\{blockedParticipants\}
+${blockedParticipants}
 
-协作会话状态: \$\{sessionStatus\}
+协作会话状态: ${sessionStatus}
 
 最近协作消息:
-\$\{latestSessionMessages\}
+${latestSessionMessages}
 
-同级 Character IDs: \$\{peerCharacterIds\}
+同级 Character IDs: ${peerCharacterIds}
 
-依赖任务 IDs: \$\{dependencyTaskIds\}
+依赖任务 IDs: ${dependencyTaskIds}
 
 ### 决策判断标准
 
@@ -631,15 +716,15 @@ VALUES ('5::::::prompt/character.collaborationDecision', 5, NULL, NULL, NULL, NU
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/projectManager.continuationDecision', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/projectManager.continuationDecision',
+VALUES ('1::::::prompt/projectManager.continuationDecision', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/projectManager.continuationDecision',
 '请判断任务应该继续执行还是等待用户输入。',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== Task 续跑模块 ====================
+-- ==================== Task 续跑模块 Prompt ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
-VALUES ('5::::::prompt/task.resumeSummary', 5, NULL, NULL, NULL, NULL, NULL, 'prompt/task.resumeSummary',
+VALUES ('1::::::prompt/task.resumeSummary', 1, NULL, NULL, NULL, NULL, NULL, 'prompt/task.resumeSummary',
 '请总结以下任务的执行进度和上下文，以便继续执行：',
 'STRING', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
