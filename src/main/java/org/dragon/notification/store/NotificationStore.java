@@ -1,7 +1,6 @@
 package org.dragon.notification.store;
 
-import org.dragon.notification.dto.NotificationEntity;
-import org.dragon.notification.dto.NotificationType;
+import org.dragon.datasource.entity.NotificationEntity;
 import org.dragon.store.Store;
 
 import java.util.List;
@@ -45,7 +44,7 @@ public interface NotificationStore extends Store {
     /**
      * 根据用户ID和类型查找
      */
-    List<NotificationEntity> findByUserIdAndType(Long userId, NotificationType type);
+    List<NotificationEntity> findByUserIdAndType(Long userId, String type);
 
     /**
      * 获取用户未读通知数量
