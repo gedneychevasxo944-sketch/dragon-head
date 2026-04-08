@@ -561,7 +561,7 @@ public class InheritanceContext {
      */
     public static InheritanceContext forGlobal() {
         return InheritanceContext.builder()
-                .level(ConfigLevel.GLOBAL_WORKSPACE)
+                .level(ConfigLevel.GLOBAL)
                 .build();
     }
 }

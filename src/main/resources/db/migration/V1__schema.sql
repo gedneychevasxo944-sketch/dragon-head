@@ -901,7 +901,7 @@ CREATE TABLE IF NOT EXISTS config_store (
     modified_by VARCHAR(100) DEFAULT NULL,
 
     -- 状态和版本
-    status VARCHAR(20) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PUBLISHED',
+    `status` VARCHAR(20) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PUBLISHED',
     version INT DEFAULT 1 COMMENT '版本号',
     published_at DATETIME COMMENT '发布时间',
     published_by VARCHAR(100) COMMENT '发布人',

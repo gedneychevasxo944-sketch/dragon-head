@@ -45,6 +45,7 @@ public class DataSourceConfig {
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .cleanDisabled(false)
+                .placeholderReplacement(false)
                 .load();
         flyway.clean();
         flyway.migrate();

@@ -194,7 +194,7 @@ public class ConfigController {
     private InheritanceContext buildContext(ConfigLevel level, String workspaceId, String characterId,
                                              String toolId, String skillId, String memoryId) {
         if (level == null) {
-            return InheritanceContext.builder().level(ConfigLevel.GLOBAL_WORKSPACE).build();
+            return InheritanceContext.builder().level(ConfigLevel.GLOBAL).build();
         }
 
         return switch (level) {
