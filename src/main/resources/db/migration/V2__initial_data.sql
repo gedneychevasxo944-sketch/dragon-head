@@ -68,12 +68,16 @@ INSERT INTO permission_policy (resource_type, role, permission) VALUES
 -- ============================================================================
 
 -- ID 格式: {scopeBit}:{workspaceId}:{characterId}:{toolId}:{skillId}:{memoryId}:{configKey}
--- scopeBit=5: GLOBAL_WORKSPACE level，所有层级 ID 为空
--- scopeBit=9: GLOBAL -> CHARACTER level
--- scopeBit=17: GLOBAL -> SKILL level
--- scopeBit=65: GLOBAL -> MEMORY level
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES
+  ('1::::::jwt.secret', 1, NULL, NULL, NULL, NULL, NULL, 'jwt.secret', 'adeptify-256-bit-secret-key-for-jwt-signing-must-be-long-enough-2024', 'STRING', 'JWT Secret', 'JWT 签名密钥（生产环境请使用安全的随机字符串）', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW()),
 
--- ==================== Character 配置 (scopeBit=9) ====================
+  ('1::::::jwt.access-token-validity', 1, NULL, NULL, NULL, NULL, NULL, 'jwt.access-token-validity', '7200', 'NUMBER', 'Access Token Validity', 'Access Token 有效期（秒）', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW()),
+
+  ('1::::::jwt.refresh-token-validity', 1, NULL, NULL, NULL, NULL, NULL, 'jwt.refresh-token-validity', '604800', 'NUMBER', 'Refresh Token Validity', 'Refresh Token 有效期（秒）', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW());
+
+
+-- ==================== Character 配置 (scopeBit=1) ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
 VALUES ('1::::::maxSteps', 1, NULL, NULL, NULL, NULL, NULL, 'maxSteps', '10', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
@@ -91,7 +95,7 @@ INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, sk
 VALUES ('1::::::enableToolUse', 1, NULL, NULL, NULL, NULL, NULL, 'enableToolUse', 'true', 'BOOLEAN', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== Skill 配置 (scopeBit=17) ====================
+-- ==================== Skill 配置 (scopeBit=1) ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
 VALUES ('1::::::maxSingleFileBytes', 1, NULL, NULL, NULL, NULL, NULL, 'maxSingleFileBytes', '2097152', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
@@ -113,13 +117,13 @@ INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, sk
 VALUES ('1::::::askTimeoutMs', 1, NULL, NULL, NULL, NULL, NULL, 'askTimeoutMs', '30000', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== Memory 配置 (scopeBit=65) ====================
+-- ==================== Memory 配置 (scopeBit=1) ====================
 
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
 VALUES ('1::::::similarityThreshold', 1, NULL, NULL, NULL, NULL, NULL, 'similarityThreshold', '0.7', 'NUMBER', 'PUBLISHED', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
--- ==================== 系统级配置 (scopeBit=5) ====================
+-- ==================== 系统级配置 (scopeBit=1) ====================
 
 -- Schedule 配置
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, status, version, created_at, updated_at)
