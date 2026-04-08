@@ -1,0 +1,1856 @@
+{
+  "info": {
+    "name": "dargonApiV3",
+    "description": "Dragon Head API v3",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Workspace",
+      "item": [
+        {
+          "name": "获取 Workspace 列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces?page=1&pageSize=20",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            }
+          }
+        },
+        {
+          "name": "创建 Workspace",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/workspaces",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Workspace 详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新 Workspace 设置",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/settings",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除 Workspace",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Workspace 成员列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/members",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取团队席位列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/team-positions",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "添加团队岗位",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/team-positions",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"roleName\":\"\",\"rolePackage\":\"\",\"purpose\":\"\",\"scope\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新团队岗位",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/team-positions/{positionId}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"assignedCharacterId\":\"\",\"enabled\":true}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除团队岗位",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/team-positions/{positionId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "添加成员",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/members",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"characterId\":\"\",\"role\":\"\",\"position\":\"\",\"level\":1,\"sourceType\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "移除成员",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/members/{memberId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取已绑定技能列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/skills",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "绑定技能",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/skills",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "解绑技能",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/skills/{skillId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新技能绑定配置",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/skills/{skillId}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"versionType\":\"\",\"fixedVersion\":1}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取记忆配置信息",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/memory",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "触发记忆同步",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/memory/sync",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Observer 信息",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/observer",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "绑定 Observer",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/observer",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"observerId\":\"\",\"evaluationMode\":\"\",\"autoOptimization\":true}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "解绑 Observer",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/observer",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取任务列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/tasks?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取审计日志",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/audit-logs?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取素材列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/materials",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "上传素材",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/materials",
+            "header": [],
+            "body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": [] }] },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除素材",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/materials/{materialId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取权限成员列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/permissions",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "添加成员权限",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/permissions",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"userId\":\"\",\"role\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新成员权限",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/permissions/{userId}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"role\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "移除成员权限",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/workspaces/{workspaceId}/permissions/{userId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "发送消息",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/chat/messages",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"sessionId\":\"\",\"message\":\"\",\"characterId\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取会话历史",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/chat/sessions/{sessionId}/messages",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 AI 连接状态",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/chat/status",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Skill",
+      "item": [
+        {
+          "name": "获取技能列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/skills?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建技能",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/skills",
+            "header": [],
+            "body": { "mode": "formdata", "formdata": [
+              { "key": "file", "type": "file", "src": [] },
+              { "key": "data", "type": "text", "value": "{}" }
+            ]},
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取技能详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新技能",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}",
+            "header": [],
+            "body": { "mode": "formdata", "formdata": [
+              { "key": "file", "type": "file", "src": [] },
+              { "key": "data", "type": "text", "value": "{}" }
+            ]},
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "发布技能版本",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}/publish",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"version\":\"\",\"changelog\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除技能",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "禁用技能",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}/disable",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "启用技能",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}/enable",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取技能版本列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}/versions",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "保存技能草稿",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}/draft",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取活动日志",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/skills/{skillId}/activity-logs?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tool",
+      "item": [
+        {
+          "name": "获取工具列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/tools?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建工具",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/tools",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取工具详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/tools/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新工具",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/tools/{id}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除工具",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/tools/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Observer",
+      "item": [
+        {
+          "name": "获取 Observer 列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/observers?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建 Observer",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/observers",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Observer 详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/observers/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新 Observer",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/observers/{id}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除 Observer",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/observers/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "触发评价",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/observers/{id}/evaluate",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取评价记录列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/observers/{observerId}/evaluations?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取优化计划列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/observers/{observerId}/plans?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "审批计划",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/observers/{observerId}/plans/{planId}/approve",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"approved\":true,\"comment\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "执行计划",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/observers/{observerId}/plans/{planId}/execute",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取优化动作列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/observers/{observerId}/actions?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "回滚动作",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/observers/{observerId}/actions/{actionId}/rollback",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取治理日志",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/observers/{observerId}/governance-logs?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Studio",
+      "item": [
+        {
+          "name": "获取角色列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/studio/characters?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建角色",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/studio/characters",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取角色详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/studio/characters/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新角色",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/studio/characters/{id}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除角色",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/studio/characters/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Studio 统计数据",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/studio/stats",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "独立运行角色",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/studio/characters/{id}/run",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"message\":\"\",\"sessionId\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Trait 列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/studio/traits?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建 Trait",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/studio/traits",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Trait 详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/studio/traits/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新 Trait",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/studio/traits/{id}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除 Trait",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/studio/traits/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取模板列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/studio/templates",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "从模板派生角色",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/studio/templates/{id}/derive",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"\",\"description\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取派驻记录列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/studio/deployments?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "派驻角色到 Workspace",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/studio/deployments",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"characterId\":\"\",\"workspaceId\":\"\",\"role\":\"\",\"position\":\"\",\"level\":1}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "撤销派驻",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/studio/deployments/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Config",
+      "item": [
+        {
+          "name": "获取配置项列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/config/items?scopeType=GLOBAL&page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取配置生效链",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/config/items/{configKey}/effect-chain?scopeType=GLOBAL",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新配置项",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/config/items",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"configKey\":\"\",\"value\":\"\",\"level\":\"GLOBAL\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取配置生效值",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/config/effective?configKey=&level=GLOBAL",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memory",
+      "item": [
+        {
+          "name": "获取数据源列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/sources?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取数据源详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/sources/{sourceId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建数据源",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/sources",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新数据源",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/memory/sources/{sourceId}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除数据源",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/memory/sources/{sourceId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "同步数据源",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/sources/{sourceId}/sync",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取文件列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/files?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取文件详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/files/{fileId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取文件片段",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/files/{fileId}/chunks?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "同步文件",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/files/{fileId}/sync",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取片段列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/chunks?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取片段详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/chunks/{chunkId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建片段",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/chunks",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新片段",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/memory/chunks/{chunkId}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除片段",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/memory/chunks/{chunkId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "批量删除片段",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/memory/chunks/batch",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"chunkIds\":[]}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "批量更新片段索引状态",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/memory/chunks/batch/index",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取绑定列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/bindings?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建绑定",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/bindings",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新绑定",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/memory/bindings/{bindingId}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除绑定",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/memory/bindings/{bindingId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "检索记忆内容",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/retrieval/search",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "检索测试",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/retrieval/test",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取运行时状态",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/operations/status",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "执行系统检查",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/operations/probe",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "重建索引",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/operations/reindex",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "清除缓存",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/memory/operations/clear-cache",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取全局统计信息",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/stats/overview",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取数据源统计信息",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/memory/stats/sources",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lab",
+      "item": [
+        {
+          "name": "获取场景列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/scenes",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建场景",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/lab/scenes",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新场景",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/lab/scenes/{id}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取场景实例列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/scenes/{sceneId}/instances",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取任务网络列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/tasks",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取任务详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/tasks/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新任务状态",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/lab/tasks/{id}/status",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"status\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "提交任务验收结果",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/lab/tasks/{id}/acceptance",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取拓扑图数据",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/topology",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取演练场景列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/arena/scenarios",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建演练场景",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/lab/arena/scenarios",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "运行演练",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/lab/arena/scenarios/{scenarioId}/run",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取演练结果",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/arena/runs/{runId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取技能图列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/skill-graphs",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建技能图",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/lab/skill-graphs",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新技能图",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/lab/skill-graphs/{id}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "生成执行计划",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/lab/skill-graphs/{id}/plan",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "执行技能图",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/lab/skill-graphs/{id}/execute",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取时间线会话列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/timeline/sessions",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取时间线会话详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/lab/timeline/sessions/{sessionId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logs",
+      "item": [
+        {
+          "name": "获取事件日志列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/logs/events?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取事件详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/logs/events/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取链路列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/logs/traces?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取链路详情",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/logs/traces/{traceId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取健康状态列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/logs/health",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取全局健康统计",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/logs/health/stats",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取审计记录",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/logs/audit?page=1&pageSize=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Approval",
+      "item": [
+        {
+          "name": "获取我发出的审批请求",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/approvals/my-requests",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取待审批请求",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/approvals/pending",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取资产审批历史",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/approvals/assets/{type}/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "审批通过",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/approvals/{id}/approve",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"comment\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "审批拒绝",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/approvals/{id}/reject",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"comment\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "创建发布审批申请",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/approvals/publish",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"resourceType\":\"\",\"resourceId\":\"\",\"reason\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Collaborator",
+      "item": [
+        {
+          "name": "获取我收到的邀请列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/collaborators/invitations",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取我的资产列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/collaborators/my-assets",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "接受邀请",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/collaborators/invitations/{id}/accept",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "拒绝邀请",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/collaborators/invitations/{id}/reject",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取资产的协作者列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/collaborators/assets/{type}/{id}/collaborators",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "邀请协作者",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/collaborators/assets/{type}/{id}/collaborators",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"collaboratorId\":0,\"reason\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "移除协作者",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/collaborators/assets/{type}/{id}/collaborators/{collaboratorId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification",
+      "item": [
+        {
+          "name": "获取我的通知列表",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/notifications?limit=20",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取未读通知数量",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/notifications/unread-count",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "标记单条通知为已读",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/notifications/{id}/read",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "标记所有通知为已读",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/notifications/read-all",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除通知",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/notifications/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AssetAssociation",
+      "item": [
+        {
+          "name": "创建资产关联",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/asset-associations",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "删除资产关联",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/asset-associations",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "按源资产查询关联",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/asset-associations/source/{type}/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "按目标资产查询关联",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/asset-associations/target/{type}/{id}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Workspace 下的所有 Character",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/asset-associations/workspace/{workspaceId}/characters",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Character 关联的所有 Memory",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/asset-associations/character/{characterId}/memories",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Workspace 关联的所有 Memory",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/asset-associations/workspace/{workspaceId}/memories",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Workspace 关联的所有 Observer",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/asset-associations/workspace/{workspaceId}/observers",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取 Skill 关联的所有 Tool",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/asset-associations/skill/{skillId}/tools",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "检查关联是否存在",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/asset-associations/exists?associationType=&sourceType=&sourceId=&targetType=&targetId=",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session",
+      "item": [
+        {
+          "name": "开始会话",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sessions/{sessionId}/start?workspaceId=&characterId=",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取会话",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/sessions/{sessionId}",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新会话",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sessions/{sessionId}/update",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "会话检查点",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sessions/{sessionId}/checkpoint",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "将会话刷入长期记忆",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sessions/{sessionId}/flush",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "关闭会话",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/sessions/{sessionId}/close",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User (Auth)",
+      "item": [
+        {
+          "name": "用户注册",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "密码登录",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/login/password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "刷新Token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/refresh-token",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"refreshToken\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "登出",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/logout",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取当前用户信息",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/user/me",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "更新当前用户信息",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/user/me",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "修改密码",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/user/password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "发送短信验证码",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/sms/send",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"phone\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "验证码登录",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/login/sms/verify",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"phone\":\"\",\"code\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "发送绑定手机验证码",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/phone/send-code",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"phone\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "绑定手机号",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/phone/bind",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"phone\":\"\",\"code\":\"\"}" },
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "获取微信登录二维码",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/wechat/qrcode",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        },
+        {
+          "name": "微信登录回调",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/user/wechat/callback",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }
+          }
+        }
+      ]
+    }
+  ]
+}
