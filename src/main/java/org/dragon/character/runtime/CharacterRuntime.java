@@ -10,6 +10,8 @@ import org.dragon.character.mind.TraitResolutionService;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.skill.runtime.SkillRegistry;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -27,36 +29,43 @@ public class CharacterRuntime {
     /**
      * ReAct 执行器
      */
+    @JsonIgnore
     private ReActExecutor reActExecutor;
 
     /**
      * Prompt 管理器
      */
+    @JsonIgnore
     private ConfigApplication configApplication;
 
     /**
      * Workflow 执行器
      */
+    @JsonIgnore
     private WorkflowExecutor workflowExecutor;
 
     /**
      * Workflow 存储
      */
+    @JsonIgnore
     private WorkflowStore workflowStore;
 
     /**
      * 模型注册中心
      */
+    @JsonIgnore
     private ModelRegistry modelRegistry;
 
     /**
      * 编排服务
      */
+    @JsonIgnore
     private OrchestrationService orchestrationService;
 
     /**
      * Mind 实例
      */
+    @JsonIgnore
     private Mind mind;
 
     /**
@@ -68,10 +77,12 @@ public class CharacterRuntime {
     /**
      * Skill 注册中心
      */
+    @JsonIgnore
     private SkillRegistry skillRegistry;
 
     /**
      * Trait 解析服务
      */
+    @JsonIgnore
     private TraitResolutionService traitResolutionService;
 }

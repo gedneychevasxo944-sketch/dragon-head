@@ -58,7 +58,7 @@ public class CharacterEntity {
     private Map<String, Object> traitConfigs;
 
     @DbJson
-    private List<Map<String, Object>> skills;
+    private List<String> skills;
 
     @Column(name = "prompt_template", columnDefinition = "TEXT")
     private String promptTemplate;

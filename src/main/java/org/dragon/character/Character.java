@@ -6,13 +6,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.dragon.agent.model.ModelRegistry;
+import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActResult;
+import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowResult;
+import org.dragon.agent.workflow.WorkflowStore;
 import org.dragon.character.config.CharacterExecutorConfig;
+import org.dragon.character.mind.Mind;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.character.runtime.CharacterExecutor;
 import org.dragon.character.runtime.CharacterRuntime;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.task.Task;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
 
@@ -151,11 +159,11 @@ public class Character {
         profile.setTraitConfigs(traitConfigs);
     }
 
-    public List<Map<String, Object>> getSkills() {
+    public List<String> getSkills() {
         return profile.getSkills();
     }
 
-    public void setSkills(List<Map<String, Object>> skills) {
+    public void setSkills(List<String> skills) {
         profile.setSkills(skills);
     }
 
@@ -215,14 +223,16 @@ public class Character {
         profile.setMindConfig(mindConfig);
     }
 
-    public org.dragon.character.mind.Mind getMind() {
+    @JsonIgnore
+    public Mind getMind() {
         return profile.getMind();
     }
 
-    public void setMind(org.dragon.character.mind.Mind mind) {
+    public void setMind(Mind mind) {
         profile.setMind(mind);
     }
 
+    @JsonIgnore
     public CharacterExecutorConfig getAgentEngineConfig() {
         return executorConfig;
     }
@@ -273,27 +283,33 @@ public class Character {
 
     // ==================== 兼容旧接口 ====================
 
+    @JsonIgnore
     public org.dragon.agent.react.ReActExecutor getReActExecutor() {
         return runtime != null ? runtime.getReActExecutor() : null;
     }
 
-    public org.dragon.config.service.ConfigApplication getConfigApplication() {
+    @JsonIgnore
+    public ConfigApplication getConfigApplication() {
         return runtime != null ? runtime.getConfigApplication() : null;
     }
 
-    public org.dragon.agent.workflow.WorkflowExecutor getWorkflowExecutor() {
+    @JsonIgnore
+    public WorkflowExecutor getWorkflowExecutor() {
         return runtime != null ? runtime.getWorkflowExecutor() : null;
     }
 
-    public org.dragon.agent.workflow.WorkflowStore getWorkflowStore() {
+    @JsonIgnore
+    public WorkflowStore getWorkflowStore() {
         return runtime != null ? runtime.getWorkflowStore() : null;
     }
 
-    public org.dragon.agent.model.ModelRegistry getModelRegistry() {
+    @JsonIgnore
+    public ModelRegistry getModelRegistry() {
         return runtime != null ? runtime.getModelRegistry() : null;
     }
 
-    public org.dragon.agent.orchestration.OrchestrationService getOrchestrationService() {
+    @JsonIgnore
+    public OrchestrationService getOrchestrationService() {
         return runtime != null ? runtime.getOrchestrationService() : null;
     }
 }

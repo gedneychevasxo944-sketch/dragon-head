@@ -49,12 +49,12 @@ VALUES
 -- ============================================================================
 INSERT INTO workspace (id, name, description, owner, status, visibility, properties, personality, created_at, updated_at)
 VALUES
-  ('ws-demo', '演示工作空间', '用于前后端联调的演示工作空间，包含多个角色和技能配置', '1', 'ACTIVE', 'PRIVATE',
+  ('ws-demo', '演示工作空间', '用于前后端联调的演示工作空间，包含多个角色和技能配置', '1', 'RUNNING', 'PRIVATE',
    '{"visibility": "PRIVATE", "maxMembers": 10, "features": ["task", "observer", "memory"]}',
    '{"workingStyle": "COLLABORATIVE", "decisionPattern": "CONSULTATIVE", "riskTolerance": 0.5}',
    NOW(), NOW()),
 
-  ('ws-test', '测试工作空间', '用于自动化测试的工作空间', '1', 'ACTIVE', 'PRIVATE',
+  ('ws-test', '测试工作空间', '用于自动化测试的工作空间', '1', 'RUNNING', 'PRIVATE',
    '{"visibility": "PRIVATE", "maxMembers": 5}',
    '{"workingStyle": "ANALYTICAL", "decisionPattern": "CONSENSUS", "riskTolerance": 0.3}',
    NOW(), NOW());
@@ -74,7 +74,7 @@ VALUES
    '["skill-001", "skill-002"]',
    '你是一位专业的 AI 项目管理者。你的职责是协调团队工作、跟踪进度、识别风险。',
    '["task_tracker", "calendar", "report_generator"]',
-   TRUE, 2, NULL, NULL, 'active', NOW(), NOW()),
+   TRUE, 2, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
   ('char-002', '["ws-demo"]', NULL, '数据分析师', 1,
    '数据分析专家，专注于从复杂数据中提取洞察，支持决策制定。',
@@ -86,7 +86,7 @@ VALUES
    '["skill-001", "skill-data-analysis"]',
    '你是一位资深数据分析师，擅长使用统计学方法和可视化技术分析数据。',
    '["data_connector", "chart_generator", "sql_query"]',
-   TRUE, 1, NULL, NULL, 'active', NOW(), NOW()),
+   TRUE, 1, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
   ('char-003', '["ws-demo", "ws-test"]', NULL, '客服代表', 1,
    '温柔的客服代表，善于倾听和理解客户需求，提供贴心的解决方案。',
@@ -98,7 +98,7 @@ VALUES
    '["skill-001"]',
    '你是一位热情的客服代表，始终以客户满意为首要目标。',
    '["ticket_system", "knowledge_base", "response_generator"]',
-   FALSE, 3, NULL, NULL, 'active', NOW(), NOW()),
+   FALSE, 3, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
   ('char-pm', '["ws-demo"]', NULL, '产品经理', 1,
    '经验丰富的产品经理，擅长需求分析和产品规划。',
@@ -110,7 +110,7 @@ VALUES
    '[]',
    '你是一位经验丰富的的产品经理，擅长用户需求分析和产品路线图规划。',
    '["roadmap_planner", "user_research"]',
-   FALSE, 0, NULL, NULL, 'active', NOW(), NOW()),
+   FALSE, 0, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
   ('char-analyst', '["ws-test"]', NULL, '市场分析师', 1,
    '专注于市场趋势分析和竞争情报收集。',
@@ -122,7 +122,7 @@ VALUES
    '[]',
    '你是一位专业的市场分析师，擅长追踪市场趋势和竞争情报。',
    '["market_tracker", "competitor_analysis"]',
-   FALSE, 0, NULL, NULL, 'active', NOW(), NOW());
+   FALSE, 0, NULL, NULL, 'RUNNING', NOW(), NOW());
 
 -- ============================================================================
 -- 4. Trait 种子数据
@@ -150,17 +150,17 @@ INSERT INTO skills (skill_id, name, display_name, description, content, category
 VALUES
   ('skill-001', '通用助手', '通用助手', '提供通用的 AI 助手能力，支持多种任务类型',
    '# 通用助手技能\n\n## 能力\n- 问答对话\n- 任务分解\n- 信息检索\n- 文本生成',
-   '通用', 'public', 'official', NULL, '官方助手', 'active', 1,
+   '通用', 'public', 'official', NULL, '官方助手', 'RUNNING', 1,
    '["助手", "通用", "问答"]', NOW(), NOW()),
 
   ('skill-002', '任务管理', '任务管理技能', '专业的任务管理和项目跟踪能力',
    '# 任务管理技能\n\n## 能力\n- 创建和分解任务\n- 跟踪任务进度\n- 识别任务依赖\n- 风险预警',
-   '项目管理', 'public', 'official', NULL, '官方助手', 'active', 2,
+   '项目管理', 'public', 'official', NULL, '官方助手', 'RUNNING', 2,
    '["任务", "管理", "项目"]', NOW(), NOW()),
 
   ('skill-data-analysis', '数据分析', '数据分析技能', '从复杂数据中提取洞察，支持决策',
    '# 数据分析技能\n\n## 能力\n- 数据清洗和预处理\n- 统计分析和建模\n- 可视化生成\n- 洞察提炼',
-   '数据分析', 'public', 'official', NULL, '官方助手', 'active', 1,
+   '数据分析', 'public', 'official', NULL, '官方助手', 'RUNNING', 1,
    '["数据", "分析", "可视化"]', NOW(), NOW());
 
 -- ============================================================================
@@ -185,7 +185,7 @@ VALUES
 -- ============================================================================
 INSERT INTO observer (id, name, description, workspace_id, status, evaluation_mode, optimization_threshold, consecutive_low_score_threshold, common_sense_enabled, auto_optimization_enabled, periodic_evaluation_hours, properties, planner_character_ids, reviewer_character_ids, supported_target_types, manual_approval_required, schedule_cron, plan_window_hours, max_plan_items, created_at, updated_at)
 VALUES
-  ('obs-001', '工作空间观察者', '监控工作空间整体运行状态，观察角色表现', 'ws-demo', 'ACTIVE', 'AUTO', 0.6, 3, TRUE, TRUE, 24,
+  ('obs-001', '工作空间观察者', '监控工作空间整体运行状态，观察角色表现', 'ws-demo', 'RUNNING', 'AUTO', 0.6, 3, TRUE, TRUE, 24,
    '{"evaluationInterval": "daily", "alertThreshold": 0.5}',
    '["char-001"]', '["char-002"]',
    '["WORKSPACE", "CHARACTER"]', TRUE, '0 0 * * *', 24, 50, NOW(), NOW()),

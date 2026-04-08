@@ -8,6 +8,8 @@ import java.util.Set;
 
 import org.dragon.character.mind.Mind;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -70,6 +72,7 @@ public class CharacterProfile {
     /**
      * Mind 实例
      */
+    @JsonIgnore
     private Mind mind;
 
     /**
@@ -97,7 +100,7 @@ public class CharacterProfile {
     /**
      * 技能引用
      */
-    private List<Map<String, Object>> skills;
+    private List<String> skills;
 
     /**
      * Prompt 模板
