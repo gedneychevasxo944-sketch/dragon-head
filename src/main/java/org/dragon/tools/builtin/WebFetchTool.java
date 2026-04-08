@@ -24,8 +24,15 @@ import java.util.regex.Pattern;
 public class WebFetchTool implements AgentTool {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final int MAX_BODY_CHARS = 50_000;
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+    private static final int DEFAULT_MAX_BODY_CHARS = 50_000;
+    private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(30);
+
+    /** @deprecated use DEFAULT_MAX_BODY_CHARS */
+    @Deprecated
+    public static final int MAX_BODY_CHARS = DEFAULT_MAX_BODY_CHARS;
+    /** @deprecated use DEFAULT_REQUEST_TIMEOUT */
+    @Deprecated
+    public static final Duration REQUEST_TIMEOUT = DEFAULT_REQUEST_TIMEOUT;
 
     private static final Pattern PRIVATE_HOST_RE = Pattern.compile(
             "^(10\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.|192\\.168\\.|" +

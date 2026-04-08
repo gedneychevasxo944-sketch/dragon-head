@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
@@ -30,16 +31,16 @@ public class TaskDecomposer {
 
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final org.dragon.agent.llm.util.CharacterCaller characterCaller;
-    private final org.dragon.config.PromptManager promptManager;
+    private final ConfigApplication configApplication;
     private final Gson gson = new Gson();
 
     public TaskDecomposer(
             BuiltInCharacterFactory builtInCharacterFactory,
             org.dragon.agent.llm.util.CharacterCaller characterCaller,
-            org.dragon.config.PromptManager promptManager) {
+            ConfigApplication configApplication) {
         this.builtInCharacterFactory = builtInCharacterFactory;
         this.characterCaller = characterCaller;
-        this.promptManager = promptManager;
+        this.configApplication = configApplication;
     }
 
     /**
@@ -51,7 +52,7 @@ public class TaskDecomposer {
             var promptWriterCharacter = builtInCharacterFactory.getOrCreatePromptWriterCharacter(workspace.getId());
 
             // 获取 prompt 模板
-            String promptTemplate = promptManager.getGlobalPrompt(
+            String promptTemplate = configApplication.getGlobalPrompt(
                     org.dragon.config.PromptKeys.PROJECT_MANAGER_DECOMPOSE,
                     "请将以下任务拆解为可执行的子任务。");
 

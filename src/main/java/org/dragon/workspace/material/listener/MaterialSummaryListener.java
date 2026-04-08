@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.config.PromptKeys;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.workspace.material.Material;
 import org.dragon.workspace.material.MaterialSummaryEvent;
 import org.dragon.workspace.material.ParsedMaterialContent;
@@ -33,7 +33,7 @@ public class MaterialSummaryListener {
     private final BuiltInCharacterFactory builtInCharacterFactory;
     private final WorkspaceMaterialService workspaceMaterialService;
     private final CharacterCaller characterCaller;
-    private final PromptManager promptManager;
+    private final ConfigApplication promptManager;
 
     /**
      * 监听物料上传事件，异步生成摘要
@@ -79,7 +79,7 @@ public class MaterialSummaryListener {
                 return;
             }
 
-            // 获取摘要 prompt（使用 PromptManager 动态获取）
+            // 获取摘要 prompt（使用 ConfigApplication 动态获取）
             String prompt= promptManager.getPrompt(workspaceId, summaryChar.getId(), PromptKeys.MATERIAL_SUMMARY);
       
             // 调用 Character 生成摘要

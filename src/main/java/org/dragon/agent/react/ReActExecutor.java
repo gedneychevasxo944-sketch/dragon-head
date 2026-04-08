@@ -1,11 +1,8 @@
 package org.dragon.agent.react;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.dragon.agent.llm.LLMRequest;
@@ -13,13 +10,12 @@ import org.dragon.agent.llm.LLMResponse;
 import org.dragon.agent.llm.caller.LLMCaller;
 import org.dragon.character.Character;
 import org.dragon.config.PromptKeys;
-import org.dragon.config.PromptManager;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.task.Task;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.workspace.service.task.arrangement.dto.PromptWriterInput;
 import org.dragon.agent.llm.util.CharacterCaller;
-import org.dragon.skill.registry.SkillRuntimeEntry;
-import org.dragon.tools.AgentTool;
+import org.dragon.skill.runtime.SkillRegistry;
 import org.dragon.tools.ToolRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -43,7 +39,7 @@ public class ReActExecutor {
 
     private final LLMCaller llmCaller;
     private final Gson gson;
-    private final PromptManager promptManager;
+    private final ConfigApplication configApplication;
     private final ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider;
     private final ObjectProvider<CharacterCaller> characterCallerProvider;
     private final ThoughtPromptAssembler thoughtPromptAssembler;
@@ -51,18 +47,20 @@ public class ReActExecutor {
     private final ActionExecutor actionExecutor;
     private final ObservationEvaluator observationEvaluator;
     private final ToolRegistry toolRegistry;
+    private final SkillRegistry skillRegistry;
 
     public ReActExecutor(LLMCaller llmCaller,
-                         PromptManager promptManager,
+                         ConfigApplication configApplication,
                          ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider,
                          ObjectProvider<CharacterCaller> characterCallerProvider,
                          ThoughtPromptAssembler thoughtPromptAssembler,
                          ActionParser actionParser,
                          ActionExecutor actionExecutor,
                          ObservationEvaluator observationEvaluator,
-                         ToolRegistry toolRegistry) {
+                         ToolRegistry toolRegistry,
+                        SkillRegistry skillRegistry) {
         this.llmCaller = llmCaller;
-        this.promptManager = promptManager;
+        this.configApplication = configApplication;
         this.builtInCharacterFactoryProvider = builtInCharacterFactoryProvider;
         this.characterCallerProvider = characterCallerProvider;
         this.gson = new Gson();
@@ -71,6 +69,7 @@ public class ReActExecutor {
         this.actionExecutor = actionExecutor;
         this.observationEvaluator = observationEvaluator;
         this.toolRegistry = toolRegistry;
+        this.skillRegistry = skillRegistry;
     }
 
     /**
@@ -131,9 +130,6 @@ public class ReActExecutor {
         String modelId = resolveModelId(context);
         String prompt = buildThoughtPrompt(context);
 
-        // 根据激活 Skill 的 allowed-tools 过滤工具列表
-        List<Map<String, Object>> effectiveTools = resolveEffectiveTools(context);
-
         LLMRequest request = LLMRequest.builder()
                 .modelId(modelId)
                 .messages(java.util.Collections.singletonList(
@@ -143,7 +139,7 @@ public class ReActExecutor {
                                 .build()
                 ))
                 .systemPrompt(context.getSystemPrompt())
-                .tools(effectiveTools)
+                .tools(toolRegistry.toDefinitions())
                 .build();
 
         // 根据是否启用流式调用选择不同的方法
@@ -269,7 +265,7 @@ public class ReActExecutor {
      * 尝试通过 PromptWriter 动态装配 Prompt
      */
     private String tryBuildDynamicThoughtPrompt(ReActContext context) {
-        if (promptManager == null) {
+        if (configApplication == null) {
             return null;
         }
 
@@ -292,7 +288,7 @@ public class ReActExecutor {
             }
 
             // 获取模板
-            String template = promptManager.getPrompt(workspaceId, context.getCharacterId(), PromptKeys.REACT_EXECUTE);
+            String template = configApplication.getPrompt(workspaceId, context.getCharacterId(), PromptKeys.REACT_EXECUTE);
             if (template == null || template.isEmpty()) {
                 return null;
             }
@@ -386,54 +382,6 @@ public class ReActExecutor {
             return action.getModelId();
         }
         return resolveModelId(context);
-    }
-
-    /**
-     * 根据当前激活的 Skill 解析有效工具集合（并集原则）。
-     *
-     * <p>如果任一 Skill 未声明 allowed-tools，则放开全局权限（返回全量工具）。
-     * 否则取所有 Skill 的 allowed-tools 并集进行过滤。</p>
-     *
-     * @param context ReAct 上下文
-     * @return 过滤后的工具定义列表
-     */
-    private List<Map<String, Object>> resolveEffectiveTools(ReActContext context) {
-        List<SkillRuntimeEntry> activeSkills = context.getActiveSkills();
-        if (activeSkills == null || activeSkills.isEmpty()) {
-            // 无激活 Skill，返回全量工具定义
-            return toolRegistry.toDefinitions();
-        }
-
-        // 若任一 Skill 未声明 allowed-tools，则放开全局（并集退化为全集）
-        boolean hasUnlimitedSkill = activeSkills.stream()
-                .anyMatch(s -> {
-                    var allowed = s.getSkillEntry().getMetadata().getAllowedTools();
-                    return allowed == null || allowed.isEmpty();
-                });
-        if (hasUnlimitedSkill) {
-            return toolRegistry.toDefinitions();
-        }
-
-        // 取所有 Skill 的 allowed-tools 并集
-        Set<String> allowedToolNames = new HashSet<>();
-        for (SkillRuntimeEntry skill : activeSkills) {
-            List<String> allowed = skill.getSkillEntry().getMetadata().getAllowedTools();
-            if (allowed != null) {
-                allowedToolNames.addAll(allowed);
-            }
-        }
-
-        // 过滤工具列表
-        return toolRegistry.listAll().stream()
-                .filter(t -> allowedToolNames.contains(t.getName()))
-                .map(t -> {
-                    Map<String, Object> def = new java.util.LinkedHashMap<>();
-                    def.put("name", t.getName());
-                    def.put("description", t.getDescription());
-                    def.put("input_schema", t.getParameterSchema());
-                    return def;
-                })
-                .collect(Collectors.toList());
     }
 
     /**

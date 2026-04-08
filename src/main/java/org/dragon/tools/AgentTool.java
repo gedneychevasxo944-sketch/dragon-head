@@ -121,5 +121,9 @@ public interface AgentTool {
         private String cwd;
         /** 项目配置 */
         private ConfigProperties config;
+        /** 当前执行的 Character ID（框架注入） */
+        private String characterId;
+        /** 当前所在的 Workspace ID（框架注入） */
+        private String workspaceId;
     }
 }

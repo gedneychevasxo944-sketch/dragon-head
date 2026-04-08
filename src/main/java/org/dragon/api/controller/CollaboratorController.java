@@ -4,8 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.dragon.api.dto.ApiResponse;
-import org.dragon.permission.service.CollaboratorService;
-import org.dragon.permission.dto.CollaboratorDTO;
+import org.dragon.asset.dto.AssetMemberDTO;
+import org.dragon.asset.dto.CollaboratorDTO;
+import org.dragon.asset.service.AssetMemberService;
+import org.dragon.asset.service.CollaboratorService;
 import org.dragon.permission.dto.InvitationDTO;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.user.security.UserPrincipal;
@@ -36,6 +38,7 @@ import java.util.Map;
 public class CollaboratorController {
 
     private final CollaboratorService collaboratorService;
+    private final AssetMemberService assetMemberService;
 
     /**
      * 获取我收到的邀请列表
@@ -45,8 +48,20 @@ public class CollaboratorController {
     @GetMapping("/invitations")
     public ApiResponse<List<InvitationDTO>> getMyInvitations(
             @AuthenticationPrincipal UserPrincipal principal) {
-        List<InvitationDTO> invitations = collaboratorService.getPendingInvitations(principal.getUserId());
+        List<InvitationDTO> invitations = assetMemberService.getPendingInvitations(principal.getUserId());
         return ApiResponse.success(invitations);
+    }
+
+    /**
+     * 获取我的资产列表
+     * GET /api/v1/collaborators/my-assets
+     */
+    @Operation(summary = "获取我的资产列表")
+    @GetMapping("/my-assets")
+    public ApiResponse<List<AssetMemberDTO>> getMyAssets(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        List<AssetMemberDTO> assets = assetMemberService.getMyAssets(principal.getUserId());
+        return ApiResponse.success(assets);
     }
 
     /**
@@ -63,7 +78,7 @@ public class CollaboratorController {
         if (parts.length != 3) {
             return ApiResponse.error(400, "无效的邀请ID格式");
         }
-        collaboratorService.acceptInvitation(principal.getUserId(),
+        assetMemberService.acceptInvitation(principal.getUserId(),
                 ResourceType.valueOf(parts[0]), parts[1] + "_" + parts[2]);
         return ApiResponse.success(Map.of("success", true, "message", "邀请已接受"));
     }
@@ -82,7 +97,7 @@ public class CollaboratorController {
         if (parts.length != 3) {
             return ApiResponse.error(400, "无效的邀请ID格式");
         }
-        collaboratorService.rejectInvitation(principal.getUserId(),
+        assetMemberService.rejectInvitation(principal.getUserId(),
                 ResourceType.valueOf(parts[0]), parts[1] + "_" + parts[2]);
         return ApiResponse.success(Map.of("success", true, "message", "邀请已拒绝"));
     }
@@ -97,7 +112,7 @@ public class CollaboratorController {
             @PathVariable String type,
             @PathVariable String id) {
         ResourceType resourceType = ResourceType.valueOf(type.toUpperCase());
-        List<CollaboratorDTO> collaborators = collaboratorService.getCollaborators(resourceType, id);
+        List<CollaboratorDTO> collaborators = assetMemberService.getCollaborators(resourceType, id);
         return ApiResponse.success(collaborators);
     }
 

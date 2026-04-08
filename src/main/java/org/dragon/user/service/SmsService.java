@@ -1,5 +1,7 @@
 package org.dragon.user.service;
 
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.store.StoreFactory;
 import org.dragon.user.dto.LoginResponse;
 import org.dragon.user.dto.SmsSendRequest;
@@ -12,7 +14,7 @@ import org.dragon.user.security.service.JwtService;
 import org.dragon.user.store.SmsCodeStore;
 import org.dragon.user.store.TokenStore;
 import org.dragon.user.store.UserStore;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,25 +28,31 @@ import java.util.UUID;
 @Service
 public class SmsService {
 
-    private static final int CODE_VALIDITY_MINUTES = 5;
-    private static final int CODE_SEND_COOLDOWN_SECONDS = 60;
+    private static final int DEFAULT_CODE_VALIDITY_MINUTES = 5;
+    private static final int DEFAULT_CODE_SEND_COOLDOWN_SECONDS = 60;
+    /** @deprecated use DEFAULT_CODE_VALIDITY_MINUTES */
+    @Deprecated
+    public static final int CODE_VALIDITY_MINUTES = DEFAULT_CODE_VALIDITY_MINUTES;
+    /** @deprecated use DEFAULT_CODE_SEND_COOLDOWN_SECONDS */
+    @Deprecated
+    public static final int CODE_SEND_COOLDOWN_SECONDS = DEFAULT_CODE_SEND_COOLDOWN_SECONDS;
 
     private final SmsCodeStore smsCodeStore;
     private final UserStore userStore;
     private final TokenStore tokenStore;
     private final JwtService jwtService;
 
-    @Value("${sms.aliyun.access-key:}")
     private String aliyunAccessKey;
-
-    @Value("${sms.aliyun.access-secret:}")
     private String aliyunAccessSecret;
 
-    public SmsService(StoreFactory storeFactory, JwtService jwtService) {
+    public SmsService(StoreFactory storeFactory, JwtService jwtService, ConfigApplication configApplication) {
         this.smsCodeStore = storeFactory.get(SmsCodeStore.class);
         this.userStore = storeFactory.get(UserStore.class);
         this.tokenStore = storeFactory.get(TokenStore.class);
         this.jwtService = jwtService;
+        InheritanceContext ctx = InheritanceContext.forGlobal();
+        this.aliyunAccessKey = configApplication.getStringValue("sms.aliyun.access-key", ctx, "");
+        this.aliyunAccessSecret = configApplication.getStringValue("sms.aliyun.access-secret", ctx, "");
     }
 
     /**

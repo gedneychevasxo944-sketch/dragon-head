@@ -26,7 +26,10 @@ import java.util.concurrent.CompletableFuture;
 public class WebSearchTool implements AgentTool {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Duration TIMEOUT = Duration.ofSeconds(15);
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(15);
+    /** @deprecated use DEFAULT_TIMEOUT */
+    @Deprecated
+    public static final Duration TIMEOUT = DEFAULT_TIMEOUT;
 
     @Override
     public String getName() {

@@ -136,7 +136,7 @@ class AgentToolTest {
         org.dragon.config.config.ConfigProperties config = new org.dragon.config.config.ConfigProperties();
 
         AgentTool.ToolContext context = new AgentTool.ToolContext(
-                params, "session-key", "/workspace", config);
+                params, "session-key", "/workspace", config, null, null);
 
         assertEquals("session-key", context.getSessionKey());
         assertEquals("/workspace", context.getCwd());

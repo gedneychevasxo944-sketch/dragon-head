@@ -6,6 +6,8 @@ import org.dragon.api.dto.PageResponse;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.observer.actionlog.ObserverActionLog;
 import org.dragon.observer.actionlog.ObserverActionLogService;
+import org.dragon.approval.service.ApprovalService;
+import org.dragon.skill.service.SkillLifecycleService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +34,8 @@ public class LogsApplication {
     private final ObserverActionLogService observerActionLogService;
     private final CharacterRegistry characterRegistry;
     private final WorkspaceLifecycleService workspaceLifecycleService;
+    private final ApprovalService approvalService;
+    private final SkillLifecycleService skillLifecycleService;
 
     // ==================== 事件日志（Event）====================
 
@@ -156,7 +160,8 @@ public class LogsApplication {
                 item.put("targetName", c.getName());
                 item.put("status", c.getStatus() != null && c.getStatus().name().equalsIgnoreCase("RUNNING")
                         ? "healthy" : "degraded");
-                item.put("lastCheckedAt", c.getUpdatedAt() != null ? c.getUpdatedAt().toString() : "");
+                item.put("lastCheckAt", c.getUpdatedAt() != null ? c.getUpdatedAt().toString() : "");
+                item.put("errorCount", 0);
                 items.add(item);
             });
         }
@@ -171,7 +176,8 @@ public class LogsApplication {
                 item.put("targetName", w.getName());
                 item.put("status", w.getStatus() != null && w.getStatus().name().equalsIgnoreCase("ACTIVE")
                         ? "healthy" : "degraded");
-                item.put("lastCheckedAt", w.getUpdatedAt() != null ? w.getUpdatedAt().toString() : "");
+                item.put("lastCheckAt", w.getUpdatedAt() != null ? w.getUpdatedAt().toString() : "");
+                item.put("errorCount", 0);
                 items.add(item);
             });
         }
@@ -186,8 +192,11 @@ public class LogsApplication {
                 })
                 .collect(Collectors.toList());
 
+        // 返回 Map 格式，key 为 id，value 为健康状态对象（前端期望的格式）
         Map<String, Object> result = new HashMap<>();
-        result.put("list", filtered);
+        for (Map<String, Object> item : filtered) {
+            result.put((String) item.get("id"), item);
+        }
         result.put("stats", buildHealthStats());
         return result;
     }
@@ -254,23 +263,31 @@ public class LogsApplication {
         event.put("id", log.getId());
         event.put("targetType", log.getTargetType() != null ? log.getTargetType().toLowerCase() : "");
         event.put("targetId", log.getTargetId());
+        event.put("targetName", log.getTargetId()); // 使用 targetId 作为名称占位
         event.put("eventType", log.getActionType() != null ? log.getActionType().name().toLowerCase() : "");
+        event.put("sourceModule", "Observer");
         event.put("operator", log.getOperator() != null ? log.getOperator() : "system");
-        event.put("details", log.getDetails());
+        event.put("operatorName", log.getOperator() != null ? log.getOperator() : "系统");
         event.put("severity", "info");
-        event.put("timestamp", log.getCreatedAt() != null ? log.getCreatedAt().toString() : "");
+        event.put("message", log.getActionType() != null ? log.getActionType().name() : "");
+        event.put("details", log.getDetails());
+        event.put("traceId", log.getId());
+        event.put("correlationId", log.getId());
+        event.put("createdAt", log.getCreatedAt() != null ? log.getCreatedAt().toString() : "");
         return event;
     }
 
     private Map<String, Object> toAuditMap(ObserverActionLog log) {
         Map<String, Object> audit = new HashMap<>();
         audit.put("id", log.getId());
+        audit.put("operator", log.getOperator() != null ? log.getOperator() : "system");
+        audit.put("operatorName", log.getOperator() != null ? log.getOperator() : "系统");
+        audit.put("action", log.getActionType() != null ? log.getActionType().name() : "");
         audit.put("targetType", log.getTargetType() != null ? log.getTargetType().toLowerCase() : "");
         audit.put("targetId", log.getTargetId());
-        audit.put("action", log.getActionType() != null ? log.getActionType().name() : "");
-        audit.put("operator", log.getOperator() != null ? log.getOperator() : "system");
+        audit.put("targetName", log.getTargetId());
         audit.put("details", log.getDetails());
-        audit.put("timestamp", log.getCreatedAt() != null ? log.getCreatedAt().toString() : "");
+        audit.put("createdAt", log.getCreatedAt() != null ? log.getCreatedAt().toString() : "");
         return audit;
     }
 
@@ -280,15 +297,16 @@ public class LogsApplication {
                 .filter(c -> c.getStatus() != null && c.getStatus().name().equalsIgnoreCase("RUNNING"))
                 .count();
         long totalWorkspaces = workspaceLifecycleService.listWorkspaces().size();
+        long activeWorkspaces = workspaceLifecycleService.countActiveWorkspaces();
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalCharacters", totalCharacters);
         stats.put("activeCharacters", activeCharacters);
         stats.put("totalWorkspaces", totalWorkspaces);
-        stats.put("activeWorkspaces", 0);
+        stats.put("activeWorkspaces", activeWorkspaces);
         stats.put("failedSkills", 0);
         stats.put("memoryAnomalies", 0);
-        stats.put("pendingApprovals", 0);
+        stats.put("pendingApprovals", approvalService.countPendingApprovals());
         stats.put("recentFailedTasks", 0);
         stats.put("highPriorityExceptions", 0);
         return stats;

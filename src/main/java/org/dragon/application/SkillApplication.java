@@ -3,22 +3,26 @@ package org.dragon.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.PageResponse;
-import org.dragon.permission.enums.ResourceType;
-import org.dragon.permission.service.PermissionService;
-import org.dragon.skill.dto.SkillCreateRequest;
+import org.dragon.skill.actionlog.SkillActionLogService;
+import org.dragon.skill.actionlog.SkillActionLogVO;
+import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.asset.service.CollaboratorService;
+import org.dragon.skill.dto.SkillDetailVO;
+import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillQueryRequest;
-import org.dragon.skill.dto.SkillResponse;
-import org.dragon.skill.dto.SkillUpdateRequest;
+import org.dragon.skill.dto.SkillRegisterResult;
+import org.dragon.skill.dto.SkillSummaryVO;
 import org.dragon.skill.enums.SkillCategory;
 import org.dragon.skill.enums.SkillVisibility;
-import org.dragon.skill.service.SkillManageService;
+import org.dragon.skill.service.SkillLifecycleService;
+import org.dragon.skill.service.SkillQueryService;
+import org.dragon.skill.service.SkillRegisterService;
 import org.dragon.util.UserUtils;
+import org.dragon.util.bean.UserInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * SkillApplication Skill 模块应用服务
@@ -33,28 +37,45 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SkillApplication {
 
-    private final SkillManageService skillManageService;
-    private final PermissionService permissionService;
+    private final SkillRegisterService registerService;
+    private final SkillLifecycleService lifecycleService;
+    private final SkillQueryService queryService;
+    private final SkillActionLogService actionLogService;
+    private final CollaboratorService collaboratorService;
+    private final AssetPublishStatusService publishStatusService;
 
     // ==================== Skill CRUD ====================
 
     /**
-     * 分页获取技能列表。
-     *
-     * @param page          页码
-     * @param pageSize      每页数量
-     * @param search        搜索关键词
-     * @param visibility    可见性筛选
-     * @param assetState    资产状态筛选
-     * @param runtimeStatus 运行时状态筛选
-     * @param category      分类筛选
-     * @return 分页结果
+     * 创建技能。
      */
-    public PageResponse<SkillResponse> listSkills(int page, int pageSize, String search,
+    public SkillDetailVO create(MultipartFile file, SkillRegisterRequest request) {
+        UserInfo user = UserUtils.getUserInfo();
+        SkillRegisterResult result = registerService.register(file, request, user);
+        log.info("[SkillApplication] Created skill: skillId={}, version={}",
+                result.getSkillId(), result.getVersion());
+        return queryService.getDetail(result.getSkillId(), false);
+    }
+
+    /**
+     * 更新技能。
+     */
+    public SkillDetailVO update(String skillId, MultipartFile file, SkillRegisterRequest request) {
+        UserInfo user = UserUtils.getUserInfo();
+        SkillRegisterResult result = registerService.update(skillId, file, request, user);
+        log.info("[SkillApplication] Updated skill: skillId={}, version={}",
+                result.getSkillId(), result.getVersion());
+        return queryService.getDetail(result.getSkillId(), false);
+    }
+
+    /**
+     * 分页获取技能列表。
+     */
+    public PageResponse<SkillSummaryVO> listSkills(int page, int pageSize, String search,
                                                   String visibility, String assetState,
                                                   String runtimeStatus, String category) {
         SkillQueryRequest request = new SkillQueryRequest();
-        request.setName(search);
+        request.setKeyword(search);
         // 转换 String 到枚举类型
         if (category != null && !category.isBlank()) {
             try {
@@ -70,119 +91,92 @@ public class SkillApplication {
                 // 忽略无效的 visibility 值
             }
         }
+        // assetState 和 runtimeStatus 目前映射为 status 筛选
+        if (runtimeStatus != null && !runtimeStatus.isBlank()) {
+            try {
+                request.setStatus(org.dragon.skill.enums.SkillStatus.valueOf(runtimeStatus.toUpperCase()));
+            } catch (IllegalArgumentException ignored) {
+                // 忽略无效的状态值
+            }
+        }
 
-        List<SkillResponse> all = skillManageService.listSkills(request);
-
-        // 按用户可见性过滤
-        Long userId = Long.parseLong(UserUtils.getUserId());
-        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.SKILL, userId);
-
-        List<SkillResponse> filtered = all.stream()
-                .filter(skill -> {
-                    if (visibleIds != null && !visibleIds.isEmpty()) {
-                        String skillId = String.valueOf(skill.getId());
-                        if (!visibleIds.contains(skillId)) return false;
-                    }
-                    return true;
-                })
-                .collect(Collectors.toList());
-
-        long total = filtered.size();
-        int fromIndex = Math.max(0, (page - 1) * pageSize);
-        int toIndex = Math.min(fromIndex + pageSize, filtered.size());
-        List<SkillResponse> pageData = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return PageResponse.of(pageData, total, page, pageSize);
-    }
-
-    /**
-     * 创建技能。
-     *
-     * @param file    技能 ZIP 包
-     * @param request 技能创建请求
-     * @return 创建后的技能
-     */
-    public SkillResponse createSkill(MultipartFile file, SkillCreateRequest request) {
-        SkillResponse response = skillManageService.createSkill(file, request);
-        log.info("[SkillApplication] Created skill: {}", response.getId());
-        return response;
+        var result = queryService.pageSearch(request);
+        return PageResponse.of(result.getItems(), result.getTotal(), result.getPage(), result.getPageSize());
     }
 
     /**
      * 获取技能详情。
-     *
-     * @param skillId 技能 ID
-     * @return 技能
      */
-    public SkillResponse getSkill(Long skillId) {
-        return skillManageService.getSkill(skillId);
-    }
-
-    /**
-     * 更新技能。
-     *
-     * @param skillId 技能 ID
-     * @param file    新的 ZIP 包（可选）
-     * @param request 更新请求
-     * @return 更新后的技能
-     */
-    public SkillResponse updateSkill(Long skillId, MultipartFile file, SkillUpdateRequest request) {
-        SkillResponse response = skillManageService.updateSkill(skillId, file, request);
-        log.info("[SkillApplication] Updated skill: {}", skillId);
-        return response;
+    public SkillDetailVO getSkill(String skillId) {
+        return queryService.getDetail(skillId, true);
     }
 
     /**
      * 删除技能。
-     *
-     * @param skillId 技能 ID
      */
-    public void deleteSkill(Long skillId) {
-        skillManageService.deleteSkill(skillId);
+    public void deleteSkill(String skillId) {
+        UserInfo user = UserUtils.getUserInfo();
+        lifecycleService.delete(skillId, user);
         log.info("[SkillApplication] Deleted skill: {}", skillId);
     }
 
     /**
      * 发布技能版本。
-     *
-     * @param skillId   技能 ID
-     * @param version   版本号
-     * @param changelog 变更日志
-     * @return 发布后的技能
      */
-    public SkillResponse publishSkill(Long skillId, String version, String changelog) {
-        // 目前 SkillManageService 中没有单独的 publish 接口，通过 enable 模拟发布状态
-        skillManageService.enableSkill(skillId);
+    public SkillDetailVO publishSkill(String skillId, String version, String changelog) {
+        UserInfo user = UserUtils.getUserInfo();
+        lifecycleService.publish(skillId, user);
         log.info("[SkillApplication] Published skill: {} version: {}", skillId, version);
-        return skillManageService.getSkill(skillId);
+        return queryService.getDetail(skillId, false);
     }
 
     /**
      * 禁用技能。
-     *
-     * @param skillId 技能 ID
      */
-    public void disableSkill(Long skillId) {
-        skillManageService.disableSkill(skillId);
+    public void disableSkill(String skillId) {
+        UserInfo user = UserUtils.getUserInfo();
+        lifecycleService.disable(skillId, user);
     }
 
     /**
      * 启用技能。
-     *
-     * @param skillId 技能 ID
      */
-    public void enableSkill(Long skillId) {
-        skillManageService.enableSkill(skillId);
+    public void enableSkill(String skillId) {
+        UserInfo user = UserUtils.getUserInfo();
+        lifecycleService.republish(skillId, user);
     }
 
     /**
-     * 保存技能草稿（占位）。
-     *
-     * @param skillId 技能 ID
-     * @param content 草稿内容
-     * @return 保存后的技能
+     * 获取技能版本列表。
      */
-    public SkillResponse saveDraft(Long skillId, Map<String, Object> content) {
-        log.info("[SkillApplication] Save draft for skill: {}", skillId);
-        return skillManageService.getSkill(skillId);
+    public List<SkillDetailVO> listVersions(String skillId) {
+        return queryService.listVersions(skillId);
+    }
+
+    /**
+     * 保存技能草稿。
+     * 更新最新版本的内容和元数据，保持 DRAFT 状态。
+     *
+     * @param skillId 技能 UUID
+     * @param request 草稿内容
+     * @return 注册结果
+     */
+    public SkillRegisterResult saveDraft(String skillId, SkillRegisterRequest request) {
+        SkillRegisterResult result = registerService.saveDraft(skillId, request);
+        log.info("[SkillApplication] Saved draft for skill: {}", skillId);
+        return result;
+    }
+
+    /**
+     * 获取技能活动日志（分页）。
+     *
+     * @param skillId 技能 UUID
+     * @param page    页码（从 1 开始）
+     * @param size    每页条数
+     * @return 分页结果
+     */
+    public PageResponse<SkillActionLogVO> getActivityLogs(String skillId, int page, int size) {
+        var result = actionLogService.pageBySkill(skillId, page, size);
+        return PageResponse.of(result.getItems(), result.getTotal(), result.getPage(), result.getPageSize());
     }
 }

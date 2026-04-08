@@ -21,7 +21,7 @@ public class SuggestionRequest {
 
     /**
      * 用户透传的 prompt（可选）
-     * 如果为空，使用 PromptManager 中的默认配置
+     * 如果为空，使用 ConfigApplication 中的默认配置
      */
     private String userPrompt;
 

@@ -1,146 +1,139 @@
 package org.dragon.config.store;
 
+import org.dragon.config.enums.ConfigLevel;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * 内存配置存储实现
- * 使用 ConcurrentHashMap 存储，支持命名空间和 workspace 维度配置
  *
- * <p>存储结构：使用组合键 "workspace|entityType|entityId|key" 作为单层 Map 的 key
+ * <p>使用 ConcurrentHashMap 存储，适配扁平化 ConfigEntity 结构
+ * <p>存储结构：compositeKey -> value
  */
 @Slf4j
 @StoreTypeAnn(StoreType.MEMORY)
 public class MemoryConfigStore implements ConfigStore {
 
-    /**
-     * 存储结构: compositeKey -> value
-     * compositeKey 格式: "workspace|entityType|entityId|key"
-     * 空值用空字符串表示
-     */
     private final ConcurrentMap<String, Object> store = new ConcurrentHashMap<>();
 
     @Override
-    public void set(ConfigKey configKey, Object value) {
-        if (configKey == null || configKey.getKey() == null) {
-            throw new IllegalArgumentException("configKey and key cannot be null");
-        }
-        String compositeKey = buildKey(configKey);
+    public void set(ConfigLevel level, String workspaceId, String characterId,
+                    String toolId, String skillId, String memoryId,
+                    String configKey, Object value) {
+        String compositeKey = buildCompositeKey(level, workspaceId, characterId,
+                toolId, skillId, memoryId, configKey);
         store.put(compositeKey, value);
-        log.debug("Config set: {} = {}", configKey, value);
+        log.debug("[MemoryConfigStore] Set: {} = {}", compositeKey, value);
     }
 
     @Override
-    public Optional<Object> get(ConfigKey configKey) {
-        if (configKey == null || configKey.getKey() == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(store.get(buildKey(configKey)));
+    public Optional<Object> get(ConfigLevel level, String workspaceId, String characterId,
+                                 String toolId, String skillId, String memoryId,
+                                 String configKey) {
+        String compositeKey = buildCompositeKey(level, workspaceId, characterId,
+                toolId, skillId, memoryId, configKey);
+        return Optional.ofNullable(store.get(compositeKey));
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <T> T get(ConfigKey configKey, T defaultValue) {
-        return (T) get(configKey).orElse(defaultValue);
+    public Optional<Object> get(ConfigLevel level, String workspaceId, String configKey) {
+        return get(level, workspaceId, null, null, null, null, configKey);
     }
 
     @Override
-    public void delete(ConfigKey configKey) {
-        if (configKey == null || configKey.getKey() == null) {
-            return;
-        }
-        store.remove(buildKey(configKey));
-        log.debug("Config deleted: {}", configKey);
+    public Optional<Object> get(ConfigLevel level, String workspaceId, String characterId, String configKey) {
+        return get(level, workspaceId, characterId, null, null, null, configKey);
     }
 
     @Override
-    public boolean exists(ConfigKey configKey) {
-        if (configKey == null || configKey.getKey() == null) {
-            return false;
-        }
-        return store.containsKey(buildKey(configKey));
-    }
-
-    @Override
-    public Map<String, Object> getAll(ConfigKey configKey) {
-        if (configKey == null) {
-            return Collections.emptyMap();
-        }
-
-        String prefix = buildPrefix(configKey);
-        Map<String, Object> result = new HashMap<>();
-
-        store.forEach((key, value) -> {
-            if (key.startsWith(prefix)) {
-                String suffix = key.substring(prefix.length());
-                // 提取最后一个部分作为配置键
-                String[] parts = suffix.split("\\|", 2);
-                if (parts.length > 1) {
-                    result.put(parts[1], value);
-                }
-            }
-        });
-
-        return result;
-    }
-
-    @Override
-    public void deleteAll(ConfigKey configKey) {
-        if (configKey == null) {
-            return;
-        }
-
-        String prefix = buildPrefix(configKey);
-        List<String> keysToRemove = new ArrayList<>();
-
-        store.forEach((key, value) -> {
-            if (key.startsWith(prefix)) {
-                keysToRemove.add(key);
-            }
-        });
-
-        keysToRemove.forEach(store::remove);
-        log.debug("Config deleted all with prefix: {}", prefix);
+    public void delete(ConfigLevel level, String workspaceId, String characterId,
+                       String toolId, String skillId, String memoryId, String configKey) {
+        String compositeKey = buildCompositeKey(level, workspaceId, characterId,
+                toolId, skillId, memoryId, configKey);
+        store.remove(compositeKey);
     }
 
     @Override
     public void clear() {
         store.clear();
-        log.info("All config cleared");
+        log.info("[MemoryConfigStore] All config cleared");
     }
 
-    // ==================== 私有辅助方法 ====================
+    @Override
+    public List<ConfigStoreItem> listAll() {
+        List<ConfigStoreItem> items = new ArrayList<>();
+        store.forEach((key, value) -> {
+            ConfigStoreItem item = parseCompositeKey(key, value);
+            if (item != null) {
+                items.add(item);
+            }
+        });
+        return items;
+    }
+
+    @Override
+    public List<ConfigStoreItem> listByLevel(ConfigLevel level) {
+        List<ConfigStoreItem> items = new ArrayList<>();
+        store.forEach((key, value) -> {
+            ConfigStoreItem item = parseCompositeKey(key, value);
+            if (item != null && item.level() == level) {
+                items.add(item);
+            }
+        });
+        return items;
+    }
 
     /**
      * 构建组合键
-     * 格式: workspace|entityType|entityId|key
-     * 空值用空字符串表示
+     * 格式：{scopeBit}:{workspaceId}:{characterId}:{toolId}:{skillId}:{memoryId}:{configKey}
      */
-    private String buildKey(ConfigKey configKey) {
-        String workspace = configKey.getWorkspace() != null ? configKey.getWorkspace() : "";
-        String entityType = configKey.getEntityType() != null ? configKey.getEntityType() : "";
-        String entityId = configKey.getEntityId() != null ? configKey.getEntityId() : "";
-        String key = configKey.getKey() != null ? configKey.getKey() : "";
-        return workspace + "|" + entityType + "|" + entityId + "|" + key;
+    private String buildCompositeKey(ConfigLevel level, String workspaceId, String characterId,
+                                     String toolId, String skillId, String memoryId, String configKey) {
+        return String.format("%d:%s:%s:%s:%s:%s:%s",
+                level.getScopeBit(),
+                workspaceId != null ? workspaceId : "",
+                characterId != null ? characterId : "",
+                toolId != null ? toolId : "",
+                skillId != null ? skillId : "",
+                memoryId != null ? memoryId : "",
+                configKey);
     }
 
     /**
-     * 构建前缀（用于批量查询和删除）
+     * 解析组合键
      */
-    private String buildPrefix(ConfigKey configKey) {
-        String workspace = configKey.getWorkspace() != null ? configKey.getWorkspace() : "";
-        String entityType = configKey.getEntityType() != null ? configKey.getEntityType() : "";
-        String entityId = configKey.getEntityId() != null ? configKey.getEntityId() : "";
-        return workspace + "|" + entityType + "|" + entityId + "|";
+    private ConfigStoreItem parseCompositeKey(String key, Object value) {
+        String[] parts = key.split(":", 7);
+        if (parts.length < 7) {
+            return null;
+        }
+        int scopeBit = Integer.parseInt(parts[0]);
+        ConfigLevel level = ConfigLevel.fromScopeBit(scopeBit);
+        if (level == null) {
+            return null;
+        }
+        return new ConfigStoreItem(
+                level,
+                parts[1].isEmpty() ? null : parts[1],
+                parts[2].isEmpty() ? null : parts[2],
+                parts[3].isEmpty() ? null : parts[3],
+                parts[4].isEmpty() ? null : parts[4],
+                parts[5].isEmpty() ? null : parts[5],
+                parts[6],
+                value
+        );
+    }
+
+    @Override
+    public ConfigMetadata getMetadata(String configKey) {
+        // MemoryStore 不存储元数据，返回 null
+        return null;
     }
 }

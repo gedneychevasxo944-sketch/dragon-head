@@ -7,7 +7,8 @@ import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.permission.enums.ResourceType;
-import org.dragon.permission.service.CollaboratorService;
+import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.asset.service.AssetMemberService;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.util.UserUtils;
 import org.dragon.workspace.WorkspaceApplicationProvider;
@@ -35,7 +36,8 @@ public class StudioApplication {
     private final CharacterRegistry characterRegistry;
     private final WorkspaceApplicationProvider workspaceApplicationProvider;
     private final PermissionService permissionService;
-    private final CollaboratorService collaboratorService;
+    private final AssetMemberService assetMemberService;
+    private final AssetPublishStatusService publishStatusService;
 
     // ==================== Character CRUD ====================
 
@@ -102,7 +104,10 @@ public class StudioApplication {
 
         // 添加创建者为 Owner
         Long userId = Long.parseLong(UserUtils.getUserId());
-        collaboratorService.addOwnerDirectly(ResourceType.CHARACTER, character.getId(), userId);
+        assetMemberService.addOwnerDirectly(ResourceType.CHARACTER, character.getId(), userId);
+
+        // 初始化发布状态（默认为 DRAFT）
+        publishStatusService.initializeStatus(ResourceType.CHARACTER, character.getId(), String.valueOf(userId));
 
         log.info("[StudioApplication] Created character: {}", character.getId());
         return characterRegistry.get(character.getId()).orElse(character);
@@ -139,6 +144,8 @@ public class StudioApplication {
      */
     public void deleteCharacter(String characterId) {
         characterRegistry.unregister(characterId);
+        // 删除发布状态
+        publishStatusService.deleteStatus(ResourceType.CHARACTER, characterId);
         log.info("[StudioApplication] Deleted character: {}", characterId);
     }
 

@@ -19,10 +19,11 @@ import org.dragon.channel.entity.ChannelConfig;
 import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.channel.enums.ActionType;
 import org.dragon.channel.parser.FeishuParser;
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.gateway.Gateway;
 import org.dragon.util.GsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -48,17 +49,12 @@ import java.util.concurrent.CompletableFuture;
 @Component
 @Slf4j
 public class FeishuChannelAdaptor implements ChannelAdapter {
-    // ===== 默认凭证（来自 application.yml，向后兼容）=====
-    @Value("${channel.feishu.appId:}")
-    private String defaultAppId;
-    @Value("${channel.feishu.appSecret:}")
-    private String defaultAppSecret;
-    @Value("${channel.feishu.whitelist:}")
-    private List<String> defaultWhitelist;
-    @Value("${channel.feishu.wakeWord:}")
-    private String defaultWakeWord;
-    @Value("${channel.feishu.robotOpenId:}")
-    private String defaultRobotOpenId;
+    // ===== 默认凭证（来自 ConfigStore，向后兼容）=====
+    private final String defaultAppId;
+    private final String defaultAppSecret;
+    private final List<String> defaultWhitelist;
+    private final String defaultWakeWord;
+    private final String defaultRobotOpenId;
 
     // ===== 运行时凭证（后台管理界面动态注入，优先于默认值）=====
     private String runtimeAppId;
@@ -73,6 +69,35 @@ public class FeishuChannelAdaptor implements ChannelAdapter {
 
     @Autowired
     private FeishuParser feishuParser;
+
+    @Autowired
+    public FeishuChannelAdaptor(ConfigApplication configApplication) {
+        this.defaultAppId = configApplication.getStringValue(
+                "channel.feishu.appId",
+                InheritanceContext.forGlobal(),
+                ""
+        );
+        this.defaultAppSecret = configApplication.getStringValue(
+                "channel.feishu.appSecret",
+                InheritanceContext.forGlobal(),
+                ""
+        );
+        this.defaultWhitelist = configApplication.getListValue(
+                "channel.feishu.whitelist",
+                InheritanceContext.forGlobal(),
+                Collections.emptyList()
+        );
+        this.defaultWakeWord = configApplication.getStringValue(
+                "channel.feishu.wakeWord",
+                InheritanceContext.forGlobal(),
+                ""
+        );
+        this.defaultRobotOpenId = configApplication.getStringValue(
+                "channel.feishu.robotOpenId",
+                InheritanceContext.forGlobal(),
+                ""
+        );
+    }
 
     // ==================== ChannelAdapter 接口实现 ====================
 

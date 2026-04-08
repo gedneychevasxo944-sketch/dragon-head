@@ -7,7 +7,8 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.dragon.permission.enums.ResourceType;
-import org.dragon.permission.service.CollaboratorService;
+import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.asset.service.AssetMemberService;
 import org.dragon.util.UserUtils;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
@@ -29,7 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkspaceLifecycleService {
 
     private final WorkspaceRegistry workspaceRegistry;
-    private final CollaboratorService collaboratorService;
+    private final AssetMemberService assetMemberService;
+    private final AssetPublishStatusService publishStatusService;
 
     /**
      * 创建工作空间
@@ -55,7 +57,10 @@ public class WorkspaceLifecycleService {
 
         // 添加创建者为 Owner
         Long ownerId = Long.parseLong(String.valueOf(workspace.getOwner()));
-        collaboratorService.addOwnerDirectly(ResourceType.WORKSPACE, workspace.getId(), ownerId);
+        assetMemberService.addOwnerDirectly(ResourceType.WORKSPACE, workspace.getId(), ownerId);
+
+        // 初始化发布状态（默认为 DRAFT）
+        publishStatusService.initializeStatus(ResourceType.WORKSPACE, workspace.getId(), String.valueOf(ownerId));
 
         log.info("[WorkspaceLifecycleService] Created workspace: {}", workspace.getId());
 
@@ -108,6 +113,8 @@ public class WorkspaceLifecycleService {
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         workspaceRegistry.unregister(workspaceId);
+        // 删除发布状态
+        publishStatusService.deleteStatus(ResourceType.WORKSPACE, workspaceId);
         log.info("[WorkspaceLifecycleService] Deleted workspace: {}", workspaceId);
     }
 
@@ -168,5 +175,14 @@ public class WorkspaceLifecycleService {
     public void archiveWorkspace(String workspaceId) {
         workspaceRegistry.archive(workspaceId);
         log.info("[WorkspaceLifecycleService] Archived workspace: {}", workspaceId);
+    }
+
+    /**
+     * 获取活跃工作空间数量
+     *
+     * @return 活跃工作空间数量
+     */
+    public long countActiveWorkspaces() {
+        return workspaceRegistry.listByStatus(Workspace.Status.ACTIVE).size();
     }
 }

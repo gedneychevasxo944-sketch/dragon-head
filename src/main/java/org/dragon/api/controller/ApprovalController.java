@@ -4,8 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.dragon.api.dto.ApiResponse;
-import org.dragon.permission.service.ApprovalService;
-import org.dragon.permission.dto.ApprovalRequestDTO;
+import org.dragon.approval.service.ApprovalService;
+import org.dragon.approval.dto.ApprovalRequestDTO;
+import org.dragon.approval.enums.ApprovalType;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.user.security.UserPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -104,6 +105,25 @@ public class ApprovalController {
     }
 
     /**
+     * 创建发布审批申请
+     * POST /api/v1/approvals/publish
+     */
+    @Operation(summary = "创建发布审批申请")
+    @PostMapping("/publish")
+    public ApiResponse<Map<String, Object>> createPublishRequest(
+            @RequestBody CreatePublishRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        String requestId = approvalService.createApprovalRequest(
+                request.getResourceType(),
+                request.getResourceId(),
+                ApprovalType.PUBLISH,
+                principal.getUserId(),
+                null,
+                request.getReason());
+        return ApiResponse.success(Map.of("requestId", requestId, "success", true, "message", "发布申请已提交"));
+    }
+
+    /**
      * 审批请求
      */
     public static class ApprovalRequest {
@@ -115,6 +135,39 @@ public class ApprovalController {
 
         public void setComment(String comment) {
             this.comment = comment;
+        }
+    }
+
+    /**
+     * 创建发布申请请求
+     */
+    public static class CreatePublishRequest {
+        private ResourceType resourceType;
+        private String resourceId;
+        private String reason;
+
+        public ResourceType getResourceType() {
+            return resourceType;
+        }
+
+        public void setResourceType(ResourceType resourceType) {
+            this.resourceType = resourceType;
+        }
+
+        public String getResourceId() {
+            return resourceId;
+        }
+
+        public void setResourceId(String resourceId) {
+            this.resourceId = resourceId;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public void setReason(String reason) {
+            this.reason = reason;
         }
     }
 }

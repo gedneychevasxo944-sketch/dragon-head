@@ -1,7 +1,6 @@
 package org.dragon.character.mind;
 
 import org.dragon.character.mind.memory.MemoryAccess;
-import org.dragon.skill.SkillAccess;
 import org.dragon.character.mind.tag.Tag;
 import org.dragon.character.mind.tag.TagRepository;
 
@@ -58,13 +57,6 @@ public interface Mind {
      * @return MemoryAccess
      */
     MemoryAccess getMemoryAccess();
-
-    /**
-     * 获取技能访问接口
-     *
-     * @return SkillAccess
-     */
-    SkillAccess getSkillAccess();
 
     /**
      * 通过 LLM 分析suggestion并增强 personality

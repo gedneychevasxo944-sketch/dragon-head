@@ -53,7 +53,8 @@ public class ToolController {
             @RequestParam(required = false) String toolType,
             @RequestParam(required = false) String runtimeStatus,
             @RequestParam(required = false) String category) {
-        PageResponse<Map<String, Object>> result = toolApplication.listTools(page, pageSize, search);
+        PageResponse<Map<String, Object>> result = toolApplication.listTools(
+                page, pageSize, search, visibility, toolType, runtimeStatus, category);
         return ApiResponse.success(result);
     }
 
@@ -64,8 +65,12 @@ public class ToolController {
     @Operation(summary = "创建工具")
     @PostMapping
     public ApiResponse<Map<String, Object>> createTool(@RequestBody Map<String, Object> toolData) {
-        // 占位：当前工具系统为运行时注册，不支持持久化创建
-        return ApiResponse.error(501, "Tool creation via API not yet implemented. Tools are registered at runtime.");
+        // 获取工具名称进行权限检查
+        Map<String, Object> result = toolApplication.createTool(toolData);
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ApiResponse.success(result);
+        }
+        return ApiResponse.error(500, (String) result.get("error"));
     }
 
     /**
@@ -91,7 +96,11 @@ public class ToolController {
             @PathVariable String id,
             @RequestBody Map<String, Object> toolData) {
         permissionChecker.checkEdit("TOOL", id);
-        return ApiResponse.error(501, "Tool update via API not yet implemented.");
+        Map<String, Object> result = toolApplication.updateTool(id, toolData);
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ApiResponse.success(result);
+        }
+        return ApiResponse.error(500, (String) result.get("error"));
     }
 
     /**
@@ -115,6 +124,10 @@ public class ToolController {
     @DeleteMapping("/{id}")
     public ApiResponse<Map<String, Object>> deleteTool(@PathVariable String id) {
         permissionChecker.checkDelete("TOOL", id);
-        return ApiResponse.error(501, "Tool deletion via API not yet implemented.");
+        Map<String, Object> result = toolApplication.deleteTool(id);
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ApiResponse.success(result);
+        }
+        return ApiResponse.error(500, (String) result.get("error"));
     }
 }

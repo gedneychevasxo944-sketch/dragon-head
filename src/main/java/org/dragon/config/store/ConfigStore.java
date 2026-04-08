@@ -1,96 +1,121 @@
 package org.dragon.config.store;
 
+import org.dragon.config.enums.ConfigLevel;
 import org.dragon.store.Store;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 
 /**
  * 配置存储抽象接口
- * 提供通用的 KV 配置存储能力，支持命名空间和 workspace 维度隔离
  *
- * <p>使用 ConfigKey 统一配置键，支持多种粒度：
- * <pre>
- * // 全局配置
- * configStore.set(ConfigKey.of("app.name"), "DragonHead");
- *
- * // 命名空间配置
- * configStore.set(ConfigKey.of("character", "maxMemory"), 1000);
- *
- * // Character 粒度配置
- * configStore.set(ConfigKey.character("char-1", "feishu.appId"), "xxx");
- *
- * // 完整维度配置
- * configStore.set(ConfigKey.of("default", "character", "char-1", "feishu.appId"), "xxx");
- * </pre>
+ * <p>扁平化存储结构：
+ * <ul>
+ *   <li>id = {scopeBit}:{workspaceId}:{characterId}:{toolId}:{skillId}:{memoryId}:{configKey}</li>
+ *   <li>通过 ConfigLevel 标识粒度</li>
+ * </ul>
  */
 public interface ConfigStore extends Store {
 
     /**
-     * 存储配置值
+     * 保存配置
      *
+     * @param level 粒度
+     * @param workspaceId Workspace ID
+     * @param characterId Character ID
+     * @param toolId Tool ID
+     * @param skillId Skill ID
+     * @param memoryId Memory ID
      * @param configKey 配置键
-     * @param value     值（支持任意类型）
+     * @param value 配置值
      */
-    void set(ConfigKey configKey, Object value);
+    void set(ConfigLevel level, String workspaceId, String characterId,
+             String toolId, String skillId, String memoryId,
+             String configKey, Object value);
 
     /**
-     * 获取配置值
+     * 查询配置
      *
+     * @param level 粒度
+     * @param workspaceId Workspace ID
+     * @param characterId Character ID
+     * @param toolId Tool ID
+     * @param skillId Skill ID
+     * @param memoryId Memory ID
      * @param configKey 配置键
-     * @return Optional 配置值
+     * @return 配置值
      */
-    Optional<Object> get(ConfigKey configKey);
+    Optional<Object> get(ConfigLevel level, String workspaceId, String characterId,
+                         String toolId, String skillId, String memoryId,
+                         String configKey);
 
     /**
-     * 获取配置值（带默认值）
-     *
-     * @param configKey    配置键
-     * @param defaultValue 默认值
-     * @param <T>          值类型
-     * @return 配置值或默认值
+     * 查询配置（简化版，只有 workspaceId）
      */
-    <T> T get(ConfigKey configKey, T defaultValue);
+    Optional<Object> get(ConfigLevel level, String workspaceId, String configKey);
+
+    /**
+     * 查询配置（只有 workspaceId 和 characterId）
+     */
+    Optional<Object> get(ConfigLevel level, String workspaceId, String characterId, String configKey);
 
     /**
      * 删除配置
-     *
-     * @param configKey 配置键
      */
-    void delete(ConfigKey configKey);
-
-    /**
-     * 检查是否存在
-     *
-     * @param configKey 配置键
-     * @return 是否存在
-     */
-    boolean exists(ConfigKey configKey);
-
-    /**
-     * 获取与 configKey 同维度的所有配置
-     *
-     * <p>根据 configKey 的维度返回：
-     * <ul>
-     *   <li>全局粒度 (key only): 返回所有全局配置</li>
-     *   <li>命名空间粒度: 返回该命名空间下所有配置</li>
-     *   <li>完整维度: 返回该 entityId 下所有配置</li>
-     * </ul>
-     *
-     * @param configKey 带有维度的 ConfigKey（key 可以为 null）
-     * @return 配置映射
-     */
-    Map<String, Object> getAll(ConfigKey configKey);
-
-    /**
-     * 删除与 configKey 同维度的所有配置
-     *
-     * @param configKey 带有维度的 ConfigKey
-     */
-    void deleteAll(ConfigKey configKey);
+    void delete(ConfigLevel level, String workspaceId, String characterId,
+                String toolId, String skillId, String memoryId, String configKey);
 
     /**
      * 清空所有配置
      */
     void clear();
+
+    /**
+     * 获取所有配置项（用于列表展示）
+     *
+     * @return 配置项列表
+     */
+    List<ConfigStoreItem> listAll();
+
+    /**
+     * 获取指定粒度的所有配置项
+     *
+     * @param level 粒度
+     * @return 配置项列表
+     */
+    List<ConfigStoreItem> listByLevel(ConfigLevel level);
+
+    /**
+     * 获取指定配置键在 GLOBAL 级别的元数据
+     *
+     * @param configKey 配置键
+     * @return 元数据（name, description, validationRules, options）
+     */
+    ConfigMetadata getMetadata(String configKey);
+
+    /**
+     * 配置存储项（用于列表查询）
+     */
+    record ConfigStoreItem(
+            ConfigLevel level,
+            String workspaceId,
+            String characterId,
+            String toolId,
+            String skillId,
+            String memoryId,
+            String configKey,
+            Object value
+    ) {}
+
+    /**
+     * 配置元数据（从 GLOBAL 级别行获取）
+     */
+    record ConfigMetadata(
+            String name,
+            String description,
+            String validationRules,
+            String options,
+            String valueType,
+            Object defaultValue
+    ) {}
 }

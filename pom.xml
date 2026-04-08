@@ -54,6 +54,10 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
             <version>0.12.5</version>
@@ -248,7 +252,7 @@
                         <id>main</id>
                         <phase>process-classes</phase>
                         <configuration>
-                            <packages>org.dragon.datasource.entity,org.dragon.skill.entity</packages>
+                            <packages>org.dragon.datasource.entity</packages>
                         </configuration>
                         <goals>
                             <goal>enhance</goal>
@@ -258,7 +262,7 @@
                         <id>test</id>
                         <phase>process-test-classes</phase>
                         <configuration>
-                            <packages>org.dragon.datasource.entity,org.dragon.skill.entity</packages>
+                            <packages>org.dragon.datasource.entity</packages>
                         </configuration>
                         <goals>
                             <goal>enhance</goal>

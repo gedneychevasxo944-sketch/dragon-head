@@ -6,7 +6,7 @@
 
 - `Character` 为数据实体，使用 Lombok `@Builder` 构建
 - **不在 Character 内部直接 new 依赖对象**
-- 所有执行器（`ReActExecutor`、`WorkflowExecutor`、`PromptManager`、`ModelRegistry`）由外部注入
+- 所有执行器（`ReActExecutor`、`WorkflowExecutor`、`ConfigApplication`、`ModelRegistry`）由外部注入
 
 ```java
 // 正确示例

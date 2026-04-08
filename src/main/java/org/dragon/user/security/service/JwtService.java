@@ -2,6 +2,7 @@ package org.dragon.user.security.service;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,14 +18,19 @@ import java.util.Map;
 @Component
 public class JwtService {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    private final String jwtSecret;
+    private final long accessTokenValidity; // 秒
+    private final long refreshTokenValidity; // 秒
 
-    @Value("${jwt.access-token-validity:7200}")
-    private long accessTokenValidity; // 秒
-
-    @Value("${jwt.refresh-token-validity:604800}")
-    private long refreshTokenValidity; // 秒
+    @Autowired
+    public JwtService(
+            @Value("${jwt.secret}") String jwtSecret,
+            @Value("${jwt.access-token-validity:7200}") long accessTokenValidity,
+            @Value("${jwt.refresh-token-validity:604800}") long refreshTokenValidity) {
+        this.jwtSecret = jwtSecret;
+        this.accessTokenValidity = accessTokenValidity;
+        this.refreshTokenValidity = refreshTokenValidity;
+    }
 
     /**
      * 生成AccessToken

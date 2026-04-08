@@ -277,8 +277,8 @@ public class Character {
         return runtime != null ? runtime.getReActExecutor() : null;
     }
 
-    public org.dragon.config.PromptManager getPromptManager() {
-        return runtime != null ? runtime.getPromptManager() : null;
+    public org.dragon.config.service.ConfigApplication getConfigApplication() {
+        return runtime != null ? runtime.getConfigApplication() : null;
     }
 
     public org.dragon.agent.workflow.WorkflowExecutor getWorkflowExecutor() {

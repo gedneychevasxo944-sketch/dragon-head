@@ -1,8 +1,11 @@
 package org.dragon.agent.model;
 
 import org.dragon.agent.model.store.ModelStore;
+import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.store.StoreFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -26,8 +29,14 @@ public class ModelRegistry {
      */
     private volatile String defaultModelId;
 
-    public ModelRegistry(StoreFactory storeFactory) {
+    @Autowired
+    public ModelRegistry(StoreFactory storeFactory, ConfigApplication configApplication) {
         this.modelStore = storeFactory.get(ModelStore.class);
+        this.defaultModelId = configApplication.getStringValue(
+                "model.default-id",
+                InheritanceContext.forGlobal(),
+                null
+        );
     }
 
     /**

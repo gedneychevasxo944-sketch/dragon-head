@@ -5,8 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.dragon.permission.enums.ApprovalStatus;
-import org.dragon.permission.enums.ApprovalType;
+import org.dragon.approval.enums.ApprovalStatus;
+import org.dragon.approval.enums.ApprovalType;
 import org.dragon.permission.enums.ResourceType;
 
 import java.time.LocalDateTime;
