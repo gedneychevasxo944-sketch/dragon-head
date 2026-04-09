@@ -8,12 +8,16 @@ import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.dto.AssetConfigVO;
+import org.dragon.config.dto.AssetTypeOption;
 import org.dragon.config.dto.ConfigItemVO;
 import org.dragon.config.dto.ImpactAnalysis;
 import org.dragon.config.dto.ConfigTopologyGraphVO;
 import org.dragon.config.dto.ConfigTopologyVO;
 import org.dragon.config.dto.EffectChainVO;
 import org.dragon.config.enums.ConfigLevel;
+import org.dragon.config.model.InheritanceConfig;
+import org.dragon.config.model.InheritanceConfig.AssetType;
+import org.dragon.config.model.InheritanceConfig.Level;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.config.service.ConfigEffectService;
 import org.dragon.config.service.ConfigImpactAnalyzer;
@@ -278,6 +282,54 @@ public class ConfigController {
         log.info("[ConfigController] listConfigMetadata");
         List<ConfigItemVO> items = configApplication.listConfigItems(InheritanceContext.forGlobal());
         return ApiResponse.success(items);
+    }
+
+    // ==================== 资产类型选项 ====================
+
+    /**
+     * 获取资产类型选项列表（用于渐进式配置层级选择）
+     * GET /api/v1/config/asset-types
+     */
+    @Operation(summary = "获取资产类型选项列表")
+    @GetMapping("/asset-types")
+    public ApiResponse<List<AssetTypeOption>> listAssetTypes() {
+        log.info("[ConfigController] listAssetTypes");
+
+        List<AssetTypeOption> options = java.util.Arrays.stream(AssetType.values())
+                .map(type -> {
+                    List<String> parentLevels = InheritanceConfig.getParentLevels(type).stream()
+                            .map(Level::name)
+                            .toList();
+                    return AssetTypeOption.builder()
+                            .type(type.name())
+                            .label(getAssetTypeLabel(type))
+                            .parentLevels(parentLevels)
+                            .icon(getAssetTypeIcon(type))
+                            .build();
+                })
+                .toList();
+
+        return ApiResponse.success(options);
+    }
+
+    private String getAssetTypeLabel(AssetType type) {
+        return switch (type) {
+            case WORKSPACE -> "工作空间";
+            case CHARACTER -> "角色";
+            case SKILL -> "技能";
+            case TOOL -> "工具";
+            case MEMORY -> "记忆";
+        };
+    }
+
+    private String getAssetTypeIcon(AssetType type) {
+        return switch (type) {
+            case WORKSPACE -> "workspaces";
+            case CHARACTER -> "person";
+            case SKILL -> "psychology";
+            case TOOL -> "build";
+            case MEMORY -> "memory";
+        };
     }
 
     // ==================== 视角一：按资产查看配置 ====================
