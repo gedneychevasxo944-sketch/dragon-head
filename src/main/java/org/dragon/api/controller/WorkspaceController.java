@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.dragon.application.WorkspaceApiApplication;
 import org.dragon.api.dto.ApiResponse;
+import org.dragon.api.dto.AuditLogResponse;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.observer.actionlog.ActionType;
 import org.dragon.observer.actionlog.ObserverActionLog;
@@ -369,32 +370,25 @@ public class WorkspaceController {
      */
     @Operation(summary = "获取 Workspace 审计日志")
     @GetMapping("/{workspaceId}/audit-logs")
-    public ApiResponse<PageResponse<Map<String, Object>>> getAuditLogs(
+    public ApiResponse<PageResponse<AuditLogResponse>> getAuditLogs(
             @PathVariable String workspaceId,
             @RequestParam(required = false) String targetType,
             @RequestParam(required = false) ActionType actionType,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize) {
+            @RequestParam(defaultValue = "15") int pageSize) {
         List<ObserverActionLog> logs = workspaceApiApplication.getAuditLogs(workspaceId, targetType, actionType);
-        // 转换为 Map 格式并分页
-        List<Map<String, Object>> logMaps = logs.stream()
-                .map(l -> {
-                    java.util.Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("id", l.getId());
-                    item.put("targetType", l.getTargetType());
-                    item.put("targetId", l.getTargetId());
-                    item.put("actionType", l.getActionType() != null ? l.getActionType().name() : "");
-                    item.put("operator", l.getOperator());
-                    item.put("createdAt", l.getCreatedAt() != null ? l.getCreatedAt().toString() : "");
-                    item.put("detailsSummary", l.getDetails() != null ? l.getDetails().toString() : "");
-                    return item;
-                })
+
+        // 转换为 AuditLogResponse 格式并分页
+        List<AuditLogResponse> logResponses = logs.stream()
+                .map(AuditLogResponse::from)
                 .collect(java.util.stream.Collectors.toList());
 
-        long total = logMaps.size();
+        long total = logResponses.size();
         int fromIndex = Math.max(0, (page - 1) * pageSize);
-        int toIndex = Math.min(fromIndex + pageSize, logMaps.size());
-        List<Map<String, Object>> pageData = fromIndex >= logMaps.size() ? List.of() : logMaps.subList(fromIndex, toIndex);
+        int toIndex = Math.min(fromIndex + pageSize, logResponses.size());
+        List<AuditLogResponse> pageData = fromIndex >= logResponses.size()
+                ? List.of()
+                : logResponses.subList(fromIndex, toIndex);
         return ApiResponse.success(PageResponse.of(pageData, total, page, pageSize));
     }
 
