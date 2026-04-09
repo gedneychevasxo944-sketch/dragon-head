@@ -3,6 +3,7 @@ package org.dragon.config.context;
 import lombok.Builder;
 import lombok.Data;
 import org.dragon.config.enums.ConfigLevel;
+import org.dragon.config.enums.ScopeBits;
 
 /**
  * 配置继承上下文
@@ -562,6 +563,39 @@ public class InheritanceContext {
     public static InheritanceContext forGlobal() {
         return InheritanceContext.builder()
                 .level(ConfigLevel.GLOBAL)
+                .build();
+    }
+
+    // ==================== 通用工厂方法（推荐使用） ====================
+
+    /**
+     * 根据 ConfigLevel 和 IDs 构建上下文，自动根据 scopeBit 填充对应字段
+     *
+     * <p>此方法为推荐用法，自动根据 level 的 scopeBit 判断需要填充哪个 ID。
+     * 适用于所有 ConfigLevel。
+     *
+     * <p>示例：
+     * <pre>
+     * // GLOBAL_WORKSPACE (scopeBit=5, 包含 WORKSPACE)
+     * InheritanceContext.forLevel(ConfigLevel.GLOBAL_WORKSPACE, "ws-001", null, null, null, null);
+     *
+     * // GLOBAL_WS_CHAR (scopeBit=13, 包含 WORKSPACE + CHARACTER)
+     * InheritanceContext.forLevel(ConfigLevel.GLOBAL_WS_CHAR, "ws-001", "char-001", null, null, null);
+     *
+     * // STUDIO_WS_CHAR_TOOL (scopeBit=47, 包含 STUDIO + WORKSPACE + CHARACTER + TOOL)
+     * InheritanceContext.forLevel(ConfigLevel.STUDIO_WS_CHAR_TOOL, "ws-001", "char-001", "tool-001", null, null);
+     * </pre>
+     */
+    public static InheritanceContext forLevel(ConfigLevel level, String workspaceId,
+            String characterId, String toolId, String skillId, String memoryId) {
+        int bit = level.getScopeBit();
+        return InheritanceContext.builder()
+                .level(level)
+                .workspaceId((bit & ScopeBits.WORKSPACE) != 0 ? workspaceId : null)
+                .characterId((bit & ScopeBits.CHARACTER) != 0 ? characterId : null)
+                .toolId((bit & ScopeBits.TOOL) != 0 ? toolId : null)
+                .skillId((bit & ScopeBits.SKILL) != 0 ? skillId : null)
+                .memoryId((bit & ScopeBits.MEMORY) != 0 ? memoryId : null)
                 .build();
     }
 }

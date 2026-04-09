@@ -136,4 +136,10 @@ public class MemoryConfigStore implements ConfigStore {
         // MemoryStore 不存储元数据，返回 null
         return null;
     }
+
+    @Override
+    public List<ConfigMetadata> listMetadata() {
+        // MemoryStore 不存储元数据，返回空列表
+        return List.of();
+    }
 }

@@ -1,5 +1,7 @@
 package org.dragon.config.store;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ebean.Database;
 import org.dragon.config.enums.ConfigLevel;
 import org.dragon.datasource.entity.ConfigEntity;
@@ -21,6 +23,7 @@ import java.util.Optional;
 public class MySqlConfigStore implements ConfigStore {
 
     private final Database mysqlDb;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public MySqlConfigStore(@Qualifier("mysqlEbeanDatabase") Database mysqlDb) {
         this.mysqlDb = mysqlDb;
@@ -34,8 +37,16 @@ public class MySqlConfigStore implements ConfigStore {
                 toolId, skillId, memoryId, configKey);
         ConfigEntity existing = mysqlDb.find(ConfigEntity.class, id);
 
+        // Serialize value to JSON string
+        String serializedValue;
+        try {
+            serializedValue = objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize config value", e);
+        }
+
         if (existing != null) {
-            existing.setConfigValue(value);
+            existing.setConfigValue(serializedValue);
             existing.setUpdatedAt(LocalDateTime.now());
             mysqlDb.update(existing);
         } else {
@@ -48,7 +59,7 @@ public class MySqlConfigStore implements ConfigStore {
                     .skillId(skillId)
                     .memoryId(memoryId)
                     .configKey(configKey)
-                    .configValue(value)
+                    .configValue(serializedValue)
                     .status("PUBLISHED")
                     .version(1)
                     .createdAt(LocalDateTime.now())
@@ -65,7 +76,17 @@ public class MySqlConfigStore implements ConfigStore {
         String id = ConfigEntity.buildId(level.getScopeBit(), workspaceId, characterId,
                 toolId, skillId, memoryId, configKey);
         ConfigEntity entity = mysqlDb.find(ConfigEntity.class, id);
-        return Optional.ofNullable(entity != null ? entity.getConfigValue() : null);
+        if (entity == null || entity.getConfigValue() == null) {
+            return Optional.empty();
+        }
+        try {
+            // Deserialize JSON string back to Object
+            Object value = objectMapper.readValue(entity.getConfigValue(), Object.class);
+            return Optional.of(value);
+        } catch (JsonProcessingException e) {
+            // If deserialization fails, return the raw string value
+            return Optional.of(entity.getConfigValue());
+        }
     }
 
     @Override
@@ -112,6 +133,7 @@ public class MySqlConfigStore implements ConfigStore {
     private List<ConfigStoreItem> convertToItems(List<ConfigEntity> entities) {
         List<ConfigStoreItem> items = new ArrayList<>();
         for (ConfigEntity entity : entities) {
+            Object value = deserializeValue(entity.getConfigValue());
             items.add(new ConfigStoreItem(
                     ConfigLevel.fromScopeBit(entity.getScopeBit()),
                     entity.getWorkspaceId(),
@@ -120,10 +142,21 @@ public class MySqlConfigStore implements ConfigStore {
                     entity.getSkillId(),
                     entity.getMemoryId(),
                     entity.getConfigKey(),
-                    entity.getConfigValue()
+                    value
             ));
         }
         return items;
+    }
+
+    private Object deserializeValue(String jsonValue) {
+        if (jsonValue == null) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(jsonValue, Object.class);
+        } catch (JsonProcessingException e) {
+            return jsonValue;
+        }
     }
 
     @Override
@@ -133,14 +166,39 @@ public class MySqlConfigStore implements ConfigStore {
         ConfigEntity entity = mysqlDb.find(ConfigEntity.class, id);
         if (entity != null) {
             return new ConfigMetadata(
+                    entity.getConfigKey(),
                     entity.getName(),
                     entity.getDescription(),
                     entity.getValidationRules(),
                     entity.getOptions(),
                     entity.getValueType(),
-                    entity.getConfigValue()
+                    deserializeValue(entity.getConfigValue())
             );
         }
         return null;
+    }
+
+    @Override
+    public List<ConfigMetadata> listMetadata() {
+        // Query all ConfigEntity rows to get all configKeys from all levels
+        List<ConfigEntity> allEntities = mysqlDb.find(ConfigEntity.class).findList();
+
+        // For each distinct configKey, get the metadata from the first available entry
+        java.util.Map<String, ConfigMetadata> metadataMap = new java.util.LinkedHashMap<>();
+
+        for (ConfigEntity entity : allEntities) {
+            if (!metadataMap.containsKey(entity.getConfigKey())) {
+                metadataMap.put(entity.getConfigKey(), new ConfigMetadata(
+                        entity.getConfigKey(),
+                        entity.getName(),
+                        entity.getDescription(),
+                        entity.getValidationRules(),
+                        entity.getOptions(),
+                        entity.getValueType(),
+                        deserializeValue(entity.getConfigValue())
+                ));
+            }
+        }
+        return new ArrayList<>(metadataMap.values());
     }
 }

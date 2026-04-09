@@ -7,11 +7,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.dto.ApiResponse;
 import org.dragon.api.dto.PageResponse;
 import org.dragon.config.context.InheritanceContext;
+import org.dragon.config.dto.AssetConfigVO;
 import org.dragon.config.dto.ConfigItemVO;
+import org.dragon.config.dto.ConfigTopologyGraphVO;
+import org.dragon.config.dto.ConfigTopologyVO;
 import org.dragon.config.dto.EffectChainVO;
 import org.dragon.config.enums.ConfigLevel;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.config.service.ConfigEffectService;
+import org.dragon.config.service.ConfigTopologyService;
 import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +37,7 @@ import java.util.Map;
 public class ConfigController {
 
     private final ConfigApplication configApplication;
+    private final ConfigTopologyService configTopologyService;
     private final PermissionChecker permissionChecker;
 
     // ==================== 配置项管理 ====================
@@ -171,6 +176,78 @@ public class ConfigController {
         return ApiResponse.success(toMap(ec));
     }
 
+    // ==================== 简化后的配置项列表（仅元数据）====================
+
+    /**
+     * 获取配置项元数据列表
+     * GET /api/v1/config/metadata
+     */
+    @Operation(summary = "获取配置项元数据列表")
+    @GetMapping("/metadata")
+    public ApiResponse<List<ConfigItemVO>> listConfigMetadata() {
+        log.info("[ConfigController] listConfigMetadata");
+        List<ConfigItemVO> items = configApplication.listConfigItems(InheritanceContext.forGlobal());
+        return ApiResponse.success(items);
+    }
+
+    // ==================== 视角一：按资产查看配置 ====================
+
+    /**
+     * 按资产查看配置
+     * GET /api/v1/config/asset/{assetType}/{assetId}/configs
+     */
+    @Operation(summary = "按资产查看配置")
+    @GetMapping("/asset/{assetType}/{assetId}/configs")
+    public ApiResponse<AssetConfigVO> getAssetConfigs(
+            @PathVariable String assetType,
+            @PathVariable String assetId) {
+        log.info("[ConfigController] getAssetConfigs assetType={} assetId={}", assetType, assetId);
+        AssetConfigVO result = configTopologyService.getAssetConfigs(assetType, assetId);
+        return ApiResponse.success(result);
+    }
+
+    // ==================== 视角二：配置链路拓扑 ====================
+
+    /**
+     * 获取配置链路拓扑（图可视化专用）
+     * GET /api/v1/config/topology/graph
+     */
+    @Operation(summary = "获取配置拓扑图（图可视化）")
+    @GetMapping("/topology/graph")
+    public ApiResponse<ConfigTopologyGraphVO> getConfigTopologyGraph(
+            @RequestParam String configKey,
+            @RequestParam String assetType,
+            @RequestParam String assetId) {
+        log.info("[ConfigController] getConfigTopologyGraph configKey={} assetType={} assetId={}", configKey, assetType, assetId);
+        ConfigTopologyGraphVO result = configTopologyService.getConfigTopologyGraph(configKey, assetType, assetId);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取配置链路拓扑
+     * GET /api/v1/config/topology
+     */
+    @Operation(summary = "获取配置链路拓扑")
+    @GetMapping("/topology")
+    public ApiResponse<ConfigTopologyVO> getTopology(
+            @RequestParam(required = false) String configKey,
+            @RequestParam(required = false) String assetType,
+            @RequestParam(required = false) String assetId) {
+        log.info("[ConfigController] getTopology configKey={} assetType={} assetId={}", configKey, assetType, assetId);
+
+        if (configKey != null && assetType != null && assetId != null) {
+            // 返回单配置的链路
+            ConfigTopologyVO result = configTopologyService.getConfigChain(configKey, assetType, assetId);
+            return ApiResponse.success(result);
+        } else if (assetType != null && assetId != null) {
+            // 返回完整拓扑树
+            ConfigTopologyVO result = configTopologyService.getTopology(assetType, assetId);
+            return ApiResponse.success(result);
+        } else {
+            return ApiResponse.error(400, "assetType and assetId are required");
+        }
+    }
+
     // ==================== 请求体 DTO ====================
 
     /** 更新配置项请求 */
@@ -196,67 +273,7 @@ public class ConfigController {
         if (level == null) {
             return InheritanceContext.builder().level(ConfigLevel.GLOBAL).build();
         }
-
-        return switch (level) {
-            // 系统级粒度
-            case GLOBAL_WORKSPACE -> InheritanceContext.forGlobalWorkspace(workspaceId);
-            case GLOBAL_CHARACTER -> InheritanceContext.forGlobalCharacter(characterId != null ? characterId : workspaceId);
-            case GLOBAL_SKILL -> InheritanceContext.forGlobalSkill(skillId != null ? skillId : workspaceId);
-            case GLOBAL_TOOL -> InheritanceContext.forGlobalTool(toolId != null ? toolId : workspaceId);
-            case GLOBAL_MEMORY -> InheritanceContext.forGlobalMemory(memoryId != null ? memoryId : workspaceId);
-            case GLOBAL_WS_CHAR -> InheritanceContext.forGlobalWsChar(workspaceId, characterId);
-            case GLOBAL_WS_SKILL -> InheritanceContext.forGlobalWsSkill(workspaceId, skillId);
-            case GLOBAL_WS_TOOL -> InheritanceContext.forGlobalWsTool(workspaceId, toolId);
-            case GLOBAL_WS_MEMORY -> InheritanceContext.forGlobalWsMemory(workspaceId, memoryId);
-            case GLOBAL_CHAR_TOOL -> InheritanceContext.forGlobalCharTool(characterId, toolId);
-            case GLOBAL_CHAR_SKILL -> InheritanceContext.forGlobalCharSkill(characterId, skillId);
-            case GLOBAL_CHAR_MEMORY -> InheritanceContext.forGlobalCharMemory(characterId, memoryId);
-            case GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forGlobalWsCharTool(workspaceId, characterId, toolId);
-            case GLOBAL_WS_CHAR_SKILL -> InheritanceContext.forGlobalWsCharSkill(workspaceId, characterId, skillId);
-            case GLOBAL_WS_CHAR_MEMORY -> InheritanceContext.forGlobalWsCharMemory(workspaceId, characterId, memoryId);
-
-            // STUDIO 粒度
-            case STUDIO_WORKSPACE -> InheritanceContext.forStudioWorkspace(workspaceId);
-            case STUDIO_CHARACTER -> InheritanceContext.forStudioCharacter(characterId);
-            case STUDIO_SKILL -> InheritanceContext.forStudioSkill(skillId);
-            case STUDIO_TOOL -> InheritanceContext.forStudioTool(toolId);
-            case STUDIO_MEMORY -> InheritanceContext.forStudioMemory(memoryId);
-            case STUDIO_WS_CHAR -> InheritanceContext.forStudioWsChar(workspaceId, characterId);
-            case STUDIO_WS_SKILL -> InheritanceContext.forStudioWsSkill(workspaceId, skillId);
-            case STUDIO_WS_MEMORY -> InheritanceContext.forStudioWsMemory(workspaceId, memoryId);
-            case STUDIO_WS_TOOL -> InheritanceContext.forStudioWsTool(workspaceId, toolId);
-            case STUDIO_CHAR_TOOL -> InheritanceContext.forStudioCharTool(characterId, toolId);
-            case STUDIO_CHAR_SKILL -> InheritanceContext.forStudioCharSkill(characterId, skillId);
-            case STUDIO_CHAR_MEMORY -> InheritanceContext.forStudioCharMemory(characterId, memoryId);
-            case STUDIO_WS_CHAR_TOOL -> InheritanceContext.forStudioWsCharTool(workspaceId, characterId, toolId);
-            case STUDIO_WS_CHAR_SKILL -> InheritanceContext.forStudioWsCharSkill(workspaceId, characterId, skillId);
-            case STUDIO_WS_CHAR_MEMORY -> InheritanceContext.forStudioWsCharMemory(workspaceId, characterId, memoryId);
-
-            // OBSERVER 粒度
-            case OBSERVER_GLOBAL_WORKSPACE -> InheritanceContext.forObserverGlobalWorkspace(workspaceId);
-            case OBSERVER_GLOBAL_CHARACTER -> InheritanceContext.forObserverGlobalCharacter(characterId);
-            case OBSERVER_GLOBAL_SKILL -> InheritanceContext.forObserverGlobalSkill(skillId);
-            case OBSERVER_GLOBAL_TOOL -> InheritanceContext.forObserverGlobalTool(toolId);
-            case OBSERVER_GLOBAL_MEMORY -> InheritanceContext.forObserverGlobalMemory(memoryId);
-            case OBSERVER_GLOBAL_WS_CHAR -> InheritanceContext.forObserverGlobalWsChar(workspaceId, characterId);
-            case OBSERVER_GLOBAL_WS_SKILL -> InheritanceContext.forObserverGlobalWsSkill(workspaceId, skillId);
-            case OBSERVER_GLOBAL_WS_MEMORY -> InheritanceContext.forObserverGlobalWsMemory(workspaceId, memoryId);
-            case OBSERVER_GLOBAL_WS_TOOL -> InheritanceContext.forObserverGlobalWsTool(workspaceId, toolId);
-            case OBSERVER_GLOBAL_CHAR_TOOL -> InheritanceContext.forObserverGlobalCharTool(characterId, toolId);
-            case OBSERVER_GLOBAL_CHAR_SKILL -> InheritanceContext.forObserverGlobalCharSkill(characterId, skillId);
-            case OBSERVER_GLOBAL_CHAR_MEMORY -> InheritanceContext.forObserverGlobalCharMemory(characterId, memoryId);
-            case OBSERVER_GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forObserverGlobalWsCharTool(workspaceId, characterId, toolId);
-            case OBSERVER_GLOBAL_WS_CHAR_SKILL -> InheritanceContext.forObserverGlobalWsCharSkill(workspaceId, characterId, skillId);
-            case OBSERVER_GLOBAL_WS_CHAR_MEMORY -> InheritanceContext.forObserverGlobalWsCharMemory(workspaceId, characterId, memoryId);
-
-            default -> InheritanceContext.builder().level(level)
-                    .workspaceId(workspaceId)
-                    .characterId(characterId)
-                    .toolId(toolId)
-                    .skillId(skillId)
-                    .memoryId(memoryId)
-                    .build();
-        };
+        return InheritanceContext.forLevel(level, workspaceId, characterId, toolId, skillId, memoryId);
     }
 
     private Map<String, Object> toMap(ConfigItemVO item) {

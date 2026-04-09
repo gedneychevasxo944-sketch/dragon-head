@@ -60,7 +60,7 @@ public class ConfigEntity {
     private String configKey;
 
     @Column(name = "config_value", columnDefinition = "TEXT")
-    private Object configValue;
+    private String configValue;
 
     @Column(name = "value_type", length = 32)
     private String valueType;

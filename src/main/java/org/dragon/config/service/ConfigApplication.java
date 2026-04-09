@@ -6,6 +6,7 @@ import org.dragon.config.dto.ConfigItemVO;
 import org.dragon.config.dto.EffectChainVO;
 import org.dragon.config.dto.ImpactAnalysis;
 import org.dragon.config.enums.ConfigLevel;
+import org.dragon.config.enums.ScopeBits;
 import org.dragon.config.store.ConfigStore;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
@@ -101,7 +102,7 @@ public class ConfigApplication {
 
         for (ConfigLevel level : inheritanceChain) {
             // 构建上下文获取该层的值
-            InheritanceContext levelContext = buildContextForLevel(level, scopeId);
+            InheritanceContext levelContext = InheritanceContext.forLevel(level, scopeId, null, null, null, null);
             Optional<Object> storeValue = configStore().get(
                     level,
                     levelContext.getWorkspaceId(),
@@ -114,8 +115,8 @@ public class ConfigApplication {
 
             chain.add(EffectChainVO.builder()
                     .scopeType(level.name())
-                    .scopeId(levelContext.getWorkspaceId())
-                    .scopeName(resolveScopeName(level, levelContext.getWorkspaceId()))
+                    .scopeId(getIdByScopeBit(level, levelContext))
+                    .scopeName(resolveScopeName(getIdByScopeBit(level, levelContext)))
                     .value(storeValue.orElse(null))
                     .isOverride(level == targetLevel)
                     .isEmpty(!storeValue.isPresent())
@@ -142,7 +143,9 @@ public class ConfigApplication {
 
         for (ConfigLevel level : inheritanceChain) {
             // 构建该层级的上下文，使用主上下文中的 IDs
-            InheritanceContext levelContext = buildContextForLevel(level, context);
+            InheritanceContext levelContext = InheritanceContext.forLevel(level,
+                    context.getWorkspaceId(), context.getCharacterId(),
+                    context.getToolId(), context.getSkillId(), context.getMemoryId());
             Optional<Object> storeValue = configStore().get(
                     level,
                     levelContext.getWorkspaceId(),
@@ -153,10 +156,11 @@ public class ConfigApplication {
                     configKey
             );
 
+            String scopeId = getIdByScopeBit(level, context);
             chain.add(EffectChainVO.builder()
                     .scopeType(level.name())
-                    .scopeId(getScopeIdForLevel(level, context))
-                    .scopeName(resolveScopeName(level, getScopeIdForLevel(level, context)))
+                    .scopeId(scopeId)
+                    .scopeName(resolveScopeName(scopeId))
                     .value(storeValue.orElse(null))
                     .isOverride(level == targetLevel)
                     .isEmpty(!storeValue.isPresent())
@@ -202,125 +206,22 @@ public class ConfigApplication {
     }
 
     /**
-     * 根据层级构建上下文
+     * 根据 scopeBit 从上下文中提取对应层级的 ID
      */
-    private InheritanceContext buildContextForLevel(ConfigLevel level, String scopeId) {
-        return switch (level) {
-            case GLOBAL_WORKSPACE -> InheritanceContext.forGlobalWorkspace(scopeId);
-            case GLOBAL_CHARACTER -> InheritanceContext.forGlobalCharacter(scopeId);
-            case GLOBAL_SKILL -> InheritanceContext.forGlobalSkill(scopeId);
-            case GLOBAL_TOOL -> InheritanceContext.forGlobalTool(scopeId);
-            case GLOBAL_MEMORY -> InheritanceContext.forGlobalMemory(scopeId);
-            case GLOBAL_WS_CHAR -> InheritanceContext.forGlobalWsChar(scopeId, null);
-            case GLOBAL_WS_SKILL -> InheritanceContext.forGlobalWsSkill(scopeId, null);
-            case GLOBAL_WS_TOOL -> InheritanceContext.forGlobalWsTool(scopeId, null);
-            case GLOBAL_CHAR_TOOL -> InheritanceContext.forGlobalCharTool(scopeId, null);
-            case GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forGlobalWsCharTool(scopeId, null, null);
-            case STUDIO_WORKSPACE -> InheritanceContext.forStudioWorkspace(scopeId);
-            case STUDIO_WS_CHAR -> InheritanceContext.forStudioWsChar(scopeId, null);
-            default -> InheritanceContext.builder().level(level).workspaceId(scopeId).build();
-        };
-    }
-
-    /**
-     * 根据层级和父上下文构建该层级的上下文
-     */
-    private InheritanceContext buildContextForLevel(ConfigLevel level, InheritanceContext parentContext) {
-        return switch (level) {
-            case GLOBAL_WORKSPACE -> InheritanceContext.forGlobalWorkspace(parentContext.getWorkspaceId());
-            case GLOBAL_CHARACTER -> InheritanceContext.forGlobalCharacter(parentContext.getCharacterId());
-            case GLOBAL_SKILL -> InheritanceContext.forGlobalSkill(parentContext.getSkillId());
-            case GLOBAL_TOOL -> InheritanceContext.forGlobalTool(parentContext.getToolId());
-            case GLOBAL_MEMORY -> InheritanceContext.forGlobalMemory(parentContext.getMemoryId());
-            case GLOBAL_WS_CHAR -> InheritanceContext.forGlobalWsChar(parentContext.getWorkspaceId(), parentContext.getCharacterId());
-            case GLOBAL_WS_SKILL -> InheritanceContext.forGlobalWsSkill(parentContext.getWorkspaceId(), parentContext.getSkillId());
-            case GLOBAL_WS_TOOL -> InheritanceContext.forGlobalWsTool(parentContext.getWorkspaceId(), parentContext.getToolId());
-            case GLOBAL_WS_MEMORY -> InheritanceContext.forGlobalWsMemory(parentContext.getWorkspaceId(), parentContext.getMemoryId());
-            case GLOBAL_CHAR_TOOL -> InheritanceContext.forGlobalCharTool(parentContext.getCharacterId(), parentContext.getToolId());
-            case GLOBAL_CHAR_SKILL -> InheritanceContext.forGlobalCharSkill(parentContext.getCharacterId(), parentContext.getSkillId());
-            case GLOBAL_CHAR_MEMORY -> InheritanceContext.forGlobalCharMemory(parentContext.getCharacterId(), parentContext.getMemoryId());
-            case GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forGlobalWsCharTool(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getToolId());
-            case GLOBAL_WS_CHAR_SKILL -> InheritanceContext.forGlobalWsCharSkill(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getSkillId());
-            case GLOBAL_WS_CHAR_MEMORY -> InheritanceContext.forGlobalWsCharMemory(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getMemoryId());
-            case STUDIO_WORKSPACE -> InheritanceContext.forStudioWorkspace(parentContext.getWorkspaceId());
-            case STUDIO_CHARACTER -> InheritanceContext.forStudioCharacter(parentContext.getCharacterId());
-            case STUDIO_SKILL -> InheritanceContext.builder()
-                    .level(ConfigLevel.STUDIO_SKILL)
-                    .workspaceId(parentContext.getWorkspaceId())
-                    .skillId(parentContext.getSkillId())
-                    .build();
-            case STUDIO_TOOL -> InheritanceContext.builder()
-                    .level(ConfigLevel.STUDIO_TOOL)
-                    .workspaceId(parentContext.getWorkspaceId())
-                    .toolId(parentContext.getToolId())
-                    .build();
-            case STUDIO_MEMORY -> InheritanceContext.builder()
-                    .level(ConfigLevel.STUDIO_MEMORY)
-                    .workspaceId(parentContext.getWorkspaceId())
-                    .memoryId(parentContext.getMemoryId())
-                    .build();
-            case STUDIO_WS_CHAR -> InheritanceContext.forStudioWsChar(parentContext.getWorkspaceId(), parentContext.getCharacterId());
-            case STUDIO_WS_SKILL -> InheritanceContext.forStudioWsSkill(parentContext.getWorkspaceId(), parentContext.getSkillId());
-            case STUDIO_WS_MEMORY -> InheritanceContext.forStudioWsMemory(parentContext.getWorkspaceId(), parentContext.getMemoryId());
-            case STUDIO_WS_TOOL -> InheritanceContext.forStudioWsTool(parentContext.getWorkspaceId(), parentContext.getToolId());
-            case STUDIO_CHAR_TOOL -> InheritanceContext.forStudioCharTool(parentContext.getCharacterId(), parentContext.getToolId());
-            case STUDIO_CHAR_SKILL -> InheritanceContext.forStudioCharSkill(parentContext.getCharacterId(), parentContext.getSkillId());
-            case STUDIO_CHAR_MEMORY -> InheritanceContext.forStudioCharMemory(parentContext.getCharacterId(), parentContext.getMemoryId());
-            case STUDIO_WS_CHAR_TOOL -> InheritanceContext.forStudioWsCharTool(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getToolId());
-            case STUDIO_WS_CHAR_SKILL -> InheritanceContext.forStudioWsCharSkill(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getSkillId());
-            case STUDIO_WS_CHAR_MEMORY -> InheritanceContext.forStudioWsCharMemory(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getMemoryId());
-            case OBSERVER_GLOBAL_WORKSPACE -> InheritanceContext.forObserverGlobalWorkspace(parentContext.getWorkspaceId());
-            case OBSERVER_GLOBAL_CHARACTER -> InheritanceContext.forObserverGlobalCharacter(parentContext.getCharacterId());
-            case OBSERVER_GLOBAL_SKILL -> InheritanceContext.forObserverGlobalSkill(parentContext.getSkillId());
-            case OBSERVER_GLOBAL_TOOL -> InheritanceContext.forObserverGlobalTool(parentContext.getToolId());
-            case OBSERVER_GLOBAL_MEMORY -> InheritanceContext.forObserverGlobalMemory(parentContext.getMemoryId());
-            case OBSERVER_GLOBAL_WS_CHAR -> InheritanceContext.forObserverGlobalWsChar(parentContext.getWorkspaceId(), parentContext.getCharacterId());
-            case OBSERVER_GLOBAL_WS_SKILL -> InheritanceContext.forObserverGlobalWsSkill(parentContext.getWorkspaceId(), parentContext.getSkillId());
-            case OBSERVER_GLOBAL_WS_MEMORY -> InheritanceContext.forObserverGlobalWsMemory(parentContext.getWorkspaceId(), parentContext.getMemoryId());
-            case OBSERVER_GLOBAL_WS_TOOL -> InheritanceContext.forObserverGlobalWsTool(parentContext.getWorkspaceId(), parentContext.getToolId());
-            case OBSERVER_GLOBAL_CHAR_TOOL -> InheritanceContext.forObserverGlobalCharTool(parentContext.getCharacterId(), parentContext.getToolId());
-            case OBSERVER_GLOBAL_CHAR_SKILL -> InheritanceContext.forObserverGlobalCharSkill(parentContext.getCharacterId(), parentContext.getSkillId());
-            case OBSERVER_GLOBAL_CHAR_MEMORY -> InheritanceContext.forObserverGlobalCharMemory(parentContext.getCharacterId(), parentContext.getMemoryId());
-            case OBSERVER_GLOBAL_WS_CHAR_TOOL -> InheritanceContext.forObserverGlobalWsCharTool(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getToolId());
-            case OBSERVER_GLOBAL_WS_CHAR_SKILL -> InheritanceContext.forObserverGlobalWsCharSkill(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getSkillId());
-            case OBSERVER_GLOBAL_WS_CHAR_MEMORY -> InheritanceContext.forObserverGlobalWsCharMemory(parentContext.getWorkspaceId(), parentContext.getCharacterId(), parentContext.getMemoryId());
-            default -> InheritanceContext.builder().level(level)
-                    .workspaceId(parentContext.getWorkspaceId())
-                    .characterId(parentContext.getCharacterId())
-                    .toolId(parentContext.getToolId())
-                    .skillId(parentContext.getSkillId())
-                    .memoryId(parentContext.getMemoryId())
-                    .build();
-        };
-    }
-
-    /**
-     * 获取层级对应的 scopeId（用于显示）
-     */
-    private String getScopeIdForLevel(ConfigLevel level, InheritanceContext context) {
-        return switch (level) {
-            case GLOBAL_WORKSPACE, STUDIO_WORKSPACE, OBSERVER_GLOBAL_WORKSPACE -> context.getWorkspaceId();
-            case GLOBAL_CHARACTER, STUDIO_CHARACTER, OBSERVER_GLOBAL_CHARACTER -> context.getCharacterId();
-            case GLOBAL_SKILL, STUDIO_SKILL, OBSERVER_GLOBAL_SKILL -> context.getSkillId();
-            case GLOBAL_TOOL, STUDIO_TOOL, OBSERVER_GLOBAL_TOOL -> context.getToolId();
-            case GLOBAL_MEMORY, STUDIO_MEMORY, OBSERVER_GLOBAL_MEMORY -> context.getMemoryId();
-            case GLOBAL_WS_CHAR, GLOBAL_WS_SKILL, GLOBAL_WS_TOOL, GLOBAL_WS_MEMORY,
-                 STUDIO_WS_CHAR, STUDIO_WS_SKILL, STUDIO_WS_MEMORY, STUDIO_WS_TOOL,
-                 OBSERVER_GLOBAL_WS_CHAR, OBSERVER_GLOBAL_WS_SKILL, OBSERVER_GLOBAL_WS_MEMORY, OBSERVER_GLOBAL_WS_TOOL -> context.getWorkspaceId();
-            case GLOBAL_CHAR_TOOL, GLOBAL_CHAR_SKILL, GLOBAL_CHAR_MEMORY,
-                 STUDIO_CHAR_TOOL, STUDIO_CHAR_SKILL, STUDIO_CHAR_MEMORY,
-                 OBSERVER_GLOBAL_CHAR_TOOL, OBSERVER_GLOBAL_CHAR_SKILL, OBSERVER_GLOBAL_CHAR_MEMORY -> context.getCharacterId();
-            case GLOBAL_WS_CHAR_TOOL, GLOBAL_WS_CHAR_SKILL, GLOBAL_WS_CHAR_MEMORY,
-                 STUDIO_WS_CHAR_TOOL, STUDIO_WS_CHAR_SKILL, STUDIO_WS_CHAR_MEMORY,
-                 OBSERVER_GLOBAL_WS_CHAR_TOOL, OBSERVER_GLOBAL_WS_CHAR_SKILL, OBSERVER_GLOBAL_WS_CHAR_MEMORY -> context.getWorkspaceId();
-            default -> null;
-        };
+    private String getIdByScopeBit(ConfigLevel level, InheritanceContext context) {
+        int bit = level.getScopeBit();
+        if ((bit & ScopeBits.WORKSPACE) != 0) return context.getWorkspaceId();
+        if ((bit & ScopeBits.CHARACTER) != 0) return context.getCharacterId();
+        if ((bit & ScopeBits.TOOL) != 0) return context.getToolId();
+        if ((bit & ScopeBits.SKILL) != 0) return context.getSkillId();
+        if ((bit & ScopeBits.MEMORY) != 0) return context.getMemoryId();
+        return null;
     }
 
     /**
      * 解析作用域名称
      */
-    private String resolveScopeName(ConfigLevel level, String scopeId) {
+    private String resolveScopeName(String scopeId) {
         if (scopeId == null) {
             return "全局";
         }

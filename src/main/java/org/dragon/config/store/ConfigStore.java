@@ -94,6 +94,13 @@ public interface ConfigStore extends Store {
     ConfigMetadata getMetadata(String configKey);
 
     /**
+     * 获取所有配置项的元数据列表（从 GLOBAL 级别）
+     *
+     * @return 所有配置键的元数据列表
+     */
+    List<ConfigMetadata> listMetadata();
+
+    /**
      * 配置存储项（用于列表查询）
      */
     record ConfigStoreItem(
@@ -111,6 +118,7 @@ public interface ConfigStore extends Store {
      * 配置元数据（从 GLOBAL 级别行获取）
      */
     record ConfigMetadata(
+            String configKey,
             String name,
             String description,
             String validationRules,

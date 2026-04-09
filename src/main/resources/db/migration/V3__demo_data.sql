@@ -419,36 +419,36 @@ ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 -- ==================== GLOBAL_WORKSPACE (scopeBit=5) ws-demo 工作空间级别配置 ====================
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
 VALUES
-  ('5:ws-demo::llm.temperature', 5, 'ws-demo', NULL, NULL, NULL, NULL, 'llm.temperature', '0.8', 'NUMBER', 'Temperature', 'ws-demo 默认 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
-  ('5:ws-demo::llm.maxTokens', 5, 'ws-demo', NULL, NULL, NULL, NULL, 'llm.maxTokens', '6000', 'NUMBER', 'Max Tokens', 'ws-demo 增加输出长度', '[{"type":"min","value":"100"},{"type":"max","value":"32000"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
-  ('5:ws-demo::workspace.workingStyle', 5, 'ws-demo', NULL, NULL, NULL, NULL, 'workspace.workingStyle', 'COLLABORATIVE', 'STRING', '工作风格', 'ws-demo 工作风格', NULL, '["AGGRESSIVE","CONSERVATIVE","COLLABORATIVE","INNOVATIVE","ANALYTICAL"]', 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
-  ('5:ws-demo::workspace.maxMembers', 5, 'ws-demo', NULL, NULL, NULL, NULL, 'workspace.maxMembers', '10', 'NUMBER', '最大成员数', 'ws-demo 最大成员数量', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW())
+  ('5:ws-demo:::::llm.temperature', 5, 'ws-demo', NULL, NULL, NULL, NULL, 'llm.temperature', '0.8', 'NUMBER', 'Temperature', 'ws-demo 默认 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('5:ws-demo:::::llm.maxTokens', 5, 'ws-demo', NULL, NULL, NULL, NULL, 'llm.maxTokens', '6000', 'NUMBER', 'Max Tokens', 'ws-demo 增加输出长度', '[{"type":"min","value":"100"},{"type":"max","value":"32000"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('5:ws-demo:::::workspace.workingStyle', 5, 'ws-demo', NULL, NULL, NULL, NULL, 'workspace.workingStyle', 'COLLABORATIVE', 'STRING', '工作风格', 'ws-demo 工作风格', NULL, '["AGGRESSIVE","CONSERVATIVE","COLLABORATIVE","INNOVATIVE","ANALYTICAL"]', 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('5:ws-demo:::::workspace.maxMembers', 5, 'ws-demo', NULL, NULL, NULL, NULL, 'workspace.maxMembers', '10', 'NUMBER', '最大成员数', 'ws-demo 最大成员数量', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 -- ==================== GLOBAL_CHARACTER (scopeBit=9) 角色级别配置 ====================
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
 VALUES
-  ('9:::char-001:llm.temperature', 9, NULL, 'char-001', NULL, NULL, NULL, 'llm.temperature', '0.9', 'NUMBER', 'Temperature', 'char-001 默认 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('9:::char-001:character.maxSteps', 9, NULL, 'char-001', NULL, NULL, NULL, 'character.maxSteps', '15', 'NUMBER', '最大步数', 'char-001 增加最大步数', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('9:::char-001:character.systemPrompt', 9, NULL, 'char-001', NULL, NULL, NULL, 'character.systemPrompt', '你是一位专业的 AI 项目管理者。你的职责是协调团队工作、跟踪进度、识别风险。', 'STRING', 'System Prompt', 'char-001 系统提示词', NULL, NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('9::char-001::::llm.temperature', 9, NULL, 'char-001', NULL, NULL, NULL, 'llm.temperature', '0.9', 'NUMBER', 'Temperature', 'char-001 默认 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('9::char-001::::character.maxSteps', 9, NULL, 'char-001', NULL, NULL, NULL, 'character.maxSteps', '15', 'NUMBER', '最大步数', 'char-001 增加最大步数', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('9::char-001::::character.systemPrompt', 9, NULL, 'char-001', NULL, NULL, NULL, 'character.systemPrompt', '你是一位专业的 AI 项目管理者。你的职责是协调团队工作、跟踪进度、识别风险。', 'STRING', 'System Prompt', 'char-001 系统提示词', NULL, NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
 
-  ('9:::char-002:llm.temperature', 9, NULL, 'char-002', NULL, NULL, NULL, 'llm.temperature', '0.6', 'NUMBER', 'Temperature', 'char-002 默认 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('9:::char-002:character.maxSteps', 9, NULL, 'char-002', NULL, NULL, NULL, 'character.maxSteps', '8', 'NUMBER', '最大步数', 'char-002 限制步数', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('9::char-002::::llm.temperature', 9, NULL, 'char-002', NULL, NULL, NULL, 'llm.temperature', '0.6', 'NUMBER', 'Temperature', 'char-002 默认 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('9::char-002::::character.maxSteps', 9, NULL, 'char-002', NULL, NULL, NULL, 'character.maxSteps', '8', 'NUMBER', '最大步数', 'char-002 限制步数', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
 
-  ('9:::char-003:llm.temperature', 9, NULL, 'char-003', NULL, NULL, NULL, 'llm.temperature', '0.7', 'NUMBER', 'Temperature', 'char-003 默认 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('9:::char-003:character.systemPrompt', 9, NULL, 'char-003', NULL, NULL, NULL, 'character.systemPrompt', '你是一位热情的客服代表，始终以客户满意为首要目标。', 'STRING', 'System Prompt', 'char-003 系统提示词', NULL, NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW())
+  ('9::char-003::::llm.temperature', 9, NULL, 'char-003', NULL, NULL, NULL, 'llm.temperature', '0.7', 'NUMBER', 'Temperature', 'char-003 默认 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('9::char-003::::character.systemPrompt', 9, NULL, 'char-003', NULL, NULL, NULL, 'character.systemPrompt', '你是一位热情的客服代表，始终以客户满意为首要目标。', 'STRING', 'System Prompt', 'char-003 系统提示词', NULL, NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 -- ==================== GLOBAL_WS_CHAR (scopeBit=13) ws-demo + char-001 配置 ====================
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
 VALUES
-  ('13:ws-demo:char-001:llm.temperature', 13, 'ws-demo', 'char-001', NULL, NULL, NULL, 'llm.temperature', '0.85', 'NUMBER', 'Temperature', 'ws-demo 下 char-001 的特化 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
-  ('13:ws-demo:char-001:llm.maxTokens', 13, 'ws-demo', 'char-001', NULL, NULL, NULL, 'llm.maxTokens', '8000', 'NUMBER', 'Max Tokens', 'ws-demo 下 char-001 增加输出', '[{"type":"min","value":"100"},{"type":"max","value":"32000"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
-  ('13:ws-demo:char-001:character.maxIterations', 13, 'ws-demo', 'char-001', NULL, NULL, NULL, 'character.maxIterations', '15', 'NUMBER', '最大迭代', 'ws-demo 下 char-001 增加迭代', '[{"type":"min","value":"1"},{"type":"max","value":"50"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
-  ('13:ws-demo:char-001:workspace.specialMode', 13, 'ws-demo', 'char-001', NULL, NULL, NULL, 'workspace.specialMode', 'true', 'BOOLEAN', '特殊模式', 'ws-demo 下 char-001 启用特殊模式', NULL, NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('13:ws-demo:char-001::::llm.temperature', 13, 'ws-demo', 'char-001', NULL, NULL, NULL, 'llm.temperature', '0.85', 'NUMBER', 'Temperature', 'ws-demo 下 char-001 的特化 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('13:ws-demo:char-001::::llm.maxTokens', 13, 'ws-demo', 'char-001', NULL, NULL, NULL, 'llm.maxTokens', '8000', 'NUMBER', 'Max Tokens', 'ws-demo 下 char-001 增加输出', '[{"type":"min","value":"100"},{"type":"max","value":"32000"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('13:ws-demo:char-001::::character.maxIterations', 13, 'ws-demo', 'char-001', NULL, NULL, NULL, 'character.maxIterations', '15', 'NUMBER', '最大迭代', 'ws-demo 下 char-001 增加迭代', '[{"type":"min","value":"1"},{"type":"max","value":"50"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('13:ws-demo:char-001::::workspace.specialMode', 13, 'ws-demo', 'char-001', NULL, NULL, NULL, 'workspace.specialMode', 'true', 'BOOLEAN', '特殊模式', 'ws-demo 下 char-001 启用特殊模式', NULL, NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
 
-  ('13:ws-demo:char-002:llm.temperature', 13, 'ws-demo', 'char-002', NULL, NULL, NULL, 'llm.temperature', '0.65', 'NUMBER', 'Temperature', 'ws-demo 下 char-002 的特化 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
-  ('13:ws-demo:char-002:character.enableMemorySearch', 13, 'ws-demo', 'char-002', NULL, NULL, NULL, 'character.enableMemorySearch', 'true', 'BOOLEAN', '启用记忆搜索', 'ws-demo 下 char-002 启用记忆搜索', NULL, NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('13:ws-demo:char-002::::llm.temperature', 13, 'ws-demo', 'char-002', NULL, NULL, NULL, 'llm.temperature', '0.65', 'NUMBER', 'Temperature', 'ws-demo 下 char-002 的特化 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('13:ws-demo:char-002::::character.enableMemorySearch', 13, 'ws-demo', 'char-002', NULL, NULL, NULL, 'character.enableMemorySearch', 'true', 'BOOLEAN', '启用记忆搜索', 'ws-demo 下 char-002 启用记忆搜索', NULL, NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
 
   ('13:ws-demo:char-003:llm.temperature', 13, 'ws-demo', 'char-003', NULL, NULL, NULL, 'llm.temperature', '0.75', 'NUMBER', 'Temperature', 'ws-demo 下 char-003 的特化 temperature', '[{"type":"min","value":"0"},{"type":"max","value":"2"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
@@ -456,35 +456,35 @@ ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 -- ==================== GLOBAL_SKILL (scopeBit=17) 技能级别配置 ====================
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
 VALUES
-  ('17::::skill-001:skill.priority', 17, NULL, NULL, NULL, 'skill-001', NULL, 'skill.priority', '10', 'NUMBER', '优先级', 'skill-001 默认优先级', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('17::::skill-001:skill.enabled', 17, NULL, NULL, NULL, 'skill-001', NULL, 'skill.enabled', 'true', 'BOOLEAN', '启用状态', 'skill-001 是否启用', NULL, NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('17::::skill-001:skill.maxRetries', 17, NULL, NULL, NULL, 'skill-001', NULL, 'skill.maxRetries', '3', 'NUMBER', '最大重试', 'skill-001 最大重试次数', '[{"type":"min","value":"0"},{"type":"max","value":"10"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('17::::skill-001::skill.priority', 17, NULL, NULL, NULL, 'skill-001', NULL, 'skill.priority', '10', 'NUMBER', '优先级', 'skill-001 默认优先级', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('17::::skill-001::skill.enabled', 17, NULL, NULL, NULL, 'skill-001', NULL, 'skill.enabled', 'true', 'BOOLEAN', '启用状态', 'skill-001 是否启用', NULL, NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('17::::skill-001::skill.maxRetries', 17, NULL, NULL, NULL, 'skill-001', NULL, 'skill.maxRetries', '3', 'NUMBER', '最大重试', 'skill-001 最大重试次数', '[{"type":"min","value":"0"},{"type":"max","value":"10"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
 
   ('17::::skill-002:skill.priority', 17, NULL, NULL, NULL, 'skill-002', NULL, 'skill.priority', '8', 'NUMBER', '优先级', 'skill-002 默认优先级', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
   ('17::::skill-002:skill.timeout', 17, NULL, NULL, NULL, 'skill-002', NULL, 'skill.timeout', '60000', 'NUMBER', '超时时间', 'skill-002 超时时间（毫秒）', '[{"type":"min","value":"5000"},{"type":"max","value":"300000"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
 
-  ('17::::skill-data-analysis:skill.priority', 17, NULL, NULL, NULL, 'skill-data-analysis', NULL, 'skill.priority', '5', 'NUMBER', '优先级', 'skill-data-analysis 默认优先级', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('17::::skill-data-analysis:skill.model', 17, NULL, NULL, NULL, 'skill-data-analysis', NULL, 'skill.model', 'model-deepseek', 'STRING', '专用模型', 'skill-data-analysis 专用模型', NULL, '["model-kimi", "model-deepseek"]', 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW())
+  ('17::::skill-data-analysis::skill.priority', 17, NULL, NULL, NULL, 'skill-data-analysis', NULL, 'skill.priority', '5', 'NUMBER', '优先级', 'skill-data-analysis 默认优先级', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('17::::skill-data-analysis::skill.model', 17, NULL, NULL, NULL, 'skill-data-analysis', NULL, 'skill.model', 'model-deepseek', 'STRING', '专用模型', 'skill-data-analysis 专用模型', NULL, '["model-kimi", "model-deepseek"]', 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 -- ==================== GLOBAL_WS_SKILL (scopeBit=21) ws-demo + skill 配置 ====================
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
 VALUES
-  ('21:ws-demo::skill-001:skill.priority', 21, 'ws-demo', NULL, NULL, 'skill-001', NULL, 'skill.priority', '12', 'NUMBER', '优先级', 'ws-demo 下 skill-001 调整优先级', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
-  ('21:ws-demo::skill-001:skill.enabled', 21, 'ws-demo', NULL, NULL, 'skill-001', NULL, 'skill.enabled', 'true', 'BOOLEAN', '启用状态', 'ws-demo 下 skill-001 是否启用', NULL, NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW())
+  ('21:ws-demo:::skill-001::skill.priority', 21, 'ws-demo', NULL, NULL, 'skill-001', NULL, 'skill.priority', '12', 'NUMBER', '优先级', 'ws-demo 下 skill-001 调整优先级', '[{"type":"min","value":"1"},{"type":"max","value":"100"}]', NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW()),
+  ('21:ws-demo:::skill-001::skill.enabled', 21, 'ws-demo', NULL, NULL, 'skill-001', NULL, 'skill.enabled', 'true', 'BOOLEAN', '启用状态', 'ws-demo 下 skill-001 是否启用', NULL, NULL, 'PUBLISHED', 1, 'admin', 'admin', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 -- ==================== GLOBAL_TOOL (scopeBit=33) 工具级别配置 ====================
 INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
 VALUES
-  ('33::::tool-001:tool.timeout', 33, NULL, NULL, 'tool-001', NULL, NULL, 'tool.timeout', '30000', 'NUMBER', '超时时间', 'tool-001 超时时间（毫秒）', '[{"type":"min","value":"1000"},{"type":"max","value":"300000"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('33::::tool-001:tool.retryCount', 33, NULL, NULL, 'tool-001', NULL, NULL, 'tool.retryCount', '3', 'NUMBER', '重试次数', 'tool-001 重试次数', '[{"type":"min","value":"0"},{"type":"max","value":"10"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('33:::tool-001:::tool.timeout', 33, NULL, NULL, 'tool-001', NULL, NULL, 'tool.timeout', '30000', 'NUMBER', '超时时间', 'tool-001 超时时间（毫秒）', '[{"type":"min","value":"1000"},{"type":"max","value":"300000"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('33:::tool-001:::tool.retryCount', 33, NULL, NULL, 'tool-001', NULL, NULL, 'tool.retryCount', '3', 'NUMBER', '重试次数', 'tool-001 重试次数', '[{"type":"min","value":"0"},{"type":"max","value":"10"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
 
-  ('33::::tool-code-review:tool.timeout', 33, NULL, NULL, 'tool-code-review', NULL, NULL, 'tool.timeout', '60000', 'NUMBER', '超时时间', 'tool-code-review 超时时间', '[{"type":"min","value":"1000"},{"type":"max","value":"300000"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('33::::tool-code-review:tool.maxFileSize', 33, NULL, NULL, 'tool-code-review', NULL, NULL, 'tool.maxFileSize', '1048576', 'NUMBER', '最大文件', 'tool-code-review 最大文件大小', '[{"type":"min","value":"1024"},{"type":"max","value":"10485760"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('33:::tool-code-review:::tool.timeout', 33, NULL, NULL, 'tool-code-review', NULL, NULL, 'tool.timeout', '60000', 'NUMBER', '超时时间', 'tool-code-review 超时时间', '[{"type":"min","value":"1000"},{"type":"max","value":"300000"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('33:::tool-code-review:::tool.maxFileSize', 33, NULL, NULL, 'tool-code-review', NULL, NULL, 'tool.maxFileSize', '1048576', 'NUMBER', '最大文件', 'tool-code-review 最大文件大小', '[{"type":"min","value":"1024"},{"type":"max","value":"10485760"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
 
-  ('33::::tool-data-export:tool.timeout', 33, NULL, NULL, 'tool-data-export', NULL, NULL, 'tool.timeout', '120000', 'NUMBER', '超时时间', 'tool-data-export 超时时间', '[{"type":"min","value":"1000"},{"type":"max","value":"300000"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
-  ('33::::tool-data-export:tool.format', 33, NULL, NULL, 'tool-data-export', NULL, NULL, 'tool.format', 'json', 'STRING', '默认格式', 'tool-data-export 默认导出格式', NULL, '["json","csv","xlsx"]', 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW())
+  ('33:::tool-data-export:::tool.timeout', 33, NULL, NULL, 'tool-data-export', NULL, NULL, 'tool.timeout', '120000', 'NUMBER', '超时时间', 'tool-data-export 超时时间', '[{"type":"min","value":"1000"},{"type":"max","value":"300000"}]', NULL, 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW()),
+  ('33:::tool-data-export:::tool.format', 33, NULL, NULL, 'tool-data-export', NULL, NULL, 'tool.format', 'json', 'STRING', '默认格式', 'tool-data-export 默认导出格式', NULL, '["json","csv","xlsx"]', 'PUBLISHED', 1, 'owner', 'owner', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
 -- ==================== GLOBAL_MEMORY (scopeBit=65) 记忆级别配置 ====================
