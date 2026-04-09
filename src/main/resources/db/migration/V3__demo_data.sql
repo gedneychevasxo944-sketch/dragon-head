@@ -49,12 +49,12 @@ VALUES
 -- ============================================================================
 INSERT INTO workspace (id, name, description, owner, status, visibility, properties, personality, created_at, updated_at)
 VALUES
-  ('ws-demo', '演示工作空间', '用于前后端联调的演示工作空间，包含多个角色和技能配置', '1', 'RUNNING', 'PRIVATE',
+  ('ws-demo', '演示工作空间', '用于前后端联调的演示工作空间，包含多个角色和技能配置', '1', 'ACTIVE', 'PRIVATE',
    '{"visibility": "PRIVATE", "maxMembers": 10, "features": ["task", "observer", "memory"]}',
    '{"workingStyle": "COLLABORATIVE", "decisionPattern": "CONSULTATIVE", "riskTolerance": 0.5}',
    NOW(), NOW()),
 
-  ('ws-test', '测试工作空间', '用于自动化测试的工作空间', '1', 'RUNNING', 'PRIVATE',
+  ('ws-test', '测试工作空间', '用于自动化测试的工作空间', '1', 'ACTIVE', 'PRIVATE',
    '{"visibility": "PRIVATE", "maxMembers": 5}',
    '{"workingStyle": "ANALYTICAL", "decisionPattern": "CONSENSUS", "riskTolerance": 0.3}',
    NOW(), NOW());
@@ -217,7 +217,7 @@ VALUES
    '{"document": "PRD-v1.0.pdf", "pages": 15}',
    '需求文档已完成，包含 8 个用户故事和完整的验收标准', NULL,
    '["task-002", "task-003"]', 'sess-001', '["char-001", "char-pm"]',
-   '[{"step": 1, "action": "调研"}, {"step": 2, "action": "撰写"}, {"step": 3, "action": "评审"}]',
+   '[{"stepNumber": 1, "content": "调研"}, {"stepNumber": 2, "content": "撰写"}, {"stepNumber": 3, "content": "评审"}]',
    '[{"role": "user", "content": "请完成需求文档"}, {"role": "assistant", "content": "开始撰写需求文档..."}]',
    NULL, NOW(), NOW(), NOW(), NOW(), 'AUTO', 'wf-001', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 
@@ -226,14 +226,14 @@ VALUES
    '{"analysis": "竞品分析报告.pdf", "pages": 10}',
    '完成竞品分析，发现 5 个可借鉴点和 3 个差异化机会', NULL,
    NULL, 'sess-001', '["char-002"]',
-   '[{"step": 1, "action": "收集信息"}, {"step": 2, "action": "分析"}, {"step": 3, "action": "撰写报告"}]',
+   '[{"stepNumber": 1, "content": "收集信息"}, {"stepNumber": 2, "content": "分析"}, {"stepNumber": 3, "content": "撰写报告"}]',
    NULL, NULL, NOW(), NOW(), NOW(), NOW(), 'AUTO', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 
-  ('task-003', 'ws-demo', 'task-001', '1', 'char-003', '用户访谈', '对目标用户进行访谈，收集需求反馈', 'IN_PROGRESS',
+  ('task-003', 'ws-demo', 'task-001', '1', 'char-003', '用户访谈', '对目标用户进行访谈，收集需求反馈', 'RUNNING',
    '{"interview_type": "半结构化访谈", "participants": 5}',
    NULL, NULL, NULL,
    NULL, NULL, '["char-003"]',
-   '[{"step": 1, "action": "准备访谈提纲"}, {"step": 2, "action": "执行访谈"}]',
+   '[{"stepNumber": 1, "content": "准备访谈提纲"}, {"stepNumber": 2, "content": "执行访谈"}]',
    NULL, '正在执行第 3 场用户访谈...', NOW(), NOW(), NOW(), NULL, 'MANUAL', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 
   ('task-004', 'ws-demo', NULL, '1', NULL, '周报汇总', '汇总本周工作进展，生成周报', 'PENDING',
@@ -246,7 +246,7 @@ VALUES
    '{"data_range": "2024-03", "report_type": "monthly"}',
    NULL, NULL, '数据源连接超时，请检查网络配置',
    NULL, NULL, '["char-002"]',
-   '[{"step": 1, "action": "连接数据源"}]',
+   '[{"stepNumber": 1, "content": "连接数据源"}]',
    NULL, NULL, NOW(), NOW(), NOW(), NULL, 'AUTO', NULL, NULL, NULL, 'resume-token-005', '{"lastStep": 1, "retryCount": 3}', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ============================================================================
