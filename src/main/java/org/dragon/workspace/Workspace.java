@@ -28,7 +28,8 @@ public class Workspace {
     public enum Status {
         ACTIVE,    // 活跃
         INACTIVE,  // 未激活
-        ARCHIVED   // 已归档
+        ARCHIVED,  // 已归档
+        RUNNING    // 运行中（兼容旧数据）
     }
 
     /**
