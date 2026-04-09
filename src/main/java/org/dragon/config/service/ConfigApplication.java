@@ -6,7 +6,9 @@ import org.dragon.config.dto.ConfigItemVO;
 import org.dragon.config.dto.EffectChainVO;
 import org.dragon.config.dto.ImpactAnalysis;
 import org.dragon.config.enums.ConfigLevel;
-import org.dragon.config.enums.ScopeBits;
+import org.dragon.config.model.InheritanceConfig;
+import org.dragon.config.model.InheritanceConfig.AssetType;
+import org.dragon.config.model.InheritanceConfig.Level;
 import org.dragon.config.store.ConfigStore;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
@@ -175,47 +177,66 @@ public class ConfigApplication {
      * 获取配置的继承链（从具体到全局）
      */
     private List<ConfigLevel> getInheritanceChain(ConfigLevel targetLevel) {
-        List<ConfigLevel> chain = new ArrayList<>();
-        chain.add(targetLevel);
+        Level level = InheritanceConfig.toLevel(targetLevel);
+        boolean hasWorkspaceParent = InheritanceConfig.hasWorkspaceParent(targetLevel);
 
-        for (ConfigLevel candidate : ConfigLevel.values()) {
-            if (candidate == targetLevel) {
-                continue;
-            }
-            if (targetLevel.isDescendantOf(candidate) && !hasIntermediateAncestor(targetLevel, candidate)) {
-                chain.add(candidate);
-            }
+        AssetType assetType = toAssetType(level);
+        if (assetType == null) {
+            // GLOBAL 或 USER，使用简化链路
+            return switch (level) {
+                case GLOBAL -> List.of(ConfigLevel.GLOBAL);
+                case USER -> List.of(ConfigLevel.STUDIO, ConfigLevel.GLOBAL);
+                default -> List.of(targetLevel, ConfigLevel.STUDIO, ConfigLevel.GLOBAL);
+            };
         }
 
-        return chain;
+        Level parentLevel = hasWorkspaceParent ? Level.WORKSPACE : null;
+        List<Level> chain = InheritanceConfig.buildChain(assetType, parentLevel);
+
+        // 转换为 ConfigLevel
+        List<ConfigLevel> result = new ArrayList<>();
+        for (Level l : chain) {
+            result.add(toConfigLevel(l, hasWorkspaceParent));
+        }
+        return result;
+    }
+
+    private AssetType toAssetType(Level level) {
+        return switch (level) {
+            case WORKSPACE -> AssetType.WORKSPACE;
+            case CHARACTER -> AssetType.CHARACTER;
+            case SKILL -> AssetType.SKILL;
+            case TOOL -> AssetType.TOOL;
+            case MEMORY -> AssetType.MEMORY;
+            case USER, GLOBAL -> null;
+        };
+    }
+
+    private ConfigLevel toConfigLevel(Level level, boolean hasWorkspaceParent) {
+        return switch (level) {
+            case GLOBAL -> ConfigLevel.GLOBAL;
+            case USER -> ConfigLevel.STUDIO;
+            case WORKSPACE -> ConfigLevel.STUDIO_WORKSPACE;
+            case CHARACTER -> hasWorkspaceParent ? ConfigLevel.GLOBAL_WS_CHAR : ConfigLevel.GLOBAL_CHARACTER;
+            case SKILL -> hasWorkspaceParent ? ConfigLevel.GLOBAL_WS_SKILL : ConfigLevel.GLOBAL_SKILL;
+            case TOOL -> hasWorkspaceParent ? ConfigLevel.GLOBAL_WS_TOOL : ConfigLevel.GLOBAL_TOOL;
+            case MEMORY -> hasWorkspaceParent ? ConfigLevel.GLOBAL_WS_MEMORY : ConfigLevel.GLOBAL_MEMORY;
+        };
     }
 
     /**
-     * 检查 level 和 candidate 之间是否有其他祖先
-     */
-    private boolean hasIntermediateAncestor(ConfigLevel level, ConfigLevel candidate) {
-        for (ConfigLevel other : ConfigLevel.values()) {
-            if (other == level || other == candidate) {
-                continue;
-            }
-            if (level.isDescendantOf(other) && other.isDescendantOf(candidate)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 根据 scopeBit 从上下文中提取对应层级的 ID
+     * 根据层级从上下文中提取对应层级的 ID
      */
     private String getIdByScopeBit(ConfigLevel level, InheritanceContext context) {
-        int bit = level.getScopeBit();
-        if ((bit & ScopeBits.WORKSPACE) != 0) return context.getWorkspaceId();
-        if ((bit & ScopeBits.CHARACTER) != 0) return context.getCharacterId();
-        if ((bit & ScopeBits.TOOL) != 0) return context.getToolId();
-        if ((bit & ScopeBits.SKILL) != 0) return context.getSkillId();
-        if ((bit & ScopeBits.MEMORY) != 0) return context.getMemoryId();
-        return null;
+        Level l = InheritanceConfig.toLevel(level);
+        return switch (l) {
+            case WORKSPACE -> context.getWorkspaceId();
+            case CHARACTER -> context.getCharacterId();
+            case SKILL -> context.getSkillId();
+            case TOOL -> context.getToolId();
+            case MEMORY -> context.getMemoryId();
+            case USER, GLOBAL -> null;
+        };
     }
 
     /**

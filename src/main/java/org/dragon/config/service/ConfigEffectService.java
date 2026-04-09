@@ -5,11 +5,13 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.enums.ConfigLevel;
+import org.dragon.config.model.InheritanceConfig;
+import org.dragon.config.model.InheritanceConfig.AssetType;
+import org.dragon.config.model.InheritanceConfig.Level;
 import org.dragon.config.store.ConfigStore;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,13 +19,7 @@ import java.util.Optional;
  * ConfigEffectService 配置生效值服务
  *
  * <p>负责配置的继承链计算和生效值查询。
- *
- * <p>继承链计算：
- * <ul>
- *   <li>从具体粒度到全局粒度遍历</li>
- *   <li>使用 ConfigLevel.isDescendantOf() 检查继承关系</li>
- *   <li>第一个匹配的配置值即为生效值</li>
- * </ul>
+ * 使用 InheritanceConfig 的显式链路替代位运算。
  */
 @Slf4j
 @Service
@@ -50,12 +46,12 @@ public class ConfigEffectService {
         ConfigLevel targetLevel = context.getLevel();
 
         // 获取继承链（从具体到全局）
-        List<ConfigLevel> chain = getInheritanceChain(targetLevel);
+        List<Level> chain = buildInheritanceChain(targetLevel);
         log.debug("[ConfigEffectService] Inheritance chain for {}: {}", targetLevel, chain);
 
         // 遍历继承链查找配置
-        for (ConfigLevel level : chain) {
-            Optional<Object> storeValue = getStoreValue(configKey, level, context);
+        for (Level level : chain) {
+            Optional<Object> storeValue = getStoreValue(configKey, level, targetLevel, context);
             if (storeValue.isPresent()) {
                 log.debug("[ConfigEffectService] Found value at level {}: {}", level, storeValue.get());
                 return EffectiveConfig.builder()
@@ -63,7 +59,7 @@ public class ConfigEffectService {
                         .effectiveValue(storeValue.get())
                         .valueType(determineValueType(storeValue.get()))
                         .source(level.name())
-                        .isInherited(level != targetLevel)
+                        .isInherited(level != chain.get(0))
                         .displayStatus(DisplayStatus.SET)
                         .build();
             }
@@ -75,59 +71,108 @@ public class ConfigEffectService {
     }
 
     /**
-     * 获取继承链（从具体到全局）
-     *
-     * <p>通过 AND 运算检查继承关系
+     * 根据 ConfigLevel 构建继承链（从具体到全局）
      */
-    private List<ConfigLevel> getInheritanceChain(ConfigLevel targetLevel) {
-        List<ConfigLevel> chain = new ArrayList<>();
-        chain.add(targetLevel);
+    private List<Level> buildInheritanceChain(ConfigLevel configLevel) {
+        Level level = InheritanceConfig.toLevel(configLevel);
+        boolean hasWorkspaceParent = InheritanceConfig.hasWorkspaceParent(configLevel);
 
-        // 找到所有祖先层级
-        for (ConfigLevel candidate : ConfigLevel.values()) {
-            if (candidate == targetLevel) {
-                continue;
-            }
-            // candidate 是 targetLevel 的祖先当且仅当：
-            // 1. targetLevel 继承 candidate
-            // 2. candidate 不继承任何其他更远的祖先（避免重复添加）
-            if (targetLevel.isDescendantOf(candidate) && !hasIntermediateAncestor(targetLevel, candidate)) {
-                chain.add(candidate);
-            }
+        // 根据是否需要 workspace 父级来构建链路
+        AssetType assetType = toAssetType(level);
+        if (assetType == null) {
+            // GLOBAL 或 USER，使用简化的链路
+            return switch (level) {
+                case GLOBAL -> List.of(Level.GLOBAL);
+                case USER -> List.of(Level.USER, Level.GLOBAL);
+                default -> List.of(level, Level.USER, Level.GLOBAL);
+            };
         }
 
-        return chain;
+        // 获取父级
+        Level parentLevel = hasWorkspaceParent ? Level.WORKSPACE : null;
+        return InheritanceConfig.buildChain(assetType, parentLevel);
     }
 
     /**
-     * 检查 level 和 candidate 之间是否有其他祖先
+     * 将简化层级转换为资产类型
      */
-    private boolean hasIntermediateAncestor(ConfigLevel level, ConfigLevel candidate) {
-        for (ConfigLevel other : ConfigLevel.values()) {
-            if (other == level || other == candidate) {
-                continue;
-            }
-            // 如果 level 继承 other，other 继承 candidate，说明 other 是中间祖先
-            if (level.isDescendantOf(other) && other.isDescendantOf(candidate)) {
-                return true;
-            }
-        }
-        return false;
+    private AssetType toAssetType(Level level) {
+        return switch (level) {
+            case WORKSPACE -> AssetType.WORKSPACE;
+            case CHARACTER -> AssetType.CHARACTER;
+            case SKILL -> AssetType.SKILL;
+            case TOOL -> AssetType.TOOL;
+            case MEMORY -> AssetType.MEMORY;
+            case USER, GLOBAL -> null;
+        };
     }
 
     /**
      * 从存储中获取配置值
      */
-    private Optional<Object> getStoreValue(String configKey, ConfigLevel level, InheritanceContext context) {
-        return configStore.get(
-                level,
-                context.getWorkspaceId(),
-                context.getCharacterId(),
-                context.getToolId(),
-                context.getSkillId(),
-                context.getMemoryId(),
-                configKey
-        );
+    private Optional<Object> getStoreValue(String configKey, Level level, ConfigLevel targetLevel, InheritanceContext context) {
+        // 根据层级确定要查询的 ConfigLevel
+        ConfigLevel queryLevel = toConfigLevel(level, context);
+
+        // 根据层级确定要传递的 ID
+        String workspaceId = getIdForLevel(level, context, InheritanceContext::getWorkspaceId);
+        String characterId = getIdForLevel(level, context, InheritanceContext::getCharacterId);
+        String toolId = getIdForLevel(level, context, InheritanceContext::getToolId);
+        String skillId = getIdForLevel(level, context, InheritanceContext::getSkillId);
+        String memoryId = getIdForLevel(level, context, InheritanceContext::getMemoryId);
+
+        return configStore.get(queryLevel, workspaceId, characterId, toolId, skillId, memoryId, configKey);
+    }
+
+    /**
+     * 根据层级和上下文获取对应的 ConfigLevel
+     */
+    private ConfigLevel toConfigLevel(Level level, InheritanceContext context) {
+        return switch (level) {
+            case GLOBAL -> ConfigLevel.GLOBAL;
+            case USER -> ConfigLevel.STUDIO;
+            case WORKSPACE -> ConfigLevel.STUDIO_WORKSPACE;
+            case CHARACTER -> {
+                if (context.getWorkspaceId() != null && !context.getWorkspaceId().isEmpty()) {
+                    yield ConfigLevel.GLOBAL_WS_CHAR;
+                }
+                yield ConfigLevel.GLOBAL_CHARACTER;
+            }
+            case SKILL -> {
+                if (context.getWorkspaceId() != null && !context.getWorkspaceId().isEmpty()) {
+                    yield ConfigLevel.GLOBAL_WS_SKILL;
+                }
+                yield ConfigLevel.GLOBAL_SKILL;
+            }
+            case TOOL -> {
+                if (context.getWorkspaceId() != null && !context.getWorkspaceId().isEmpty()) {
+                    yield ConfigLevel.GLOBAL_WS_TOOL;
+                }
+                if (context.getCharacterId() != null && !context.getCharacterId().isEmpty()) {
+                    yield ConfigLevel.GLOBAL_CHAR_TOOL;
+                }
+                yield ConfigLevel.GLOBAL_TOOL;
+            }
+            case MEMORY -> {
+                if (context.getWorkspaceId() != null && !context.getWorkspaceId().isEmpty()) {
+                    yield ConfigLevel.GLOBAL_WS_MEMORY;
+                }
+                if (context.getCharacterId() != null && !context.getCharacterId().isEmpty()) {
+                    yield ConfigLevel.GLOBAL_CHAR_MEMORY;
+                }
+                yield ConfigLevel.GLOBAL_MEMORY;
+            }
+        };
+    }
+
+    /**
+     * 获取指定层级对应的 ID
+     */
+    private String getIdForLevel(Level level, InheritanceContext context, java.util.function.Function<InheritanceContext, String> getter) {
+        return switch (level) {
+            case GLOBAL, USER -> null;
+            default -> getter.apply(context);
+        };
     }
 
     /**
@@ -159,17 +204,11 @@ public class ConfigEffectService {
     @Data
     @Builder
     public static class EffectiveConfig {
-        /** 配置键 */
         private String configKey;
-        /** 生效值 */
         private Object effectiveValue;
-        /** 值类型 */
         private String valueType;
-        /** 值来源 */
         private String source;
-        /** 是否继承自父级 */
         private boolean isInherited;
-        /** 显示状态 */
         private DisplayStatus displayStatus;
     }
 
@@ -177,11 +216,8 @@ public class ConfigEffectService {
      * 显示状态枚举
      */
     public enum DisplayStatus {
-        /** 已设置（当前 scope 有 store 值） */
         SET,
-        /** 未设置（使用默认值） */
         USE_DEFAULT,
-        /** 未设置（无有效值） */
         NOT_SET
     }
 }

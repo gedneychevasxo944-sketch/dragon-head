@@ -3,7 +3,6 @@ package org.dragon.config.context;
 import lombok.Builder;
 import lombok.Data;
 import org.dragon.config.enums.ConfigLevel;
-import org.dragon.config.enums.ScopeBits;
 
 /**
  * 配置继承上下文
@@ -588,14 +587,13 @@ public class InheritanceContext {
      */
     public static InheritanceContext forLevel(ConfigLevel level, String workspaceId,
             String characterId, String toolId, String skillId, String memoryId) {
-        int bit = level.getScopeBit();
         return InheritanceContext.builder()
                 .level(level)
-                .workspaceId((bit & ScopeBits.WORKSPACE) != 0 ? workspaceId : null)
-                .characterId((bit & ScopeBits.CHARACTER) != 0 ? characterId : null)
-                .toolId((bit & ScopeBits.TOOL) != 0 ? toolId : null)
-                .skillId((bit & ScopeBits.SKILL) != 0 ? skillId : null)
-                .memoryId((bit & ScopeBits.MEMORY) != 0 ? memoryId : null)
+                .workspaceId(level.hasWorkspace() ? workspaceId : null)
+                .characterId(level.hasCharacter() ? characterId : null)
+                .toolId(level.hasTool() ? toolId : null)
+                .skillId(level.hasSkill() ? skillId : null)
+                .memoryId(level.hasMemory() ? memoryId : null)
                 .build();
     }
 }

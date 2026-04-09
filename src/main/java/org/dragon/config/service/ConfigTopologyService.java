@@ -1,29 +1,31 @@
 package org.dragon.config.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.dto.AssetConfigItemVO;
 import org.dragon.config.dto.AssetConfigVO;
-import org.dragon.config.dto.ConfigTopologyGraphVO;
 import org.dragon.config.dto.ConfigTopologyVO;
 import org.dragon.config.dto.ConfigTopologyVO.ConfigChainNodeVO;
-import org.dragon.config.dto.ConfigTopologyVO.TopologyNodeVO;
 import org.dragon.config.enums.ConfigLevel;
-import org.dragon.config.enums.ScopeBits;
+import org.dragon.config.model.InheritanceConfig;
+import org.dragon.config.model.InheritanceConfig.AssetType;
+import org.dragon.config.model.InheritanceConfig.Level;
 import org.dragon.config.store.ConfigStore;
+import org.dragon.config.store.ConfigStore.ConfigStoreItem;
+import org.dragon.config.store.ConfigStore.ConfigMetadata;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * 配置拓扑服务
  *
- * <p>提供配置的链路拓扑查询和资产配置查询
+ * <p>使用显式继承链路配置替代位运算
  */
 @Slf4j
 @Service
@@ -38,507 +40,429 @@ public class ConfigTopologyService {
     /**
      * 获取资产配置列表
      *
+     * <p>同一 configKey 的不同资产组合配置汇总在 comboValues 列表中返回
+     *
      * @param assetType 资产类型（CHARACTER, WORKSPACE, TOOL, SKILL, MEMORY）
      * @param assetId 资产 ID
+     * @param parentLevelName 父级层级名称（可选，如 WORKSPACE）
      * @return 资产配置信息
      */
-    public AssetConfigVO getAssetConfigs(String assetType, String assetId) {
-        // 根据资产类型确定对应的 ConfigLevel 和 scopeBit
-        int assetBit = getAssetBit(assetType);
-        ConfigLevel targetLevel = getTargetLevel(assetType);
+    public AssetConfigVO getAssetConfigs(String assetType, String assetId, String parentLevelName) {
+        log.info("[ConfigTopologyService] getAssetConfigs assetType={} assetId={} parentLevelName={}", assetType, assetId, parentLevelName);
+        AssetType type = AssetType.valueOf(assetType.toUpperCase());
+        Level parentLevel = parentLevelName != null ? Level.valueOf(parentLevelName.toUpperCase()) : null;
 
-        // 获取该资产相关的所有配置键（从元数据列表）
-        List<String> configKeys = getAllConfigKeys();
+        // 1. 构建继承链
+        List<Level> chain = InheritanceConfig.buildChain(type, parentLevel);
 
+        // 2. 收集所有配置项（按 configKey 聚合）
+        Map<String, List<ComboValueEntry>> configMap = new LinkedHashMap<>();
+
+        for (Level level : chain) {
+            // 获取该层级对应的所有 ConfigLevel
+            List<ConfigLevel> configLevels = getConfigLevelsForLevel(level, type, parentLevel);
+
+            for (ConfigLevel configLevel : configLevels) {
+                List<ConfigStoreItem> items = configStore.listByLevel(configLevel);
+                for (ConfigStoreItem item : items) {
+                    // 检查该配置项是否与当前资产相关
+                    ComboValueEntry entry = buildComboValueEntry(item, level, type, assetId, parentLevel);
+                    if (entry != null) {
+                        configMap.computeIfAbsent(item.configKey(), k -> new ArrayList<>()).add(entry);
+                    }
+                }
+            }
+        }
+
+        // 3. 转换为 VO，按优先级排序
         List<AssetConfigItemVO> configs = new ArrayList<>();
+        for (Map.Entry<String, List<ComboValueEntry>> entry : configMap.entrySet()) {
+            String configKey = entry.getKey();
+            List<ComboValueEntry> entries = entry.getValue();
 
-        for (String configKey : configKeys) {
-            // 构建上下文
-            InheritanceContext context = InheritanceContext.forLevel(targetLevel,
-                    "WORKSPACE".equals(assetType) ? assetId : null,
-                    "CHARACTER".equals(assetType) ? assetId : null,
-                    "TOOL".equals(assetType) ? assetId : null,
-                    "SKILL".equals(assetType) ? assetId : null,
-                    "MEMORY".equals(assetType) ? assetId : null);
+            // 按优先级排序：直接配置(OVERRIDDEN)优先，然后按层级
+            entries.sort((a, b) -> {
+                if ("OVERRIDDEN".equals(a.sourceType) && !"OVERRIDDEN".equals(b.sourceType)) return -1;
+                if (!"OVERRIDDEN".equals(a.sourceType) && "OVERRIDDEN".equals(b.sourceType)) return 1;
+                return a.level.compareTo(b.level);
+            });
 
-            // 获取生效配置
-            ConfigEffectService.EffectiveConfig ec = getEffectiveConfig(configKey, context);
+            // 检查是否存在多个相同优先级的 OVERRIDDEN 配置（模糊情况）
+            long overriddenCount = entries.stream().filter(e -> "OVERRIDDEN".equals(e.sourceType)).count();
+            boolean ambiguous = overriddenCount > 1;
 
-            // 获取继承链
-            List<ConfigLevel> inheritanceChain = getInheritanceChain(targetLevel);
-            List<AssetConfigItemVO.InheritanceChainNode> chainNodes = new ArrayList<>();
-            for (ConfigLevel level : inheritanceChain) {
-                boolean hasValue = hasConfigAtLevel(configKey, level, context);
-                chainNodes.add(AssetConfigItemVO.InheritanceChainNode.builder()
-                        .level(level.name())
-                        .hasValue(hasValue)
+            // 构建 comboValues
+            List<AssetConfigItemVO.ComboValue> comboValues = new ArrayList<>();
+            for (ComboValueEntry e : entries) {
+                comboValues.add(AssetConfigItemVO.ComboValue.builder()
+                        .workspaceId(e.workspaceId)
+                        .characterId(e.characterId)
+                        .toolId(e.toolId)
+                        .skillId(e.skillId)
+                        .memoryId(e.memoryId)
+                        .value(e.value)
+                        .sourceLevel(e.level.name())
+                        .sourceType(e.sourceType)
+                        .effective(false)
                         .build());
             }
 
+            // 构建候选值列表
+            List<AssetConfigItemVO.CandidateValue> candidates = new ArrayList<>();
+            int priority = 0;
+            for (ComboValueEntry e : entries) {
+                String assetCombo = buildAssetCombo(e.workspaceId, e.characterId, e.toolId, e.skillId, e.memoryId);
+                candidates.add(AssetConfigItemVO.CandidateValue.builder()
+                        .value(e.value)
+                        .sourceLevel(e.level.name())
+                        .sourceType(e.sourceType)
+                        .assetCombo(assetCombo)
+                        .priority(priority++)
+                        .build());
+            }
+
+            // 确定生效值和来源信息
+            Object effectiveValue = null;
+            String sourceLevel = null;
+            String sourceType = null;
+            Integer scopeBit = null;
+            if (ambiguous) {
+                // 模糊情况：effectiveValue 为 null，候选值在 candidates 中
+            } else {
+                ComboValueEntry effectiveEntry = entries.get(0);
+                effectiveValue = effectiveEntry.value;
+                sourceLevel = effectiveEntry.level.name();
+                sourceType = effectiveEntry.sourceType;
+                scopeBit = effectiveEntry.scopeBit;
+                // 标记有效的 comboValue
+                for (AssetConfigItemVO.ComboValue cv : comboValues) {
+                    if (cv.getSourceLevel().equals(effectiveEntry.level.name())
+                            && Objects.equals(cv.getWorkspaceId(), effectiveEntry.workspaceId)
+                            && Objects.equals(cv.getCharacterId(), effectiveEntry.characterId)) {
+                        cv.setEffective(true);
+                        break;
+                    }
+                }
+            }
+
+            // 获取 GLOBAL 级别的元数据（name, description）
+            ConfigMetadata metadata = configStore.listMetadata().stream()
+                    .filter(m -> m.configKey().equals(configKey))
+                    .findFirst()
+                    .orElse(null);
+
             configs.add(AssetConfigItemVO.builder()
                     .configKey(configKey)
-                    .name(getConfigName(configKey))
-                    .description(getConfigDescription(configKey))
-                    .effectiveValue(ec.getEffectiveValue())
-                    .sourceLevel(ec.getSource())
-                    .sourceType(determineSourceType(ec, targetLevel))
-                    .inheritanceChain(chainNodes)
+                    .name(metadata != null ? metadata.name() : null)
+                    .description(metadata != null ? metadata.description() : null)
+                    .effectiveValue(effectiveValue)
+                    .sourceLevel(sourceLevel)
+                    .sourceType(sourceType)
+                    .scopeBit(scopeBit)
+                    .ambiguous(ambiguous)
+                    .effectiveValueCandidates(ambiguous ? candidates : null)
+                    .comboValues(comboValues)
                     .build());
         }
 
         return AssetConfigVO.builder()
                 .assetType(assetType)
                 .assetId(assetId)
-                .scopeLevel(targetLevel.name())
-                .scopeBit(targetLevel.getScopeBit())
+                .scopeLevel(chain.get(0).name())
                 .configs(configs)
                 .build();
     }
 
     /**
-     * 获取单个配置的链路拓扑
-     *
-     * @param configKey 配置键
-     * @param assetType 资产类型
-     * @param assetId 资产 ID
-     * @return 配置链路信息
+     * 获取配置继承链路
      */
-    public ConfigTopologyVO getConfigChain(String configKey, String assetType, String assetId) {
-        ConfigLevel targetLevel = getTargetLevel(assetType);
+    public ConfigTopologyVO getConfigChain(String configKey, String assetType, String assetId, String parentLevelName, String workspaceId) {
+        AssetType type = AssetType.valueOf(assetType.toUpperCase());
+        Level parentLevel = parentLevelName != null ? Level.valueOf(parentLevelName.toUpperCase()) : null;
 
-        InheritanceContext context = InheritanceContext.forLevel(targetLevel,
-                "WORKSPACE".equals(assetType) ? assetId : null,
-                "CHARACTER".equals(assetType) ? assetId : null,
-                "TOOL".equals(assetType) ? assetId : null,
-                "SKILL".equals(assetType) ? assetId : null,
-                "MEMORY".equals(assetType) ? assetId : null);
+        // 构建继承链
+        List<Level> chain = InheritanceConfig.buildChain(type, parentLevel);
 
-        // 获取继承链
-        List<ConfigLevel> inheritanceChain = getInheritanceChain(targetLevel);
-        List<ConfigChainNodeVO> chainNodes = new ArrayList<>();
+        // 构建链路节点
+        List<ConfigChainNodeVO> nodes = new ArrayList<>();
+        Level effectiveLevel = null;
 
-        ConfigLevel effectiveLevel = null;
-        for (ConfigLevel level : inheritanceChain) {
-            if (hasConfigAtLevel(configKey, level, context)) {
+        for (Level level : chain) {
+            Object value = getConfigValueAtLevel(level, parentLevel, configKey, assetId, type);
+            boolean hasConfig = value != null;
+            if (hasConfig && effectiveLevel == null) {
                 effectiveLevel = level;
-                break;
             }
-        }
-
-        for (ConfigLevel level : inheritanceChain) {
-            boolean hasConfig = hasConfigAtLevel(configKey, level, context);
-            Object configValue = hasConfig ? getConfigValueAtLevel(configKey, level, context) : null;
-
-            chainNodes.add(ConfigChainNodeVO.builder()
+            nodes.add(ConfigChainNodeVO.builder()
                     .level(level.name())
-                    .levelName(getLevelDisplayName(level))
-                    .scopeBit(level.getScopeBit())
-                    .scopeId(getScopeId(level, context))
-                    .scopeIdType(getScopeIdType(level))
                     .hasConfig(hasConfig)
-                    .configValue(configValue)
+                    .configValue(value)
                     .isEffective(level == effectiveLevel)
                     .build());
         }
 
         return ConfigTopologyVO.builder()
                 .configKey(configKey)
-                .chain(chainNodes)
+                .chain(nodes)
                 .build();
     }
 
     /**
-     * 获取完整拓扑树
-     *
-     * @param assetType 资产类型
-     * @param assetId 资产 ID
-     * @return 拓扑树结构
+     * 获取配置继承链路（兼容旧接口）
      */
-    public ConfigTopologyVO getTopology(String assetType, String assetId) {
-        ConfigLevel targetLevel = getTargetLevel(assetType);
-
-        InheritanceContext context = InheritanceContext.forLevel(targetLevel,
-                "WORKSPACE".equals(assetType) ? assetId : null,
-                "CHARACTER".equals(assetType) ? assetId : null,
-                "TOOL".equals(assetType) ? assetId : null,
-                "SKILL".equals(assetType) ? assetId : null,
-                "MEMORY".equals(assetType) ? assetId : null);
-
-        // 构建拓扑树
-        TopologyNodeVO root = buildTopologyNode(ConfigLevel.GLOBAL, context);
-
-        return ConfigTopologyVO.builder()
-                .tree(root)
-                .build();
+    public ConfigTopologyVO getConfigChain(String configKey, String assetType, String assetId, String parentLevelName) {
+        return getConfigChain(configKey, assetType, assetId, parentLevelName, null);
     }
 
     /**
-     * 获取配置拓扑图（用于前端图可视化）
-     *
-     * @param configKey 配置键
-     * @param assetType 资产类型
-     * @param assetId 资产 ID
-     * @return 拓扑图数据（节点+边）
+     * 获取资产元数据列表
      */
-    public ConfigTopologyGraphVO getConfigTopologyGraph(String configKey, String assetType, String assetId) {
-        ConfigLevel targetLevel = getTargetLevel(assetType);
-        InheritanceContext context = InheritanceContext.forLevel(targetLevel,
-                "WORKSPACE".equals(assetType) ? assetId : null,
-                "CHARACTER".equals(assetType) ? assetId : null,
-                "TOOL".equals(assetType) ? assetId : null,
-                "SKILL".equals(assetType) ? assetId : null,
-                "MEMORY".equals(assetType) ? assetId : null);
-
-        // 获取继承链（从具体到全局，逆序）
-        List<ConfigLevel> inheritanceChain = getInheritanceChain(targetLevel);
-
-        // 找到生效层级
-        ConfigLevel effectiveLevel = null;
-        for (ConfigLevel level : inheritanceChain) {
-            if (hasConfigAtLevel(configKey, level, context)) {
-                effectiveLevel = level;
-                break;
-            }
-        }
-
-        // 构建节点和边
-        List<ConfigTopologyGraphVO.ConfigGraphNodeVO> nodes = new ArrayList<>();
-        List<ConfigTopologyGraphVO.ConfigGraphEdgeVO> edges = new ArrayList<>();
-
-        // 从左到右布局，GLOBAL 在最左
-        // 所以需要反转链，让 GLOBAL 的 index 最小
-        List<ConfigLevel> orderedLevels = new ArrayList<>(inheritanceChain);
-        // 按 scopeBit 从小到大排序（scopeBit 越小越"全局"）
-        orderedLevels.sort((a, b) -> Integer.compare(a.getScopeBit(), b.getScopeBit()));
-
-        // 节点大小映射
-        Map<String, String> sizeMap = Map.of(
-                "GLOBAL", "large",
-                "STUDIO", "large",
-                "WORKSPACE", "medium",
-                "CHARACTER", "medium",
-                "TOOL", "small",
-                "SKILL", "small",
-                "MEMORY", "small"
-        );
-
-        for (int i = 0; i < orderedLevels.size(); i++) {
-            ConfigLevel level = orderedLevels.get(i);
-            boolean hasValue = hasConfigAtLevel(configKey, level, context);
-            Object value = hasValue ? getConfigValueAtLevel(configKey, level, context) : null;
-            boolean isEffective = level == effectiveLevel;
-
-            // 确定层级类型
-            String levelType = getLevelType(level);
-
-            // 构建节点
-            ConfigTopologyGraphVO.ConfigGraphNodeVO node = ConfigTopologyGraphVO.ConfigGraphNodeVO.builder()
-                    .id(level.name())
-                    .level(level.name())
-                    .levelType(levelType)
-                    .name(getLevelDisplayName(level))
-                    .configKey(configKey)
-                    .hasValue(hasValue)
-                    .value(value)
-                    .isEffective(isEffective)
-                    .x(i * 180)  // 水平间距 180px
-                    .y(150)     // 固定 y 居中
-                    .size(sizeMap.getOrDefault(levelType, "medium"))
-                    .status(hasValue ? "active" : "inactive")
-                    .build();
-            nodes.add(node);
-
-            // 构建边（从父到子，即从左到右）
-            if (i > 0) {
-                ConfigLevel parent = orderedLevels.get(i - 1);
-                ConfigTopologyGraphVO.ConfigGraphEdgeVO edge = ConfigTopologyGraphVO.ConfigGraphEdgeVO.builder()
-                        .id(parent.name() + "->" + level.name())
-                        .source(parent.name())
-                        .target(level.name())
-                        .type("inherits_from")
-                        .label("继承")
-                        .weight(hasValue ? 1.0 : 0.3)
-                        .build();
-                edges.add(edge);
-            }
-        }
-
-        // 获取配置元数据中的名称
-        String configName = getConfigName(configKey);
-
-        return ConfigTopologyGraphVO.builder()
-                .configKey(configKey)
-                .configName(configName)
-                .effectiveValue(effectiveLevel != null ? getConfigValueAtLevel(configKey, effectiveLevel, context) : null)
-                .effectiveSource(effectiveLevel != null ? effectiveLevel.name() : null)
-                .nodes(nodes)
-                .edges(edges)
-                .build();
-    }
-
-    private String getConfigName(String configKey) {
-        List<ConfigStore.ConfigMetadata> metadata = configStore.listMetadata();
-        return metadata.stream()
-                .filter(m -> m.configKey().equals(configKey))
-                .findFirst()
-                .map(ConfigStore.ConfigMetadata::name)
-                .orElse(configKey);
-    }
-
-    private String getConfigDescription(String configKey) {
-        List<ConfigStore.ConfigMetadata> metadata = configStore.listMetadata();
-        return metadata.stream()
-                .filter(m -> m.configKey().equals(configKey))
-                .findFirst()
-                .map(ConfigStore.ConfigMetadata::description)
-                .orElse(null);
-    }
-
-    private String getLevelType(ConfigLevel level) {
-        int bit = level.getScopeBit();
-        if (bit == 1) return "GLOBAL";
-        if (bit == 2) return "STUDIO";
-        if ((bit & ScopeBits.CHARACTER) != 0) return "CHARACTER";
-        if ((bit & ScopeBits.WORKSPACE) != 0) return "WORKSPACE";
-        if ((bit & ScopeBits.TOOL) != 0) return "TOOL";
-        if ((bit & ScopeBits.SKILL) != 0) return "SKILL";
-        if ((bit & ScopeBits.MEMORY) != 0) return "MEMORY";
-        if ((bit & ScopeBits.OBSERVER) != 0) return "OBSERVER";
-        return "UNKNOWN";
+    public List<ConfigMetadata> listMetadata() {
+        return configStore.listMetadata();
     }
 
     // ==================== 私有辅助方法 ====================
 
-    private int getAssetBit(String assetType) {
-        return switch (assetType.toUpperCase()) {
-            case "CHARACTER" -> ScopeBits.CHARACTER;
-            case "WORKSPACE" -> ScopeBits.WORKSPACE;
-            case "TOOL" -> ScopeBits.TOOL;
-            case "SKILL" -> ScopeBits.SKILL;
-            case "MEMORY" -> ScopeBits.MEMORY;
-            default -> 0;
-        };
-    }
+    /**
+     * 获取指定层级对应的所有 ConfigLevel
+     *
+     * <p>注意：对于资产自身层级，会同时查询带工作空间和不带工作空间的配置，
+     * 以便收集该资产在所有资产组合下的配置
+     */
+    private List<ConfigLevel> getConfigLevelsForLevel(Level level, AssetType assetType, Level parentLevel) {
+        List<ConfigLevel> levels = new ArrayList<>();
 
-    private ConfigLevel getTargetLevel(String assetType) {
-        return switch (assetType.toUpperCase()) {
-            case "CHARACTER" -> ConfigLevel.GLOBAL_CHARACTER;
-            case "WORKSPACE" -> ConfigLevel.GLOBAL_WORKSPACE;
-            case "TOOL" -> ConfigLevel.GLOBAL_TOOL;
-            case "SKILL" -> ConfigLevel.GLOBAL_SKILL;
-            case "MEMORY" -> ConfigLevel.GLOBAL_MEMORY;
-            default -> ConfigLevel.GLOBAL;
-        };
-    }
+        boolean hasWorkspace = parentLevel == Level.WORKSPACE;
 
-    private List<String> getAllConfigKeys() {
-        List<ConfigStore.ConfigMetadata> metadata = configStore.listMetadata();
-        return metadata.stream()
-                .map(ConfigStore.ConfigMetadata::configKey)
-                .distinct()
-                .toList();
-    }
-
-    //character,llm.temp
-    private ConfigEffectService.EffectiveConfig getEffectiveConfig(String configKey, InheritanceContext context) {
-        // 遍历继承链找第一个有值的
-        List<ConfigLevel> chain = getInheritanceChain(context.getLevel());
-        for (ConfigLevel level : chain) {
-            // 根据 level 判断应该使用哪个 ID
-            String workspaceId = shouldUseWorkspaceId(level) ? context.getWorkspaceId() : null;
-            String characterId = shouldUseCharacterId(level) ? context.getCharacterId() : null;
-            String toolId = shouldUseToolId(level) ? context.getToolId() : null;
-            String skillId = shouldUseSkillId(level) ? context.getSkillId() : null;
-            String memoryId = shouldUseMemoryId(level) ? context.getMemoryId() : null;
-
-            Optional<Object> value = configStore.get(level,
-                    workspaceId, characterId, toolId, skillId, memoryId,
-                    configKey);
-            if (value.isPresent()) {
-                return ConfigEffectService.EffectiveConfig.builder()
-                        .configKey(configKey)
-                        .effectiveValue(value.get())
-                        .source(level.name())
-                        .isInherited(level != context.getLevel())
-                        .build();
+        switch (level) {
+            case GLOBAL -> levels.add(ConfigLevel.GLOBAL);
+            case USER -> levels.add(ConfigLevel.STUDIO);
+            case WORKSPACE -> {
+                levels.add(hasWorkspace ? ConfigLevel.GLOBAL_WORKSPACE : ConfigLevel.STUDIO_WORKSPACE);
+            }
+            case CHARACTER -> {
+                // 始终添加 GLOBAL_WS_CHAR 以获取该角色在所有工作空间下的配置
+                levels.add(ConfigLevel.GLOBAL_WS_CHAR);
+                levels.add(ConfigLevel.GLOBAL_CHARACTER);
+            }
+            case SKILL -> {
+                // 始终添加 GLOBAL_WS_SKILL 以获取该技能在所有工作空间下的配置
+                levels.add(ConfigLevel.GLOBAL_WS_SKILL);
+                levels.add(ConfigLevel.GLOBAL_SKILL);
+            }
+            case TOOL -> {
+                // 始终添加 GLOBAL_WS_TOOL 以获取该工具在所有工作空间下的配置
+                levels.add(ConfigLevel.GLOBAL_WS_TOOL);
+                levels.add(ConfigLevel.GLOBAL_CHAR_TOOL);
+                levels.add(ConfigLevel.GLOBAL_TOOL);
+            }
+            case MEMORY -> {
+                // 始终添加 GLOBAL_WS_MEMORY 以获取该记忆在所有工作空间下的配置
+                levels.add(ConfigLevel.GLOBAL_WS_MEMORY);
+                levels.add(ConfigLevel.GLOBAL_CHAR_MEMORY);
+                levels.add(ConfigLevel.GLOBAL_MEMORY);
             }
         }
-        return ConfigEffectService.EffectiveConfig.builder()
-                .configKey(configKey)
-                .displayStatus(ConfigEffectService.DisplayStatus.NOT_SET)
-                .build();
+
+        return levels;
     }
 
-    private List<ConfigLevel> getInheritanceChain(ConfigLevel targetLevel) {
-        List<ConfigLevel> chain = new ArrayList<>();
-        chain.add(targetLevel);
-
-        for (ConfigLevel candidate : ConfigLevel.values()) {
-            if (candidate == targetLevel) {
-                continue;
-            }
-            if (targetLevel.isDescendantOf(candidate) && !hasIntermediateAncestor(targetLevel, candidate)) {
-                chain.add(candidate);
-            }
-        }
-        return chain;
-    }
-
-    //1001
-    //8,4,2,1
-    private boolean hasIntermediateAncestor(ConfigLevel level, ConfigLevel candidate) {
-        for (ConfigLevel other : ConfigLevel.values()) {
-            if (other == level || other == candidate) {
-                continue;
-            }
-            if (level.isDescendantOf(other) && other.isDescendantOf(candidate)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean hasConfigAtLevel(String configKey, ConfigLevel level, InheritanceContext context) {
-        // 根据级别获取对应的 IDs，不要传递不相关级别的 ID
-        String workspaceId = shouldUseWorkspaceId(level) ? context.getWorkspaceId() : null;
-        String characterId = shouldUseCharacterId(level) ? context.getCharacterId() : null;
-        String toolId = shouldUseToolId(level) ? context.getToolId() : null;
-        String skillId = shouldUseSkillId(level) ? context.getSkillId() : null;
-        String memoryId = shouldUseMemoryId(level) ? context.getMemoryId() : null;
-
-        Optional<Object> value = configStore.get(level,
-                workspaceId, characterId, toolId, skillId, memoryId, configKey);
-        return value.isPresent();
-    }
-
-    private Object getConfigValueAtLevel(String configKey, ConfigLevel level, InheritanceContext context) {
-        String workspaceId = shouldUseWorkspaceId(level) ? context.getWorkspaceId() : null;
-        String characterId = shouldUseCharacterId(level) ? context.getCharacterId() : null;
-        String toolId = shouldUseToolId(level) ? context.getToolId() : null;
-        String skillId = shouldUseSkillId(level) ? context.getSkillId() : null;
-        String memoryId = shouldUseMemoryId(level) ? context.getMemoryId() : null;
-
-        Optional<Object> value = configStore.get(level,
-                workspaceId, characterId, toolId, skillId, memoryId, configKey);
+    private Object getConfigValueAtLevel(Level level, Level parentLevel, String configKey, String assetId, AssetType assetType) {
+        ConfigLevel configLevel = toConfigLevelForAsset(level, assetType, parentLevel);
+        String wid = getWorkspaceIdForLevel(level, parentLevel);
+        String cid = getCharacterIdForLevel(level, assetId, assetType, parentLevel);
+        String tid = getToolIdForLevel(level, assetId, assetType);
+        String sid = getSkillIdForLevel(level, assetId, assetType);
+        String mid = getMemoryIdForLevel(level, assetId, assetType);
+        Optional<Object> value = configStore.get(configLevel, wid, cid, tid, sid, mid, configKey);
         return value.orElse(null);
     }
 
-    private boolean shouldUseWorkspaceId(ConfigLevel level) {
-        return (level.getScopeBit() & ScopeBits.WORKSPACE) != 0;
+    private ConfigLevel toConfigLevelForAsset(Level level, AssetType assetType, Level parentLevel) {
+        boolean hasWorkspace = parentLevel == Level.WORKSPACE;
+
+        return switch (level) {
+            case GLOBAL -> ConfigLevel.GLOBAL;
+            case USER -> ConfigLevel.STUDIO;
+            case WORKSPACE -> hasWorkspace ? ConfigLevel.GLOBAL_WORKSPACE : ConfigLevel.STUDIO_WORKSPACE;
+            case CHARACTER -> {
+                if (hasWorkspace) {
+                    yield ConfigLevel.GLOBAL_WS_CHAR;
+                }
+                yield ConfigLevel.GLOBAL_CHARACTER;
+            }
+            case SKILL -> {
+                if (hasWorkspace) {
+                    yield ConfigLevel.GLOBAL_WS_SKILL;
+                }
+                yield ConfigLevel.GLOBAL_SKILL;
+            }
+            case TOOL -> {
+                if (hasWorkspace && parentLevel == Level.CHARACTER) {
+                    yield ConfigLevel.GLOBAL_WS_CHAR_TOOL;
+                }
+                if (hasWorkspace) {
+                    yield ConfigLevel.GLOBAL_WS_TOOL;
+                }
+                if (parentLevel == Level.CHARACTER) {
+                    yield ConfigLevel.GLOBAL_CHAR_TOOL;
+                }
+                yield ConfigLevel.GLOBAL_TOOL;
+            }
+            case MEMORY -> {
+                if (hasWorkspace) {
+                    yield ConfigLevel.GLOBAL_WS_MEMORY;
+                }
+                if (parentLevel == Level.CHARACTER) {
+                    yield ConfigLevel.GLOBAL_CHAR_MEMORY;
+                }
+                yield ConfigLevel.GLOBAL_MEMORY;
+            }
+        };
     }
 
-    private boolean shouldUseCharacterId(ConfigLevel level) {
-        return (level.getScopeBit() & ScopeBits.CHARACTER) != 0;
+    private String getWorkspaceIdForLevel(Level level, Level parentLevel) {
+        return switch (level) {
+            case GLOBAL, USER -> null;
+            case WORKSPACE, CHARACTER, SKILL, TOOL, MEMORY -> {
+                if (parentLevel == Level.WORKSPACE) {
+                    yield null; // 工作空间ID由数据库记录中的workspaceId提供
+                }
+                yield null;
+            }
+        };
     }
 
-    private boolean shouldUseToolId(ConfigLevel level) {
-        return (level.getScopeBit() & ScopeBits.TOOL) != 0;
+    private String getCharacterIdForLevel(Level level, String assetId, AssetType assetType, Level parentLevel) {
+        return switch (level) {
+            case GLOBAL, USER, WORKSPACE, SKILL, TOOL, MEMORY -> null;
+            case CHARACTER -> assetType == AssetType.CHARACTER ? assetId : null;
+        };
     }
 
-    private boolean shouldUseSkillId(ConfigLevel level) {
-        return (level.getScopeBit() & ScopeBits.SKILL) != 0;
+    private String getToolIdForLevel(Level level, String assetId, AssetType assetType) {
+        return switch (level) {
+            case GLOBAL, USER, WORKSPACE, CHARACTER, SKILL, MEMORY -> null;
+            case TOOL -> assetType == AssetType.TOOL ? assetId : null;
+        };
     }
 
-    private boolean shouldUseMemoryId(ConfigLevel level) {
-        return (level.getScopeBit() & ScopeBits.MEMORY) != 0;
+    private String getSkillIdForLevel(Level level, String assetId, AssetType assetType) {
+        return switch (level) {
+            case GLOBAL, USER, WORKSPACE, CHARACTER, TOOL, MEMORY -> null;
+            case SKILL -> assetType == AssetType.SKILL ? assetId : null;
+        };
     }
 
-    private String determineSourceType(ConfigEffectService.EffectiveConfig ec, ConfigLevel targetLevel) {
-        if (ec.getSource() == null) {
-            return "NOT_SET";
-        }
-        return ec.getSource().equals(targetLevel.name()) ? "OVERRIDDEN" : "INHERITED";
+    private String getMemoryIdForLevel(Level level, String assetId, AssetType assetType) {
+        return switch (level) {
+            case GLOBAL, USER, WORKSPACE, CHARACTER, SKILL, TOOL -> null;
+            case MEMORY -> assetType == AssetType.MEMORY ? assetId : null;
+        };
     }
 
-    private String getLevelDisplayName(ConfigLevel level) {
-        int bit = level.getScopeBit();
-        if ((bit & ScopeBits.CHARACTER) != 0) {
-            return "角色级别";
-        }
-        if ((bit & ScopeBits.WORKSPACE) != 0) {
-            return "工作空间级别";
-        }
-        if ((bit & ScopeBits.TOOL) != 0) {
-            return "工具级别";
-        }
-        if ((bit & ScopeBits.SKILL) != 0) {
-            return "技能级别";
-        }
-        if ((bit & ScopeBits.MEMORY) != 0) {
-            return "记忆级别";
-        }
-        if ((bit & ScopeBits.OBSERVER) != 0) {
-            return "观察者级别";
-        }
-        if (bit == 1) {
-            return "全局级别";
-        }
-        return level.name();
-    }
-
-    private String getScopeId(ConfigLevel level, InheritanceContext context) {
-        int bit = level.getScopeBit();
-        if ((bit & ScopeBits.CHARACTER) != 0) return context.getCharacterId();
-        if ((bit & ScopeBits.WORKSPACE) != 0) return context.getWorkspaceId();
-        if ((bit & ScopeBits.TOOL) != 0) return context.getToolId();
-        if ((bit & ScopeBits.SKILL) != 0) return context.getSkillId();
-        if ((bit & ScopeBits.MEMORY) != 0) return context.getMemoryId();
-        return null;
-    }
-
-    private String getScopeIdType(ConfigLevel level) {
-        int bit = level.getScopeBit();
-        if ((bit & ScopeBits.CHARACTER) != 0) return "CHARACTER";
-        if ((bit & ScopeBits.WORKSPACE) != 0) return "WORKSPACE";
-        if ((bit & ScopeBits.TOOL) != 0) return "TOOL";
-        if ((bit & ScopeBits.SKILL) != 0) return "SKILL";
-        if ((bit & ScopeBits.MEMORY) != 0) return "MEMORY";
-        return null;
-    }
-
-    private TopologyNodeVO buildTopologyNode(ConfigLevel level, InheritanceContext context) {
-        // 获取该层的配置值
-        List<String> configKeys = getAllConfigKeys();
-        Object configValue = null;
-        boolean hasValue = false;
-
-        // 检查是否有任何配置
-        for (String configKey : configKeys) {
-            Optional<Object> value = configStore.get(level,
-                    context.getWorkspaceId(), context.getCharacterId(),
-                    context.getToolId(), context.getSkillId(), context.getMemoryId(),
-                    configKey);
-            if (value.isPresent()) {
-                hasValue = true;
-                configValue = value.get();
-                break;
+    /**
+     * 构建 ComboValueEntry，检查配置项是否与当前资产相关
+     */
+    private ComboValueEntry buildComboValueEntry(ConfigStoreItem item, Level level, AssetType assetType, String assetId, Level parentLevel) {
+        // 父级层级不限制具体资产ID
+        if (!isParentLevel(level)) {
+            // 资产自身层级需要严格匹配资产ID
+            if (!matchesAssetId(item, level, assetType, assetId)) {
+                return null;
             }
         }
 
-        // 构建当前节点
-        TopologyNodeVO node = TopologyNodeVO.builder()
-                .level(level.name())
-                .levelName(getLevelDisplayName(level))
-                .scopeBit(level.getScopeBit())
-                .workspaceId((level.getScopeBit() & ScopeBits.WORKSPACE) != 0 ? context.getWorkspaceId() : null)
-                .characterId((level.getScopeBit() & ScopeBits.CHARACTER) != 0 ? context.getCharacterId() : null)
-                .toolId((level.getScopeBit() & ScopeBits.TOOL) != 0 ? context.getToolId() : null)
-                .skillId((level.getScopeBit() & ScopeBits.SKILL) != 0 ? context.getSkillId() : null)
-                .memoryId((level.getScopeBit() & ScopeBits.MEMORY) != 0 ? context.getMemoryId() : null)
-                .hasValue(hasValue)
-                .configValue(configValue)
-                .children(new ArrayList<>())
-                .build();
+        String sourceType = isParentLevel(level) ? "INHERITED" : "OVERRIDDEN";
 
-        // 递归构建子节点
-        for (ConfigLevel child : ConfigLevel.values()) {
-            if (child == level) continue;
-            // 检查 child 是否是 level 的直接子节点
-            if (child.isDescendantOf(level) && !hasIntermediateAncestor(child, level)) {
-                node.getChildren().add(buildTopologyNode(child, context));
-            }
+        // 获取该配置项在当前层级和资产上下文下的值
+        Object value = getConfigValueAtLevel(level, parentLevel, item.configKey(), assetId, assetType);
+        if (value == null) {
+            return null;
         }
 
-        return node;
+        String wid = item.workspaceId();
+        String cid = item.characterId();
+        String tid = item.toolId();
+        String sid = item.skillId();
+        String mid = item.memoryId();
+        Integer scopeBit = item.level().getScopeBit();
+
+        return new ComboValueEntry(item.configKey(), value, level, sourceType, wid, cid, tid, sid, mid, scopeBit);
+    }
+
+    /**
+     * 检查配置项的资产ID是否匹配目标资产
+     */
+    private boolean matchesAssetId(ConfigStoreItem item, Level level, AssetType assetType, String assetId) {
+        return switch (assetType) {
+            // CHARACTER 只匹配 characterId，不限制 workspaceId（收集所有工作空间下的配置）
+            case CHARACTER -> assetId.equals(item.characterId());
+            case WORKSPACE -> assetId.equals(item.workspaceId());
+            case TOOL -> assetId.equals(item.toolId());
+            case SKILL -> assetId.equals(item.skillId());
+            case MEMORY -> assetId.equals(item.memoryId());
+        };
+    }
+
+    private boolean isParentLevel(Level level) {
+        return level == Level.GLOBAL || level == Level.USER || level == Level.WORKSPACE;
+    }
+
+    /**
+     * 构建资产组合描述字符串
+     */
+    private String buildAssetCombo(String workspaceId, String characterId, String toolId, String skillId, String memoryId) {
+        StringBuilder sb = new StringBuilder();
+        if (workspaceId != null && !workspaceId.isEmpty()) {
+            sb.append(workspaceId);
+        }
+        if (characterId != null && !characterId.isEmpty()) {
+            if (sb.length() > 0) sb.append("/");
+            sb.append(characterId);
+        }
+        if (toolId != null && !toolId.isEmpty()) {
+            if (sb.length() > 0) sb.append("/");
+            sb.append(toolId);
+        }
+        if (skillId != null && !skillId.isEmpty()) {
+            if (sb.length() > 0) sb.append("/");
+            sb.append(skillId);
+        }
+        if (memoryId != null && !memoryId.isEmpty()) {
+            if (sb.length() > 0) sb.append("/");
+            sb.append(memoryId);
+        }
+        return sb.length() > 0 ? sb.toString() : "global";
+    }
+
+    /**
+     * 内部类： ComboValueEntry
+     */
+    private static class ComboValueEntry {
+        final String configKey;
+        final Object value;
+        final Level level;
+        final String sourceType;
+        final String workspaceId;
+        final String characterId;
+        final String toolId;
+        final String skillId;
+        final String memoryId;
+        final Integer scopeBit;
+
+        ComboValueEntry(String configKey, Object value, Level level, String sourceType,
+                        String workspaceId, String characterId, String toolId, String skillId, String memoryId, Integer scopeBit) {
+            this.configKey = configKey;
+            this.value = value;
+            this.level = level;
+            this.sourceType = sourceType;
+            this.workspaceId = workspaceId;
+            this.characterId = characterId;
+            this.toolId = toolId;
+            this.skillId = skillId;
+            this.memoryId = memoryId;
+            this.scopeBit = scopeBit;
+        }
     }
 }

@@ -9,14 +9,18 @@ import org.dragon.api.dto.PageResponse;
 import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.dto.AssetConfigVO;
 import org.dragon.config.dto.ConfigItemVO;
+import org.dragon.config.dto.ImpactAnalysis;
 import org.dragon.config.dto.ConfigTopologyGraphVO;
 import org.dragon.config.dto.ConfigTopologyVO;
 import org.dragon.config.dto.EffectChainVO;
 import org.dragon.config.enums.ConfigLevel;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.config.service.ConfigEffectService;
+import org.dragon.config.service.ConfigImpactAnalyzer;
 import org.dragon.config.service.ConfigTopologyService;
+import org.dragon.asset.service.AssetMemberService;
 import org.dragon.permission.checker.PermissionChecker;
+import org.dragon.permission.enums.ResourceType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -38,7 +42,9 @@ public class ConfigController {
 
     private final ConfigApplication configApplication;
     private final ConfigTopologyService configTopologyService;
+    private final ConfigImpactAnalyzer configImpactAnalyzer;
     private final PermissionChecker permissionChecker;
+    private final AssetMemberService assetMemberService;
 
     // ==================== 配置项管理 ====================
 
@@ -132,6 +138,13 @@ public class ConfigController {
     public ApiResponse<Map<String, Object>> updateConfigItem(@RequestBody UpdateConfigRequest request) {
         log.info("[ConfigController] updateConfigItem key={} level={}", request.getConfigKey(), request.getLevel());
 
+        // 检查权限
+        String[] parent = determineParentResource(request.getLevel(), request.getWorkspaceId(),
+                request.getCharacterId(), request.getToolId(), request.getSkillId(), request.getMemoryId());
+        if (parent != null) {
+            permissionChecker.checkEdit(parent[0], parent[1]);
+        }
+
         configApplication.setConfigValue(
                 request.getConfigKey(),
                 request.getValue(),
@@ -148,8 +161,64 @@ public class ConfigController {
     }
 
     /**
+     * 创建配置项
+     * POST /api/v1/config/items
+     */
+    @Operation(summary = "创建配置项")
+    @PostMapping("/items")
+    public ApiResponse<Map<String, Object>> createConfigItem(@RequestBody CreateConfigRequest request) {
+        log.info("[ConfigController] createConfigItem key={} level={}", request.getConfigKey(), request.getLevel());
+
+        configApplication.setConfigValue(
+                request.getConfigKey(),
+                request.getValue(),
+                request.getLevel(),
+                request.getWorkspaceId(),
+                request.getCharacterId(),
+                request.getToolId(),
+                request.getSkillId(),
+                request.getMemoryId()
+        );
+
+        // 建立所有者关系
+        String[] parent = determineParentResource(request.getLevel(), request.getWorkspaceId(),
+                request.getCharacterId(), request.getToolId(), request.getSkillId(), request.getMemoryId());
+        if (parent != null) {
+            ResourceType resourceType = ResourceType.valueOf(parent[0]);
+            assetMemberService.addOwnerDirectly(resourceType, parent[1], getCurrentUserId());
+        }
+
+        InheritanceContext context = buildContext(request.getLevel(), request.getWorkspaceId(), request.getCharacterId(), request.getToolId(), request.getSkillId(), request.getMemoryId());
+        return ApiResponse.success(toMap(configApplication.getEffectiveConfig(request.getConfigKey(), context)));
+    }
+
+    /**
+     * 删除配置项
+     * DELETE /api/v1/config/items
+     */
+    @Operation(summary = "删除配置项")
+    @DeleteMapping("/items")
+    public ApiResponse<Void> deleteConfigItem(@RequestBody DeleteConfigRequest request) {
+        log.info("[ConfigController] deleteConfigItem key={} level={}", request.getConfigKey(), request.getLevel());
+
+        // 检查权限
+        String[] parent = determineParentResource(request.getLevel(), request.getWorkspaceId(),
+                request.getCharacterId(), request.getToolId(), request.getSkillId(), request.getMemoryId());
+        if (parent != null) {
+            permissionChecker.checkDelete(parent[0], parent[1]);
+        }
+
+        InheritanceContext context = buildContext(request.getLevel(), request.getWorkspaceId(), request.getCharacterId(), request.getToolId(), request.getSkillId(), request.getMemoryId());
+        configApplication.deleteConfigValue(request.getConfigKey(), context);
+
+        return ApiResponse.success(null);
+    }
+
+    /**
      * 获取生效值
      * GET /api/v1/config/effective
+     *
+     * <p>level 参数支持简化名称：GLOBAL, USER, WORKSPACE, CHARACTER, SKILL, TOOL, MEMORY
      */
     @Operation(summary = "获取配置生效值")
     @GetMapping("/effective")
@@ -163,10 +232,8 @@ public class ConfigController {
             @RequestParam(required = false) String memoryId) {
         log.info("[ConfigController] getEffectiveValue key={} level={}", configKey, level);
 
-        ConfigLevel configLevel;
-        try {
-            configLevel = ConfigLevel.valueOf(level.toUpperCase());
-        } catch (IllegalArgumentException e) {
+        ConfigLevel configLevel = toConfigLevel(level.toUpperCase());
+        if (configLevel == null) {
             return ApiResponse.error(400, "Invalid level");
         }
 
@@ -174,6 +241,29 @@ public class ConfigController {
         ConfigEffectService.EffectiveConfig ec = configApplication.getEffectiveConfig(configKey, context);
 
         return ApiResponse.success(toMap(ec));
+    }
+
+    /**
+     * 将简化层级名称转换为 ConfigLevel
+     */
+    private ConfigLevel toConfigLevel(String levelName) {
+        return switch (levelName) {
+            case "GLOBAL" -> ConfigLevel.GLOBAL;
+            case "USER" -> ConfigLevel.STUDIO;
+            case "WORKSPACE" -> ConfigLevel.STUDIO_WORKSPACE;
+            case "CHARACTER" -> ConfigLevel.GLOBAL_CHARACTER;
+            case "SKILL" -> ConfigLevel.GLOBAL_SKILL;
+            case "TOOL" -> ConfigLevel.GLOBAL_TOOL;
+            case "MEMORY" -> ConfigLevel.GLOBAL_MEMORY;
+            default -> {
+                // 尝试直接作为 ConfigLevel 名称使用
+                try {
+                    yield ConfigLevel.valueOf(levelName);
+                } catch (IllegalArgumentException e) {
+                    yield null;
+                }
+            }
+        };
     }
 
     // ==================== 简化后的配置项列表（仅元数据）====================
@@ -200,28 +290,14 @@ public class ConfigController {
     @GetMapping("/asset/{assetType}/{assetId}/configs")
     public ApiResponse<AssetConfigVO> getAssetConfigs(
             @PathVariable String assetType,
-            @PathVariable String assetId) {
-        log.info("[ConfigController] getAssetConfigs assetType={} assetId={}", assetType, assetId);
-        AssetConfigVO result = configTopologyService.getAssetConfigs(assetType, assetId);
+            @PathVariable String assetId,
+            @RequestParam(required = false) String parentLevel) {
+        log.info("[ConfigController] getAssetConfigs assetType={} assetId={} parentLevel={}", assetType, assetId, parentLevel);
+        AssetConfigVO result = configTopologyService.getAssetConfigs(assetType, assetId, parentLevel);
         return ApiResponse.success(result);
     }
 
     // ==================== 视角二：配置链路拓扑 ====================
-
-    /**
-     * 获取配置链路拓扑（图可视化专用）
-     * GET /api/v1/config/topology/graph
-     */
-    @Operation(summary = "获取配置拓扑图（图可视化）")
-    @GetMapping("/topology/graph")
-    public ApiResponse<ConfigTopologyGraphVO> getConfigTopologyGraph(
-            @RequestParam String configKey,
-            @RequestParam String assetType,
-            @RequestParam String assetId) {
-        log.info("[ConfigController] getConfigTopologyGraph configKey={} assetType={} assetId={}", configKey, assetType, assetId);
-        ConfigTopologyGraphVO result = configTopologyService.getConfigTopologyGraph(configKey, assetType, assetId);
-        return ApiResponse.success(result);
-    }
 
     /**
      * 获取配置链路拓扑
@@ -230,22 +306,36 @@ public class ConfigController {
     @Operation(summary = "获取配置链路拓扑")
     @GetMapping("/topology")
     public ApiResponse<ConfigTopologyVO> getTopology(
-            @RequestParam(required = false) String configKey,
-            @RequestParam(required = false) String assetType,
-            @RequestParam(required = false) String assetId) {
-        log.info("[ConfigController] getTopology configKey={} assetType={} assetId={}", configKey, assetType, assetId);
+            @RequestParam String configKey,
+            @RequestParam String assetType,
+            @RequestParam String assetId,
+            @RequestParam(required = false) String parentLevel) {
+        log.info("[ConfigController] getTopology configKey={} assetType={} assetId={} parentLevel={}", configKey, assetType, assetId, parentLevel);
+        ConfigTopologyVO result = configTopologyService.getConfigChain(configKey, assetType, assetId, parentLevel);
+        return ApiResponse.success(result);
+    }
 
-        if (configKey != null && assetType != null && assetId != null) {
-            // 返回单配置的链路
-            ConfigTopologyVO result = configTopologyService.getConfigChain(configKey, assetType, assetId);
-            return ApiResponse.success(result);
-        } else if (assetType != null && assetId != null) {
-            // 返回完整拓扑树
-            ConfigTopologyVO result = configTopologyService.getTopology(assetType, assetId);
-            return ApiResponse.success(result);
-        } else {
-            return ApiResponse.error(400, "assetType and assetId are required");
-        }
+    // ==================== 影响面分析 ====================
+
+    /**
+     * 分析配置变更影响面
+     * GET /api/v1/config/impact
+     *
+     * <p>level 参数支持简化名称：GLOBAL, USER, WORKSPACE, CHARACTER, SKILL, TOOL, MEMORY
+     */
+    @Operation(summary = "分析配置变更影响面")
+    @GetMapping("/impact")
+    public ApiResponse<ImpactAnalysis> analyzeImpact(
+            @RequestParam String level,
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String characterId,
+            @RequestParam(required = false) String toolId,
+            @RequestParam(required = false) String skillId,
+            @RequestParam(required = false) String memoryId) {
+        log.info("[ConfigController] analyzeImpact level={} workspaceId={} characterId={}", level, workspaceId, characterId);
+        ConfigLevel configLevel = ConfigLevel.valueOf(level.toUpperCase());
+        ImpactAnalysis result = configImpactAnalyzer.analyzeImpact(configLevel, workspaceId, characterId, toolId, skillId, memoryId);
+        return ApiResponse.success(result);
     }
 
     // ==================== 请求体 DTO ====================
@@ -263,7 +353,65 @@ public class ConfigController {
         private String memoryId;
     }
 
+    /** 创建配置项请求 */
+    @lombok.Data
+    public static class CreateConfigRequest {
+        private String configKey;
+        private Object value;
+        private ConfigLevel level;
+        private String workspaceId;
+        private String characterId;
+        private String toolId;
+        private String skillId;
+        private String memoryId;
+    }
+
+    /** 删除配置项请求 */
+    @lombok.Data
+    public static class DeleteConfigRequest {
+        private String configKey;
+        private ConfigLevel level;
+        private String workspaceId;
+        private String characterId;
+        private String toolId;
+        private String skillId;
+        private String memoryId;
+    }
+
     // ==================== 内部工具方法 ====================
+
+    /**
+     * 根据 ConfigLevel 确定父级资源类型和ID
+     *
+     * @return [resourceType, resourceId] 或 null 表示无需权限检查
+     */
+    private String[] determineParentResource(ConfigLevel level, String workspaceId,
+            String characterId, String toolId, String skillId, String memoryId) {
+        if (level.hasCharacter() && characterId != null) {
+            return new String[]{"CHARACTER", characterId};
+        }
+        if (level.hasSkill() && skillId != null) {
+            return new String[]{"SKILL", skillId};
+        }
+        if (level.hasTool() && toolId != null) {
+            return new String[]{"TOOL", toolId};
+        }
+        if (level.hasMemory() && memoryId != null) {
+            return new String[]{"MEMORY", memoryId};
+        }
+        if (level.hasWorkspace() && workspaceId != null) {
+            return new String[]{"WORKSPACE", workspaceId};
+        }
+        return null;
+    }
+
+    /**
+     * 获取当前用户ID（临时方案，需根据实际认证方式调整）
+     */
+    private Long getCurrentUserId() {
+        // TODO: 从 SecurityContext 或其他方式获取当前用户ID
+        return 1L;
+    }
 
     /**
      * 根据 level 和 IDs 构建 InheritanceContext

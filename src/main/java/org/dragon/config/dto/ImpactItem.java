@@ -2,7 +2,6 @@ package org.dragon.config.dto;
 
 import lombok.Builder;
 import lombok.Data;
-import org.dragon.config.enums.ConfigLevel;
 import org.dragon.config.enums.ImpactType;
 
 /**
@@ -11,7 +10,8 @@ import org.dragon.config.enums.ImpactType;
 @Data
 @Builder
 public class ImpactItem {
-    private ConfigLevel level;
+    private String level;
+    private String assetId;
     private ImpactType impactType;
     private String description;
 }

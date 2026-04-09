@@ -5,7 +5,9 @@ import org.dragon.config.dto.ImpactAnalysis;
 import org.dragon.config.dto.ImpactItem;
 import org.dragon.config.enums.ConfigLevel;
 import org.dragon.config.enums.ImpactType;
-import org.dragon.config.enums.ScopeBits;
+import org.dragon.config.model.InheritanceConfig;
+import org.dragon.config.model.InheritanceConfig.AssetType;
+import org.dragon.config.model.InheritanceConfig.Level;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -14,7 +16,9 @@ import java.util.List;
 /**
  * 配置影响面分析服务
  *
- * <p>分析逻辑：如果一个配置存在于粗粒度 X，且 ID 为 Y，那么所有继承自 X 且同样使用 ID Y 的细粒度配置都会被影响。
+ * <p>使用显式继承链路配置替代位运算来分析配置变更影响面。
+ *
+ * <p>分析逻辑：如果一个配置在父层级 X 设置了值，那么所有继承自 X 的子层级配置都会受影响。
  */
 @Slf4j
 @Service
@@ -23,39 +27,44 @@ public class ConfigImpactAnalyzer {
     /**
      * 影响面分析
      *
-     * <p>示例：如果 GLOBAL_WORKSPACE (ws-001) 存在，则影响：
+     * <p>示例：如果在 WORKSPACE 级别设置了配置值，则影响：
      * <ul>
-     *   <li>GLOBAL_WORKSPACE (ws-001) - 自身</li>
-     *   <li>GLOBAL_WS_CHAR (ws-001, char-*) - 子链路</li>
-     *   <li>GLOBAL_WS_SKILL (ws-001, skill-*) - 子链路</li>
-     *   <li>GLOBAL_WS_TOOL (ws-001, tool-*) - 子链路</li>
-     *   <li>GLOBAL_WS_CHAR_TOOL (ws-001, char-*, tool-*) - 子链路</li>
+     *   <li>WORKSPACE 自身</li>
+     *   <li>所有 CHARACTER（继承自 WORKSPACE）</li>
+     *   <li>所有 SKILL（继承自 WORKSPACE）</li>
+     *   <li>所有 TOOL（继承自 WORKSPACE 或 CHARACTER）</li>
+     *   <li>所有 MEMORY（继承自 WORKSPACE 或 CHARACTER）</li>
      * </ul>
      */
     public ImpactAnalysis analyzeImpact(ConfigLevel level, String workspaceId, String characterId,
                                        String toolId, String skillId, String memoryId) {
         List<ImpactItem> impacts = new ArrayList<>();
+        Level targetLevel = InheritanceConfig.toLevel(level);
 
-        // 找出所有是当前粒度祖先的粒度（粗粒度）
-        for (ConfigLevel candidate : ConfigLevel.values()) {
-            if (candidate == level) {
-                continue;
-            }
-            // candidate 是 level 的祖先当且仅当 level.isDescendantOf(candidate) = true
-            if (level.isDescendantOf(candidate)) {
-                // 检查 ID 是否匹配
-                if (idsMatch(candidate, workspaceId, characterId, toolId, skillId, memoryId)) {
-                    impacts.add(ImpactItem.builder()
-                            .level(candidate)
-                            .impactType(ImpactType.AFFECTS)
-                            .description("配置变更将影响 " + candidate.getDescription() + " 级别的配置")
-                            .build());
-                }
+        // 找出所有会受到影响的子层级
+        for (AssetType assetType : AssetType.values()) {
+            List<Level> chain = InheritanceConfig.getChain(assetType);
+            if (chain == null) continue;
+
+            // 检查链中是否包含 targetLevel 作为父级
+            int targetIndex = chain.indexOf(targetLevel);
+            if (targetIndex > 0) {
+                // targetLevel 在链路中，且不是第一个（不是资产自身）
+                // 这个资产类型的所有子配置都会受影响
+                Level assetLevel = chain.get(0); // 资产自身的层级
+                String affectedAssetId = getAssetId(assetLevel, workspaceId, characterId, toolId, skillId, memoryId);
+
+                impacts.add(ImpactItem.builder()
+                        .level(assetLevel.name())
+                        .assetId(affectedAssetId)
+                        .impactType(ImpactType.AFFECTS)
+                        .description(String.format("继承自 %s 的 %s 层级配置", targetLevel.name(), assetLevel.name()))
+                        .build());
             }
         }
 
         return ImpactAnalysis.builder()
-                .sourceLevel(level)
+                .sourceLevel(level.name())
                 .workspaceId(workspaceId)
                 .characterId(characterId)
                 .toolId(toolId)
@@ -82,55 +91,17 @@ public class ConfigImpactAnalyzer {
     }
 
     /**
-     * 检查 ID 是否匹配
-     *
-     * <p>规则：
-     * <ul>
-     *   <li>如果粗粒度有 WORKSPACE bit，workspaceId 必须匹配</li>
-     *   <li>如果粗粒度有 CHARACTER bit，characterId 必须匹配</li>
-     *   <li>如果粗粒度有 TOOL bit，toolId 必须匹配</li>
-     *   <li>如果粗粒度有 SKILL bit，skillId 必须匹配</li>
-     *   <li>如果粗粒度有 MEMORY bit，memoryId 必须匹配</li>
-     * </ul>
+     * 获取资产 ID
      */
-    private boolean idsMatch(ConfigLevel coarseLevel,
-                            String workspaceId, String characterId, String toolId,
-                            String skillId, String memoryId) {
-        // WORKSPACE 检查
-        if ((coarseLevel.getScopeBit() & ScopeBits.WORKSPACE) != 0) {
-            if (workspaceId == null) {
-                return false;
-            }
-        }
-
-        // CHARACTER 检查
-        if ((coarseLevel.getScopeBit() & ScopeBits.CHARACTER) != 0) {
-            if (characterId == null) {
-                return false;
-            }
-        }
-
-        // TOOL 检查
-        if ((coarseLevel.getScopeBit() & ScopeBits.TOOL) != 0) {
-            if (toolId == null) {
-                return false;
-            }
-        }
-
-        // SKILL 检查
-        if ((coarseLevel.getScopeBit() & ScopeBits.SKILL) != 0) {
-            if (skillId == null) {
-                return false;
-            }
-        }
-
-        // MEMORY 检查
-        if ((coarseLevel.getScopeBit() & ScopeBits.MEMORY) != 0) {
-            if (memoryId == null) {
-                return false;
-            }
-        }
-
-        return true;
+    private String getAssetId(Level level, String workspaceId, String characterId,
+                             String toolId, String skillId, String memoryId) {
+        return switch (level) {
+            case WORKSPACE -> workspaceId;
+            case CHARACTER -> characterId;
+            case SKILL -> skillId;
+            case TOOL -> toolId;
+            case MEMORY -> memoryId;
+            case USER, GLOBAL -> null;
+        };
     }
 }

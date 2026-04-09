@@ -69,7 +69,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/api-docs/swagger-config",
-                                "/api-docs"
+                                "/api-docs"//,
+                                // "/api/v1/config/**"
                         ).permitAll()
                         // 所有其他请求需要认证
                         .anyRequest().authenticated())

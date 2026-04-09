@@ -41,6 +41,8 @@ public enum ConfigLevel {
     // 继承链：GLOBAL -> STUDIO -> XXX
     // scopeBit = 系统级 + STUDIO bit (2)
 
+    /** 用户级（无工作空间），用于继承链中的 USER 层 */
+    STUDIO(3, "GLOBAL -> STUDIO"),
     STUDIO_WORKSPACE(7, "GLOBAL -> STUDIO -> WORKSPACE"),
     STUDIO_CHARACTER(11, "GLOBAL -> STUDIO -> CHARACTER"),
     STUDIO_SKILL(19, "GLOBAL -> STUDIO -> SKILL"),
@@ -97,23 +99,12 @@ public enum ConfigLevel {
      * 检查当前粒度是否继承自指定粒度（通过 AND 运算）
      *
      * <p>如果 (this.scopeBit & ancestor.scopeBit) == ancestor.scopeBit，则继承成立。
+     *
+     * @deprecated 使用 {@link org.dragon.config.model.InheritanceConfig} 替代位运算
      */
+    @Deprecated
     public boolean isDescendantOf(ConfigLevel ancestor) {
         return (this.scopeBit & ancestor.scopeBit) == ancestor.scopeBit;
-    }
-
-    /**
-     * 检查是否为用户级粒度（包含 STUDIO）
-     */
-    public boolean isStudio() {
-        return (this.scopeBit & ScopeBits.STUDIO) == ScopeBits.STUDIO;
-    }
-
-    /**
-     * 检查是否为 OBSERVER 粒度
-     */
-    public boolean isObserver() {
-        return (this.scopeBit & ScopeBits.OBSERVER) == ScopeBits.OBSERVER;
     }
 
     /**
@@ -126,5 +117,124 @@ public enum ConfigLevel {
             }
         }
         return null;
+    }
+
+    /**
+     * 检查是否为用户级粒度（包含 STUDIO）
+     */
+    public boolean isStudio() {
+        return this.name().startsWith("STUDIO_") || this == STUDIO;
+    }
+
+    /**
+     * 检查是否为 OBSERVER 粒度
+     */
+    public boolean isObserver() {
+        return this.name().startsWith("OBSERVER_");
+    }
+
+    /**
+     * 检查当前粒度是否包含工作空间层级
+     */
+    public boolean hasWorkspace() {
+        return this == GLOBAL_WORKSPACE
+                || this == GLOBAL_WS_CHAR
+                || this == GLOBAL_WS_SKILL
+                || this == GLOBAL_WS_TOOL
+                || this == GLOBAL_WS_MEMORY
+                || this == STUDIO_WORKSPACE
+                || this == STUDIO_WS_CHAR
+                || this == STUDIO_WS_SKILL
+                || this == STUDIO_WS_TOOL
+                || this == STUDIO_WS_MEMORY
+                || this == OBSERVER_GLOBAL_WORKSPACE
+                || this == OBSERVER_GLOBAL_WS_CHAR
+                || this == OBSERVER_GLOBAL_WS_SKILL
+                || this == OBSERVER_GLOBAL_WS_TOOL
+                || this == OBSERVER_GLOBAL_WS_MEMORY;
+    }
+
+    /**
+     * 检查当前粒度是否包含角色层级
+     */
+    public boolean hasCharacter() {
+        return this == GLOBAL_CHARACTER
+                || this == GLOBAL_WS_CHAR
+                || this == GLOBAL_CHAR_TOOL
+                || this == GLOBAL_CHAR_SKILL
+                || this == GLOBAL_CHAR_MEMORY
+                || this == GLOBAL_WS_CHAR_TOOL
+                || this == GLOBAL_WS_CHAR_SKILL
+                || this == GLOBAL_WS_CHAR_MEMORY
+                || this == STUDIO_CHARACTER
+                || this == STUDIO_WS_CHAR
+                || this == STUDIO_CHAR_TOOL
+                || this == STUDIO_CHAR_SKILL
+                || this == STUDIO_CHAR_MEMORY
+                || this == STUDIO_WS_CHAR_TOOL
+                || this == STUDIO_WS_CHAR_SKILL
+                || this == STUDIO_WS_CHAR_MEMORY
+                || this == OBSERVER_GLOBAL_CHARACTER
+                || this == OBSERVER_GLOBAL_WS_CHAR
+                || this == OBSERVER_GLOBAL_CHAR_TOOL
+                || this == OBSERVER_GLOBAL_CHAR_SKILL
+                || this == OBSERVER_GLOBAL_CHAR_MEMORY
+                || this == OBSERVER_GLOBAL_WS_CHAR_TOOL
+                || this == OBSERVER_GLOBAL_WS_CHAR_SKILL
+                || this == OBSERVER_GLOBAL_WS_CHAR_MEMORY;
+    }
+
+    /**
+     * 检查当前粒度是否包含工具层级
+     */
+    public boolean hasTool() {
+        return this == GLOBAL_TOOL
+                || this == GLOBAL_WS_TOOL
+                || this == GLOBAL_CHAR_TOOL
+                || this == GLOBAL_WS_CHAR_TOOL
+                || this == STUDIO_TOOL
+                || this == STUDIO_WS_TOOL
+                || this == STUDIO_CHAR_TOOL
+                || this == STUDIO_WS_CHAR_TOOL
+                || this == OBSERVER_GLOBAL_TOOL
+                || this == OBSERVER_GLOBAL_WS_TOOL
+                || this == OBSERVER_GLOBAL_CHAR_TOOL
+                || this == OBSERVER_GLOBAL_WS_CHAR_TOOL;
+    }
+
+    /**
+     * 检查当前粒度是否包含技能层级
+     */
+    public boolean hasSkill() {
+        return this == GLOBAL_SKILL
+                || this == GLOBAL_WS_SKILL
+                || this == GLOBAL_CHAR_SKILL
+                || this == GLOBAL_WS_CHAR_SKILL
+                || this == STUDIO_SKILL
+                || this == STUDIO_WS_SKILL
+                || this == STUDIO_CHAR_SKILL
+                || this == STUDIO_WS_CHAR_SKILL
+                || this == OBSERVER_GLOBAL_SKILL
+                || this == OBSERVER_GLOBAL_WS_SKILL
+                || this == OBSERVER_GLOBAL_CHAR_SKILL
+                || this == OBSERVER_GLOBAL_WS_CHAR_SKILL;
+    }
+
+    /**
+     * 检查当前粒度是否包含记忆层级
+     */
+    public boolean hasMemory() {
+        return this == GLOBAL_MEMORY
+                || this == GLOBAL_WS_MEMORY
+                || this == GLOBAL_CHAR_MEMORY
+                || this == GLOBAL_WS_CHAR_MEMORY
+                || this == STUDIO_MEMORY
+                || this == STUDIO_WS_MEMORY
+                || this == STUDIO_CHAR_MEMORY
+                || this == STUDIO_WS_CHAR_MEMORY
+                || this == OBSERVER_GLOBAL_MEMORY
+                || this == OBSERVER_GLOBAL_WS_MEMORY
+                || this == OBSERVER_GLOBAL_CHAR_MEMORY
+                || this == OBSERVER_GLOBAL_WS_CHAR_MEMORY;
     }
 }
