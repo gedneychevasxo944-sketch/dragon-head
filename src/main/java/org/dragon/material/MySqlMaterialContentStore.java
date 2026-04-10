@@ -1,4 +1,4 @@
-package org.dragon.workspace.material;
+package org.dragon.material;
 
 import io.ebean.Database;
 import org.dragon.datasource.entity.ParsedMaterialContentEntity;

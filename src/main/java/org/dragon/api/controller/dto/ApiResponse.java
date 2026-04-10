@@ -32,6 +32,15 @@ public class ApiResponse<T> {
     private T data;
 
     /**
+     * 成功响应（无数据）
+     *
+     * @return 成功响应
+     */
+    public static <T> ApiResponse<T> success() {
+        return success(null);
+    }
+
+    /**
      * 成功响应
      *
      * @param data 响应数据

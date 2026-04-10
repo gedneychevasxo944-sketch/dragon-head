@@ -1,4 +1,4 @@
-package org.dragon.workspace.commons.content;
+package org.dragon.commonsense.content;
 
 import java.util.List;
 

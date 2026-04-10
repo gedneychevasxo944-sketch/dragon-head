@@ -1,12 +1,13 @@
-package org.dragon.workspace.commons.store;
+package org.dragon.commonsense.store;
 
 import io.ebean.Database;
+
+import org.dragon.commonsense.CommonSense;
+import org.dragon.commonsense.CommonSenseFolder;
 import org.dragon.datasource.entity.CommonSenseEntity;
 import org.dragon.datasource.entity.CommonSenseFolderEntity;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
-import org.dragon.workspace.commons.CommonSense;
-import org.dragon.workspace.commons.CommonSenseFolder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 

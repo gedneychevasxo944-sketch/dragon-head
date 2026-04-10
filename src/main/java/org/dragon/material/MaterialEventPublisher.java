@@ -1,4 +1,4 @@
-package org.dragon.workspace.material;
+package org.dragon.material;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;

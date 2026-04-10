@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.dragon.character.config.BuiltInCharacterDefinition;
-
 /**
  * Built-in Character 静态注册表
  * 定义所有内置 character 的配置

@@ -5,7 +5,7 @@ import java.util.stream.Stream;
 
 import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
-import org.dragon.observer.actionlog.ObserverActionLogService;
+import org.dragon.observer.log.ObserverActionLogService;
 import org.springframework.stereotype.Component;
 
 /**

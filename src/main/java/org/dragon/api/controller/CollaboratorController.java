@@ -3,7 +3,7 @@ package org.dragon.api.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.dragon.api.dto.ApiResponse;
+import org.dragon.api.controller.dto.ApiResponse;
 import org.dragon.asset.dto.AssetMemberDTO;
 import org.dragon.asset.dto.CollaboratorDTO;
 import org.dragon.asset.service.AssetMemberService;

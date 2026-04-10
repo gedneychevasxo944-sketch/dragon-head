@@ -1,4 +1,4 @@
-package org.dragon.character.config;
+package org.dragon.character.builtin;
 
 import java.util.List;
 

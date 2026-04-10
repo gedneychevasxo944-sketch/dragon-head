@@ -3,8 +3,8 @@ package org.dragon.character.mind;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.datasource.entity.TraitEntity;
-import org.dragon.studio.store.TraitStore;
 import org.dragon.store.StoreFactory;
+import org.dragon.trait.store.TraitStore;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

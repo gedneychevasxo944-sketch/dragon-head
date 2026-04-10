@@ -1,4 +1,4 @@
-package org.dragon.workspace.commons.content;
+package org.dragon.commonsense.content;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;

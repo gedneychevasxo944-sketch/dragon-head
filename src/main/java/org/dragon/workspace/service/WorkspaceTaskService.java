@@ -8,7 +8,7 @@ import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
 import org.dragon.task.TaskStatus;
 import org.dragon.workspace.WorkspaceRegistry;
-import org.dragon.workspace.service.task.execution.TaskBridge;
+import org.dragon.workspace.cooperation.task.TaskBridge;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 

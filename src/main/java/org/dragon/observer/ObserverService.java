@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.dragon.character.CharacterRegistry;
+import org.dragon.commonsense.CommonSenseValidator;
+import org.dragon.commonsense.store.WorkspaceCommonSenseStore;
 import org.dragon.observer.collector.DataCollector;
-import org.dragon.workspace.commons.CommonSenseValidator;
-import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
 import org.dragon.observer.evaluation.EvaluationEngine;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
@@ -408,7 +408,7 @@ public class ObserverService {
         stats.setTotalOptimizations(getOptimizationActionStore().count());
         stats.setPendingOptimizations(getOptimizationActionStore().findPending().size());
         stats.setCommonSenseCount(getCommonSenseStore().countByWorkspace(
-                org.dragon.workspace.commons.store.MemoryWorkspaceCommonSenseStore.GLOBAL_WORKSPACE_ID));
+                org.dragon.commonsense.store.MemoryWorkspaceCommonSenseStore.GLOBAL_WORKSPACE_ID));
         stats.setCharacterCount(characterRegistry.size());
 
         return stats;

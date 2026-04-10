@@ -9,12 +9,14 @@ import java.util.stream.Collectors;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
-import org.dragon.workspace.chat.ChatMessage;
-import org.dragon.workspace.chat.ChatRoom;
-import org.dragon.workspace.chat.ChatSession;
-import org.dragon.workspace.material.Material;
+import org.dragon.workspace.cooperation.chat.ChatMessage;
+import org.dragon.workspace.cooperation.chat.ChatRoom;
+import org.dragon.workspace.cooperation.chat.ChatSession;
+import org.dragon.workspace.cooperation.task.TaskBridge;
+import org.dragon.workspace.cooperation.task.TaskBridgeContext;
+import org.dragon.workspace.cooperation.task.notify.WorkspaceTaskNotifier;
 import org.dragon.workspace.service.material.WorkspaceMaterialService;
-import org.dragon.workspace.task.notify.WorkspaceTaskNotifier;
+import org.dragon.material.Material;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
@@ -208,7 +210,7 @@ public class WorkspaceTaskExecutionService {
             // WORKSPACE_SCOPED 默认可访问
 
             // 获取解析内容
-            Optional<org.dragon.workspace.material.ParsedMaterialContent> contentOpt =
+            Optional<org.dragon.material.ParsedMaterialContent> contentOpt =
                     materialService.getParsedContent(materialId);
             if (contentOpt.isPresent() && contentOpt.get().getTextContent() != null) {
                 context.append(String.format("[%s]: %s\n",

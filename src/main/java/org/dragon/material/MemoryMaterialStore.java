@@ -1,4 +1,4 @@
-package org.dragon.workspace.material;
+package org.dragon.material;
 
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;

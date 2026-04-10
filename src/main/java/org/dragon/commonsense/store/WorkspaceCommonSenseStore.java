@@ -1,8 +1,8 @@
-package org.dragon.workspace.commons.store;
+package org.dragon.commonsense.store;
 
+import org.dragon.commonsense.CommonSense;
+import org.dragon.commonsense.CommonSenseFolder;
 import org.dragon.store.Store;
-import org.dragon.workspace.commons.CommonSense;
-import org.dragon.workspace.commons.CommonSenseFolder;
 
 import java.util.List;
 import java.util.Optional;

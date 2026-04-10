@@ -1,13 +1,13 @@
-package org.dragon.workspace.commons;
+package org.dragon.commonsense;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.dragon.workspace.commons.content.CommonSenseContent;
-import org.dragon.workspace.commons.content.CommonSenseContentParser;
-import org.dragon.workspace.commons.content.ConstraintContent;
-import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
+import org.dragon.commonsense.content.CommonSenseContent;
+import org.dragon.commonsense.content.CommonSenseContentParser;
+import org.dragon.commonsense.content.ConstraintContent;
+import org.dragon.commonsense.store.WorkspaceCommonSenseStore;
 import org.dragon.store.StoreFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

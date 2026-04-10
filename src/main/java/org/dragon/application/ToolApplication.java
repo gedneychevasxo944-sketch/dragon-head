@@ -2,7 +2,7 @@ package org.dragon.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.api.dto.PageResponse;
+import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.permission.service.PermissionService;

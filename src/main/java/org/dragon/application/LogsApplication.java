@@ -2,10 +2,10 @@ package org.dragon.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.api.dto.PageResponse;
+import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.character.CharacterRegistry;
-import org.dragon.observer.actionlog.ObserverActionLog;
-import org.dragon.observer.actionlog.ObserverActionLogService;
+import org.dragon.observer.log.ObserverActionLog;
+import org.dragon.observer.log.ObserverActionLogService;
 import org.dragon.approval.service.ApprovalService;
 import org.dragon.skill.service.SkillLifecycleService;
 import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;

@@ -2,7 +2,7 @@ package org.dragon.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.api.dto.PageResponse;
+import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.skill.actionlog.SkillActionLogService;
 import org.dragon.skill.actionlog.SkillActionLogVO;
 import org.dragon.asset.service.AssetPublishStatusService;

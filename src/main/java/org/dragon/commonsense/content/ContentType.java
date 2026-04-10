@@ -1,4 +1,4 @@
-package org.dragon.workspace.commons.content;
+package org.dragon.commonsense.content;
 
 /**
  * CommonSense 内容类型枚举

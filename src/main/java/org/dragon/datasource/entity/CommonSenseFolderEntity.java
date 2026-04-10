@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-import org.dragon.workspace.commons.CommonSenseFolder;
+import org.dragon.commonsense.CommonSenseFolder;
 
 /**
  * CommonSenseFolderEntity 常识文件夹实体

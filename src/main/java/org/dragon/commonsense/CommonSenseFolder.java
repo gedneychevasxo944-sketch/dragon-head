@@ -1,4 +1,4 @@
-package org.dragon.workspace.commons;
+package org.dragon.commonsense;
 
 import java.time.LocalDateTime;
 

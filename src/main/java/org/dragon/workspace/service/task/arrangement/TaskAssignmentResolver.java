@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import org.dragon.character.Character;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.workspace.service.WorkspacePluginService;
 import org.dragon.workspace.service.task.arrangement.dto.PromptWriterInput;
 import org.dragon.workspace.service.task.arrangement.dto.AssignmentDecision;
 import org.dragon.workspace.service.task.arrangement.dto.ChildTaskPlan;
@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TaskAssignmentResolver {
 
-    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final WorkspacePluginService workspacePluginService;
     private final CharacterCaller characterCaller;
     private final ConfigApplication configApplication;
     private final Gson gson = new Gson();
@@ -62,11 +62,11 @@ public class TaskAssignmentResolver {
             return result;
         }
 
-        // 获取 PromptWriter Character 用于生成选择提示
-        Character promptWriter = builtInCharacterFactory.getOrCreatePromptWriterCharacter(workspace.getId());
+        // 通过 Plugin 获取 PromptWriter Character 用于生成选择提示
+        Character promptWriter = workspacePluginService.getBuiltinCharacter(workspace.getId(), "prompt_writer");
 
-        // 获取 MemberSelector Character 用于执行选择
-        Character memberSelector = builtInCharacterFactory.getOrCreateMemberSelectorCharacter(workspace.getId());
+        // 通过 Plugin 获取 MemberSelector Character 用于执行选择
+        Character memberSelector = workspacePluginService.getBuiltinCharacter(workspace.getId(), "member_selector");
 
         // 获取选择提示模板
         String promptTemplate = configApplication.getGlobalPrompt(

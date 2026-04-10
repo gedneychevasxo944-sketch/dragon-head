@@ -5,20 +5,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.dragon.application.WorkspaceApiApplication;
-import org.dragon.api.dto.ApiResponse;
-import org.dragon.api.dto.AuditLogResponse;
-import org.dragon.api.dto.PageResponse;
-import org.dragon.observer.actionlog.ActionType;
-import org.dragon.observer.actionlog.ObserverActionLog;
+import org.dragon.api.controller.dto.ApiResponse;
+import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.permission.checker.PermissionChecker;
-import org.dragon.skill.dto.SkillBindingRequest;
-import org.dragon.skill.dto.SkillBindingResult;
-import org.dragon.skill.dto.SkillBindingVO;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.api.dto.TeamPositionResponse;
-import org.springframework.http.MediaType;
+import org.dragon.api.controller.dto.TeamPositionResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,17 +21,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 /**
  * WorkspaceController 工作空间模块 API
  *
- * <p>对应前端 /workspaces 页面，包含 Workspace 生命周期、成员、技能绑定、
- * 记忆配置、Observer 绑定、任务、审计日志、素材、权限等接口。
+ * <p>对应前端 /workspaces 页面，包含 Workspace 生命周期、成员、岗位、任务等接口。
  * Base URL: /api/v1/workspaces
  *
  * @author zhz
@@ -53,10 +43,10 @@ public class WorkspaceController {
     private final WorkspaceApiApplication workspaceApiApplication;
     private final PermissionChecker permissionChecker;
 
-    // ==================== 5. Workspace CRUD ====================
+    // ==================== Workspace CRUD ====================
 
     /**
-     * 5.1 获取 Workspace 列表
+     * 获取 Workspace 列表
      * GET /api/v1/workspaces
      */
     @Operation(summary = "获取 Workspace 列表（分页+筛选）")
@@ -74,7 +64,7 @@ public class WorkspaceController {
     }
 
     /**
-     * 5.2 创建 Workspace
+     * 创建 Workspace
      * POST /api/v1/workspaces
      */
     @Operation(summary = "创建 Workspace")
@@ -85,7 +75,7 @@ public class WorkspaceController {
     }
 
     /**
-     * 5.3 获取 Workspace 详情
+     * 获取 Workspace 详情
      * GET /api/v1/workspaces/:id
      */
     @Operation(summary = "获取 Workspace 详情")
@@ -98,7 +88,7 @@ public class WorkspaceController {
     }
 
     /**
-     * 5.4 更新 Workspace 设置
+     * 更新 Workspace 设置
      * PUT /api/v1/workspaces/:id/settings
      */
     @Operation(summary = "更新 Workspace 设置")
@@ -112,7 +102,7 @@ public class WorkspaceController {
     }
 
     /**
-     * 5.5 删除 Workspace
+     * 删除 Workspace
      * DELETE /api/v1/workspaces/:id
      */
     @Operation(summary = "删除 Workspace")
@@ -123,10 +113,10 @@ public class WorkspaceController {
         return ApiResponse.success(Map.of("success", true));
     }
 
-    // ==================== 6. Member（团队成员）====================
+    // ==================== Member（团队成员）====================
 
     /**
-     * 6.1 获取 Workspace 成员列表
+     * 获取 Workspace 成员列表
      * GET /api/v1/workspaces/:workspaceId/members
      */
     @Operation(summary = "获取 Workspace AI 团队成员列表")
@@ -138,61 +128,7 @@ public class WorkspaceController {
     }
 
     /**
-     * 6.2 获取团队席位列表
-     * GET /api/v1/workspaces/:workspaceId/team-positions
-     */
-    @Operation(summary = "获取团队席位列表")
-    @GetMapping("/{workspaceId}/team-positions")
-    public ApiResponse<List<TeamPositionResponse>> listTeamPositions(@PathVariable String workspaceId) {
-        List<TeamPositionResponse> positions = workspaceApiApplication.listTeamPositions(workspaceId);
-        return ApiResponse.success(positions);
-    }
-
-    /**
-     * 6.3 添加岗位
-     * POST /api/v1/workspaces/:workspaceId/team-positions
-     */
-    @Operation(summary = "添加团队岗位")
-    @PostMapping("/{workspaceId}/team-positions")
-    public ApiResponse<TeamPositionResponse> addTeamPosition(
-            @PathVariable String workspaceId,
-            @RequestBody AddPositionRequest request) {
-        permissionChecker.checkManage("WORKSPACE", workspaceId);
-        TeamPositionResponse position = workspaceApiApplication.addTeamPosition(workspaceId, request);
-        return ApiResponse.success(position);
-    }
-
-    /**
-     * 6.4 更新岗位
-     * PUT /api/v1/workspaces/:workspaceId/team-positions/:positionId
-     */
-    @Operation(summary = "更新团队岗位")
-    @PutMapping("/{workspaceId}/team-positions/{positionId}")
-    public ApiResponse<TeamPositionResponse> updateTeamPosition(
-            @PathVariable String workspaceId,
-            @PathVariable String positionId,
-            @RequestBody UpdatePositionRequest request) {
-        permissionChecker.checkManage("WORKSPACE", workspaceId);
-        TeamPositionResponse position = workspaceApiApplication.updateTeamPosition(workspaceId, positionId, request);
-        return ApiResponse.success(position);
-    }
-
-    /**
-     * 6.5 删除岗位
-     * DELETE /api/v1/workspaces/:workspaceId/team-positions/:positionId
-     */
-    @Operation(summary = "删除团队岗位")
-    @DeleteMapping("/{workspaceId}/team-positions/{positionId}")
-    public ApiResponse<Map<String, Object>> deleteTeamPosition(
-            @PathVariable String workspaceId,
-            @PathVariable String positionId) {
-        permissionChecker.checkManage("WORKSPACE", workspaceId);
-        workspaceApiApplication.deleteTeamPosition(workspaceId, positionId);
-        return ApiResponse.success(Map.of("success", true));
-    }
-
-    /**
-     * 6.3 添加成员
+     * 添加成员
      * POST /api/v1/workspaces/:workspaceId/members
      */
     @Operation(summary = "添加 Workspace 成员")
@@ -212,7 +148,7 @@ public class WorkspaceController {
     }
 
     /**
-     * 6.4 移除成员
+     * 移除成员
      * DELETE /api/v1/workspaces/:workspaceId/members/:memberId
      */
     @Operation(summary = "移除 Workspace 成员")
@@ -225,130 +161,66 @@ public class WorkspaceController {
         return ApiResponse.success(Map.of("success", true));
     }
 
-    // ==================== 7. Skill Binding（技能绑定）====================
+    // ==================== Team Position（团队岗位）====================
 
     /**
-     * 7.1 获取已绑定技能列表
-     * GET /api/v1/workspaces/:workspaceId/skills
+     * 获取团队岗位列表
+     * GET /api/v1/workspaces/:workspaceId/team-positions
      */
-    @Operation(summary = "获取 Workspace 已绑定技能列表")
-    @GetMapping("/{workspaceId}/skills")
-    public ApiResponse<List<SkillBindingVO>> listWorkspaceSkills(
-            @PathVariable String workspaceId) {
-        List<SkillBindingVO> list = workspaceApiApplication.listWorkspaceSkills(workspaceId);
-        return ApiResponse.success(list);
+    @Operation(summary = "获取团队席位列表")
+    @GetMapping("/{workspaceId}/team-positions")
+    public ApiResponse<List<TeamPositionResponse>> listTeamPositions(@PathVariable String workspaceId) {
+        List<TeamPositionResponse> positions = workspaceApiApplication.listTeamPositions(workspaceId);
+        return ApiResponse.success(positions);
     }
 
     /**
-     * 7.2 绑定技能
-     * POST /api/v1/workspaces/:workspaceId/skills
+     * 添加岗位
+     * POST /api/v1/workspaces/:workspaceId/team-positions
      */
-    @Operation(summary = "为 Workspace 绑定技能")
-    @PostMapping("/{workspaceId}/skills")
-    public ApiResponse<SkillBindingResult> bindSkill(
+    @Operation(summary = "添加团队岗位")
+    @PostMapping("/{workspaceId}/team-positions")
+    public ApiResponse<TeamPositionResponse> addTeamPosition(
             @PathVariable String workspaceId,
-            @RequestBody SkillBindingRequest request) {
-        SkillBindingResult result = workspaceApiApplication.bindSkill(workspaceId, request);
-        return ApiResponse.success(result);
-    }
-
-    /**
-     * 7.3 解绑技能
-     * DELETE /api/v1/workspaces/:workspaceId/skills/:skillId
-     */
-    @Operation(summary = "解绑 Workspace 技能")
-    @DeleteMapping("/{workspaceId}/skills/{skillId}")
-    public ApiResponse<Map<String, Object>> unbindSkill(
-            @PathVariable String workspaceId,
-            @PathVariable String skillId) {
-        workspaceApiApplication.unbindSkill(workspaceId, skillId);
-        return ApiResponse.success(Map.of("success", true));
-    }
-
-    /**
-     * 7.4 更新技能绑定配置
-     * PUT /api/v1/workspaces/:workspaceId/skills/:skillId
-     */
-    @Operation(summary = "更新 Workspace 技能绑定配置")
-    @PutMapping("/{workspaceId}/skills/{skillId}")
-    public ApiResponse<Map<String, Object>> updateSkillBinding(
-            @PathVariable String workspaceId,
-            @PathVariable String skillId,
-            @RequestBody UpdateSkillBindingRequest request) {
-        workspaceApiApplication.updateSkillBinding(workspaceId, skillId,
-                request.getVersionType(), request.getFixedVersion());
-        return ApiResponse.success(Map.of("success", true));
-    }
-
-    // ==================== 8. Memory（记忆配置）====================
-
-    /**
-     * 8.1 获取 Workspace 记忆配置信息
-     * GET /api/v1/workspaces/:workspaceId/memory
-     */
-    @Operation(summary = "获取 Workspace 记忆配置信息")
-    @GetMapping("/{workspaceId}/memory")
-    public ApiResponse<Map<String, Object>> getMemoryInfo(@PathVariable String workspaceId) {
-        Map<String, Object> info = workspaceApiApplication.getMemoryInfo(workspaceId);
-        return ApiResponse.success(info);
-    }
-
-    /**
-     * 8.2 触发记忆同步
-     * POST /api/v1/workspaces/:workspaceId/memory/sync
-     */
-    @Operation(summary = "触发 Workspace 记忆同步")
-    @PostMapping("/{workspaceId}/memory/sync")
-    public ApiResponse<Map<String, Object>> triggerMemorySync(@PathVariable String workspaceId) {
-        Map<String, Object> result = workspaceApiApplication.triggerMemorySync(workspaceId);
-        return ApiResponse.success(result);
-    }
-
-    // ==================== 9. Observer（观测者绑定）====================
-
-    /**
-     * 9.1 获取 Workspace Observer 信息
-     * GET /api/v1/workspaces/:workspaceId/observer
-     */
-    @Operation(summary = "获取 Workspace Observer 绑定信息")
-    @GetMapping("/{workspaceId}/observer")
-    public ApiResponse<Map<String, Object>> getObserverInfo(@PathVariable String workspaceId) {
-        permissionChecker.checkView("WORKSPACE", workspaceId);
-        Map<String, Object> info = workspaceApiApplication.getObserverInfo(workspaceId);
-        return ApiResponse.success(info);
-    }
-
-    /**
-     * 9.2 绑定 Observer
-     * POST /api/v1/workspaces/:workspaceId/observer
-     */
-    @Operation(summary = "为 Workspace 绑定 Observer")
-    @PostMapping("/{workspaceId}/observer")
-    public ApiResponse<Map<String, Object>> bindObserver(
-            @PathVariable String workspaceId,
-            @RequestBody BindObserverRequest request) {
+            @RequestBody AddPositionRequest request) {
         permissionChecker.checkManage("WORKSPACE", workspaceId);
-        workspaceApiApplication.bindObserver(workspaceId, request.getObserverId(),
-                request.getEvaluationMode(), request.getAutoOptimization());
-        return ApiResponse.success(Map.of("success", true));
+        TeamPositionResponse position = workspaceApiApplication.addTeamPosition(workspaceId, request);
+        return ApiResponse.success(position);
     }
 
     /**
-     * 9.3 解绑 Observer
-     * DELETE /api/v1/workspaces/:workspaceId/observer
+     * 更新岗位
+     * PUT /api/v1/workspaces/:workspaceId/team-positions/:positionId
      */
-    @Operation(summary = "解绑 Workspace Observer")
-    @DeleteMapping("/{workspaceId}/observer")
-    public ApiResponse<Map<String, Object>> unbindObserver(@PathVariable String workspaceId) {
+    @Operation(summary = "更新团队岗位")
+    @PutMapping("/{workspaceId}/team-positions/{positionId}")
+    public ApiResponse<TeamPositionResponse> updateTeamPosition(
+            @PathVariable String workspaceId,
+            @PathVariable String positionId,
+            @RequestBody UpdatePositionRequest request) {
         permissionChecker.checkManage("WORKSPACE", workspaceId);
-        workspaceApiApplication.unbindObserver(workspaceId);
+        TeamPositionResponse position = workspaceApiApplication.updateTeamPosition(workspaceId, positionId, request);
+        return ApiResponse.success(position);
+    }
+
+    /**
+     * 删除岗位
+     * DELETE /api/v1/workspaces/:workspaceId/team-positions/:positionId
+     */
+    @Operation(summary = "删除团队岗位")
+    @DeleteMapping("/{workspaceId}/team-positions/{positionId}")
+    public ApiResponse<Map<String, Object>> deleteTeamPosition(
+            @PathVariable String workspaceId,
+            @PathVariable String positionId) {
+        permissionChecker.checkManage("WORKSPACE", workspaceId);
+        workspaceApiApplication.deleteTeamPosition(workspaceId, positionId);
         return ApiResponse.success(Map.of("success", true));
     }
 
-    // ==================== 10. Task（任务）====================
+    // ==================== Task（任务）====================
 
     /**
-     * 10.1 获取 Workspace 任务列表
+     * 获取 Workspace 任务列表
      * GET /api/v1/workspaces/:workspaceId/tasks
      */
     @Operation(summary = "获取 Workspace 任务列表")
@@ -362,152 +234,6 @@ public class WorkspaceController {
         return ApiResponse.success(result);
     }
 
-    // ==================== 11. Audit Log（审计日志）====================
-
-    /**
-     * 11.1 获取 Workspace 审计日志
-     * GET /api/v1/workspaces/:workspaceId/audit-logs
-     */
-    @Operation(summary = "获取 Workspace 审计日志")
-    @GetMapping("/{workspaceId}/audit-logs")
-    public ApiResponse<PageResponse<AuditLogResponse>> getAuditLogs(
-            @PathVariable String workspaceId,
-            @RequestParam(required = false) String targetType,
-            @RequestParam(required = false) ActionType actionType,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int pageSize) {
-        List<ObserverActionLog> logs = workspaceApiApplication.getAuditLogs(workspaceId, targetType, actionType);
-
-        // 转换为 AuditLogResponse 格式并分页
-        List<AuditLogResponse> logResponses = logs.stream()
-                .map(AuditLogResponse::from)
-                .collect(java.util.stream.Collectors.toList());
-
-        long total = logResponses.size();
-        int fromIndex = Math.max(0, (page - 1) * pageSize);
-        int toIndex = Math.min(fromIndex + pageSize, logResponses.size());
-        List<AuditLogResponse> pageData = fromIndex >= logResponses.size()
-                ? List.of()
-                : logResponses.subList(fromIndex, toIndex);
-        return ApiResponse.success(PageResponse.of(pageData, total, page, pageSize));
-    }
-
-    // ==================== 12. Material（素材）====================
-
-    /**
-     * 12.1 获取素材列表
-     * GET /api/v1/workspaces/:workspaceId/materials
-     */
-    @Operation(summary = "获取 Workspace 素材列表")
-    @GetMapping("/{workspaceId}/materials")
-    public ApiResponse<List<Map<String, Object>>> listMaterials(@PathVariable String workspaceId) {
-        List<org.dragon.workspace.material.Material> materials = workspaceApiApplication.listMaterials(workspaceId);
-        List<Map<String, Object>> result = materials.stream()
-                .map(m -> {
-                    java.util.Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("materialId", m.getId());
-                    item.put("filename", m.getName());
-                    item.put("type", m.getType() != null ? m.getType() : "other");
-                    item.put("size", m.getSize());
-                    item.put("uploader", m.getUploader());
-                    item.put("uploadTime", m.getUploadedAt() != null ? m.getUploadedAt().toString() : "");
-                    return item;
-                })
-                .collect(java.util.stream.Collectors.toList());
-        return ApiResponse.success(result);
-    }
-
-    /**
-     * 12.2 上传素材
-     * POST /api/v1/workspaces/:workspaceId/materials (multipart/form-data)
-     */
-    @Operation(summary = "上传 Workspace 素材")
-    @PostMapping(value = "/{workspaceId}/materials", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<Map<String, Object>> uploadMaterial(
-            @PathVariable String workspaceId,
-            @RequestParam("file") MultipartFile file) throws IOException {
-        org.dragon.workspace.material.Material material = workspaceApiApplication.uploadMaterial(
-                workspaceId, file, "api-user");
-        Map<String, Object> result = new java.util.HashMap<>();
-        result.put("materialId", material.getId());
-        result.put("filename", material.getName());
-        result.put("type", material.getType() != null ? material.getType() : "other");
-        result.put("size", material.getSize());
-        result.put("uploader", material.getUploader());
-        result.put("uploadTime", material.getUploadedAt() != null ? material.getUploadedAt().toString() : "");
-        return ApiResponse.success(result);
-    }
-
-    /**
-     * 12.3 删除素材
-     * DELETE /api/v1/workspaces/:workspaceId/materials/:materialId
-     */
-    @Operation(summary = "删除 Workspace 素材")
-    @DeleteMapping("/{workspaceId}/materials/{materialId}")
-    public ApiResponse<Map<String, Object>> deleteMaterial(
-            @PathVariable String workspaceId,
-            @PathVariable String materialId) {
-        workspaceApiApplication.deleteMaterial(workspaceId, materialId);
-        return ApiResponse.success(Map.of("success", true));
-    }
-
-    // ==================== 13. Permission（权限）====================
-
-    /**
-     * 13.1 获取权限成员列表
-     * GET /api/v1/workspaces/:workspaceId/permissions
-     */
-    @Operation(summary = "获取 Workspace 权限成员列表")
-    @GetMapping("/{workspaceId}/permissions")
-    public ApiResponse<List<Map<String, Object>>> listPermissions(@PathVariable String workspaceId) {
-        permissionChecker.checkManage("WORKSPACE", workspaceId);
-        List<Map<String, Object>> permissions = workspaceApiApplication.listPermissions(workspaceId);
-        return ApiResponse.success(permissions);
-    }
-
-    /**
-     * 13.2 添加成员权限
-     * POST /api/v1/workspaces/:workspaceId/permissions
-     */
-    @Operation(summary = "添加 Workspace 成员权限")
-    @PostMapping("/{workspaceId}/permissions")
-    public ApiResponse<Map<String, Object>> addPermission(
-            @PathVariable String workspaceId,
-            @RequestBody PermissionRequest request) {
-        permissionChecker.checkManage("WORKSPACE", workspaceId);
-        workspaceApiApplication.addPermission(workspaceId, request.getUserId(), request.getRole());
-        return ApiResponse.success(Map.of("success", true));
-    }
-
-    /**
-     * 13.3 更新成员权限
-     * PUT /api/v1/workspaces/:workspaceId/permissions/:userId
-     */
-    @Operation(summary = "更新 Workspace 成员权限")
-    @PutMapping("/{workspaceId}/permissions/{userId}")
-    public ApiResponse<Map<String, Object>> updatePermission(
-            @PathVariable String workspaceId,
-            @PathVariable String userId,
-            @RequestBody PermissionRequest request) {
-        permissionChecker.checkManage("WORKSPACE", workspaceId);
-        workspaceApiApplication.updatePermission(workspaceId, userId, request.getRole());
-        return ApiResponse.success(Map.of("success", true));
-    }
-
-    /**
-     * 13.4 移除成员权限
-     * DELETE /api/v1/workspaces/:workspaceId/permissions/:userId
-     */
-    @Operation(summary = "移除 Workspace 成员权限")
-    @DeleteMapping("/{workspaceId}/permissions/{userId}")
-    public ApiResponse<Map<String, Object>> removePermission(
-            @PathVariable String workspaceId,
-            @PathVariable String userId) {
-        permissionChecker.checkManage("WORKSPACE", workspaceId);
-        workspaceApiApplication.removePermission(workspaceId, userId);
-        return ApiResponse.success(Map.of("success", true));
-    }
-
     // ==================== 请求体 DTO ====================
 
     /** 添加成员请求 */
@@ -518,28 +244,6 @@ public class WorkspaceController {
         private String position;
         private Integer level;
         private String sourceType;
-    }
-
-    /** 绑定 Observer 请求 */
-    @Data
-    public static class BindObserverRequest {
-        private String observerId;
-        private String evaluationMode;
-        private Boolean autoOptimization;
-    }
-
-    /** 权限请求 */
-    @Data
-    public static class PermissionRequest {
-        private String userId;
-        private String role;
-    }
-
-    /** 更新技能绑定配置请求 */
-    @Data
-    public static class UpdateSkillBindingRequest {
-        private String versionType;
-        private Integer fixedVersion;
     }
 
     /** 添加岗位请求 */
@@ -555,6 +259,7 @@ public class WorkspaceController {
     @Data
     public static class UpdatePositionRequest {
         private String assignedCharacterId;
+        private String assignedBuiltinType;
         private Boolean enabled;
     }
 }

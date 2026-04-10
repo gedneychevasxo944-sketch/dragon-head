@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import org.dragon.observer.actionlog.ObserverActionLog;
-import org.dragon.observer.actionlog.ActionType;
+import org.dragon.actionlog.ActionType;
+import org.dragon.observer.log.ObserverActionLog;
 
 /**
  * ObserverActionLogEntity 观察者动作日志实体

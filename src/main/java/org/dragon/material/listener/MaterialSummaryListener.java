@@ -1,13 +1,13 @@
-package org.dragon.workspace.material.listener;
+package org.dragon.material.listener;
 
 import java.util.concurrent.CompletableFuture;
 
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.service.ConfigApplication;
-import org.dragon.workspace.material.Material;
-import org.dragon.workspace.material.MaterialSummaryEvent;
-import org.dragon.workspace.material.ParsedMaterialContent;
+import org.dragon.material.Material;
+import org.dragon.material.MaterialSummaryEvent;
+import org.dragon.material.ParsedMaterialContent;
 import org.dragon.workspace.service.material.WorkspaceMaterialService;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.character.Character;

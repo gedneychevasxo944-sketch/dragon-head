@@ -1,4 +1,4 @@
-package org.dragon.workspace.material;
+package org.dragon.material;
 
 import java.io.InputStream;
 

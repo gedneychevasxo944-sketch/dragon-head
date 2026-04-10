@@ -1,14 +1,14 @@
-package org.dragon.workspace.commons.store;
+package org.dragon.commonsense.store;
 
+import org.dragon.commonsense.CommonSense;
+import org.dragon.commonsense.CommonSenseFolder;
+import org.dragon.commonsense.content.CommonSenseContent;
+import org.dragon.commonsense.content.CommonSenseContentParser;
+import org.dragon.commonsense.content.ConstraintContent;
+import org.dragon.commonsense.content.ContentType;
+import org.dragon.commonsense.content.ForbiddenContent;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
-import org.dragon.workspace.commons.CommonSense;
-import org.dragon.workspace.commons.CommonSenseFolder;
-import org.dragon.workspace.commons.content.CommonSenseContent;
-import org.dragon.workspace.commons.content.CommonSenseContentParser;
-import org.dragon.workspace.commons.content.ConstraintContent;
-import org.dragon.workspace.commons.content.ContentType;
-import org.dragon.workspace.commons.content.ForbiddenContent;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;

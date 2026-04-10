@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-import org.dragon.workspace.member.CharacterDuty;
+import org.dragon.workspace.duty.CharacterDuty;
 
 /**
  * CharacterDutyEntity Character职责实体

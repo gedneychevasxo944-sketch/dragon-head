@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import org.dragon.workspace.material.Material;
+import org.dragon.material.Material;
+
 import java.util.Map;
 
 /**

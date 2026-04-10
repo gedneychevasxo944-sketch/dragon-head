@@ -9,7 +9,7 @@ import org.dragon.config.service.ConfigApplication;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.workspace.service.WorkspacePluginService;
 import org.dragon.workspace.service.task.arrangement.dto.PromptWriterInput;
 import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
 import org.springframework.stereotype.Component;
@@ -29,16 +29,16 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class TaskDecomposer {
 
-    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final WorkspacePluginService workspacePluginService;
     private final org.dragon.agent.llm.util.CharacterCaller characterCaller;
     private final ConfigApplication configApplication;
     private final Gson gson = new Gson();
 
     public TaskDecomposer(
-            BuiltInCharacterFactory builtInCharacterFactory,
+            WorkspacePluginService workspacePluginService,
             org.dragon.agent.llm.util.CharacterCaller characterCaller,
             ConfigApplication configApplication) {
-        this.builtInCharacterFactory = builtInCharacterFactory;
+        this.workspacePluginService = workspacePluginService;
         this.characterCaller = characterCaller;
         this.configApplication = configApplication;
     }
@@ -48,8 +48,8 @@ public class TaskDecomposer {
      */
     public TaskDecompositionResult decompose(Task parentTask, Workspace workspace, List<WorkspaceMember> members) {
         try {
-            // 获取 PromptWriter Character
-            var promptWriterCharacter = builtInCharacterFactory.getOrCreatePromptWriterCharacter(workspace.getId());
+            // 通过 Plugin 获取 PromptWriter Character
+            var promptWriterCharacter = workspacePluginService.getBuiltinCharacter(workspace.getId(), "prompt_writer");
 
             // 获取 prompt 模板
             String promptTemplate = configApplication.getGlobalPrompt(
@@ -62,8 +62,8 @@ public class TaskDecomposer {
             // 调用 PromptWriter 获取完整 prompt
             String fullPrompt = characterCaller.call(promptWriterCharacter, promptWriterInput);
 
-            // 获取 ProjectManager Character
-            var projectManagerCharacter = builtInCharacterFactory.getOrCreateProjectManagerCharacter(workspace.getId());
+            // 通过 Plugin 获取 ProjectManager Character
+            var projectManagerCharacter = workspacePluginService.getBuiltinCharacter(workspace.getId(), "project_manager");
 
             // 调用 ProjectManager 进行任务分解
             String result = characterCaller.call(projectManagerCharacter, fullPrompt);

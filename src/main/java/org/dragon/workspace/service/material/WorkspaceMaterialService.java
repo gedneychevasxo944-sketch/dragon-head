@@ -12,12 +12,12 @@ import java.util.stream.Collectors;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.WorkspaceRegistry;
-import org.dragon.workspace.material.Material;
-import org.dragon.workspace.material.MaterialContentStore;
-import org.dragon.workspace.material.MaterialEventPublisher;
-import org.dragon.workspace.material.MaterialParser;
-import org.dragon.workspace.material.MaterialStore;
-import org.dragon.workspace.material.MaterialStorage;
+import org.dragon.material.Material;
+import org.dragon.material.MaterialContentStore;
+import org.dragon.material.MaterialEventPublisher;
+import org.dragon.material.MaterialParser;
+import org.dragon.material.MaterialStorage;
+import org.dragon.material.MaterialStore;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
@@ -65,7 +65,7 @@ public class WorkspaceMaterialService {
         }
         // 找不到匹配的解析器，返回默认解析器
         return materialParsers.stream()
-                .filter(parser -> parser instanceof org.dragon.workspace.material.DefaultMaterialParser)
+                .filter(parser -> parser instanceof org.dragon.material.DefaultMaterialParser)
                 .findFirst()
                 .orElse(materialParsers.get(0));
     }
@@ -220,7 +220,7 @@ public class WorkspaceMaterialService {
      * @param materialId 物料 ID
      * @return 解析后的内容
      */
-    public org.dragon.workspace.material.ParsedMaterialContent parseMaterial(String materialId) {
+    public org.dragon.material.ParsedMaterialContent parseMaterial(String materialId) {
         Material material = getMaterialStore().findById(materialId)
                 .orElseThrow(() -> new IllegalArgumentException("Material not found: " + materialId));
 
@@ -233,16 +233,16 @@ public class WorkspaceMaterialService {
             MaterialParser.ParseResult result = selectParser(material).parse(material, inputStream);
 
             // 保存解析内容
-            org.dragon.workspace.material.ParsedMaterialContent content =
-                    org.dragon.workspace.material.ParsedMaterialContent.builder()
+            org.dragon.material.ParsedMaterialContent content =
+                    org.dragon.material.ParsedMaterialContent.builder()
                             .id(java.util.UUID.randomUUID().toString())
                             .materialId(materialId)
                             .textContent(result.getTextContent())
                             .structuredContent(result.getStructuredContent())
                             .metadata(result.getMetadata())
                             .status(result.isSuccess()
-                                    ? org.dragon.workspace.material.ParsedMaterialContent.ParseStatus.SUCCESS
-                                    : org.dragon.workspace.material.ParsedMaterialContent.ParseStatus.FAILED)
+                                    ? org.dragon.material.ParsedMaterialContent.ParseStatus.SUCCESS
+                                    : org.dragon.material.ParsedMaterialContent.ParseStatus.FAILED)
                             .errorMessage(result.getErrorMessage())
                             .parsedAt(java.time.LocalDateTime.now())
                             .build();
@@ -268,7 +268,7 @@ public class WorkspaceMaterialService {
      * @param materialId 物料 ID
      * @return 解析内容（如果存在）
      */
-    public java.util.Optional<org.dragon.workspace.material.ParsedMaterialContent> getParsedContent(String materialId) {
+    public java.util.Optional<org.dragon.material.ParsedMaterialContent> getParsedContent(String materialId) {
         Material material = getMaterialStore().findById(materialId).orElse(null);
         if (material == null || material.getParsedContentId() == null) {
             return java.util.Optional.empty();

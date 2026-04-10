@@ -11,7 +11,7 @@ import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
-import org.dragon.workspace.chat.ChatRoom;
+import org.dragon.workspace.cooperation.chat.ChatRoom;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.service.task.arrangement.dto.TaskCreationCommand;
 import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
@@ -42,7 +42,7 @@ public class WorkspaceTaskArrangementService {
     private final TaskDecomposer taskDecomposer;
     private final TaskAssignmentResolver taskAssignmentResolver;
     private final ChildTaskFactory childTaskFactory;
-    private final org.dragon.workspace.service.task.execution.CollaborationSessionCoordinator sessionCoordinator;
+    private final org.dragon.workspace.cooperation.task.CollaborationSessionCoordinator sessionCoordinator;
     private final StoreFactory storeFactory;
 
     private TaskStore getTaskStore() {

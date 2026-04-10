@@ -2,7 +2,7 @@ package org.dragon.workspace.service.teampositions;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.api.dto.TeamPositionResponse;
+import org.dragon.api.controller.dto.TeamPositionResponse;
 import org.dragon.store.StoreFactory;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.member.TeamPosition;
@@ -97,11 +97,12 @@ public class WorkspaceTeamPositionsManagementService {
      * @param workspaceId         工作空间 ID
      * @param positionId          岗位 ID
      * @param assignedCharacterId 分配的 Character ID（可为 null）
+     * @param assignedBuiltinType 分配的 Built-in 类型（可为 null，格式: "builtin:{type}"）
      * @param enabled             是否启用
      * @return 更新后的岗位
      */
     public TeamPosition updatePosition(String workspaceId, String positionId,
-                                       String assignedCharacterId, Boolean enabled) {
+                                       String assignedCharacterId, String assignedBuiltinType, Boolean enabled) {
         TeamPosition position = getPositionStore().findById(positionId)
                 .orElseThrow(() -> new IllegalArgumentException("Position not found: " + positionId));
 
@@ -110,9 +111,13 @@ public class WorkspaceTeamPositionsManagementService {
             throw new IllegalArgumentException("Position does not belong to workspace: " + workspaceId);
         }
 
-        // 更新字段
-        if (assignedCharacterId != null) {
+        // 更新字段 - assignedCharacterId 和 assignedBuiltinType 互斥
+        if (assignedBuiltinType != null && !assignedBuiltinType.isBlank()) {
+            position.setAssignedBuiltinType(assignedBuiltinType);
+            position.setAssignedCharacterId(null);  // 清除普通 Character 分配
+        } else if (assignedCharacterId != null) {
             position.setAssignedCharacterId(assignedCharacterId);
+            position.setAssignedBuiltinType(null);  // 清除 Built-in 分配
         }
         if (enabled != null) {
             position.setEnabled(enabled);

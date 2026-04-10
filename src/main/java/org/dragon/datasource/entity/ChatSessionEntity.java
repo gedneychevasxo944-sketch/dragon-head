@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.dragon.workspace.chat.ChatSession;
+import org.dragon.workspace.cooperation.chat.ChatSession;
 
 import java.time.LocalDateTime;
 import java.util.List;

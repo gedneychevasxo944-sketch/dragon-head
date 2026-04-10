@@ -38,32 +38,20 @@ public class XxxService {
 
 ### 业务入口
 
-- Workspace 级别的业务逻辑入口**统一走 `WorkspaceApplication`**
+- Workspace 级别的业务逻辑入口**统一走 `WorkspaceService`**
 - **不直接调用 `WorkspaceRegistry` 或 `WorkspaceScheduler`**
 
 ```java
 // 正确示例
-WorkspaceApplication app = workspaceApplicationProvider.getApplication(workspaceId);
-app.createWorkspace(workspace);
-
-// 错误示例 —— 绕过 WorkspaceApplication
-workspaceRegistry.create(workspace);
-```
-
-### WorkspaceApplicationProvider
-
-**文件路径：** `org.dragon.workspace.WorkspaceApplicationProvider`
-
-- 获取 `WorkspaceApplication` 实例的统一入口
-
-```java
 @Autowired
-private WorkspaceApplicationProvider workspaceApplicationProvider;
+private WorkspaceService workspaceService;
 
 public void doSomething(String workspaceId) {
-    WorkspaceApplication app = workspaceApplicationProvider.getApplication(workspaceId);
-    // 业务逻辑
+    workspaceService.createWorkspace(workspace);
 }
+
+// 错误示例 —— 绕过 WorkspaceService
+workspaceRegistry.create(workspace);
 ```
 
 ## Channel 适配器规范
@@ -92,5 +80,5 @@ channelManager.registerAdapter(new MyChannelAdapter());
 |------|------|------|
 | `Character` | AI 智能体数据实体 | 内部创建执行器 |
 | `Workspace` | 工作空间业务入口 | 直接调用 Registry |
-| `WorkspaceApplication` | Workspace 级别业务逻辑统一入口 | 绕过直接调用 |
+| `WorkspaceService` | Workspace 级别业务逻辑统一入口 | 绕过直接调用 |
 | `ChannelManager` | 渠道管理 | 直接引用具体 Adapter |

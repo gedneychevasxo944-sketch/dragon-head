@@ -1,4 +1,4 @@
-package org.dragon.workspace.commons;
+package org.dragon.commonsense;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,9 +14,9 @@ import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
-import org.dragon.workspace.commons.content.CommonSenseContent;
-import org.dragon.workspace.commons.content.CommonSenseContentParser;
-import org.dragon.workspace.commons.store.WorkspaceCommonSenseStore;
+import org.dragon.commonsense.content.CommonSenseContent;
+import org.dragon.commonsense.content.CommonSenseContentParser;
+import org.dragon.commonsense.store.WorkspaceCommonSenseStore;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;

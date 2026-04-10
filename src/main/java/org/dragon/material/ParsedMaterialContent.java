@@ -1,4 +1,4 @@
-package org.dragon.workspace.material;
+package org.dragon.material;
 
 import java.time.LocalDateTime;
 import java.util.Map;

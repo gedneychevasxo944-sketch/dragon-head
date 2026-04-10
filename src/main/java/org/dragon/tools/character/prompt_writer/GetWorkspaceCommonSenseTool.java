@@ -2,8 +2,8 @@ package org.dragon.tools.character.prompt_writer;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.dragon.commonsense.CommonSenseService;
 import org.dragon.tools.AgentTool;
-import org.dragon.workspace.commons.CommonSenseService;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;

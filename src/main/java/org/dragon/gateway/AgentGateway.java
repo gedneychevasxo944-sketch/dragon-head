@@ -10,11 +10,10 @@ import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.channel.enums.ActionType;
 import org.dragon.channel.service.ChannelBindingService;
 import org.dragon.character.CharacterRegistry;
+import org.dragon.material.Material;
 import org.dragon.task.Task;
-import org.dragon.workspace.WorkspaceApplication;
-import org.dragon.workspace.WorkspaceApplicationProvider;
-import org.dragon.workspace.material.Material;
-import org.dragon.workspace.service.material. WorkspaceMaterialService;
+import org.dragon.workspace.service.WorkspaceService;
+import org.dragon.workspace.service.material.WorkspaceMaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -40,7 +39,7 @@ public class AgentGateway implements Gateway {
     private CharacterRegistry characterRegistry;
 
     @Autowired
-    private WorkspaceApplicationProvider workspaceApplicationProvider;
+    private WorkspaceService workspaceService;
 
     @Autowired
     private ChannelBindingService channelBindingService;
@@ -63,6 +62,17 @@ public class AgentGateway implements Gateway {
             log.info("[Gateway] No workspace binding found for channel={} chatId={}, falling back to single character", inboundMsg.getChannel(), inboundMsg.getChatId());
             dispatchToSingleCharacter(inboundMsg);
         }
+    }
+
+    /**
+     * 执行即时任务（单 Character 路径）。
+     */
+    public String executeInstantTask(String characterId, String userInput) {
+        Optional<org.dragon.character.Character> characterOpt = characterRegistry.get(characterId);
+        if (!characterOpt.isPresent()) {
+            throw new IllegalArgumentException("Character not found: " + characterId);
+        }
+        return characterOpt.get().run(userInput);
     }
 
 
@@ -88,9 +98,8 @@ public class AgentGateway implements Gateway {
                     log.info("[Gateway] Ingested {} materials", materials.size());
                 }
 
-                WorkspaceApplication app = workspaceApplicationProvider.getApplication(workspaceId);
                 // 将用户消息作为任务提交给 Workspace 编排层（走 NormalizedMessage 主入口）
-                Task task = app.executeTask(inboundMsg, inboundMsg.getSenderId());
+                Task task = workspaceService.executeTask(workspaceId, inboundMsg, inboundMsg.getSenderId());
                 log.info("[Gateway] Workspace task submitted, taskId={}", task.getId());
                 // Workspace 编排为异步执行，回复由各 Character 通过 ActionMessage 下行推送
                 // 此处无需再主动发消息，等待编排层回调
@@ -120,9 +129,9 @@ public class AgentGateway implements Gateway {
                     return;
                 }
 
-                // 2. 通过 WorkspaceApplicationProvider 执行任务（统一入口）
+                // 2. 执行即时任务
                 String characterId = characterOpt.get().getId();
-                String result = workspaceApplicationProvider.executeInstantTask(characterId, inboundMsg.getTextContent());
+                String result = executeInstantTask(characterId, inboundMsg.getTextContent());
 
                 // 3. 返回消息
                 ActionMessage actionMessage = buildActionMessage(inboundMsg, result);

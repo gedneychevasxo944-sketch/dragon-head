@@ -104,7 +104,7 @@ public class CharacterExecutor {
      * 执行 ReAct（带流式、Task 和桥接上下文支持）
      */
     public ReActResult runReAct(String userInput, boolean streaming, Task task,
-                                org.dragon.workspace.service.task.execution.TaskBridgeContext bridgeContext) {
+                                org.dragon.workspace.cooperation.task.TaskBridgeContext bridgeContext) {
         if (runtime.getReActExecutor() == null) {
             throw new IllegalStateException("ReActExecutor not initialized");
         }

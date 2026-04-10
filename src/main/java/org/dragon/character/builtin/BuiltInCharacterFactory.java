@@ -11,7 +11,6 @@ import org.dragon.character.Character;
 import org.dragon.character.CharacterFactory;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.CharacterRuntimeBinder;
-import org.dragon.character.config.BuiltInCharacterDefinition;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.tools.AgentTool;
 import org.dragon.tools.ToolRegistry;
