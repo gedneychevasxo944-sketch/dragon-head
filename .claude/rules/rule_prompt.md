@@ -86,3 +86,96 @@ src/main/resources/prompts/
 2. 在 `PromptInitializer` 中添加 `init{Module}Prompts()` 方法
 3. 创建对应的 `prompts/{module}-{action}-prompt.txt` 文件（如需长 prompt）
 4. 在业务代码中通过 `ConfigApplication` 获取使用
+
+## Prompt 物料上下文
+
+### PromptMaterialContext
+
+**文件路径：** `org.dragon.agent.react.context.PromptMaterialContext`
+
+统一物料上下文，存放所有 Prompt 生成相关物料，避免散落在多处：
+
+```java
+PromptMaterialContext
+├── workspacePersonality        ← Workspace人格
+├── availableMembers           ← 可用成员
+├── teamPositions              ← 职位信息
+├── characterPersonality       ← Character人格 (Mind)
+├── availableSkills            ← Skill列表
+├── skillDirectoryPrompt        ← 已组装Skill目录
+├── taskId/Name/Description    ← 任务信息
+├── recentEvaluation           ← 评估记录
+├── recentMemories            ← Memory
+└── collaborationContext       ← 协作上下文
+```
+
+### PromptMaterialContextBuilder
+
+**文件路径：** `org.dragon.agent.react.context.PromptMaterialContextBuilder`
+
+收集并填充 `PromptMaterialContext` 的各个部分：
+
+```java
+// 构建 ReAct 执行所需的上下文
+PromptMaterialContext ctx = builder.buildForReAct(
+    workspaceId, characterId, task, mind, activeSkills, reActConfig);
+
+// 构建成员选择所需的上下文
+PromptMaterialContext ctx = builder.buildForMemberSelection(
+    workspaceId, parentTask, members);
+
+// 构建任务分解所需的上下文
+PromptMaterialContext ctx = builder.buildForTaskDecomposition(
+    workspaceId, parentTask, members);
+```
+
+### PromptMaterialConfig
+
+**文件路径：** `org.dragon.agent.react.context.PromptMaterialConfig`
+
+控制各部分是否包含在 `PromptMaterialContext` 中：
+
+```java
+// 通过配置文件控制（dragon.prompt-material.*）
+// 或使用预设配置
+PromptMaterialConfig.defaultReAct();        // ReAct 执行用
+PromptMaterialConfig.memberSelection();     // 成员选择用
+PromptMaterialConfig.taskDecomposition();   // 任务分解用
+PromptMaterialConfig.observerSuggestion(); // Observer建议用
+```
+
+对应的配置属性：`org.dragon.config.config.PromptMaterialConfigProperties`
+
+### 调用时机
+
+`CharacterExecutor.runReAct()` 在构建 `ReActContext` 前调用 `PromptMaterialContextBuilder`：
+
+```java
+PromptMaterialContext ctx = buildPromptMaterialContext(workspace, task);
+String systemPrompt = resolveSystemPrompt(ctx);
+// ctx 被放入 ReActContext，在 ThoughtPromptAssembler 中使用
+```
+
+## Prompt 分类
+
+| 类型 | 来源 | 用途 |
+|------|------|------|
+| **System Prompt** | `CharacterExecutor.resolveSystemPrompt()` | Character 人格 + Workspace Personality + Skill 目录 |
+| **Thought Prompt** | `ThoughtPromptAssembler` / `PromptWriter` | 用户输入 + 任务描述 + 历史 + 工具列表 |
+| **Tool Prompt** | `ToolRegistry` | 工具定义和参数 schema |
+
+## System Prompt 组装顺序
+
+```
+1. ConfigApplication.getPrompt(workspace, character, CHARACTER_SYSTEM)
+   // 4级层次: workspace+char > char > workspace > global
+
+2. Fallback: Mind.getPersonality().toPrompt()
+   // traits, values, communicationStyle, decisionStyle
+
+3. SkillDirectoryBuilder.buildDirectoryPrompt()
+   // displayName, description, whenToUse, argumentHint
+
+4. WorkspacePersonality (通过 PromptMaterialContext 注入)
+   // workingStyle, decisionPattern, riskTolerance, coreValues
+```
