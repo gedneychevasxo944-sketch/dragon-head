@@ -67,6 +67,23 @@ public interface WorkspaceStore extends Store {
     List<Workspace> findByOwner(String owner);
 
     /**
+     * 根据 ID 列表获取工作空间
+     *
+     * @param ids 工作空间 ID 列表
+     * @return 工作空间列表
+     */
+    List<Workspace> findByIds(List<String> ids);
+
+    /**
+     * 根据 ID 列表和状态获取工作空间
+     *
+     * @param ids 工作空间 ID 列表
+     * @param status 工作空间状态
+     * @return 工作空间列表
+     */
+    List<Workspace> findByIdsAndStatus(List<String> ids, Workspace.Status status);
+
+    /**
      * 检查工作空间是否存在
      *
      * @param id 工作空间 ID

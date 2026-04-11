@@ -10,21 +10,18 @@ import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
-import org.dragon.task.TaskStore;
 import org.dragon.util.UserUtils;
-import org.dragon.workspace.Workspace;
-import org.dragon.workspace.DeploymentService;
 import org.dragon.workspace.member.TeamPosition;
+import org.dragon.workspace.member.TeamPositionService;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
-import org.dragon.workspace.member.TeamPositionService;
 import org.dragon.workspace.plugin.WorkspacePluginService;
 import org.dragon.workspace.task.TaskArrangementService;
 import org.dragon.workspace.task.TaskArrangementService.TaskExecutionMode;
-import org.dragon.workspace.task.dto.TaskCreationCommand;
 import org.dragon.workspace.task.TaskExecutionService;
 import org.dragon.workspace.task.TaskResumeService;
 import org.dragon.workspace.task.WorkspaceTaskService;
+import org.dragon.workspace.task.dto.TaskCreationCommand;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -53,36 +50,35 @@ public class WorkspaceFacadeService {
     private final TaskArrangementService taskArrangementService;
     private final TaskResumeService taskResumeService;
     private final TaskExecutionService taskExecutionService;
-    private final TaskStore taskStore;
+    // private final TaskStore taskStore;
 
     // ==================== Workspace CRUD ====================
 
     public PageResponse<Workspace> listWorkspaces(int page, int pageSize, String search,
                                                   String status, String teamStatus, Boolean hasObserver) {
+        Long userId = Long.valueOf(UserUtils.getUserId());
+        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.WORKSPACE, userId);
+        if (visibleIds == null || visibleIds.isEmpty()) {
+            return PageResponse.of(List.of(), 0, page, pageSize);
+        }
+
         List<Workspace> all;
         if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
             try {
                 Workspace.Status st = Workspace.Status.valueOf(status.toUpperCase());
-                all = workspaceLifecycleService.listWorkspacesByStatus(st);
+                all = workspaceLifecycleService.listWorkspacesByIdsAndStatus(visibleIds, st);
             } catch (IllegalArgumentException e) {
-                all = workspaceLifecycleService.listWorkspaces();
+                all = workspaceLifecycleService.listWorkspacesByIds(visibleIds);
             }
         } else {
-            all = workspaceLifecycleService.listWorkspaces();
+            all = workspaceLifecycleService.listWorkspacesByIds(visibleIds);
         }
-
-        Long userId = Long.parseLong(UserUtils.getUserId());
-        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.WORKSPACE, userId);
 
         List<Workspace> filtered = all.stream()
                 .filter(w -> {
                     if (search != null && !search.isBlank()) {
                         String s = search.toLowerCase();
-                        boolean nameMatch = w.getName() != null && w.getName().toLowerCase().contains(s);
-                        if (!nameMatch) return false;
-                    }
-                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(w.getId())) {
-                        return false;
+                        return w.getName() != null && w.getName().toLowerCase().contains(s);
                     }
                     return true;
                 })

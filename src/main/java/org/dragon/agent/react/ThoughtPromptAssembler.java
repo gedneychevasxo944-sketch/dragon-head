@@ -2,6 +2,7 @@ package org.dragon.agent.react;
 
 import java.util.Iterator;
 
+import org.dragon.agent.react.context.PromptMaterialContext;
 import org.dragon.tools.ToolRegistry;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,21 @@ public class ThoughtPromptAssembler {
     private String buildLocalThoughtPrompt(ReActContext context) {
         StringBuilder prompt = new StringBuilder();
 
-        prompt.append("用户输入: ").append(context.getUserInput()).append("\n\n");
+        // 优先从 PromptMaterialContext 获取任务输入
+        PromptMaterialContext materialCtx = context.getPromptMaterialContext();
+        String taskInput = resolveTaskInput(context, materialCtx);
+        prompt.append("用户输入: ").append(taskInput).append("\n\n");
+
+        // 添加任务描述（如果从 PromptMaterialContext 获取）
+        if (materialCtx != null && materialCtx.getTaskDescription() != null) {
+            prompt.append("## 任务描述\n");
+            prompt.append(materialCtx.getTaskDescription()).append("\n\n");
+        }
+
+        // 添加 Workspace 人格上下文（如果从 PromptMaterialContext 获取）
+        if (materialCtx != null && materialCtx.getWorkspacePersonality() != null) {
+            prompt.append(appendWorkspacePersonalityContext(materialCtx.getWorkspacePersonality()));
+        }
 
         // 添加物料上下文（如果存在）
         if (context.getMaterialContext() != null && !context.getMaterialContext().isEmpty()) {
@@ -179,6 +194,44 @@ public class ThoughtPromptAssembler {
         sb.append("依赖任务 IDs: ")
                 .append(context.getDependencyTaskIds() != null ? String.join(", ", context.getDependencyTaskIds()) : "无").append("\n\n");
 
+        return sb.toString();
+    }
+
+    /**
+     * 解析任务输入
+     */
+    private String resolveTaskInput(ReActContext context, PromptMaterialContext materialCtx) {
+        if (materialCtx != null && materialCtx.getTaskInput() != null) {
+            return materialCtx.getTaskInput();
+        }
+        return context.getUserInput() != null ? context.getUserInput() : "";
+    }
+
+    /**
+     * 追加 Workspace 人格上下文段落
+     */
+    private String appendWorkspacePersonalityContext(org.dragon.workspace.WorkspacePersonality personality) {
+        if (personality == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("## Workspace 人格上下文\n");
+        if (personality.getWorkingStyle() != null) {
+            sb.append("- 工作风格: ").append(personality.getWorkingStyle()).append("\n");
+        }
+        if (personality.getDecisionPattern() != null) {
+            sb.append("- 决策模式: ").append(personality.getDecisionPattern()).append("\n");
+        }
+        if (personality.getRiskTolerance() != null) {
+            sb.append("- 风险容忍度: ").append(personality.getRiskTolerance()).append("\n");
+        }
+        if (personality.getCoreValues() != null && !personality.getCoreValues().isBlank()) {
+            sb.append("- 核心价值观: ").append(personality.getCoreValues()).append("\n");
+        }
+        if (personality.getCollaborationPreference() != null && !personality.getCollaborationPreference().isBlank()) {
+            sb.append("- 协作偏好: ").append(personality.getCollaborationPreference()).append("\n");
+        }
+        sb.append("\n");
         return sb.toString();
     }
 }

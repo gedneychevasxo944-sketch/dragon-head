@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.task.Task;
 
+import org.dragon.agent.react.context.PromptMaterialContext;
 import org.dragon.skill.runtime.SkillDefinition;
 
 import java.util.ArrayList;
@@ -196,6 +197,16 @@ public class ReActContext {
      * 物料上下文（独立于 systemPrompt 和 userInput）
      */
     private String materialContext;
+
+    // ==================== Prompt 物料上下文 ====================
+
+    /**
+     * Prompt 物料上下文（所有 Prompt 生成相关的物料）
+     * <p>
+     * 通过 {@link PromptMaterialContextBuilder} 收集并填充，
+     * 便于统一管理和调优。
+     */
+    private PromptMaterialContext promptMaterialContext;
 
     // ==================== 业务方法 ====================
 

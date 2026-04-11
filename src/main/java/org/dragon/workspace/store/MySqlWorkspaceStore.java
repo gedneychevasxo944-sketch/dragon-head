@@ -80,6 +80,29 @@ public class MySqlWorkspaceStore implements WorkspaceStore {
     }
 
     @Override
+    public List<Workspace> findByIds(List<String> ids) {
+        return mysqlDb.find(WorkspaceEntity.class)
+                .where()
+                .in("id", ids)
+                .findList()
+                .stream()
+                .map(WorkspaceEntity::toWorkspace)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Workspace> findByIdsAndStatus(List<String> ids, Workspace.Status status) {
+        return mysqlDb.find(WorkspaceEntity.class)
+                .where()
+                .in("id", ids)
+                .eq("status", status.name())
+                .findList()
+                .stream()
+                .map(WorkspaceEntity::toWorkspace)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public boolean exists(String id) {
         return mysqlDb.find(WorkspaceEntity.class, id) != null;
     }

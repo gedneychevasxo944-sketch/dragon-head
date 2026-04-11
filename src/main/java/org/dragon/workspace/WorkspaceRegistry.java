@@ -136,6 +136,27 @@ public class WorkspaceRegistry {
     }
 
     /**
+     * 根据 ID 列表获取 Workspace 列表
+     *
+     * @param ids Workspace ID 列表
+     * @return Workspace 列表
+     */
+    public List<Workspace> listByIds(List<String> ids) {
+        return workspaceStore.findByIds(ids);
+    }
+
+    /**
+     * 根据 ID 列表和状态获取 Workspace 列表
+     *
+     * @param ids Workspace ID 列表
+     * @param status 工作空间状态
+     * @return Workspace 列表
+     */
+    public List<Workspace> listByIdsAndStatus(List<String> ids, Workspace.Status status) {
+        return workspaceStore.findByIdsAndStatus(ids, status);
+    }
+
+    /**
      * 更新 Workspace
      *
      * @param workspace Workspace 实例

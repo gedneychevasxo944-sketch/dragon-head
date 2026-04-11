@@ -9,13 +9,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.dragon.agent.llm.util.CharacterCaller;
+import org.dragon.agent.react.context.PromptMaterialContext;
+import org.dragon.agent.react.context.PromptMaterialConfig;
+import org.dragon.agent.react.context.PromptMaterialContextBuilder;
 import org.dragon.character.Character;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.service.ConfigApplication;
+import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.Workspace;
+import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.cooperation.chat.ChatRoom;
 import org.dragon.workspace.cooperation.task.CollaborationSessionCoordinator;
 import org.dragon.workspace.member.WorkspaceMember;
@@ -28,9 +34,6 @@ import org.dragon.workspace.task.dto.PromptWriterInput;
 import org.dragon.workspace.task.dto.TaskCreationCommand;
 import org.dragon.workspace.task.dto.TaskDecompositionResult;
 import org.dragon.workspace.task.util.MemberUtils;
-import org.dragon.workspace.WorkspaceRegistry;
-import org.dragon.agent.llm.util.CharacterCaller;
-import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
@@ -65,6 +68,7 @@ public class TaskArrangementService {
     private final CharacterCaller characterCaller;
     private final ConfigApplication configApplication;
     private final StoreFactory storeFactory;
+    private final PromptMaterialContextBuilder promptMaterialContextBuilder;
     private final Gson gson = new Gson();
 
     private TaskStore getTaskStore() {
@@ -133,12 +137,12 @@ public class TaskArrangementService {
             return;
         }
 
-        if (executionMode == TaskExecutionMode.SPECIFIED) {
-            handleSpecifiedMode(task, members, specifiedCharacterIds);
-        } else if (executionMode == TaskExecutionMode.DEFAULT) {
-            handleDefaultMode(task, members);
-        } else {
+        if (null == executionMode) {
             handleAutoMode(task, workspace, members);
+        } else switch (executionMode) {
+            case SPECIFIED -> handleSpecifiedMode(task, members, specifiedCharacterIds);
+            case DEFAULT -> handleDefaultMode(task, members);
+            default -> handleAutoMode(task, workspace, members);
         }
     }
 
@@ -536,15 +540,24 @@ public class TaskArrangementService {
         Map<String, String> memberDescriptions = memberInfos.stream()
                 .collect(Collectors.toMap(PromptWriterInput.MemberInfo::getCharacterId, PromptWriterInput.MemberInfo::getDescription));
 
-        Map<String, Object> contextHints = Map.of(
-                "timestamp", LocalDateTime.now().toString(),
-                "collaborationMode", "AUTO",
-                "allowFollowUp", true,
-                "maxChildTasks", 10,
-                "memberCapabilities", memberCapabilities,
-                "memberDescriptions", memberDescriptions,
-                "collaborationConstraint", "子任务间应保持独立性，按依赖关系顺序执行"
-        );
+        // 构建 contextHints
+        Map<String, Object> contextHints = new HashMap<>();
+        contextHints.put("timestamp", LocalDateTime.now().toString());
+        contextHints.put("collaborationMode", "AUTO");
+        contextHints.put("allowFollowUp", true);
+        contextHints.put("maxChildTasks", 10);
+        contextHints.put("memberCapabilities", memberCapabilities);
+        contextHints.put("memberDescriptions", memberDescriptions);
+        contextHints.put("collaborationConstraint", "子任务间应保持独立性，按依赖关系顺序执行");
+
+        // 通过 PromptMaterialContextBuilder 获取 Workspace Personality 并加入 contextHints
+        if (promptMaterialContextBuilder != null) {
+            PromptMaterialContext pctx = promptMaterialContextBuilder.buildForTaskDecomposition(
+                    task.getWorkspaceId(), task, members);
+            if (pctx != null && pctx.getWorkspacePersonality() != null) {
+                contextHints.put("workspacePersonality", buildWorkspacePersonalityContext(pctx.getWorkspacePersonality()));
+            }
+        }
 
         var input = PromptWriterInput.builder()
                 .workspaceId(task.getWorkspaceId())
@@ -562,6 +575,32 @@ public class TaskArrangementService {
                 .build();
 
         return gson.toJson(input);
+    }
+
+    /**
+     * 构建 Workspace Personality 上下文字符串
+     */
+    private String buildWorkspacePersonalityContext(org.dragon.workspace.WorkspacePersonality personality) {
+        if (personality == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (personality.getWorkingStyle() != null) {
+            sb.append("工作风格: ").append(personality.getWorkingStyle()).append("; ");
+        }
+        if (personality.getDecisionPattern() != null) {
+            sb.append("决策模式: ").append(personality.getDecisionPattern()).append("; ");
+        }
+        if (personality.getRiskTolerance() != null) {
+            sb.append("风险容忍度: ").append(personality.getRiskTolerance()).append("; ");
+        }
+        if (personality.getCoreValues() != null && !personality.getCoreValues().isBlank()) {
+            sb.append("核心价值观: ").append(personality.getCoreValues()).append("; ");
+        }
+        if (personality.getCollaborationPreference() != null && !personality.getCollaborationPreference().isBlank()) {
+            sb.append("协作偏好: ").append(personality.getCollaborationPreference());
+        }
+        return sb.toString();
     }
 
     private String buildMemberSelectionPromptWriterInput(ChildTaskPlan plan, Workspace workspace,

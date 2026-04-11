@@ -7,6 +7,9 @@ import java.util.UUID;
 import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActContext;
 import org.dragon.agent.react.ReActResult;
+import org.dragon.agent.react.context.PromptMaterialContext;
+import org.dragon.agent.react.context.PromptMaterialConfig;
+import org.dragon.agent.react.context.PromptMaterialContextBuilder;
 import org.dragon.agent.workflow.Workflow;
 import org.dragon.agent.workflow.WorkflowResult;
 import org.dragon.character.config.CharacterExecutorConfig;
@@ -14,6 +17,7 @@ import org.dragon.character.mind.DefaultMind;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.config.PromptKeys;
+import org.dragon.config.config.PromptMaterialConfigProperties;
 import org.dragon.skill.runtime.SkillDefinition;
 import org.dragon.skill.runtime.SkillDirectoryBuilder;
 import org.dragon.skill.runtime.SkillRegistry;
@@ -38,6 +42,18 @@ public class CharacterExecutor {
     private final CharacterProfile profile;
     private final CharacterRuntime runtime;
     private final CharacterExecutorConfig config;
+
+    /**
+     * Prompt 物料上下文构建器（可选）
+     */
+    @Builder.Default
+    private final PromptMaterialContextBuilder promptMaterialContextBuilder = null;
+
+    /**
+     * Prompt 物料配置属性（可选）
+     */
+    @Builder.Default
+    private final PromptMaterialConfigProperties promptMaterialConfigProperties = null;
 
     /**
      * 执行主入口
@@ -111,9 +127,13 @@ public class CharacterExecutor {
 
         String defaultModelId = resolveDefaultModelId();
         int maxIterations = resolveMaxIterations();
-
-        String systemPrompt = resolveSystemPrompt();
         String workspace = resolveWorkspace();
+
+        // 构建 PromptMaterialContext
+        PromptMaterialContext promptMaterialContext = buildPromptMaterialContext(workspace, task);
+
+        // 使用 PromptMaterialContext 构建 system prompt
+        String systemPrompt = resolveSystemPrompt(promptMaterialContext);
 
         ReActContext.ReActContextBuilder contextBuilder = ReActContext.builder()
                 .executionId(UUID.randomUUID().toString())
@@ -126,7 +146,8 @@ public class CharacterExecutor {
                 .streamingEnabled(streaming)
                 .task(task)
                 .allowedTools(profile.getAllowedTools())
-                .activeSkills(resolveActiveSkills(workspace));
+                .activeSkills(resolveActiveSkills(workspace))
+                .promptMaterialContext(promptMaterialContext);
 
         if (bridgeContext != null) {
             boolean collaborationEnabled = bridgeContext.isCollaborationJudgementEnabled();
@@ -212,7 +233,39 @@ public class CharacterExecutor {
         return 10;
     }
 
-    private String resolveSystemPrompt() {
+    /**
+     * 构建 PromptMaterialContext
+     */
+    private PromptMaterialContext buildPromptMaterialContext(String workspace, Task task) {
+        if (promptMaterialContextBuilder == null) {
+            return null;
+        }
+        PromptMaterialConfig materialConfig = resolvePromptMaterialConfig();
+        return promptMaterialContextBuilder.buildForReAct(
+                workspace,
+                profile.getId(),
+                task,
+                getMind(),
+                resolveActiveSkills(workspace),
+                config != null ? config.getReActConfig() : null,
+                materialConfig
+        );
+    }
+
+    /**
+     * 获取 PromptMaterialConfig
+     */
+    private PromptMaterialConfig resolvePromptMaterialConfig() {
+        if (promptMaterialConfigProperties != null) {
+            return promptMaterialConfigProperties.toConfig();
+        }
+        return PromptMaterialConfig.defaultReAct();
+    }
+
+    /**
+     * 解析 System Prompt
+     */
+    private String resolveSystemPrompt(PromptMaterialContext promptMaterialContext) {
         String prompt = "";
         String workspace = resolveWorkspace();
         if (runtime.getConfigApplication() != null) {
@@ -226,7 +279,47 @@ public class CharacterExecutor {
         }
         // 增加skill的prompt
         prompt += SkillDirectoryBuilder.buildDirectoryPrompt(runtime.getSkillRegistry().getSkills(profile.getId(), workspace));
+
+        // 增加 Workspace Personality（如果有）
+        if (promptMaterialContext != null && promptMaterialContext.getWorkspacePersonality() != null) {
+            prompt = appendWorkspacePersonalityPrompt(prompt, promptMaterialContext.getWorkspacePersonality());
+        }
+
         return prompt != null ? prompt : "";
+    }
+
+    /**
+     * 追加 Workspace Personality 到 System Prompt
+     */
+    private String appendWorkspacePersonalityPrompt(String currentPrompt, org.dragon.workspace.WorkspacePersonality personality) {
+        if (personality == null) {
+            return currentPrompt;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append(currentPrompt).append("\n\n");
+        sb.append("## Workspace 工作空间人格\n");
+        if (personality.getWorkingStyle() != null) {
+            sb.append("- 工作风格: ").append(personality.getWorkingStyle()).append("\n");
+        }
+        if (personality.getDecisionPattern() != null) {
+            sb.append("- 决策模式: ").append(personality.getDecisionPattern()).append("\n");
+        }
+        if (personality.getRiskTolerance() != null) {
+            sb.append("- 风险容忍度: ").append(personality.getRiskTolerance()).append("\n");
+        }
+        if (personality.getCoreValues() != null && !personality.getCoreValues().isBlank()) {
+            sb.append("- 核心价值观: ").append(personality.getCoreValues()).append("\n");
+        }
+        if (personality.getBehaviorGuidelines() != null && !personality.getBehaviorGuidelines().isBlank()) {
+            sb.append("- 行为准则: ").append(personality.getBehaviorGuidelines()).append("\n");
+        }
+        if (personality.getCollaborationPreference() != null && !personality.getCollaborationPreference().isBlank()) {
+            sb.append("- 协作偏好: ").append(personality.getCollaborationPreference()).append("\n");
+        }
+        if (personality.getPersonalityDescription() != null && !personality.getPersonalityDescription().isBlank()) {
+            sb.append("- 组织描述:\n").append(personality.getPersonalityDescription()).append("\n");
+        }
+        return sb.toString();
     }
 
     private String resolveWorkspace() {

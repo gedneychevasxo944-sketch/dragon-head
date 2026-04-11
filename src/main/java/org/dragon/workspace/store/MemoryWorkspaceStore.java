@@ -71,6 +71,20 @@ public class MemoryWorkspaceStore implements WorkspaceStore {
     }
 
     @Override
+    public List<Workspace> findByIds(List<String> ids) {
+        return store.values().stream()
+                .filter(ws -> ids.contains(ws.getId()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Workspace> findByIdsAndStatus(List<String> ids, Workspace.Status status) {
+        return store.values().stream()
+                .filter(ws -> ids.contains(ws.getId()) && ws.getStatus() == status)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public boolean exists(String id) {
         return store.containsKey(id);
     }

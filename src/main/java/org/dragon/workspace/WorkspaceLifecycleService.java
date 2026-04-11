@@ -6,11 +6,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
-import org.dragon.permission.enums.ResourceType;
-import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.asset.service.AssetMemberService;
+import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.permission.enums.ResourceType;
 import org.dragon.util.UserUtils;
-import org.dragon.workspace.Workspace;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -55,7 +54,7 @@ public class WorkspaceLifecycleService {
         workspaceRegistry.register(workspace);
 
         // 添加创建者为 Owner
-        Long ownerId = Long.parseLong(String.valueOf(workspace.getOwner()));
+        Long ownerId = Long.valueOf(String.valueOf(workspace.getOwner()));
         assetMemberService.addOwnerDirectly(ResourceType.WORKSPACE, workspace.getId(), ownerId);
 
         // 初始化发布状态（默认为 DRAFT）
@@ -144,6 +143,27 @@ public class WorkspaceLifecycleService {
      */
     public List<Workspace> listWorkspacesByStatus(Workspace.Status status) {
         return workspaceRegistry.listByStatus(status);
+    }
+
+    /**
+     * 根据 ID 列表获取工作空间
+     *
+     * @param ids 工作空间 ID 列表
+     * @return 工作空间列表
+     */
+    public List<Workspace> listWorkspacesByIds(List<String> ids) {
+        return workspaceRegistry.listByIds(ids);
+    }
+
+    /**
+     * 根据 ID 列表和状态获取工作空间
+     *
+     * @param ids 工作空间 ID 列表
+     * @param status 工作空间状态
+     * @return 工作空间列表
+     */
+    public List<Workspace> listWorkspacesByIdsAndStatus(List<String> ids, Workspace.Status status) {
+        return workspaceRegistry.listByIdsAndStatus(ids, status);
     }
 
     /**
