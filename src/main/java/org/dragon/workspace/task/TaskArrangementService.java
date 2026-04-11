@@ -22,6 +22,7 @@ import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
 import org.dragon.workspace.plugin.WorkspacePluginService;
 import org.dragon.workspace.task.dto.AssignmentDecision;
+import org.dragon.workspace.task.dto.BatchMemberSelectionInput;
 import org.dragon.workspace.task.dto.ChildTaskPlan;
 import org.dragon.workspace.task.dto.PromptWriterInput;
 import org.dragon.workspace.task.dto.TaskCreationCommand;
@@ -186,7 +187,7 @@ public class TaskArrangementService {
     }
 
     /**
-     * SPECIFIED 模式：使用指定的 Character
+     * SPECIFIED 模式：使用指定的 Character，直接执行跳过子任务封装
      */
     private void handleSpecifiedMode(Task task, List<WorkspaceMember> members, List<String> specifiedCharacterIds) {
         List<String> characterIds = getSpecifiedCharacterIds(members, specifiedCharacterIds);
@@ -196,7 +197,12 @@ public class TaskArrangementService {
             getTaskStore().update(task);
             return;
         }
-        createAndExecuteSingleChildTask(task, characterIds.get(0), characterIds);
+
+        task.setAssignedMemberIds(characterIds);
+        task.setStatus(TaskStatus.RUNNING);
+        getTaskStore().update(task);
+
+        taskExecutionService.executeSpecifiedTask(task, characterIds.get(0));
     }
 
     /**
@@ -271,14 +277,121 @@ public class TaskArrangementService {
         Character memberSelector = workspacePluginService.getBuiltinCharacter(workspace.getId(), "member_selector");
         String promptTemplate = configApplication.getGlobalPrompt(PromptKeys.MEMBER_SELECTOR_SELECT, "请从可用成员中选择最合适的执行者来完成指定任务。");
 
+        // 分离已分配和待分配的 plan
         List<String> excludedCharacterIds = new ArrayList<>();
+        List<ChildTaskPlan> needsAssignment = new ArrayList<>();
 
         for (ChildTaskPlan plan : result.getChildTasks()) {
             if (plan.getCharacterId() != null && !plan.getCharacterId().isEmpty()) {
                 excludedCharacterIds.add(plan.getCharacterId());
-                continue;
+            } else {
+                needsAssignment.add(plan);
             }
+        }
 
+        // 3+ 个待分配任务时使用批量选择
+        if (needsAssignment.size() >= 3) {
+            try {
+                Map<String, String> batchAssignments = selectMembersForTasksBatch(
+                        needsAssignment, workspace, members, promptWriter, memberSelector, promptTemplate, excludedCharacterIds);
+
+                for (ChildTaskPlan plan : needsAssignment) {
+                    String assignedId = batchAssignments.get(plan.getPlanTaskId());
+                    if (assignedId != null) {
+                        plan.setCharacterId(assignedId);
+                        WorkspaceMember member = members.stream()
+                                .filter(m -> m.getCharacterId().equals(assignedId))
+                                .findFirst().orElse(null);
+                        if (member != null) {
+                            plan.setCharacterRole(member.getRole());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("[TaskArrangementService] Batch assignment failed, falling back to serial: {}", e.getMessage());
+                assignSerially(needsAssignment, workspace, members, promptWriter, memberSelector, promptTemplate, excludedCharacterIds);
+            }
+        } else {
+            // 1-2 个待分配任务，使用串行选择
+            assignSerially(needsAssignment, workspace, members, promptWriter, memberSelector, promptTemplate, excludedCharacterIds);
+        }
+
+        return result;
+    }
+
+    /**
+     * 批量选择成员（单次 LLM 调用）
+     */
+    private Map<String, String> selectMembersForTasksBatch(List<ChildTaskPlan> plans, Workspace workspace,
+            List<WorkspaceMember> members, Character promptWriter, Character memberSelector,
+            String promptTemplate, List<String> excludedCharacterIds) {
+
+        List<BatchMemberSelectionInput.PlanSummary> planSummaries = plans.stream()
+                .map(p -> BatchMemberSelectionInput.PlanSummary.builder()
+                        .planTaskId(p.getPlanTaskId())
+                        .taskName(p.getName())
+                        .taskDescription(p.getDescription())
+                        .expectedOutput(p.getExpectedOutput())
+                        .dependencyPlanTaskIds(p.getDependencyPlanTaskIds())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<BatchMemberSelectionInput.MemberInfo> memberInfos = members.stream()
+                .filter(m -> !excludedCharacterIds.contains(m.getCharacterId()))
+                .map(m -> BatchMemberSelectionInput.MemberInfo.builder()
+                        .characterId(m.getCharacterId())
+                        .role(m.getRole())
+                        .description(MemberUtils.buildMemberDescription(m))
+                        .build())
+                .collect(Collectors.toList());
+
+        BatchMemberSelectionInput input = BatchMemberSelectionInput.builder()
+                .workspaceId(workspace.getId())
+                .plans(planSummaries)
+                .availableMembers(memberInfos)
+                .excludedCharacterIds(excludedCharacterIds)
+                .build();
+
+        String inputJson = gson.toJson(input);
+        String batchPromptTemplate = configApplication.getGlobalPrompt(
+                PromptKeys.MEMBER_SELECTOR_SELECT_BATCH,
+                "请为以下每个任务选择最合适的执行者，返回 JSON 数组格式：[{planTaskId, characterId}]");
+        String promptWriterInput = String.format(batchPromptTemplate, inputJson);
+        String selectionPrompt = characterCaller.call(promptWriter, promptWriterInput);
+
+        return parseBatchSelectionResult(selectionPrompt);
+    }
+
+    /**
+     * 解析批量选择结果
+     */
+    private Map<String, String> parseBatchSelectionResult(String rawResult) {
+        Map<String, String> assignments = new HashMap<>();
+        if (rawResult == null || rawResult.isEmpty()) {
+            return assignments;
+        }
+        try {
+            com.google.gson.JsonArray jsonArray = gson.fromJson(rawResult, com.google.gson.JsonArray.class);
+            for (int i = 0; i < jsonArray.size(); i++) {
+                com.google.gson.JsonObject obj = jsonArray.get(i).getAsJsonObject();
+                String planTaskId = obj.get("planTaskId").getAsString();
+                String characterId = obj.get("characterId").getAsString();
+                assignments.put(planTaskId, characterId);
+            }
+        } catch (Exception e) {
+            log.warn("[TaskArrangementService] Failed to parse batch selection result: {}", e.getMessage());
+        }
+        return assignments;
+    }
+
+    /**
+     * 串行选择成员（兼容备用）
+     */
+    private void assignSerially(List<ChildTaskPlan> plans, Workspace workspace,
+            List<WorkspaceMember> members, Character promptWriter, Character memberSelector,
+            String promptTemplate, List<String> excludedCharacterIds) {
+
+        for (ChildTaskPlan plan : plans) {
             try {
                 AssignmentDecision decision = selectMemberForTask(plan, workspace, members, promptWriter, memberSelector, promptTemplate, excludedCharacterIds);
                 if (decision != null && decision.getSelectedCharacterId() != null) {
@@ -290,8 +403,6 @@ public class TaskArrangementService {
                 log.error("[TaskArrangementService] Failed to assign plan {}: {}", plan.getPlanTaskId(), e.getMessage());
             }
         }
-
-        return result;
     }
 
     /**
@@ -421,8 +532,9 @@ public class TaskArrangementService {
 
         Map<String, Object> memberCapabilities = members.stream()
                 .collect(Collectors.toMap(WorkspaceMember::getCharacterId, m -> m.getTags() != null ? m.getTags() : List.of()));
-        Map<String, String> memberDescriptions = members.stream()
-                .collect(Collectors.toMap(WorkspaceMember::getCharacterId, MemberUtils::buildMemberDescription));
+        // 从已构建的 memberInfos 复用 description，避免重复调用 MemberUtils.buildMemberDescription()
+        Map<String, String> memberDescriptions = memberInfos.stream()
+                .collect(Collectors.toMap(PromptWriterInput.MemberInfo::getCharacterId, PromptWriterInput.MemberInfo::getDescription));
 
         Map<String, Object> contextHints = Map.of(
                 "timestamp", LocalDateTime.now().toString(),

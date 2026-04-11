@@ -81,6 +81,11 @@ public class PromptKeys {
      */
     public static final String MEMBER_SELECTOR_SELECT = "memberSelector.select";
 
+    /**
+     * MemberSelector 批量选择成员 prompt
+     */
+    public static final String MEMBER_SELECTOR_SELECT_BATCH = "memberSelector.selectBatch";
+
     // ==================== ProjectManager 模块 ====================
 
     /**

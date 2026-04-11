@@ -12,12 +12,11 @@ import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.observer.log.ObserverActionLogService;
 import org.dragon.store.StoreFactory;
+import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.duty.CharacterDuty;
 import org.dragon.workspace.duty.CharacterDutyStore;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
-import org.dragon.workspace.hiring.HrHiringExecutor;
-import org.dragon.workspace.WorkspaceRegistry;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;

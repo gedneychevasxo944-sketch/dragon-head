@@ -15,6 +15,7 @@ import org.dragon.workspace.cooperation.chat.ChatSession;
 import org.dragon.workspace.material.WorkspaceMaterialService;
 import org.dragon.material.Material;
 import org.dragon.store.StoreFactory;
+import org.dragon.workspace.task.event.TaskEventPublisher;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,7 @@ public class TaskExecutionService {
     private final ChatRoom chatRoom;
     private final WorkspaceMaterialService materialService;
     private final TaskDependencyService taskDependencyService;
+    private final TaskEventPublisher taskEventPublisher;
     private final StoreFactory storeFactory;
 
     private TaskStore getTaskStore() {
@@ -80,6 +82,55 @@ public class TaskExecutionService {
 
         // 处理不同执行结果
         handleExecutionResult(result, childTask, parentTask);
+    }
+
+    /**
+     * 执行 SPECIFIED 模式任务 - 直接执行，跳过子任务封装
+     *
+     * @param task 任务（其 parentTaskId 作为父任务ID）
+     * @param characterId 指定的 Character ID
+     */
+    public void executeSpecifiedTask(Task task, String characterId) {
+        log.info("[TaskExecutionService] Executing specified task {} on character {}", task.getId(), characterId);
+
+        task.setCharacterId(characterId);
+        task.setStatus(TaskStatus.RUNNING);
+        task.setStartedAt(LocalDateTime.now());
+        getTaskStore().update(task);
+
+        taskNotifier.notifyStarted(task);
+        taskNotifier.notifyProgress(task, "任务执行中");
+
+        // 最小化上下文，无协作会话
+        TaskBridgeContext context = TaskBridgeContext.builder()
+                .workspaceId(task.getWorkspaceId())
+                .parentTaskId(task.getParentTaskId())
+                .build();
+
+        Task result = taskBridge.execute(task, context);
+
+        // 处理执行结果（无递归子任务调度）
+        handleSpecifiedExecutionResult(result, task);
+    }
+
+    /**
+     * 处理 SPECIFIED 模式执行结果
+     */
+    private void handleSpecifiedExecutionResult(Task result, Task task) {
+        if (result.getStatus() == TaskStatus.WAITING_DEPENDENCY) {
+            taskNotifier.notifyWaiting(result, result.getWaitingReason());
+        } else if (result.getStatus() == TaskStatus.WAITING_USER_INPUT) {
+            if (result.getLastQuestion() != null) {
+                taskNotifier.notifyQuestion(result, result.getLastQuestion());
+            }
+        } else if (result.getStatus() == TaskStatus.COMPLETED) {
+            log.info("[TaskExecutionService] Specified task {} completed successfully", task.getId());
+            taskNotifier.notifyCompleted(result);
+            taskDependencyService.notifyDependencyResolved(task.getId());
+        } else if (result.getStatus() == TaskStatus.FAILED) {
+            log.warn("[TaskExecutionService] Specified task {} failed: {}", task.getId(), result.getErrorMessage());
+            taskNotifier.notifyFailed(result, result.getErrorMessage());
+        }
     }
 
     /**
@@ -143,19 +194,8 @@ public class TaskExecutionService {
             // 通知依赖已解决，触发等待此任务的依赖任务重调度
             taskDependencyService.notifyDependencyResolved(childTask.getId());
 
-            // 同步拉起同一父任务下其他可执行的子任务
-            taskDependencyService.findRunnableChildTasks(parentTask.getId())
-                    .forEach(runnableTask -> {
-                        try {
-                            executeChildTask(runnableTask, parentTask);
-                        } catch (Exception e) {
-                            log.error("[TaskExecutionService] Error executing runnable child task {}: {}", runnableTask.getId(), e.getMessage());
-                            runnableTask.setStatus(TaskStatus.FAILED);
-                            runnableTask.setErrorMessage(e.getMessage());
-                            getTaskStore().update(runnableTask);
-                            taskNotifier.notifyFailed(runnableTask, e.getMessage());
-                        }
-                    });
+            // 发布事件触发可执行子任务调度（避免递归）
+            taskEventPublisher.publishChildCompleted(result, parentTask);
 
             // 标记参与者就绪
             if (result.getCollaborationSessionId() != null) {
