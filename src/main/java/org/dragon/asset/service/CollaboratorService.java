@@ -38,7 +38,7 @@ public class CollaboratorService {
         }
 
         if (approvalService.requiresApproval(type, ApprovalType.ADD_COLLABORATOR)) {
-            approvalService.createApprovalRequest(type, assetId, ApprovalType.ADD_COLLABORATOR, ownerId, collaboratorId, reason);
+            approvalService.createApprovalRequest(type, assetId, ApprovalType.ADD_COLLABORATOR, ownerId, ownerId, collaboratorId, reason);
         } else {
             assetMemberService.addMemberDirectly(type, assetId, ownerId, collaboratorId);
         }
@@ -49,7 +49,7 @@ public class CollaboratorService {
      */
     public void removeCollaborator(ResourceType type, String assetId, Long ownerId, Long collaboratorId) {
         if (approvalService.requiresApproval(type, ApprovalType.REMOVE_COLLABORATOR)) {
-            approvalService.createApprovalRequest(type, assetId, ApprovalType.REMOVE_COLLABORATOR, ownerId, collaboratorId, "移除协作者");
+            approvalService.createApprovalRequest(type, assetId, ApprovalType.REMOVE_COLLABORATOR, ownerId, ownerId, collaboratorId, "移除协作者");
         } else {
             assetMemberService.removeMemberDirectly(type, assetId, collaboratorId);
         }

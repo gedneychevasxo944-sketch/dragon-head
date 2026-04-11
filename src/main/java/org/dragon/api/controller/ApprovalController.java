@@ -9,6 +9,7 @@ import org.dragon.approval.dto.ApprovalRequestDTO;
 import org.dragon.approval.enums.ApprovalType;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.user.security.UserPrincipal;
+import org.dragon.user.store.UserStore;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,6 +36,9 @@ import java.util.Map;
 public class ApprovalController {
 
     private final ApprovalService approvalService;
+    private final UserStore userStore;
+
+    private static final String SYSTEM_USERNAME = "system";
 
     /**
      * 获取我发出的审批请求
@@ -113,14 +117,35 @@ public class ApprovalController {
     public ApiResponse<Map<String, Object>> createPublishRequest(
             @RequestBody CreatePublishRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
+        // 获取 system 用户 ID 作为审批人
+        Long systemUserId = userStore.findByUsername(SYSTEM_USERNAME)
+                .map(u -> u.getId())
+                .orElse(null);
+
         String requestId = approvalService.createApprovalRequest(
                 request.getResourceType(),
                 request.getResourceId(),
                 ApprovalType.PUBLISH,
                 principal.getUserId(),
-                null,
+                systemUserId,
                 request.getReason());
         return ApiResponse.success(Map.of("requestId", requestId, "success", true, "message", "发布申请已提交"));
+    }
+
+    /**
+     * 获取所有待审批请求（system管理员专用）
+     * GET /api/v1/approvals/system-pending
+     */
+    @Operation(summary = "获取所有待审批请求（system管理员专用）")
+    @GetMapping("/system-pending")
+    public ApiResponse<List<ApprovalRequestDTO>> getSystemPendingApprovals(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        // 验证调用者是 system 用户
+        if (!SYSTEM_USERNAME.equals(principal.getUsername())) {
+            return ApiResponse.error(403, "仅允许 system 账号访问");
+        }
+        List<ApprovalRequestDTO> requests = approvalService.getAllPendingApprovals();
+        return ApiResponse.success(requests);
     }
 
     /**
