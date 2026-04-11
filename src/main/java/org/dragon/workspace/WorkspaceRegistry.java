@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.dragon.store.StoreFactory;
+import org.dragon.workspace.Workspace;
 import org.dragon.workspace.store.WorkspaceStore;
 import org.springframework.stereotype.Component;
 

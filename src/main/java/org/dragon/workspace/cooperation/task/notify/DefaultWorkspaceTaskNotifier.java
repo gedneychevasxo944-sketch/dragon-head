@@ -8,7 +8,7 @@ import org.dragon.channel.entity.MentionConfig;
 import org.dragon.channel.enums.ActionType;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
-import org.dragon.workspace.service.WorkspaceTaskService;
+import org.dragon.workspace.task.WorkspaceTaskService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 

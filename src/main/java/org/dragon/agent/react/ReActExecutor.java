@@ -13,7 +13,7 @@ import org.dragon.config.PromptKeys;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.task.Task;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
-import org.dragon.workspace.service.task.arrangement.dto.PromptWriterInput;
+import org.dragon.workspace.task.dto.PromptWriterInput;
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.skill.runtime.SkillRegistry;
 import org.dragon.tools.ToolRegistry;

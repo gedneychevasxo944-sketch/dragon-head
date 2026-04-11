@@ -7,7 +7,7 @@ import org.dragon.tools.AgentTool;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
-import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
+import org.dragon.workspace.member.WorkspaceMemberService;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class ListCandidatesTool implements AgentTool {
 
     private final CharacterRegistry characterRegistry;
-    private final WorkspaceMemberManagementService memberManagementService;
+    private final WorkspaceMemberService memberManagementService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override

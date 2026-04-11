@@ -256,7 +256,7 @@ public class Character {
     }
 
     public ReActResult runReAct(String userInput, boolean streaming, Task task,
-                                org.dragon.workspace.cooperation.task.TaskBridgeContext bridgeContext) {
+                                org.dragon.workspace.task.TaskBridgeContext bridgeContext) {
         return getExecutor().runReAct(userInput, streaming, task, bridgeContext);
     }
 

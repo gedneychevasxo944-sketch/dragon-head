@@ -2,13 +2,13 @@ package org.dragon.workspace.cooperation;
 
 import java.util.List;
 
+import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
-import org.dragon.workspace.WorkspaceRegistry;
 import org.dragon.workspace.cooperation.chat.ChatRoom;
 import org.dragon.workspace.cooperation.chat.ChatSession;
 import org.dragon.workspace.cooperation.task.CollaborationSessionCoordinator;
 import org.dragon.workspace.cooperation.task.notify.WorkspaceTaskNotifier;
-import org.dragon.store.StoreFactory;
+import org.dragon.workspace.WorkspaceRegistry;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;

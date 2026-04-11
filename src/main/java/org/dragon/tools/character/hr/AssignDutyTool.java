@@ -3,7 +3,7 @@ package org.dragon.tools.character.hr;
 import java.util.concurrent.CompletableFuture;
 
 import org.dragon.tools.AgentTool;
-import org.dragon.workspace.service.hiring.WorkspaceHiringService;
+import org.dragon.workspace.hiring.WorkspaceHiringService;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;

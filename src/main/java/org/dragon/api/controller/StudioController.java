@@ -12,7 +12,7 @@ import org.dragon.character.service.CharacterService;
 import org.dragon.character.service.CharacterTemplateService;
 import org.dragon.permission.checker.PermissionChecker;
 import org.dragon.trait.service.TraitService;
-import org.dragon.workspace.service.DeploymentService;
+import org.dragon.workspace.DeploymentService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

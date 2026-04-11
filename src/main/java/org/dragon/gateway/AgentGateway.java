@@ -12,8 +12,8 @@ import org.dragon.channel.service.ChannelBindingService;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.material.Material;
 import org.dragon.task.Task;
-import org.dragon.workspace.service.WorkspaceService;
-import org.dragon.workspace.service.material.WorkspaceMaterialService;
+import org.dragon.workspace.WorkspaceFacadeService;
+import org.dragon.workspace.material.WorkspaceMaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -39,7 +39,7 @@ public class AgentGateway implements Gateway {
     private CharacterRegistry characterRegistry;
 
     @Autowired
-    private WorkspaceService workspaceService;
+    private WorkspaceFacadeService workspaceService;
 
     @Autowired
     private ChannelBindingService channelBindingService;

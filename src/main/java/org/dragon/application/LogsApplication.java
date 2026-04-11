@@ -8,7 +8,7 @@ import org.dragon.observer.log.ObserverActionLog;
 import org.dragon.observer.log.ObserverActionLogService;
 import org.dragon.approval.service.ApprovalService;
 import org.dragon.skill.service.SkillLifecycleService;
-import org.dragon.workspace.service.lifecycle.WorkspaceLifecycleService;
+import org.dragon.workspace.WorkspaceLifecycleService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

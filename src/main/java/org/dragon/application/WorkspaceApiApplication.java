@@ -11,7 +11,7 @@ import org.dragon.api.controller.WorkspaceController.UpdatePositionRequest;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.workspace.service.WorkspaceService;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -29,7 +29,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class WorkspaceApiApplication {
 
-    private final WorkspaceService workspaceService;
+    private final WorkspaceFacadeService workspaceService;
 
     // ==================== Workspace CRUD ====================
 

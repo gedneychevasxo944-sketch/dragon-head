@@ -2,9 +2,9 @@ package org.dragon.tools.character.hr;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.dragon.tools.AgentTool;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
+import org.dragon.tools.AgentTool;
 import org.dragon.workspace.WorkspaceRegistry;
 import org.springframework.stereotype.Component;
 

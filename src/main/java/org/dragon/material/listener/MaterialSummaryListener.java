@@ -8,7 +8,7 @@ import org.dragon.config.service.ConfigApplication;
 import org.dragon.material.Material;
 import org.dragon.material.MaterialSummaryEvent;
 import org.dragon.material.ParsedMaterialContent;
-import org.dragon.workspace.service.material.WorkspaceMaterialService;
+import org.dragon.workspace.material.WorkspaceMaterialService;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.character.Character;
 import org.springframework.context.event.EventListener;
