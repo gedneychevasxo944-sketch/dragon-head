@@ -65,6 +65,14 @@ public class ApprovalService {
      */
     public String createApprovalRequest(ResourceType type, String assetId, ApprovalType approvalType,
                                        Long requesterId, Long targetUserId, String reason) {
+        return createApprovalRequest(type, assetId, approvalType, requesterId, null, targetUserId, reason);
+    }
+
+    /**
+     * 创建审批请求（带指定审批人）
+     */
+    public String createApprovalRequest(ResourceType type, String assetId, ApprovalType approvalType,
+                                       Long requesterId, Long approverId, Long targetUserId, String reason) {
         if (approvalStore.existsPendingRequest(type, assetId, approvalType)) {
             throw new IllegalArgumentException("已存在待处理的审批请求");
         }
@@ -80,6 +88,7 @@ public class ApprovalService {
                 .approvalType(approvalType)
                 .requesterId(requesterId)
                 .requesterName(requesterName)
+                .approverId(approverId)
                 .targetUserId(targetUserId)
                 .reason(reason)
                 .status(ApprovalStatus.PENDING)
@@ -186,6 +195,15 @@ public class ApprovalService {
      */
     public List<ApprovalRequestDTO> getPendingApprovals(Long approverId) {
         return approvalStore.findPendingByApprover(approverId).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取所有待审批请求（system管理员专用）
+     */
+    public List<ApprovalRequestDTO> getAllPendingApprovals() {
+        return approvalStore.findAllPending().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }

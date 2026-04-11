@@ -22,6 +22,7 @@ public class UserService {
 
     private static final int DEFAULT_MAX_LOGIN_FAIL_COUNT = 5;
     private static final int DEFAULT_LOCK_MINUTES = 15;
+    private static final String RESERVED_USERNAME = "system";
     /** @deprecated use DEFAULT_MAX_LOGIN_FAIL_COUNT */
     @Deprecated
     public static final int MAX_LOGIN_FAIL_COUNT = DEFAULT_MAX_LOGIN_FAIL_COUNT;
@@ -49,6 +50,11 @@ public class UserService {
         // 检查用户名是否存在
         if (userStore.findByUsername(request.getUsername()).isPresent()) {
             throw new IllegalArgumentException("用户名已存在");
+        }
+
+        // 检查是否使用保留用户名
+        if (RESERVED_USERNAME.equals(request.getUsername())) {
+            throw new IllegalArgumentException("该用户名是系统保留用户名");
         }
 
         // 创建用户

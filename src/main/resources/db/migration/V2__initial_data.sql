@@ -13,6 +13,14 @@
 use adeptify;
 
 -- ============================================================================
+-- System Admin 用户账号
+-- 说明: 用于审批所有发布到公共库的申请
+-- ============================================================================
+
+INSERT INTO adeptify_user (username, password_hash, nickname, status, create_time) VALUES
+('system', '$2a$10$qv0CcheqIC6TrU3Nc5Dh9eukmGCo75dv3XlU4ZDAtuobgKEJsl79W', 'System Admin', 'NORMAL', NOW());
+
+-- ============================================================================
 -- Trait 种子数据
 -- ============================================================================
 
@@ -33,6 +41,29 @@ INSERT INTO trait (name, category, description, content, enabled, used_by_count,
 ('迭代思维', 'personality', '小步快跑，持续改进', '你信奉迭代思维，倾向于小步快跑、持续改进。你相信完美的方案是通过不断迭代打磨出来的。', true, 0, NOW()),
 ('全渠道营销', 'config', '覆盖多个营销渠道的整合能力', '你具备全渠道营销能力，能够整合和协调多个营销渠道的策略和执行。你熟悉各渠道的特点和最佳实践。', true, 0, NOW()),
 ('品牌叙事', 'personality', '擅长讲故事，建立情感连接', '你擅长讲故事，能够通过叙事建立与受众的情感连接。你善于用故事来传达品牌价值和理念。', true, 0, NOW());
+
+-- ============================================================================
+-- Trait 冷启数据的发布状态
+-- 说明: 为冷启 trait 创建 PUBLISHED 状态，使其在公共库可见
+-- ============================================================================
+
+INSERT INTO asset_publish_status (id, resource_type, resource_id, status, version, published_at, published_by, snapshot, created_at, updated_at) VALUES
+('00000000-0000-0000-0000-000000000001', 'TRAIT', '1', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000002', 'TRAIT', '2', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000003', 'TRAIT', '3', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000004', 'TRAIT', '4', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000005', 'TRAIT', '5', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000006', 'TRAIT', '6', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000007', 'TRAIT', '7', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000008', 'TRAIT', '8', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000009', 'TRAIT', '9', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000010', 'TRAIT', '10', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000011', 'TRAIT', '11', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000012', 'TRAIT', '12', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000013', 'TRAIT', '13', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000014', 'TRAIT', '14', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000015', 'TRAIT', '15', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000016', 'TRAIT', '16', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW());
 
 -- ============================================================================
 -- Permission Policy 种子数据
