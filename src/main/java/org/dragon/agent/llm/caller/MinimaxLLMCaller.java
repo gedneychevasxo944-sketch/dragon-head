@@ -48,7 +48,7 @@ public class MinimaxLLMCaller implements LLMCaller {
         InheritanceContext ctx = InheritanceContext.forGlobal();
         this.apiKey = configApplication.getStringValue("llm.minimax.apiKey", ctx, "");
         this.baseUrl = configApplication.getStringValue("llm.minimax.baseUrl", ctx, "https://api.minimax.chat");
-        this.defaultModel = configApplication.getStringValue("llm.minimax.model", ctx, "abab6.5s-chat");
+        this.defaultModel = configApplication.getStringValue("llm.minimax.model", ctx, "MiniMax-M2.7");
         this.groupId = configApplication.getStringValue("llm.minimax.groupId", ctx, "");
     }
 
@@ -199,11 +199,33 @@ public class MinimaxLLMCaller implements LLMCaller {
 
             JsonObject choice = json.getAsJsonArray("choices").get(0).getAsJsonObject();
             JsonObject message = choice.getAsJsonObject("message");
-            String content = message.get("content").getAsString();
 
             String finishReason = choice.has("finish_reason")
                     ? choice.get("finish_reason").getAsString()
                     : "stop";
+
+            String content = null;
+            LLMResponse.FunctionCall functionCall = null;
+
+            // 处理 tool_calls 模式
+            if (message.has("tool_calls")) {
+                JsonArray toolCalls = message.getAsJsonArray("tool_calls");
+                if (toolCalls != null && toolCalls.size() > 0) {
+                    JsonObject toolCall = toolCalls.get(0).getAsJsonObject();
+                    String funcName = toolCall.getAsJsonObject("function").get("name").getAsString();
+                    String arguments = toolCall.getAsJsonObject("function").get("arguments").getAsString();
+                    functionCall = LLMResponse.FunctionCall.builder()
+                            .name(funcName)
+                            .arguments(arguments)
+                            .build();
+                    log.info("[Minimax] tool_call detected: name={}, arguments={}", funcName, arguments);
+                }
+            } else if (message.has("content")) {
+                // 处理普通文本模式
+                content = message.get("content").isJsonNull() ? null : message.get("content").getAsString();
+            }
+
+            log.info("[Minimax] parseResponse: finishReason={}, content={}, functionCall={}", finishReason, content, functionCall);
 
             // 用量统计
             LLMResponse.Usage usage = null;
@@ -221,6 +243,7 @@ public class MinimaxLLMCaller implements LLMCaller {
 
             return LLMResponse.builder()
                     .content(content)
+                    .functionCall(functionCall)
                     .finishReason(finishReason)
                     .usage(usage)
                     .lastChunk(true)
