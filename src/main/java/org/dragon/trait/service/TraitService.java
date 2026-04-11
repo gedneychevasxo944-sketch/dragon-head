@@ -3,6 +3,7 @@ package org.dragon.trait.service;
 import lombok.RequiredArgsConstructor;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.datasource.entity.TraitEntity;
+import org.dragon.asset.enums.PublishStatus;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.asset.service.AssetMemberService;
@@ -104,8 +105,9 @@ public class TraitService {
 
     /**
      * 分页查询 Trait 列表
+     * @param publishStatus 可选，按发布状态筛选（DRAFT/PUBLISHED）
      */
-    public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String category) {
+    public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String category, String publishStatus) {
         List<TraitEntity> allTraits;
 
         // 按条件过滤
@@ -117,10 +119,18 @@ public class TraitService {
             allTraits = getStore().findAll();
         }
 
-        // 进一步过滤
+        // 进一步按 category 过滤
         if (category != null && !category.isBlank() && !"all".equalsIgnoreCase(category)) {
             allTraits = allTraits.stream()
                     .filter(t -> category.equals(t.getCategory()))
+                    .toList();
+        }
+
+        // 按发布状态筛选
+        if (publishStatus != null && !publishStatus.isBlank()) {
+            List<String> filteredIds = publishStatusService.getAssetIdsByStatus(ResourceType.TRAIT, PublishStatus.valueOf(publishStatus));
+            allTraits = allTraits.stream()
+                    .filter(t -> filteredIds.contains(String.valueOf(t.getId())))
                     .toList();
         }
 
@@ -162,6 +172,9 @@ public class TraitService {
         map.put("usedByCount", trait.getUsedByCount());
         map.put("createdAt", trait.getCreateTime() != null ? trait.getCreateTime().toString() : null);
         map.put("updatedAt", trait.getUpdateTime() != null ? trait.getUpdateTime().toString() : null);
+        // 添加发布状态
+        PublishStatus status = publishStatusService.getStatusOrDefault(ResourceType.TRAIT, String.valueOf(trait.getId()));
+        map.put("publishStatus", status.name());
         return map;
     }
 }

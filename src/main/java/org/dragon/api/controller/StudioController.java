@@ -149,6 +149,7 @@ public class StudioController {
     /**
      * 2.1 获取 Trait 列表
      * GET /api/v1/studio/traits
+     * @param publishStatus 可选，按发布状态筛选（DRAFT/PUBLISHED）
      */
     @Operation(summary = "获取 Trait 列表")
     @GetMapping("/traits")
@@ -156,8 +157,9 @@ public class StudioController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String category) {
-        return ApiResponse.success(traitService.listTraits(page, pageSize, search, category));
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String publishStatus) {
+        return ApiResponse.success(traitService.listTraits(page, pageSize, search, category, publishStatus));
     }
 
     /**
