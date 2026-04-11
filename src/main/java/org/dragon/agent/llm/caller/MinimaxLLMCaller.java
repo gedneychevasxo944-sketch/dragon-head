@@ -46,9 +46,9 @@ public class MinimaxLLMCaller implements LLMCaller {
                 .build();
         this.gson = new Gson();
         InheritanceContext ctx = InheritanceContext.forGlobal();
-        this.apiKey = configApplication.getStringValue("llm.minimax.apiKey", ctx, "");
+        this.apiKey = configApplication.getStringValue("llm.minimax.apiKey", ctx, "sk-cp-oOukgyncEXgiR7-dYG0QR3nC_CP3Li9iUgHa4otrj_HSIgTf0tEKClsx869mqDRW-DttngbtQ3Q8kSzMg3Opou6OVPnUeg1Y0iAcAByGMABmHFfgRciDe24");
         this.baseUrl = configApplication.getStringValue("llm.minimax.baseUrl", ctx, "https://api.minimax.chat");
-        this.defaultModel = configApplication.getStringValue("llm.minimax.model", ctx, "abab6.5s-chat");
+        this.defaultModel = configApplication.getStringValue("llm.minimax.model", ctx, "MiniMax-M2.7");
         this.groupId = configApplication.getStringValue("llm.minimax.groupId", ctx, "");
     }
 
