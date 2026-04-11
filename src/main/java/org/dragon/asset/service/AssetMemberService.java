@@ -147,6 +147,58 @@ public class AssetMemberService {
                 .orElse(false);
     }
 
+    /**
+     * 检查用户是否是所有者
+     */
+    public boolean isOwner(ResourceType type, String assetId, Long userId) {
+        return assetMemberStore.findByResourceAndUser(type, assetId, userId)
+                .map(m -> m.getRole() == Role.OWNER && Boolean.TRUE.equals(m.getAccepted()))
+                .orElse(false);
+    }
+
+    /**
+     * 更新成员角色
+     */
+    public void updateRole(ResourceType type, String assetId, Long userId, Role newRole) {
+        assetMemberStore.findByResourceAndUser(type, assetId, userId)
+                .ifPresent(m -> {
+                    m.setRole(newRole);
+                    m.setUpdatedAt(LocalDateTime.now());
+                    assetMemberStore.update(m);
+                    log.info("[AssetMemberService] Updated role: type={}, assetId={}, userId={}, newRole={}", type, assetId, userId, newRole);
+                });
+    }
+
+    /**
+     * 转让所有权
+     */
+    public void transferOwner(ResourceType type, String assetId, Long currentOwnerId, Long newOwnerId) {
+        // 验证当前用户是否是所有者
+        if (!isOwner(type, assetId, currentOwnerId)) {
+            throw new IllegalStateException("只有所有者才能转让所有权");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 将新所有者更新为 OWNER
+        assetMemberStore.findByResourceAndUser(type, assetId, newOwnerId)
+                .ifPresent(m -> {
+                    m.setRole(Role.OWNER);
+                    m.setUpdatedAt(now);
+                    assetMemberStore.update(m);
+                });
+
+        // 将原所有者降级为 ADMIN
+        assetMemberStore.findByResourceAndUser(type, assetId, currentOwnerId)
+                .ifPresent(m -> {
+                    m.setRole(Role.ADMIN);
+                    m.setUpdatedAt(now);
+                    assetMemberStore.update(m);
+                });
+
+        log.info("[AssetMemberService] Transferred ownership: type={}, assetId={}, from={}, to={}", type, assetId, currentOwnerId, newOwnerId);
+    }
+
     private CollaboratorDTO toCollaboratorDTO(AssetMemberEntity member) {
         String userName = userStore.findById(member.getUserId())
                 .map(u -> u.getNickname() != null ? u.getNickname() : u.getUsername())

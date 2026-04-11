@@ -46,10 +46,20 @@ public class CollaboratorService {
 
     /**
      * 移除协作者
+     * OWNER 或 ADMIN 可以直接移除协作者（无需审批）
      */
-    public void removeCollaborator(ResourceType type, String assetId, Long ownerId, Long collaboratorId) {
-        if (approvalService.requiresApproval(type, ApprovalType.REMOVE_COLLABORATOR)) {
-            approvalService.createApprovalRequest(type, assetId, ApprovalType.REMOVE_COLLABORATOR, ownerId, ownerId, collaboratorId, "移除协作者");
+    public void removeCollaborator(ResourceType type, String assetId, Long operatorId, Long collaboratorId) {
+        // 检查操作者是否是 OWNER 或 ADMIN，如果是则直接移除，否则需要审批
+        boolean isOwnerOrAdmin = assetMemberService.isOwner(type, assetId, operatorId)
+                || assetMemberStore.findByResourceAndUser(type, assetId, operatorId)
+                        .map(m -> m.getRole() == org.dragon.permission.enums.Role.ADMIN)
+                        .orElse(false);
+
+        if (isOwnerOrAdmin) {
+            // OWNER 或 ADMIN 直接移除，无需审批
+            assetMemberService.removeMemberDirectly(type, assetId, collaboratorId);
+        } else if (approvalService.requiresApproval(type, ApprovalType.REMOVE_COLLABORATOR)) {
+            approvalService.createApprovalRequest(type, assetId, ApprovalType.REMOVE_COLLABORATOR, operatorId, operatorId, collaboratorId, "移除协作者");
         } else {
             assetMemberService.removeMemberDirectly(type, assetId, collaboratorId);
         }
