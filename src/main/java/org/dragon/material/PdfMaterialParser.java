@@ -61,7 +61,7 @@ public class PdfMaterialParser implements MaterialParser {
                     .build();
 
         } catch (Exception e) {
-            log.error("[PdfMaterialParser] Failed to parse PDF material {}: {}", material.getId(), e.getMessage());
+            log.error("[PdfMaterialParser] Failed to parse PDF material {}: {}", material.getId(), e.getMessage(), e);
             return ParseResult.builder()
                     .materialId(material.getId())
                     .success(false)

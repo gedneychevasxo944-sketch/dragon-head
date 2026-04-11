@@ -208,7 +208,7 @@ public class WorkspaceMaterialService {
                 materials.add(material);
                 log.info("[WorkspaceMaterialService] Ingested NormalizedFile as material: {}", material.getId());
             } catch (Exception e) {
-                log.error("[WorkspaceMaterialService] Failed to ingest NormalizedFile: {}", e.getMessage());
+                log.error("[WorkspaceMaterialService] Failed to ingest NormalizedFile: {}", e.getMessage(), e);
             }
         }
         return materials;
@@ -257,7 +257,7 @@ public class WorkspaceMaterialService {
 
             return content;
         } catch (Exception e) {
-            log.error("[WorkspaceMaterialService] Failed to parse material {}: {}", materialId, e.getMessage());
+            log.error("[WorkspaceMaterialService] Failed to parse material {}: {}", materialId, e.getMessage(), e);
             return null;
         }
     }

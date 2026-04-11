@@ -191,7 +191,7 @@ public class FeishuChannelAdaptor implements ChannelAdapter {
                 }
                 log.info("[Feishu] 消息成功推送给用户");
             } catch (Exception e) {
-                log.error("[Feishu] 异步发送异常: {}", e.getMessage());
+                log.error("[Feishu] 异步发送异常: {}", e.getMessage(), e);
                 throw new RuntimeException(e);
             }
         });
@@ -254,7 +254,7 @@ public class FeishuChannelAdaptor implements ChannelAdapter {
             gateway.dispatch(normalizedMessage);
 
         } catch (Exception e) {
-            log.error("[Feishu] 解析消息失败: {}", e.getMessage());
+            log.error("[Feishu] 解析消息失败: {}", e.getMessage(), e);
         }
     }
 

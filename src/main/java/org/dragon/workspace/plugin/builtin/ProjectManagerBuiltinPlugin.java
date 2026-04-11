@@ -51,7 +51,7 @@ public class ProjectManagerBuiltinPlugin implements WorkspaceBuiltinPlugin {
             String result = characterCaller.call(projectManager, prompt);
             return PluginResult.success(result);
         } catch (Exception e) {
-            log.error("[ProjectManagerBuiltinPlugin] Failed to execute: {}", e.getMessage());
+            log.error("[ProjectManagerBuiltinPlugin] Failed to execute: {}", e.getMessage(), e);
             return PluginResult.failure(e.getMessage());
         }
     }

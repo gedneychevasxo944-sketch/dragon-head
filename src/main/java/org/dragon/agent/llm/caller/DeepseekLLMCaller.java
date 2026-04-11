@@ -2,7 +2,9 @@ package org.dragon.agent.llm.caller;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
@@ -27,7 +29,7 @@ import java.util.stream.Stream;
  * @version 1.0
  */
 @Slf4j
-@Component
+@Component("deepseekLLMCaller")
 public class DeepseekLLMCaller implements LLMCaller {
 
     private final HttpClient httpClient;
@@ -159,12 +161,23 @@ public class DeepseekLLMCaller implements LLMCaller {
 
     private LLMResponse parseResponse(String responseBody) {
         try {
-            JsonObject json = gson.fromJson(responseBody, JsonObject.class);
+            JsonElement jsonElement = JsonParser.parseString(responseBody);
+            if (!jsonElement.isJsonObject()) {
+                log.error("[Deepseek] 响应不是 JSON 对象: {}", responseBody);
+                return buildErrorResponse("响应格式错误: " + responseBody);
+            }
+
+            JsonObject json = jsonElement.getAsJsonObject();
 
             // 检查错误
             if (json.has("error")) {
-                JsonObject error = json.getAsJsonObject("error");
-                String errorMsg = error.get("message").getAsString();
+                JsonElement errorElem = json.get("error");
+                String errorMsg;
+                if (errorElem.isJsonObject()) {
+                    errorMsg = errorElem.getAsJsonObject().get("message").getAsString();
+                } else {
+                    errorMsg = errorElem.getAsString();
+                }
                 log.error("[Deepseek] API 错误: {}", errorMsg);
                 return buildErrorResponse(errorMsg);
             }
@@ -199,7 +212,7 @@ public class DeepseekLLMCaller implements LLMCaller {
                     .build();
 
         } catch (Exception e) {
-            log.error("[Deepseek] 解析响应失败: {}", e.getMessage());
+            log.error("[Deepseek] 解析响应失败: {}", e.getMessage(), e);
             return buildErrorResponse("解析响应失败: " + e.getMessage());
         }
     }

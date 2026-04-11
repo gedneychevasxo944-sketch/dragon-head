@@ -75,6 +75,8 @@ public class ModelInstance {
         ALIBABA_TONGYI,
         ZHIPU,
         MOONSHOT,
+        DEEPSEEK,
+        MINIMAX,
         CUSTOM
     }
 }

@@ -8,6 +8,9 @@ import java.util.stream.Stream;
 import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
 import org.dragon.agent.llm.caller.LLMCaller;
+import org.dragon.agent.llm.caller.LLMCallerSelector;
+import org.dragon.agent.model.ModelInstance;
+import org.dragon.agent.model.ModelRegistry;
 import org.dragon.character.Character;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.service.ConfigApplication;
@@ -37,7 +40,8 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class ReActExecutor {
 
-    private final LLMCaller llmCaller;
+    private final LLMCallerSelector callerSelector;
+    private final ModelRegistry modelRegistry;
     private final Gson gson;
     private final ConfigApplication configApplication;
     private final ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider;
@@ -49,7 +53,8 @@ public class ReActExecutor {
     private final ToolRegistry toolRegistry;
     private final SkillRegistry skillRegistry;
 
-    public ReActExecutor(LLMCaller llmCaller,
+    public ReActExecutor(LLMCallerSelector callerSelector,
+                         ModelRegistry modelRegistry,
                          ConfigApplication configApplication,
                          ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider,
                          ObjectProvider<CharacterCaller> characterCallerProvider,
@@ -59,7 +64,8 @@ public class ReActExecutor {
                          ObservationEvaluator observationEvaluator,
                          ToolRegistry toolRegistry,
                         SkillRegistry skillRegistry) {
-        this.llmCaller = llmCaller;
+        this.callerSelector = callerSelector;
+        this.modelRegistry = modelRegistry;
         this.configApplication = configApplication;
         this.builtInCharacterFactoryProvider = builtInCharacterFactoryProvider;
         this.characterCallerProvider = characterCallerProvider;
@@ -154,7 +160,8 @@ public class ReActExecutor {
      * 同步思考
      */
     private String syncThink(ReActContext context, LLMRequest request) {
-        LLMResponse response = llmCaller.call(request);
+        LLMCaller caller = resolveCaller(context, request.getModelId());
+        LLMResponse response = caller.call(request);
         String thought = response.getContent();
         context.addThought(thought);
         log.debug("[ReAct] Thought: {}", thought);
@@ -165,7 +172,8 @@ public class ReActExecutor {
      * 流式思考
      */
     private String streamThink(ReActContext context, LLMRequest request) {
-        Stream<LLMResponse> stream = llmCaller.streamCall(request);
+        LLMCaller caller = resolveCaller(context, request.getModelId());
+        Stream<LLMResponse> stream = caller.streamCall(request);
         StringBuilder fullContent = new StringBuilder();
 
         stream.forEach(response -> {
@@ -382,6 +390,29 @@ public class ReActExecutor {
             return action.getModelId();
         }
         return resolveModelId(context);
+    }
+
+    /**
+     * 根据模型 ID 解析对应的 LLMCaller
+     *
+     * @param context 上下文
+     * @param modelId 模型 ID
+     * @return 对应的 LLMCaller
+     */
+    private LLMCaller resolveCaller(ReActContext context, String modelId) {
+        if (modelId == null) {
+            return callerSelector.getDefault();
+        }
+
+        ModelInstance model = modelRegistry.get(modelId).orElse(null);
+        if (model == null) {
+            log.warn("[ReAct] Model not found: {}, using default caller", modelId);
+            return callerSelector.getDefault();
+        }
+
+        LLMCaller caller = callerSelector.select(model);
+        log.debug("[ReAct] Selected caller {} for model: {}", caller.getClass().getSimpleName(), modelId);
+        return caller;
     }
 
     /**

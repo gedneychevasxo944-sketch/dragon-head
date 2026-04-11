@@ -2,7 +2,9 @@ package org.dragon.agent.llm.caller;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
@@ -176,7 +178,13 @@ public class MinimaxLLMCaller implements LLMCaller {
 
     private LLMResponse parseResponse(String responseBody) {
         try {
-            JsonObject json = gson.fromJson(responseBody, JsonObject.class);
+            JsonElement jsonElement = JsonParser.parseString(responseBody);
+            if (!jsonElement.isJsonObject()) {
+                log.error("[Minimax] 响应不是 JSON 对象: {}", responseBody);
+                return buildErrorResponse("响应格式错误: " + responseBody);
+            }
+
+            JsonObject json = jsonElement.getAsJsonObject();
 
             // 检查错误
             if (json.has("base_resp")) {
@@ -219,7 +227,7 @@ public class MinimaxLLMCaller implements LLMCaller {
                     .build();
 
         } catch (Exception e) {
-            log.error("[Minimax] 解析响应失败: {}", e.getMessage());
+            log.error("[Minimax] 解析响应失败: {}", e.getMessage(), e);
             return buildErrorResponse("解析响应失败: " + e.getMessage());
         }
     }

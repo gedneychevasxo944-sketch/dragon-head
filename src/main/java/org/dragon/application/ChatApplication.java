@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
+import org.dragon.character.runtime.CharacterExecutionManager;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatApplication {
 
     private final CharacterRegistry characterRegistry;
+    private final CharacterExecutionManager characterExecutionManager;
 
     /** 会话消息存储：sessionId -> 消息列表 */
     private final Map<String, List<Map<String, Object>>> sessionMessages = new ConcurrentHashMap<>();
@@ -123,10 +125,16 @@ public class ChatApplication {
                 return "No character available. Please deploy a character first.";
             }
 
-            String reply = character.run(message);
+            String reply = characterExecutionManager.execute(character, message);
             return reply != null ? reply : "No response generated.";
+        } catch (IllegalArgumentException e) {
+            log.warn("[ChatApplication] Invalid character request: {}", e.getMessage());
+            return "Invalid character request: " + e.getMessage();
+        } catch (IllegalStateException e) {
+            log.error("[ChatApplication] Character execution error: {}", e.getMessage(), e);
+            return "Character execution error: " + e.getMessage();
         } catch (Exception e) {
-            log.error("[ChatApplication] Failed to generate reply: {}", e.getMessage());
+            log.error("[ChatApplication] Failed to generate reply: {}", e.getMessage(), e);
             return "Sorry, an error occurred while processing your message: " + e.getMessage();
         }
     }

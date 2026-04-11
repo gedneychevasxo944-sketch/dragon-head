@@ -51,7 +51,7 @@ public class HrBuiltinPlugin implements WorkspaceBuiltinPlugin {
             String result = characterCaller.call(hrCharacter, prompt);
             return PluginResult.success(result);
         } catch (Exception e) {
-            log.error("[HrBuiltinPlugin] Failed to execute: {}", e.getMessage());
+            log.error("[HrBuiltinPlugin] Failed to execute: {}", e.getMessage(), e);
             return PluginResult.failure(e.getMessage());
         }
     }

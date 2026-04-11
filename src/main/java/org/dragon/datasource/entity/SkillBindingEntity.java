@@ -6,8 +6,6 @@ import org.dragon.skill.enums.BindingType;
 import org.dragon.skill.enums.VersionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -48,10 +46,9 @@ public class SkillBindingEntity {
 
     // ── 绑定类型 ─────────────────────────────────────────────────────
 
-    /** 绑定类型（不可 null） */
-    @Enumerated(EnumType.STRING)
+    /** 绑定类型（不可 null，存储小写字符串如 'workspace'） */
     @Column(name = "binding_type", nullable = false, length = 30)
-    private BindingType bindingType;
+    private String bindingType;
 
     // ── 绑定主体 ─────────────────────────────────────────────────────
 
@@ -77,10 +74,9 @@ public class SkillBindingEntity {
 
     // ── 版本策略 ─────────────────────────────────────────────────────
 
-    /** 版本策略（不可 null） */
-    @Enumerated(EnumType.STRING)
+    /** 版本策略（不可 null，存储小写字符串如 'latest'） */
     @Column(name = "version_type", nullable = false, length = 10)
-    private VersionType versionType;
+    private String versionType;
 
     /**
      * 固定版本号（对应 skills.version）。
@@ -109,11 +105,11 @@ public class SkillBindingEntity {
     public org.dragon.skill.domain.SkillBindingDO toDomain() {
         org.dragon.skill.domain.SkillBindingDO domain = new org.dragon.skill.domain.SkillBindingDO();
         domain.setId(this.id);
-        domain.setBindingType(this.bindingType);
+        domain.setBindingType(BindingType.fromValue(this.bindingType));
         domain.setCharacterId(this.characterId);
         domain.setWorkspaceId(this.workspaceId);
         domain.setSkillId(this.skillId);
-        domain.setVersionType(this.versionType);
+        domain.setVersionType(VersionType.fromValue(this.versionType));
         domain.setFixedVersion(this.fixedVersion);
         domain.setCreatedAt(this.createdAt);
         domain.setUpdatedAt(this.updatedAt);
@@ -126,11 +122,11 @@ public class SkillBindingEntity {
     public static SkillBindingEntity fromDomain(org.dragon.skill.domain.SkillBindingDO domain) {
         return SkillBindingEntity.builder()
                 .id(domain.getId())
-                .bindingType(domain.getBindingType())
+                .bindingType(domain.getBindingType() != null ? domain.getBindingType().getValue() : null)
                 .characterId(domain.getCharacterId())
                 .workspaceId(domain.getWorkspaceId())
                 .skillId(domain.getSkillId())
-                .versionType(domain.getVersionType())
+                .versionType(domain.getVersionType() != null ? domain.getVersionType().getValue() : null)
                 .fixedVersion(domain.getFixedVersion())
                 .createdAt(domain.getCreatedAt())
                 .updatedAt(domain.getUpdatedAt())
