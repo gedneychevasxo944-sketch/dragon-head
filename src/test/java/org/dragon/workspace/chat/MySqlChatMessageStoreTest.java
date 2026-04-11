@@ -1,26 +1,32 @@
 package org.dragon.workspace.chat;
 
-import io.ebean.Database;
-import io.ebean.DatabaseFactory;
-import io.ebean.config.DatabaseConfig;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import org.flywaydb.core.Flyway;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import javax.sql.DataSource;
-
-import org.dragon.datasource.entity.ChatMessageEntity;
-import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import javax.sql.DataSource;
+
+import org.dragon.datasource.entity.ChatMessageEntity;
+import org.dragon.workspace.cooperation.chat.ChatMessage;
+import org.dragon.workspace.cooperation.chat.MySqlChatMessageStore;
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
+import io.ebean.Database;
+import io.ebean.DatabaseFactory;
+import io.ebean.config.DatabaseConfig;
 
 /**
  * MySqlChatMessageStore 单元测试

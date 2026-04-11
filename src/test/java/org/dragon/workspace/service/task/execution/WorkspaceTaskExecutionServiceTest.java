@@ -1,34 +1,34 @@
 package org.dragon.workspace.service.task.execution;
 
-import org.dragon.task.Task;
-import org.dragon.task.TaskStatus;
-import org.dragon.task.TaskStore;
-import org.dragon.workspace.chat.ChatMessage;
-import org.dragon.workspace.chat.ChatRoom;
-import org.dragon.workspace.chat.ChatSession;
-import org.dragon.workspace.service.material.WorkspaceMaterialService;
-import org.dragon.workspace.task.notify.WorkspaceTaskNotifier;
-import org.dragon.material.Material;
-import org.dragon.store.StoreFactory;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.dragon.store.StoreFactory;
+import org.dragon.task.Task;
+import org.dragon.task.TaskStatus;
+import org.dragon.task.TaskStore;
+import org.dragon.workspace.cooperation.chat.ChatRoom;
+import org.dragon.workspace.cooperation.task.TaskBridge;
+import org.dragon.workspace.cooperation.task.TaskBridgeContext;
+import org.dragon.workspace.cooperation.task.notify.WorkspaceTaskNotifier;
+import org.dragon.workspace.service.material.WorkspaceMaterialService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import org.mockito.Mock;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * WorkspaceTaskExecutionService 单元测试

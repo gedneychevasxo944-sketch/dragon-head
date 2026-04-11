@@ -1,37 +1,42 @@
 package org.dragon.workspace.service.task.arrangement;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspaceRegistry;
-import org.dragon.workspace.chat.ChatRoom;
+import org.dragon.workspace.cooperation.chat.ChatRoom;
+import org.dragon.workspace.cooperation.task.CollaborationSessionCoordinator;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.service.member.WorkspaceMemberManagementService;
 import org.dragon.workspace.service.task.arrangement.dto.ChildTaskPlan;
 import org.dragon.workspace.service.task.arrangement.dto.TaskCreationCommand;
 import org.dragon.workspace.service.task.arrangement.dto.TaskDecompositionResult;
-import org.dragon.workspace.service.task.execution.CollaborationSessionCoordinator;
 import org.dragon.workspace.service.task.execution.WorkspaceTaskExecutionService;
-import org.dragon.store.StoreFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
  * WorkspaceTaskArrangementService 单元测试
