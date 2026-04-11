@@ -24,6 +24,7 @@ use adeptify;
 -- 0. 清理旧数据（重新插入时使用）
 -- ============================================================================
 DELETE FROM notification WHERE user_id = 1;
+DELETE FROM material WHERE workspace_id IN ('ws-demo', 'ws-test');
 DELETE FROM task WHERE workspace_id IN ('ws-demo', 'ws-test');
 DELETE FROM common_sense WHERE workspace_id IN ('ws-demo', 'ws-test');
 DELETE FROM workspace_member WHERE workspace_id IN ('ws-demo', 'ws-test');
@@ -301,7 +302,26 @@ VALUES
   ('MEMORY', 'cs-003', 1, 'OWNER', '1', NOW(), NOW(), TRUE, NOW(), NOW());
 
 -- ============================================================================
--- 12. 通知 (Notification)
+-- 12. 物料文件 (Material)
+-- ============================================================================
+INSERT INTO material (id, workspace_id, name, size, type, storage_key, uploader, uploaded_at, kind, parse_status, metadata)
+VALUES
+  ('mat-001', 'ws-demo', 'Q1_销售报告_2024.pdf', 2457600, 'application/pdf', 'ws-demo/materials/q1-sales-2024.pdf', 'testuser', DATE_SUB(NOW(), INTERVAL 7 DAY), 'DOCUMENT', 'SUCCESS', '{"source": "manual_upload", "pages": 15}'),
+
+  ('mat-002', 'ws-demo', '产品路线图.png', 512000, 'image/png', 'ws-demo/materials/product-roadmap.png', 'testuser', DATE_SUB(NOW(), INTERVAL 5 DAY), 'IMAGE', 'SUCCESS', '{"source": "manual_upload", "resolution": "1920x1080"}'),
+
+  ('mat-003', 'ws-demo', '客户数据导出_0328.csv', 15728640, 'text/csv', 'ws-demo/materials/customer-data-0328.csv', 'char-001', DATE_SUB(NOW(), INTERVAL 3 DAY), 'DOCUMENT', 'SUCCESS', '{"source": "task_output", "taskId": "task-002"}'),
+
+  ('mat-004', 'ws-demo', '团队周会纪要.docx', 128000, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'ws-demo/materials/weekly-meeting.docx', 'char-001', DATE_SUB(NOW(), INTERVAL 2 DAY), 'DOCUMENT', 'SUCCESS', '{"source": "manual_upload"}'),
+
+  ('mat-005', 'ws-demo', 'logo_v2.svg', 25600, 'image/svg+xml', 'ws-demo/materials/logo-v2.svg', 'testuser', DATE_SUB(NOW(), INTERVAL 1 DAY), 'IMAGE', 'SUCCESS', '{"source": "manual_upload"}'),
+
+  ('mat-006', 'ws-demo', '技术架构文档.pdf', 890000, 'application/pdf', 'ws-demo/materials/tech-architecture.pdf', 'char-002', DATE_SUB(NOW(), INTERVAL 10 DAY), 'DOCUMENT', 'SUCCESS', '{"source": "manual_upload", "pages": 42}'),
+
+  ('mat-007', 'ws-demo', '用户访谈记录_2024Q1.pdf', 1560000, 'application/pdf', 'ws-demo/materials/user-interview-q1.pdf', 'char-003', DATE_SUB(NOW(), INTERVAL 4 DAY), 'DOCUMENT', 'SUCCESS', '{"source": "task_output", "taskId": "task-003"}');
+
+-- ============================================================================
+-- 13. 通知 (Notification)
 -- ============================================================================
 INSERT INTO notification (id, user_id, type, title, content, link, source_type, source_id, is_read, created_at)
 VALUES
