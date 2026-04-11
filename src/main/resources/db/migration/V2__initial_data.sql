@@ -18,7 +18,7 @@ use adeptify;
 -- ============================================================================
 
 INSERT INTO adeptify_user (username, password_hash, nickname, status, create_time) VALUES
-('system', '$2a$10$qv0CcheqIC6TrU3Nc5Dh9eukmGCo75dv3XlU4ZDAtuobgKEJsl79W', 'System Admin', 'NORMAL', NOW());
+('system', '$2b$10$EQJIcNd/yTXbhDlClmMYbOylhXio7A8U05/uhYj3uhvF7wfKrrsWe', 'System Admin', 'NORMAL', NOW());
 
 -- ============================================================================
 -- Trait 种子数据
