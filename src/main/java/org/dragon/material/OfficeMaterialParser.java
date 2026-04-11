@@ -65,7 +65,7 @@ public class OfficeMaterialParser implements MaterialParser {
             return buildErrorResult(material, "Unsupported Office type: " + type);
 
         } catch (Exception e) {
-            log.error("[OfficeMaterialParser] Failed to parse Office material {}: {}", material.getId(), e.getMessage());
+            log.error("[OfficeMaterialParser] Failed to parse Office material {}: {}", material.getId(), e.getMessage(), e);
             return buildErrorResult(material, "Office parsing failed: " + e.getMessage());
         }
     }

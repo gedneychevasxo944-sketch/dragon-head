@@ -333,6 +333,9 @@ VALUES
   ('model-kimi', 'kimi', 'moonshot-v1-8k', 'https://api.moonshot.cn/v1', '{"apiKey": "${KIMI_API_KEY:}"}', '{"temperature": 0.7, "max_tokens": 8000}', TRUE, 'Kimi 8K 上下文模型', 10),
   ('model-deepseek', 'deepseek', 'deepseek-chat', 'https://api.deepseek.com/v1', '{"apiKey": "${DEEPSEEK_API_KEY:}"}', '{"temperature": 0.7, "max_tokens": 4000}', TRUE, 'DeepSeek Chat 模型', 5);
 
+INSERT INTO model_instance (id, provider, model_name, endpoint, enabled, priority)
+VALUES ('minimax-default', 'MINIMAX', 'abab6.5s-chat', 'https://api.minimax.chat', true, 10);
+
 -- ============================================================================
 -- 15. ConfigStore 配置数据（各粒度）
 -- ============================================================================
@@ -523,6 +526,11 @@ VALUES
   ('1::::::prompt.observer.suggestion', 1, NULL, NULL, NULL, NULL, NULL, 'prompt.observer.suggestion', '# Observer LLM Optimization Suggestion Prompt\n\n## Role\n你是一个专业的AI优化顾问...', 'STRING', 'Observer 建议 Prompt', '观察者优化建议提示词', 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by,
+                          published_by, published_at, created_at, updated_at)
+VALUES
+    ('1::::::model.default-id', 1, NULL, NULL, NULL, NULL, NULL, 'model.default-id', 'minimax-default', 'STRING', '默认模型', '系统默认模型ID', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+    ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
 -- ============================================================================
 -- 验证查询
 -- ============================================================================

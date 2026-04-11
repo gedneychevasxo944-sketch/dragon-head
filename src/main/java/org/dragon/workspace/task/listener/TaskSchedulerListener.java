@@ -1,21 +1,20 @@
 package org.dragon.workspace.task.listener;
 
-import java.util.List;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
-import org.dragon.store.StoreFactory;
+import org.dragon.workspace.cooperation.task.notify.WorkspaceTaskNotifier;
 import org.dragon.workspace.task.TaskDependencyService;
 import org.dragon.workspace.task.TaskExecutionService;
-import org.dragon.workspace.task.WorkspaceTaskNotifier;
 import org.dragon.workspace.task.event.TaskChildCompletedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 
 /**
  * 任务调度监听器

@@ -51,7 +51,7 @@ public class MemberSelectorBuiltinPlugin implements WorkspaceBuiltinPlugin {
             String result = characterCaller.call(memberSelector, prompt);
             return PluginResult.success(result);
         } catch (Exception e) {
-            log.error("[MemberSelectorBuiltinPlugin] Failed to execute: {}", e.getMessage());
+            log.error("[MemberSelectorBuiltinPlugin] Failed to execute: {}", e.getMessage(), e);
             return PluginResult.failure(e.getMessage());
         }
     }

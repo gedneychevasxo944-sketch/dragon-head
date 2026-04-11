@@ -39,7 +39,7 @@ public class DemoJobHandler implements JobHandler {
     @Override
     public void afterExecute(CronDefinition definition, JobContext context, Object result, Throwable throwable) {
         if (throwable != null) {
-            log.error("[{}] Job execution failed: {}", context.getExecutionId(), throwable.getMessage());
+            log.error("[{}] Job execution failed: {}", context.getExecutionId(), throwable.getMessage(), throwable);
         } else {
             log.debug("[{}] Job execution completed, result: {}", context.getExecutionId(), result);
         }
@@ -176,7 +176,7 @@ class CriticalJobHandler implements JobHandler {
             log.info("[Critical] Execution successful");
             return Map.of("status", "success", "processedAt", System.currentTimeMillis());
         } catch (Exception e) {
-            log.error("[Critical] Execution failed: {}", e.getMessage());
+            log.error("[Critical] Execution failed: {}", e.getMessage(), e);
             throw e;
         }
     }

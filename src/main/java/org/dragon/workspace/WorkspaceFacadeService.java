@@ -53,7 +53,6 @@ public class WorkspaceFacadeService {
     private final TaskArrangementService taskArrangementService;
     private final TaskResumeService taskResumeService;
     private final TaskExecutionService taskExecutionService;
-    private final TaskStore taskStore;
 
     // ==================== Workspace CRUD ====================
 

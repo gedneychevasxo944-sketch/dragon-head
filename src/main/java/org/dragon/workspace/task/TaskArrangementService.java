@@ -308,7 +308,7 @@ public class TaskArrangementService {
                     }
                 }
             } catch (Exception e) {
-                log.error("[TaskArrangementService] Batch assignment failed, falling back to serial: {}", e.getMessage());
+                log.error("[TaskArrangementService] Batch assignment failed, falling back to serial: {}", e.getMessage(), e);
                 assignSerially(needsAssignment, workspace, members, promptWriter, memberSelector, promptTemplate, excludedCharacterIds);
             }
         } else {
@@ -400,7 +400,7 @@ public class TaskArrangementService {
                     excludedCharacterIds.add(decision.getSelectedCharacterId());
                 }
             } catch (Exception e) {
-                log.error("[TaskArrangementService] Failed to assign plan {}: {}", plan.getPlanTaskId(), e.getMessage());
+                log.error("[TaskArrangementService] Failed to assign plan {}: {}", plan.getPlanTaskId(), e.getMessage(), e);
             }
         }
     }
@@ -620,7 +620,7 @@ public class TaskArrangementService {
             if (json.has("collaborationMode")) builder.collaborationMode(json.get("collaborationMode").getAsString());
             return builder.build();
         } catch (Exception e) {
-            log.error("[TaskArrangementService] Failed to extract decomposition result: {}", e.getMessage());
+            log.error("[TaskArrangementService] Failed to extract decomposition result: {}", e.getMessage(), e);
             return null;
         }
     }

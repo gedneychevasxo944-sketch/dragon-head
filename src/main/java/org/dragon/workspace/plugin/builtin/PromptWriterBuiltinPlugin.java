@@ -51,7 +51,7 @@ public class PromptWriterBuiltinPlugin implements WorkspaceBuiltinPlugin {
             String result = characterCaller.call(promptWriter, prompt);
             return PluginResult.success(result);
         } catch (Exception e) {
-            log.error("[PromptWriterBuiltinPlugin] Failed to execute: {}", e.getMessage());
+            log.error("[PromptWriterBuiltinPlugin] Failed to execute: {}", e.getMessage(), e);
             return PluginResult.failure(e.getMessage());
         }
     }
