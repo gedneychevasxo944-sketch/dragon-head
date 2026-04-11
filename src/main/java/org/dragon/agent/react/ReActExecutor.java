@@ -1,6 +1,7 @@
 package org.dragon.agent.react;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -85,31 +86,53 @@ public class ReActExecutor {
      * @return 执行结果
      */
     public ReActResult execute(ReActContext context) {
-        log.info("[ReAct] Starting ReAct loop for execution: {}", context.getExecutionId());
+        String executionId = context.getExecutionId();
+        String characterId = context.getCharacterId();
+        String userInput = context.getUserInput();
+
+        log.info("[ReAct] ================== ReAct 执行开始 ==================");
+        log.info("[ReAct] ExecutionId: {}", executionId);
+        log.info("[ReAct] CharacterId: {}", characterId);
+        log.info("[ReAct] UserInput: {}", userInput);
+        log.info("[ReAct] MaxIterations: {}", context.getMaxIterations());
+        log.info("[ReAct] SystemPrompt: {}", context.getSystemPrompt());
+        log.info("[ReAct] StreamingEnabled: {}", context.isStreamingEnabled());
 
         // ReAct 循环：Thought -> Action -> Observation
         while (!context.isComplete() && context.incrementIteration() <= context.getMaxIterations()) {
+            int iteration = context.getCurrentIteration();
             try {
-                log.debug("[ReAct] Iteration {} started", context.getCurrentIteration());
+                log.info("[ReAct] -------- 第 {}/{} 轮迭代开始 --------", iteration, context.getMaxIterations());
 
                 // Step 1: Thought - 让 LLM 分析并决定下一步行动
+                log.info("[ReAct] [{}] Step 1: Think - 发送请求到大模型...", iteration);
                 String thought = think(context);
+                log.info("[ReAct] [{}] Think 完成，思考结果长度: {} chars", iteration, thought != null ? thought.length() : 0);
+                log.info("[ReAct] [{}] Think 结果: {}", iteration, thought);
 
                 // Step 2: Action - 根据思考执行动作
+                log.info("[ReAct] [{}] Step 2: Act - 解析并执行动作...", iteration);
                 String actionResult = act(context, thought);
+                log.info("[ReAct] [{}] Act 完成，动作结果: {}", iteration, actionResult);
 
                 // Step 3: Observation - 观察动作结果，并评估可用性
+                log.info("[ReAct] [{}] Step 3: Observe - 评估观察结果...", iteration);
                 ObservationEvaluator.ObservationAssessment assessment = observe(context, actionResult);
+                log.info("[ReAct] [{}] Observation 评估: available={}, isError={}, reason={}, shouldFinish={}",
+                        iteration, assessment.isAvailable(), assessment.isError(), assessment.getReason(), observationEvaluator.shouldFinish(context, assessment));
 
                 // 检查是否应该结束（结合动作类型与观察结果可用性）
                 if (observationEvaluator.shouldFinish(context, assessment)) {
                     context.complete(actionResult);
-                    log.info("[ReAct] Execution completed at iteration {}", context.getCurrentIteration());
+                    log.info("[ReAct] [{}] ========== 执行完成 ==========", iteration);
+                    log.info("[ReAct] 最终响应: {}", actionResult);
                     break;
                 }
 
+                log.info("[ReAct] -------- 第 {} 轮迭代结束 --------", iteration);
+
             } catch (Exception e) {
-                log.error("[ReAct] Error at iteration: {}", context.getCurrentIteration(), e);
+                log.error("[ReAct] [{}] 迭代执行出错: {}", iteration, e.getMessage(), e);
                 handleError(context, e);
             }
         }
@@ -117,10 +140,15 @@ public class ReActExecutor {
         // 检查是否达到最大迭代次数
         if (!context.isComplete() && context.getCurrentIteration() >= context.getMaxIterations()) {
             context.complete("达到最大迭代次数");
-            log.warn("[ReAct] Max iterations reached: {}", context.getMaxIterations());
+            log.warn("[ReAct] 达到最大迭代次数: {}", context.getMaxIterations());
         }
 
-        return buildResult(context);
+        ReActResult result = buildResult(context);
+        log.info("[ReAct] ========== ReAct 执行结束 ==========");
+        log.info("[ReAct] Success: {}, Iterations: {}, FinalResponse: {}",
+                result.isSuccess(), result.getIterations(), result.getResponse());
+
+        return result;
     }
 
     // ==================== ReAct 步骤方法 ====================
@@ -136,6 +164,10 @@ public class ReActExecutor {
         String modelId = resolveModelId(context);
         String prompt = buildThoughtPrompt(context);
 
+        log.info("[ReAct] [{}] 构建 LLM Request - modelId: {}", context.getCurrentIteration(), modelId);
+        log.info("[ReAct] [{}] SystemPrompt: {}", context.getCurrentIteration(), context.getSystemPrompt());
+        log.info("[ReAct] [{}] UserPrompt: {}", context.getCurrentIteration(), prompt);
+
         LLMRequest request = LLMRequest.builder()
                 .modelId(modelId)
                 .messages(java.util.Collections.singletonList(
@@ -148,10 +180,15 @@ public class ReActExecutor {
                 .tools(toolRegistry.toDefinitions())
                 .build();
 
+        log.info("[ReAct] [{}] 工具数量: {}", context.getCurrentIteration(),
+                request.getTools() != null ? request.getTools().size() : 0);
+
         // 根据是否启用流式调用选择不同的方法
         if (context.isStreamingEnabled()) {
+            log.info("[ReAct] [{}] 使用流式调用", context.getCurrentIteration());
             return streamThink(context, request);
         } else {
+            log.info("[ReAct] [{}] 使用同步调用", context.getCurrentIteration());
             return syncThink(context, request);
         }
     }
@@ -160,11 +197,64 @@ public class ReActExecutor {
      * 同步思考
      */
     private String syncThink(ReActContext context, LLMRequest request) {
-        LLMCaller caller = resolveCaller(context, request.getModelId());
+        int iteration = context.getCurrentIteration();
+        String modelId = request.getModelId();
+
+        // 解析 Caller
+        LLMCaller caller = resolveCaller(context, modelId);
+        log.info("[ReAct] [{}] ========== 同步 LLM 调用开始 ==========", iteration);
+        log.info("[ReAct] [{}] Caller: {}", iteration, caller.getClass().getSimpleName());
+        log.info("[ReAct] [{}] ModelId: {}", iteration, modelId);
+
+        // 打印完整请求
+        log.info("[ReAct] [{}] ========== LLM Request ==========", iteration);
+        log.info("[ReAct] [{}] modelId: {}", iteration, request.getModelId());
+        log.info("[ReAct] [{}] systemPrompt: {}", iteration, request.getSystemPrompt());
+        log.info("[ReAct] [{}] messages: {}", iteration, request.getMessages());
+        if (request.getTools() != null && !request.getTools().isEmpty()) {
+            log.info("[ReAct] [{}] tools (前3个): {}", iteration, request.getTools().stream().limit(3).toList());
+        }
+        log.info("[ReAct] [{}] temperature: {}", iteration, request.getTemperature());
+        log.info("[ReAct] [{}] maxTokens: {}", iteration, request.getMaxTokens());
+
+        // 调用 LLM
+        long startTime = System.currentTimeMillis();
         LLMResponse response = caller.call(request);
+        long duration = System.currentTimeMillis() - startTime;
+
+        log.info("[ReAct] [{}] ========== LLM Response ==========", iteration);
+        log.info("[ReAct] [{}] 耗时: {}ms", iteration, duration);
+        log.info("[ReAct] [{}] finishReason: {}", iteration, response.getFinishReason());
+        log.info("[ReAct] [{}] content (完整): {}", iteration, response.getContent());
+        log.info("[ReAct] [{}] functionCall: {}", iteration, response.getFunctionCall());
+
+        if (response.getUsage() != null) {
+            log.info("[ReAct] [{}] usage: promptTokens={}, completionTokens={}, totalTokens={}",
+                    iteration,
+                    response.getUsage().getPromptTokens(),
+                    response.getUsage().getCompletionTokens(),
+                    response.getUsage().getTotalTokens());
+        }
+
         String thought = response.getContent();
+        // 如果 content 为空但有 functionCall，说明是 tool_calls 模式
+        if ((thought == null || thought.isEmpty()) && response.getFunctionCall() != null) {
+            LLMResponse.FunctionCall fc = response.getFunctionCall();
+            // 转换为 ActionParser 可解析的 JSON 格式
+            thought = String.format(
+                    "{\"action\": \"TOOL\", \"tool\": \"%s\", \"params\": %s}",
+                    fc.getName(),
+                    fc.getArguments()
+            );
+            log.info("[ReAct] [{}] 从 functionCall 构建 thought: {}", iteration, thought);
+        }
+        if (thought == null || thought.isEmpty()) {
+            log.warn("[ReAct] [{}] LLM 返回内容为空!", iteration);
+        }
+
         context.addThought(thought);
-        log.debug("[ReAct] Thought: {}", thought);
+        log.info("[ReAct] [{}] ========== 同步 LLM 调用结束 ==========", iteration);
+
         return thought;
     }
 
@@ -172,14 +262,33 @@ public class ReActExecutor {
      * 流式思考
      */
     private String streamThink(ReActContext context, LLMRequest request) {
-        LLMCaller caller = resolveCaller(context, request.getModelId());
+        int iteration = context.getCurrentIteration();
+        String modelId = request.getModelId();
+
+        // 解析 Caller
+        LLMCaller caller = resolveCaller(context, modelId);
+        log.info("[ReAct] [{}] ========== 流式 LLM 调用开始 ==========", iteration);
+        log.info("[ReAct] [{}] Caller: {}", iteration, caller.getClass().getSimpleName());
+        log.info("[ReAct] [{}] ModelId: {}", iteration, modelId);
+
         Stream<LLMResponse> stream = caller.streamCall(request);
         StringBuilder fullContent = new StringBuilder();
+
+        long startTime = System.currentTimeMillis();
+        AtomicInteger chunkCount = new AtomicInteger(0);
+        int currentIteration = iteration;  // effectively final for lambda
 
         stream.forEach(response -> {
             String chunk = response.getContent();
             if (chunk != null) {
+                int count = chunkCount.incrementAndGet();
                 fullContent.append(chunk);
+
+                // 每10个chunk打印一次进度
+                if (count % 10 == 0) {
+                    log.info("[ReAct] [{}] 流式接收 chunk #{}, 当前累计长度: {}",
+                            currentIteration, count, fullContent.length());
+                }
 
                 // 写入 Task
                 Task task = context.getTask();
@@ -190,9 +299,16 @@ public class ReActExecutor {
             }
         });
 
+        long duration = System.currentTimeMillis() - startTime;
+
         String thought = fullContent.toString();
+        log.info("[ReAct] [{}] ========== 流式 LLM 调用结束 ==========", iteration);
+        log.info("[ReAct] [{}] 总 chunks: {}", iteration, chunkCount.get());
+        log.info("[ReAct] [{}] 耗时: {}ms", iteration, duration);
+        log.info("[ReAct] [{}] 最终内容长度: {} chars", iteration, thought.length());
+        log.info("[ReAct] [{}] 最终内容: {}", iteration, thought);
+
         context.addThought(thought);
-        log.debug("[ReAct] Streamed Thought: {}", thought);
 
         return thought;
     }
@@ -206,19 +322,37 @@ public class ReActExecutor {
      * @return 动作执行结果
      */
     private String act(ReActContext context, String thought) {
+        int iteration = context.getCurrentIteration();
+
         // 解析动作
+        log.info("[ReAct] [{}] ========== 动作解析开始 ==========", iteration);
+        log.info("[ReAct] [{}] 待解析的 Thought: {}", iteration, thought);
+
         Action action = actionParser.parse(thought);
         if (action == null) {
-            log.warn("[ReAct] Failed to parse action from thought");
+            log.warn("[ReAct] [{}] 无法从 Thought 解析出动作!", iteration);
             return "无法解析动作";
         }
 
         context.addAction(action);
-        log.debug("[ReAct] Action: {} - {}", action.getType(), action.getToolName());
+        log.info("[ReAct] [{}] 动作解析成功:", iteration);
+        log.info("[ReAct] [{}]   ActionType: {}", iteration, action.getType());
+        log.info("[ReAct] [{}]   ToolName: {}", iteration, action.getToolName());
+        log.info("[ReAct] [{}]   Params: {}", iteration, action.getParameters());
+        log.info("[ReAct] [{}] ========== 动作解析结束 ==========", iteration);
 
         // 执行动作
         String modelId = resolveModelId(context, action);
-        return actionExecutor.execute(context, action, modelId);
+        log.info("[ReAct] [{}] 执行动作, modelId: {}", iteration, modelId);
+
+        long startTime = System.currentTimeMillis();
+        String result = actionExecutor.execute(context, action, modelId);
+        long duration = System.currentTimeMillis() - startTime;
+
+        log.info("[ReAct] [{}] 动作执行完成, 耗时: {}ms", iteration, duration);
+        log.info("[ReAct] [{}] 执行结果: {}", iteration, result);
+
+        return result;
     }
 
     /**
@@ -231,7 +365,7 @@ public class ReActExecutor {
      */
     private ObservationEvaluator.ObservationAssessment observe(ReActContext context, String result) {
         context.addObservation(result);
-        log.debug("[ReAct] Observation: {}", result);
+        log.info("[ReAct] [{}] Observation 记录: {}", context.getCurrentIteration(), result);
         return observationEvaluator.assess(result);
     }
 
@@ -411,7 +545,9 @@ public class ReActExecutor {
         }
 
         LLMCaller caller = callerSelector.select(model);
-        log.debug("[ReAct] Selected caller {} for model: {}", caller.getClass().getSimpleName(), modelId);
+        log.info("[ReAct] [{}] 模型解析: modelId={}, provider={}, selectedCaller={}",
+                context != null ? context.getCurrentIteration() : 0,
+                modelId, model.getProvider(), caller.getClass().getSimpleName());
         return caller;
     }
 
