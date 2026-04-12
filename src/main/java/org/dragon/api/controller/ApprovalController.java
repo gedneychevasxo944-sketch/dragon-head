@@ -1,12 +1,12 @@
 package org.dragon.api.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Map;
+
 import org.dragon.api.controller.dto.ApiResponse;
-import org.dragon.approval.service.ApprovalService;
 import org.dragon.approval.dto.ApprovalRequestDTO;
 import org.dragon.approval.enums.ApprovalType;
+import org.dragon.approval.service.ApprovalService;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.user.security.UserPrincipal;
 import org.dragon.user.store.UserStore;
@@ -19,8 +19,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 /**
  * ApprovalController 审批管理 API
@@ -151,7 +152,11 @@ public class ApprovalController {
         if (!SYSTEM_USERNAME.equals(principal.getUsername())) {
             return ApiResponse.error(403, "仅允许 system 账号访问");
         }
-        List<ApprovalRequestDTO> requests = approvalService.getAllPendingApprovals();
+        Long systemUserId = userStore.findByUsername(SYSTEM_USERNAME)
+            .map(u -> u.getId())
+            .orElseThrow(() -> new IllegalStateException("system 用户不存在，请确保 V2 migration 已执行"));
+
+        List<ApprovalRequestDTO> requests = approvalService.getPendingApprovals(systemUserId);
         return ApiResponse.success(requests);
     }
 

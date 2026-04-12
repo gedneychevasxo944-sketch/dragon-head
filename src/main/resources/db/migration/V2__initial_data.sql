@@ -17,8 +17,8 @@ use adeptify;
 -- 说明: 用于审批所有发布到公共库的申请
 -- ============================================================================
 
-INSERT INTO adeptify_user (username, password_hash, nickname, status, create_time) VALUES
-('system', '$2b$10$EQJIcNd/yTXbhDlClmMYbOylhXio7A8U05/uhYj3uhvF7wfKrrsWe', 'System Admin', 'NORMAL', NOW());
+INSERT INTO adeptify_user (id, username, password_hash, nickname, status, create_time) VALUES
+(2, 'system', '$2b$10$EQJIcNd/yTXbhDlClmMYbOylhXio7A8U05/uhYj3uhvF7wfKrrsWe', 'System Admin', 'NORMAL', NOW());
 
 -- ============================================================================
 -- Trait 种子数据
