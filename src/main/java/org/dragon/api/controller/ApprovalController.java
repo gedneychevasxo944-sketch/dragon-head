@@ -154,7 +154,7 @@ public class ApprovalController {
         }
         Long systemUserId = userStore.findByUsername(SYSTEM_USERNAME)
             .map(u -> u.getId())
-            .orElseThrow(() -> new IllegalStateException("system 用户不存在，请确保 V2 migration 已执行"));
+            .orElseThrow(() -> new IllegalStateException("System用户不存在"));
 
         List<ApprovalRequestDTO> requests = approvalService.getPendingApprovals(systemUserId);
         return ApiResponse.success(requests);

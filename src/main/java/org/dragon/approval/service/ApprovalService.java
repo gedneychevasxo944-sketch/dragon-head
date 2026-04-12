@@ -1,6 +1,12 @@
 package org.dragon.approval.service;
 
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.dragon.approval.dto.ApprovalRequestDTO;
 import org.dragon.approval.enums.ApprovalStatus;
 import org.dragon.approval.enums.ApprovalType;
@@ -12,12 +18,7 @@ import org.dragon.user.store.UserStore;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ApprovalService 审批服务
@@ -64,8 +65,8 @@ public class ApprovalService {
      * 创建审批请求
      */
     public String createApprovalRequest(ResourceType type, String assetId, ApprovalType approvalType,
-                                       Long requesterId, Long targetUserId, String reason) {
-        return createApprovalRequest(type, assetId, approvalType, requesterId, null, targetUserId, reason);
+                                       Long requesterId, Long approverId, String reason) {
+        return createApprovalRequest(type, assetId, approvalType, requesterId, approverId, approverId, reason);
     }
 
     /**
@@ -89,6 +90,7 @@ public class ApprovalService {
                 .requesterId(requesterId)
                 .requesterName(requesterName)
                 .approverId(approverId)
+                .approverId(targetUserId)
                 .targetUserId(targetUserId)
                 .reason(reason)
                 .status(ApprovalStatus.PENDING)
