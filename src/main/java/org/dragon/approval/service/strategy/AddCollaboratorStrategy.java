@@ -34,20 +34,30 @@ public class AddCollaboratorStrategy implements ApprovalStrategy {
                 context.getRequest().getTargetUserId());
 
         if (context.getRequest().getTargetUserId() != null) {
-            assetMemberService.addMemberDirectly(
+            // 确认协作者邀请（将 pending 状态更新为已接受）
+            assetMemberService.acceptInvitationDirectly(
+                    context.getRequest().getTargetUserId(),
                     context.getRequest().getResourceType(),
-                    context.getRequest().getResourceId(),
-                    context.getRequest().getRequesterId(),
-                    context.getRequest().getTargetUserId()
+                    context.getRequest().getResourceId()
             );
         }
     }
 
     @Override
     public void onReject(ApprovalContext context) {
-        log.info("[AddCollaboratorStrategy] Rejecting add collaborator: resourceType={}, resourceId={}, approverId={}",
+        log.info("[AddCollaboratorStrategy] Rejecting add collaborator: resourceType={}, resourceId={}, approverId={}, targetUserId={}",
                 context.getRequest().getResourceType(),
                 context.getRequest().getResourceId(),
-                context.getApproverId());
+                context.getApproverId(),
+                context.getRequest().getTargetUserId());
+
+        // 删除 pending 状态的邀请记录
+        if (context.getRequest().getTargetUserId() != null) {
+            assetMemberService.rejectInvitationDirectly(
+                    context.getRequest().getTargetUserId(),
+                    context.getRequest().getResourceType(),
+                    context.getRequest().getResourceId()
+            );
+        }
     }
 }

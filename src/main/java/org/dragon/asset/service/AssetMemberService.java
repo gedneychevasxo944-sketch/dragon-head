@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dragon.asset.dto.AssetMemberDTO;
 import org.dragon.asset.dto.CollaboratorDTO;
 import org.dragon.asset.store.AssetMemberStore;
+import org.dragon.asset.store.AssetPublishStatusStore;
 import org.dragon.datasource.entity.AssetMemberEntity;
 import org.dragon.permission.dto.InvitationDTO;
 import org.dragon.permission.enums.Role;
@@ -27,10 +28,12 @@ public class AssetMemberService {
 
     private final AssetMemberStore assetMemberStore;
     private final UserStore userStore;
+    private final AssetPublishStatusStore publishStatusStore;
 
     public AssetMemberService(StoreFactory storeFactory) {
         this.assetMemberStore = storeFactory.get(AssetMemberStore.class);
         this.userStore = storeFactory.get(UserStore.class);
+        this.publishStatusStore = storeFactory.get(AssetPublishStatusStore.class);
     }
 
     /**
@@ -117,6 +120,34 @@ public class AssetMemberService {
                     assetMemberStore.delete(m.getId());
                     log.info("[AssetMemberService] Rejected invitation: type={}, resourceId={}, userId={}", type, resourceId, userId);
                 });
+    }
+
+    /**
+     * 确认协作者邀请（审批通过后调用）
+     * 将 pending 状态的邀请确认为已接受
+     * @throws IllegalStateException 如果邀请记录不存在
+     */
+    public void acceptInvitationDirectly(Long userId, ResourceType type, String resourceId) {
+        AssetMemberEntity member = assetMemberStore.findByResourceAndUser(type, resourceId, userId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "邀请记录不存在，无法确认: userId=" + userId + ", type=" + type + ", resourceId=" + resourceId));
+        member.setAccepted(true);
+        member.setAcceptedAt(LocalDateTime.now());
+        assetMemberStore.update(member);
+        log.info("[AssetMemberService] Accepted invitation directly (approval): type={}, resourceId={}, userId={}", type, resourceId, userId);
+    }
+
+    /**
+     * 拒绝协作者邀请（审批拒绝后调用）
+     * 删除 pending 状态的邀请记录
+     * @throws IllegalStateException 如果邀请记录不存在
+     */
+    public void rejectInvitationDirectly(Long userId, ResourceType type, String resourceId) {
+        AssetMemberEntity member = assetMemberStore.findByResourceAndUser(type, resourceId, userId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "邀请记录不存在，无法拒绝: userId=" + userId + ", type=" + type + ", resourceId=" + resourceId));
+        assetMemberStore.delete(member.getId());
+        log.info("[AssetMemberService] Rejected invitation directly (approval): type={}, resourceId={}, userId={}", type, resourceId, userId);
     }
 
     /**
@@ -218,18 +249,37 @@ public class AssetMemberService {
                 .build();
     }
 
+    /**
+     * 安全解析 inviterId，避免 NPE 和空字符串问题
+     */
+    private Long parseInviterId(String invitedBy) {
+        if (invitedBy == null || invitedBy.isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(invitedBy);
+        } catch (NumberFormatException e) {
+            log.warn("[AssetMemberService] Invalid inviterId format: {}", invitedBy);
+            return null;
+        }
+    }
+
     private InvitationDTO toInvitationDTO(AssetMemberEntity member) {
-        String inviterName = member.getInvitedBy() != null
-                ? userStore.findById(Long.parseLong(member.getInvitedBy()))
+        Long inviterId = parseInviterId(member.getInvitedBy());
+        String inviterName = inviterId != null
+                ? userStore.findById(inviterId)
                         .map(u -> u.getNickname() != null ? u.getNickname() : u.getUsername())
                         .orElse("Unknown")
                 : "Unknown";
 
+        // 构建邀请ID，格式: resourceType_resourceId_userId
+        String invitationId = member.getResourceType().name() + "_" + member.getResourceId() + "_" + member.getUserId();
+
         return InvitationDTO.builder()
-                .id(member.getId())
+                .id(invitationId)  // 使用复合ID格式，供 accept/reject API 使用
                 .resourceType(member.getResourceType())
                 .resourceId(member.getResourceId())
-                .inviterId(member.getInvitedBy() != null ? Long.parseLong(member.getInvitedBy()) : null)
+                .inviterId(inviterId)
                 .inviterName(inviterName)
                 .invitedAt(member.getInvitedAt())
                 .accepted(member.getAccepted())
@@ -237,11 +287,25 @@ public class AssetMemberService {
     }
 
     private AssetMemberDTO toAssetMemberDTO(AssetMemberEntity member) {
+        // 获取发布状态
+        String publishStatus = publishStatusStore
+                .findByResource(member.getResourceType().name(), member.getResourceId())
+                .map(entity -> {
+                    String status = entity.getStatus();
+                    // 转换为前端格式：DRAFT->unpublished, PUBLISHED->published, ARCHIVED->unpublished
+                    if ("PUBLISHED".equals(status)) {
+                        return "published";
+                    }
+                    return "unpublished";
+                })
+                .orElse("unpublished");
+
         return AssetMemberDTO.builder()
                 .id(member.getId())
                 .resourceType(member.getResourceType())
                 .resourceId(member.getResourceId())
                 .role(member.getRole())
+                .publishStatus(publishStatus)
                 .invitedBy(member.getInvitedBy())
                 .invitedAt(member.getInvitedAt())
                 .acceptedAt(member.getAcceptedAt())
