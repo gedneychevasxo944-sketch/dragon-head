@@ -1,5 +1,6 @@
 package org.dragon.skill.enums;
 
+import io.ebean.annotation.DbEnumValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -15,6 +16,9 @@ public enum CreatorType {
     OFFICIAL("official");
 
     private final String value;
+
+    @DbEnumValue
+    public String getValue() { return value; }
 
     public static CreatorType fromValue(String value) {
         if (value == null) return null;

@@ -1,5 +1,6 @@
 package org.dragon.skill.enums;
 
+import io.ebean.annotation.DbEnumValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +18,9 @@ public enum VersionType {
     FIXED("fixed");
 
     private final String value;
+
+    @DbEnumValue
+    public String getValue() { return value; }
 
     public static VersionType fromValue(String value) {
         if (value == null) return LATEST;

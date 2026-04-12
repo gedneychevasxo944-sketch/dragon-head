@@ -42,7 +42,7 @@ public class CharacterDetailDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SkillInfo {
-        private String id;
+        private String skillId;
         private String name;
         private String displayName;
         private String description;
