@@ -58,53 +58,90 @@ public class DefaultMemoryRecallService implements MemoryRecallService {
     @Override
     public List<MemorySearchResult> recallSession(String sessionId, String query, int limit) {
         Optional<SessionSnapshot> snapshotOpt = sessionMemoryRepository.get(sessionId);
-        if (snapshotOpt.isPresent()) {
-            SessionSnapshot snapshot = snapshotOpt.get();
-            // 这里可以根据需要将 SessionSnapshot 转换为 MemoryEntry 进行搜索
-            // 目前简单实现：如果会话内容包含查询词，则返回该会话的记忆结果
-            List<MemoryEntry> sessionEntries = new ArrayList<>();
-            MemoryEntry entry = MemoryEntry.builder()
-                    .id(MemoryId.generate())
-                    .title("会话摘要")
-                    .description(snapshot.getSummary())
-                    .content(snapshot.getContent())
-                    .type(MemoryType.SESSION_SUMMARY)
-                    .scope(MemoryScope.SESSION)
-                    .ownerId(sessionId)
-                    .updatedAt(snapshot.getUpdatedAt())
-                    .build();
-            sessionEntries.add(entry);
-            return searchEntries(sessionEntries, query, limit);
+        if (snapshotOpt.isEmpty()) {
+            return new ArrayList<>();
         }
-        return new ArrayList<>();
+        SessionSnapshot snapshot = snapshotOpt.get();
+        List<MemoryEntry> sessionEntries = collectSessionEntries(sessionId, snapshot);
+        return searchEntries(sessionEntries, query, limit);
     }
 
     @Override
     public List<MemorySearchResult> recallComposite(MemoryQuery query) {
-        List<MemorySearchResult> results = new ArrayList<>();
+        List<MemoryEntry> allEntries = new ArrayList<>();
 
-        if (query.getCharacterId() != null) {
-            results.addAll(recallCharacter(query.getCharacterId(), query.getText(), query.getLimit()));
-        }
-
-        if (query.getWorkspaceId() != null) {
-            results.addAll(recallWorkspace(query.getWorkspaceId(), query.getText(), query.getLimit()));
-        }
-
+        // 1. 先拿 session summary（最近上下文优先）
         if (query.getSessionId() != null) {
-            results.addAll(recallSession(query.getSessionId(), query.getText(), query.getLimit()));
+            Optional<SessionSnapshot> snapshotOpt = sessionMemoryRepository.get(query.getSessionId());
+            snapshotOpt.ifPresent(snapshot ->
+                    allEntries.addAll(collectSessionEntries(query.getSessionId(), snapshot)));
         }
 
-        // 统一过滤规则
-        List<MemorySearchResult> filteredResults = applyFilters(results, query);
+        // 2. 再召回 character memory
+        if (query.getCharacterId() != null) {
+            allEntries.addAll(characterMemoryRepository.list(query.getCharacterId()));
+        }
 
-        // 统一排序规则
-        List<MemorySearchResult> sortedResults = applySorting(filteredResults);
+        // 3. 再召回 workspace memory
+        if (query.getWorkspaceId() != null) {
+            allEntries.addAll(workspaceMemoryRepository.list(query.getWorkspaceId()));
+        }
 
-        // 限制结果数量
-        return sortedResults.stream()
-                .limit(query.getLimit())
-                .collect(Collectors.toList());
+        // 4. 合并排序控量
+        List<MemorySearchResult> results = memoryRanker.rank(query.getText(), allEntries, query.getLimit());
+        return applyFilters(results, query);
+    }
+
+    /**
+     * 将 SessionSnapshot 拆解为多条结构化 MemoryEntry
+     */
+    private List<MemoryEntry> collectSessionEntries(String sessionId, SessionSnapshot snapshot) {
+        List<MemoryEntry> entries = new ArrayList<>();
+
+        // 会话摘要
+        if (snapshot.getSummary() != null && !snapshot.getSummary().isBlank()) {
+            entries.add(MemoryEntry.builder()
+                    .id(MemoryId.generate())
+                    .title("会话摘要")
+                    .content(snapshot.getSummary())
+                    .type(MemoryType.SESSION_SUMMARY)
+                    .scope(MemoryScope.SESSION)
+                    .ownerId(sessionId)
+                    .updatedAt(snapshot.getUpdatedAt())
+                    .build());
+        }
+
+        // 最近决策
+        if (snapshot.getRecentDecisions() != null) {
+            for (String decision : snapshot.getRecentDecisions()) {
+                entries.add(MemoryEntry.builder()
+                        .id(MemoryId.generate())
+                        .title("最近决策")
+                        .content(decision)
+                        .type(MemoryType.WORKSPACE_DECISION)
+                        .scope(MemoryScope.SESSION)
+                        .ownerId(sessionId)
+                        .updatedAt(snapshot.getUpdatedAt())
+                        .build());
+            }
+        }
+
+        // 未解决问题
+        if (snapshot.getUnresolvedQuestions() != null) {
+            for (String question : snapshot.getUnresolvedQuestions()) {
+                entries.add(MemoryEntry.builder()
+                        .id(MemoryId.generate())
+                        .title("未解决问题")
+                        .content(question)
+                        .type(MemoryType.SESSION_SUMMARY)
+                        .scope(MemoryScope.SESSION)
+                        .ownerId(sessionId)
+                        .updatedAt(snapshot.getUpdatedAt())
+                        .build());
+            }
+        }
+
+        return entries;
     }
 
     /**
@@ -126,24 +163,6 @@ public class DefaultMemoryRecallService implements MemoryRecallService {
         }
 
         return results;
-    }
-
-    /**
-     * 应用排序规则
-     */
-    private List<MemorySearchResult> applySorting(List<MemorySearchResult> results) {
-        return results.stream()
-                .sorted((a, b) -> {
-                    // 按分数降序排列
-                    int scoreComparison = Double.compare(b.getScore(), a.getScore());
-                    if (scoreComparison != 0) {
-                        return scoreComparison;
-                    }
-
-                    // 分数相同按更新时间降序排列
-                    return b.getMemory().getUpdatedAt().compareTo(a.getMemory().getUpdatedAt());
-                })
-                .collect(Collectors.toList());
     }
 
     /**

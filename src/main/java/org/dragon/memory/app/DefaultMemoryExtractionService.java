@@ -34,10 +34,10 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
     private final MemoryDedupPolicy memoryDedupPolicy;
 
     public DefaultMemoryExtractionService(CharacterMemoryRepository characterMemoryRepository,
-                                         WorkspaceMemoryRepository workspaceMemoryRepository,
-                                         MemoryRoutingPolicy memoryRoutingPolicy,
-                                         MemoryValidationPolicy memoryValidationPolicy,
-                                         MemoryDedupPolicy memoryDedupPolicy) {
+                                          WorkspaceMemoryRepository workspaceMemoryRepository,
+                                          MemoryRoutingPolicy memoryRoutingPolicy,
+                                          MemoryValidationPolicy memoryValidationPolicy,
+                                          MemoryDedupPolicy memoryDedupPolicy) {
         this.characterMemoryRepository = characterMemoryRepository;
         this.workspaceMemoryRepository = workspaceMemoryRepository;
         this.memoryRoutingPolicy = memoryRoutingPolicy;
@@ -65,14 +65,15 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
         }
 
         // 从决策中提取记忆候选
-        for (String decision : snapshot.getRecentDecisions()) {
+        for (int i = 0; i < snapshot.getRecentDecisions().size(); i++) {
+            String decision = snapshot.getRecentDecisions().get(i);
             MemoryEntry entry = MemoryEntry.builder()
                     .id(generateMemoryId(decision))
                     .title("决策记录")
                     .description(decision)
                     .content(decision)
                     .type(MemoryType.WORKSPACE_DECISION)
-                    .fileName("decision_" + System.currentTimeMillis() + ".md")
+                    .fileName("decision_" + MemoryId.fromContent(decision).getValue() + ".md")
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
                     .build();
@@ -81,14 +82,16 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
 
         // 从事件中提取记忆候选
         for (String event : events) {
-            if (isSignificantEvent(event)) {
+            // 从 JSON 格式事件中提取可读内容用于关键词判断
+            String eventText = extractEventText(event);
+            if (isSignificantEvent(eventText)) {
                 MemoryEntry entry = MemoryEntry.builder()
                         .id(generateMemoryId(event))
                         .title("重要事件")
-                        .description(event)
-                        .content(event)
+                        .description(eventText)
+                        .content(eventText)
                         .type(MemoryType.PROJECT)
-                        .fileName("event_" + System.currentTimeMillis() + ".md")
+                        .fileName("event_" + MemoryId.fromContent(event).getValue() + ".md")
                         .createdAt(Instant.now())
                         .updatedAt(Instant.now())
                         .build();
@@ -168,11 +171,48 @@ public class DefaultMemoryExtractionService implements MemoryExtractionService {
 
 
     /**
-     * 判断事件是否重要
+     * 从事件字符串中提取可读文本。
+     * appendEntry() 写入的事件为 JSON 格式：{"type":"...","title":"...","content":"..."}
+     * 普通字符串事件直接返回原文。
      */
-    private boolean isSignificantEvent(String event) {
-        String lowerEvent = event.toLowerCase();
-        return lowerEvent.contains("决定") || lowerEvent.contains("需要") || lowerEvent.contains("必须") ||
-                lowerEvent.contains("建议") || lowerEvent.contains("计划") || lowerEvent.contains("目标");
+    private String extractEventText(String event) {
+        if (event == null || !event.trim().startsWith("{")) {
+            return event;
+        }
+        // 简单提取 content 字段值，避免引入 JSON 库依赖
+        String text = extractJsonField(event, "content");
+        if (text == null || text.isBlank()) {
+            text = extractJsonField(event, "title");
+        }
+        return text != null ? text : event;
+    }
+
+    /**
+     * 从 JSON 字符串中粗提取指定字段的字符串值（仅用于单层简单 JSON）
+     */
+    private String extractJsonField(String json, String field) {
+        String key = "\"" + field + "\":\"";
+        int start = json.indexOf(key);
+        if (start < 0) {
+            return null;
+        }
+        start += key.length();
+        int end = json.indexOf("\"", start);
+        if (end < 0) {
+            return null;
+        }
+        return json.substring(start, end).replace("\\\"", "\"");
+    }
+
+    /**
+     * 判断事件文本是否重要（作用于可读文本，非原始 JSON）
+     */
+    private boolean isSignificantEvent(String eventText) {
+        if (eventText == null || eventText.isBlank()) {
+            return false;
+        }
+        String lower = eventText.toLowerCase();
+        return lower.contains("决定") || lower.contains("需要") || lower.contains("必须") ||
+                lower.contains("建议") || lower.contains("计划") || lower.contains("目标");
     }
 }

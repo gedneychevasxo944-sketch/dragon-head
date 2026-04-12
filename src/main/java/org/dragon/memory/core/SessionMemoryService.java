@@ -23,4 +23,20 @@ public interface SessionMemoryService {
     List<MemoryEntry> promote(String sessionId);
 
     void close(String sessionId);
+
+    /**
+     * 手动向 session 追加一条记忆条目
+     *
+     * @param sessionId session ID
+     * @param entry     要追加的记忆条目
+     */
+    void appendEntry(String sessionId, MemoryEntry entry);
+
+    /**
+     * 向 session 写入一条事件记录
+     *
+     * @param sessionId session ID
+     * @param event     事件内容
+     */
+    void appendEvent(String sessionId, String event);
 }

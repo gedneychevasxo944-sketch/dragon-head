@@ -21,17 +21,29 @@ public class DefaultMemoryRanker implements MemoryRanker {
     @Override
     public List<MemorySearchResult> rank(String query, List<MemoryEntry> candidates, int limit) {
         List<MemorySearchResult> results = new ArrayList<>();
-        String lowerQuery = query.toLowerCase();
+        // query 为空时视为全量返回，不做文本过滤
+        boolean emptyQuery = query == null || query.isBlank();
+        String lowerQuery = emptyQuery ? "" : query.toLowerCase();
 
         for (MemoryEntry entry : candidates) {
-            double score = calculateRelevanceScore(entry, lowerQuery);
-            if (score > 0) {
-                results.add(MemorySearchResult.builder()
-                        .memory(entry)
-                        .score(score)
-                        .reason(getMatchReason(entry, lowerQuery))
-                        .build());
+            double score;
+            String reason;
+            if (emptyQuery) {
+                // 无查询词时所有条目以默认分数入选
+                score = 0.5;
+                reason = "全量召回";
+            } else {
+                score = calculateRelevanceScore(entry, lowerQuery);
+                if (score == 0) {
+                    continue;
+                }
+                reason = getMatchReason(entry, lowerQuery);
             }
+            results.add(MemorySearchResult.builder()
+                    .memory(entry)
+                    .score(score)
+                    .reason(reason)
+                    .build());
         }
 
         // 按分数降序排序
@@ -50,22 +62,23 @@ public class DefaultMemoryRanker implements MemoryRanker {
      */
     private double calculateRelevanceScore(MemoryEntry entry, String lowerQuery) {
         double score = 0.0;
-        String lowerTitle = entry.getTitle().toLowerCase();
-        String lowerContent = entry.getContent().toLowerCase();
-        String lowerDescription = entry.getDescription().toLowerCase();
+
+        String title = entry.getTitle();
+        String description = entry.getDescription();
+        String content = entry.getContent();
 
         // 标题匹配权重最高
-        if (lowerTitle.contains(lowerQuery)) {
+        if (title != null && title.toLowerCase().contains(lowerQuery)) {
             score += 0.6;
         }
 
         // 描述匹配权重次之
-        if (lowerDescription.contains(lowerQuery)) {
+        if (description != null && description.toLowerCase().contains(lowerQuery)) {
             score += 0.3;
         }
 
         // 内容匹配权重最低
-        if (lowerContent.contains(lowerQuery)) {
+        if (content != null && content.toLowerCase().contains(lowerQuery)) {
             score += 0.1;
         }
 
@@ -76,15 +89,15 @@ public class DefaultMemoryRanker implements MemoryRanker {
      * 获取匹配原因
      */
     private String getMatchReason(MemoryEntry entry, String lowerQuery) {
-        String lowerTitle = entry.getTitle().toLowerCase();
-        String lowerContent = entry.getContent().toLowerCase();
-        String lowerDescription = entry.getDescription().toLowerCase();
+        String title = entry.getTitle();
+        String description = entry.getDescription();
+        String content = entry.getContent();
 
-        if (lowerTitle.contains(lowerQuery)) {
+        if (title != null && title.toLowerCase().contains(lowerQuery)) {
             return "标题匹配";
-        } else if (lowerDescription.contains(lowerQuery)) {
+        } else if (description != null && description.toLowerCase().contains(lowerQuery)) {
             return "描述匹配";
-        } else if (lowerContent.contains(lowerQuery)) {
+        } else if (content != null && content.toLowerCase().contains(lowerQuery)) {
             return "内容匹配";
         } else {
             return "相关匹配";

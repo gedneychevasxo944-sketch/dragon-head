@@ -29,7 +29,9 @@ public class DefaultSessionToLongTermBridge implements SessionToLongTermBridge {
             return List.of();
         }
 
-        List<MemoryEntry> convertedEntries = sessionMemoryService.promote(sessionId);
+        // extractCandidates 仅读取候选条目，不触发 promote
+        List<MemoryEntry> convertedEntries = sessionMemoryService.extractCandidates(sessionId);
+        // close() 内部已包含 checkpoint → promote → clear，无需重复调用
         cleanupSessionMemory(sessionId);
         return convertedEntries;
     }
@@ -39,7 +41,7 @@ public class DefaultSessionToLongTermBridge implements SessionToLongTermBridge {
         List<MemoryEntry> allConvertedEntries = new ArrayList<>();
         for (String sessionId : sessionIds) {
             if (shouldConvert(sessionId)) {
-                List<MemoryEntry> convertedEntries = sessionMemoryService.promote(sessionId);
+                List<MemoryEntry> convertedEntries = sessionMemoryService.extractCandidates(sessionId);
                 allConvertedEntries.addAll(convertedEntries);
                 cleanupSessionMemory(sessionId);
             }

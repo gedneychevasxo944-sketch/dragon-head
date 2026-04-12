@@ -73,9 +73,28 @@ public class DefaultSessionMemoryService implements SessionMemoryService {
     }
 
     @Override
+    public void appendEntry(String sessionId, MemoryEntry entry) {
+        SessionSnapshot snapshot = get(sessionId);
+        if (snapshot == null) {
+            return;
+        }
+        // 将 entry 内容序列化为事件写入 events.jsonl，使其参与后续 extract/promote
+        String eventLine = String.format("{\"type\":\"%s\",\"title\":\"%s\",\"content\":%s}",
+                entry.getType() != null ? entry.getType().name() : "UNKNOWN",
+                entry.getTitle() != null ? entry.getTitle().replace("\"", "\\\"") : "",
+                entry.getContent() != null ? "\"" + entry.getContent().replace("\"", "\\\"") + "\"" : "null");
+        sessionMemoryRepository.appendEvent(sessionId, eventLine);
+    }
+
+    @Override
+    public void appendEvent(String sessionId, String event) {
+        sessionMemoryRepository.appendEvent(sessionId, event);
+    }
+
+    @Override
     public void close(String sessionId) {
         checkpoint(sessionId);
-        // 清理会话资源
+        promote(sessionId);
         sessionMemoryRepository.clear(sessionId);
     }
 }

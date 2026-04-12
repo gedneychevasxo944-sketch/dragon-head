@@ -47,27 +47,29 @@ public class DefaultMemoryDedupPolicy implements MemoryDedupPolicy {
 
     @Override
     public MemoryEntry merge(MemoryEntry existing, MemoryEntry candidate) {
-        // 合并标题
-        String mergedTitle = existing.getTitle();
-        if (!mergedTitle.equals(candidate.getTitle())) {
-            mergedTitle = existing.getTitle() + " | " + candidate.getTitle();
-        }
+        // 标题：candidate 有新标题则使用新标题，否则保留旧标题
+        String mergedTitle = (candidate.getTitle() != null && !candidate.getTitle().isBlank())
+                ? candidate.getTitle()
+                : existing.getTitle();
 
-        // 合并描述
-        String mergedDescription = existing.getDescription();
-        if (!mergedDescription.equals(candidate.getDescription())) {
-            mergedDescription = existing.getDescription() + "\n" + candidate.getDescription();
-        }
+        // 描述：candidate 有新描述则使用新描述，否则保留旧描述
+        String mergedDescription = (candidate.getDescription() != null && !candidate.getDescription().isBlank())
+                ? candidate.getDescription()
+                : existing.getDescription();
 
-        // 合并内容
-        String mergedContent = existing.getContent() + "\n\n" + candidate.getContent();
+        // 内容：直接用 candidate 的最新内容替换，避免无限追加膨胀
+        String mergedContent = (candidate.getContent() != null && !candidate.getContent().isBlank())
+                ? candidate.getContent()
+                : existing.getContent();
 
         // 使用较新的时间戳
-        Instant updatedAt = existing.getUpdatedAt().isAfter(candidate.getUpdatedAt())
+        Instant updatedAt = (existing.getUpdatedAt() != null
+                && candidate.getUpdatedAt() != null
+                && existing.getUpdatedAt().isAfter(candidate.getUpdatedAt()))
                 ? existing.getUpdatedAt()
-                : candidate.getUpdatedAt();
+                : (candidate.getUpdatedAt() != null ? candidate.getUpdatedAt() : existing.getUpdatedAt());
 
-        // 保持类型和作用域不变
+        // 保持 id、类型、作用域、文件名不变
         return MemoryEntry.builder()
                 .id(existing.getId())
                 .title(mergedTitle)
