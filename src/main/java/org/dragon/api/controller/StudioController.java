@@ -8,6 +8,7 @@ import org.dragon.application.StudioApplication;
 import org.dragon.api.controller.dto.ApiResponse;
 import org.dragon.api.controller.dto.CharacterDetailDTO;
 import org.dragon.api.controller.dto.PageResponse;
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.character.Character;
 import org.dragon.character.service.CharacterService;
 import org.dragon.character.service.CharacterTemplateService;
@@ -50,6 +51,7 @@ public class StudioController {
     private final DeploymentService deploymentService;
     private final TraitService traitService;
     private final PermissionChecker permissionChecker;
+    private final AssetAssociationService assetAssociationService;
 
     // ==================== 1. Character（角色）====================
 
@@ -143,6 +145,23 @@ public class StudioController {
         permissionChecker.checkUse("CHARACTER", id);
         Map<String, Object> result = characterService.runCharacter(id, request.getMessage(), request.getSessionId());
         return ApiResponse.success(result);
+    }
+
+    /**
+     * 1.8 获取角色的 Traits
+     * GET /api/v1/studio/characters/:id/traits
+     */
+    @Operation(summary = "获取角色的 Traits")
+    @GetMapping("/characters/{id}/traits")
+    public ApiResponse<List<Map<String, Object>>> getCharacterTraits(@PathVariable String id) {
+        permissionChecker.checkView("CHARACTER", id);
+        List<String> traitIds = assetAssociationService.getTraitsForCharacter(id);
+        List<Map<String, Object>> traits = traitIds.stream()
+                .map(traitService::getTrait)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+        return ApiResponse.success(traits);
     }
 
     // ==================== 2. Trait（特征片段）====================
