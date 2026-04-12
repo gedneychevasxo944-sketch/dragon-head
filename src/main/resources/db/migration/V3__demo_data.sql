@@ -29,6 +29,7 @@ DELETE FROM task WHERE workspace_id IN ('ws-demo', 'ws-test');
 DELETE FROM common_sense WHERE workspace_id IN ('ws-demo', 'ws-test');
 DELETE FROM workspace_member WHERE workspace_id IN ('ws-demo', 'ws-test');
 DELETE FROM asset_member WHERE user_id = 1;
+DELETE FROM asset_association WHERE source_id IN ('char-001', 'char-002', 'char-003', 'char-pm', 'char-analyst') AND source_type = 'CHARACTER';
 DELETE FROM workspace WHERE id IN ('ws-demo', 'ws-test');
 DELETE FROM observer WHERE id IN ('obs-001', 'obs-test');
 DELETE FROM tool WHERE name IN ('tool-001', 'tool-code-review', 'tool-data-export');
@@ -69,7 +70,7 @@ VALUES
 -- ============================================================================
 -- 3. 角色 (Character)
 -- ============================================================================
-INSERT INTO `character` (id, organization_ids, name, description, avatar, source, allowed_tools, traits, trait_configs, skills, prompt_template, default_tools, is_running, deployed_count, mind_config, extensions, status, created_at, updated_at)
+INSERT INTO `character` (id, organization_ids, name, description, avatar, source, allowed_tools, prompt_template, default_tools, is_running, deployed_count, mind_config, extensions, status, created_at, updated_at)
 VALUES
   ('char-001', NULL, 'AI 项目经理',
    '专业的 AI 项目管理者，能够协调多个 AI Agent 之间的工作，擅长资源分配和进度跟踪。',
