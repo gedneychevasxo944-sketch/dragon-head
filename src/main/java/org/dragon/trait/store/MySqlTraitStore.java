@@ -39,9 +39,20 @@ public class MySqlTraitStore implements TraitStore {
     }
 
     @Override
-    public Optional<TraitEntity> findById(Long id) {
+    public Optional<TraitEntity> findById(String id) {
         TraitEntity entity = db.find(TraitEntity.class, id);
         return Optional.ofNullable(entity);
+    }
+
+    @Override
+    public List<TraitEntity> findByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return db.find(TraitEntity.class)
+                .where()
+                .in("id", ids)
+                .findList();
     }
 
     @Override
@@ -91,12 +102,12 @@ public class MySqlTraitStore implements TraitStore {
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(String id) {
         db.delete(TraitEntity.class, id);
     }
 
     @Override
-    public void incrementUsedByCount(Long id) {
+    public void incrementUsedByCount(String id) {
         findById(id).ifPresent(trait -> {
             trait.setUsedByCount(trait.getUsedByCount() + 1);
             update(trait);
@@ -104,7 +115,7 @@ public class MySqlTraitStore implements TraitStore {
     }
 
     @Override
-    public void decrementUsedByCount(Long id) {
+    public void decrementUsedByCount(String id) {
         findById(id).ifPresent(trait -> {
             int newCount = Math.max(0, trait.getUsedByCount() - 1);
             trait.setUsedByCount(newCount);

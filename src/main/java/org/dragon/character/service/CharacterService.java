@@ -2,21 +2,27 @@ package org.dragon.character.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.api.controller.dto.CharacterDetailDTO;
 import org.dragon.api.controller.dto.PageResponse;
+import org.dragon.asset.enums.AssociationType;
 import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
+import org.dragon.datasource.entity.TraitEntity;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
+import org.dragon.skill.store.SkillStore;
+import org.dragon.trait.store.TraitStore;
 import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * CharacterService 角色领域服务
@@ -36,6 +42,8 @@ public class CharacterService {
     private final PermissionService permissionService;
     private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
+    private final TraitStore traitStore;
+    private final SkillStore skillStore;
     private final AssetAssociationService assetAssociationService;
 
     /**
@@ -52,15 +60,20 @@ public class CharacterService {
                                                   String status, String source) {
         List<Character> all = characterRegistry.listAll();
 
-        // 按用户可见性过滤
+        // 按用户可见性过滤：成员资产 + 已发布资产
         Long userId = Long.parseLong(UserUtils.getUserId());
-        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.CHARACTER, userId);
+        List<String> memberCharacterIds = permissionService.getVisibleAssets(ResourceType.CHARACTER, userId);
+        List<String> publishedCharacterIds = publishStatusService.getPublishedAssetIds(ResourceType.CHARACTER);
+
+        // 合并可见性：成员资产 + 已发布资产
+        java.util.Set<String> visibleIds = new java.util.HashSet<>(memberCharacterIds);
+        visibleIds.addAll(publishedCharacterIds);
 
         // 过滤
         List<Character> filtered = all.stream()
                 .filter(c -> {
                     // 可见性过滤
-                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(c.getId())) {
+                    if (!visibleIds.isEmpty() && !visibleIds.contains(c.getId())) {
                         return false;
                     }
                     if (search != null && !search.isBlank()) {
@@ -118,6 +131,56 @@ public class CharacterService {
      */
     public Optional<Character> getCharacter(String characterId) {
         return characterRegistry.get(characterId);
+    }
+
+    /**
+     * 获取角色详情（含 Skill 和 Trait 完整信息）。
+     *
+     * @param characterId 角色 ID
+     * @return CharacterDetailDTO
+     */
+    public Optional<CharacterDetailDTO> getCharacterDetail(String characterId) {
+        Optional<Character> optChar = characterRegistry.get(characterId);
+        if (optChar.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Character character = optChar.get();
+
+        // 查询关联的 Skill（SKILL_CHARACTER: source=CHARACTER, target=SKILL）
+        List<CharacterDetailDTO.SkillInfo> skillInfos = assetAssociationService
+                .findBySource(AssociationType.SKILL_CHARACTER, ResourceType.CHARACTER, characterId)
+                .stream()
+                .map(assoc -> skillStore.findLatestActiveBySkillId(assoc.getTargetId())
+                        .map(skillDO -> CharacterDetailDTO.SkillInfo.builder()
+                                .id(skillDO.getSkillId())
+                                .name(skillDO.getName())
+                                .displayName(skillDO.getDisplayName())
+                                .description(skillDO.getDescription())
+                                .category(skillDO.getCategory() != null ? skillDO.getCategory().name() : null)
+                                .build())
+                        .orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // 查询关联的 Trait
+        List<String> traitIds = assetAssociationService.getTraitsForCharacter(characterId);
+        List<CharacterDetailDTO.TraitInfo> traitInfos;
+        if (traitIds == null || traitIds.isEmpty()) {
+            traitInfos = List.of();
+        } else {
+            traitInfos = traitStore.findByIds(traitIds).stream()
+                    .map(CharacterDetailDTO::fromTraitEntity)
+                    .collect(Collectors.toList());
+        }
+
+        CharacterDetailDTO dto = CharacterDetailDTO.builder()
+                .character(character)
+                .skills(skillInfos)
+                .traits(traitInfos)
+                .build();
+
+        return Optional.of(dto);
     }
 
     /**

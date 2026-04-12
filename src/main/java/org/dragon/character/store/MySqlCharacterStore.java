@@ -54,6 +54,20 @@ public class MySqlCharacterStore implements CharacterStore {
     }
 
     @Override
+    public List<Character> findByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return mysqlDb.find(CharacterEntity.class)
+                .where()
+                .in("id", ids)
+                .findList()
+                .stream()
+                .map(CharacterEntity::toCharacter)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Character> findAll() {
         return mysqlDb.find(CharacterEntity.class)
                 .findList()

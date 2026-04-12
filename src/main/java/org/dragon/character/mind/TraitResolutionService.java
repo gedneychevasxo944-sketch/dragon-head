@@ -41,8 +41,7 @@ public class TraitResolutionService {
 
     private Optional<PersonalityDescriptor.TraitContent> resolveSingle(String traitId) {
         try {
-            Long id = parseId(traitId);
-            return getStore().findById(id)
+            return getStore().findById(traitId)
                     .filter(TraitEntity::getEnabled)
                     .map(this::toTraitContent);
         } catch (Exception e) {
@@ -51,19 +50,9 @@ public class TraitResolutionService {
         }
     }
 
-    private Long parseId(String traitId) {
-        if (traitId == null) {
-            throw new IllegalArgumentException("traitId cannot be null");
-        }
-        if (traitId.startsWith("trait_")) {
-            return Long.parseLong(traitId.substring(6));
-        }
-        return Long.parseLong(traitId);
-    }
-
     private PersonalityDescriptor.TraitContent toTraitContent(TraitEntity entity) {
         return PersonalityDescriptor.TraitContent.builder()
-                .id(String.valueOf(entity.getId()))
+                .id(entity.getId())
                 .name(entity.getName())
                 .category(entity.getCategory())
                 .content(entity.getContent())

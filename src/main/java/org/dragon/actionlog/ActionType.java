@@ -94,5 +94,11 @@ public enum ActionType {
     /** 定时任务触发 */
     SCHEDULE_TRIGGER,
     /** 定时任务执行 */
-    SCHEDULE_EXECUTE
+    SCHEDULE_EXECUTE,
+
+    // ==================== Skill 绑定 ====================
+    /** 绑定 Skill */
+    BIND,
+    /** 解绑 Skill */
+    UNBIND
 }

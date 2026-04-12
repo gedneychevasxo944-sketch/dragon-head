@@ -17,7 +17,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class InvitationDTO {
 
-    private Long id;
+    /**
+     * 邀请ID，格式: resourceType_resourceId_userId
+     * 用于 accept/reject API
+     */
+    private String id;
 
     private ResourceType resourceType;
 

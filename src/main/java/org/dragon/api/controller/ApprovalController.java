@@ -1,16 +1,18 @@
 package org.dragon.api.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Map;
+
 import org.dragon.api.controller.dto.ApiResponse;
-import org.dragon.approval.service.ApprovalService;
 import org.dragon.approval.dto.ApprovalRequestDTO;
 import org.dragon.approval.enums.ApprovalType;
+import org.dragon.approval.service.ApprovalService;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.user.security.UserPrincipal;
+import org.dragon.user.store.UserStore;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,8 +20,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 /**
  * ApprovalController 审批管理 API
@@ -35,6 +38,9 @@ import java.util.Map;
 public class ApprovalController {
 
     private final ApprovalService approvalService;
+    private final UserStore userStore;
+
+    private static final String SYSTEM_USERNAME = "system";
 
     /**
      * 获取我发出的审批请求
@@ -51,12 +57,19 @@ public class ApprovalController {
     /**
      * 获取需要我审批的待处理请求
      * GET /api/v1/approvals/pending
+     * <p>system 用户会看到所有待审批请求，其他用户只看分配给自己的
      */
     @Operation(summary = "获取需要我审批的待处理请求")
     @GetMapping("/pending")
     public ApiResponse<List<ApprovalRequestDTO>> getPendingApprovals(
             @AuthenticationPrincipal UserPrincipal principal) {
-        List<ApprovalRequestDTO> requests = approvalService.getPendingApprovals(principal.getUserId());
+        List<ApprovalRequestDTO> requests;
+        if (SYSTEM_USERNAME.equals(principal.getUsername())) {
+            // system 用户获取所有待审批请求
+            requests = approvalService.getAllPendingApprovals();
+        } else {
+            requests = approvalService.getPendingApprovals(principal.getUserId());
+        }
         return ApiResponse.success(requests);
     }
 
@@ -105,6 +118,19 @@ public class ApprovalController {
     }
 
     /**
+     * 撤回我发起的审批申请
+     * DELETE /api/v1/approvals/{id}
+     */
+    @Operation(summary = "撤回审批申请")
+    @DeleteMapping("/{id}")
+    public ApiResponse<Map<String, Object>> withdraw(
+            @PathVariable String id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        approvalService.withdraw(id, principal.getUserId());
+        return ApiResponse.success(Map.of("success", true, "message", "审批已撤回"));
+    }
+
+    /**
      * 创建发布审批申请
      * POST /api/v1/approvals/publish
      */
@@ -113,14 +139,39 @@ public class ApprovalController {
     public ApiResponse<Map<String, Object>> createPublishRequest(
             @RequestBody CreatePublishRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
+        // 获取 system 用户 ID 作为审批人
+        Long systemUserId = userStore.findByUsername(SYSTEM_USERNAME)
+                .map(u -> u.getId())
+                .orElseThrow(() -> new IllegalStateException("system 用户不存在，请确保 V2 migration 已执行"));
+
         String requestId = approvalService.createApprovalRequest(
                 request.getResourceType(),
                 request.getResourceId(),
                 ApprovalType.PUBLISH,
                 principal.getUserId(),
-                null,
+                systemUserId,
                 request.getReason());
         return ApiResponse.success(Map.of("requestId", requestId, "success", true, "message", "发布申请已提交"));
+    }
+
+    /**
+     * 获取所有待审批请求（system管理员专用）
+     * GET /api/v1/approvals/system-pending
+     */
+    @Operation(summary = "获取所有待审批请求（system管理员专用）")
+    @GetMapping("/system-pending")
+    public ApiResponse<List<ApprovalRequestDTO>> getSystemPendingApprovals(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        // 验证调用者是 system 用户
+        if (!SYSTEM_USERNAME.equals(principal.getUsername())) {
+            return ApiResponse.error(403, "仅允许 system 账号访问");
+        }
+        Long systemUserId = userStore.findByUsername(SYSTEM_USERNAME)
+            .map(u -> u.getId())
+            .orElseThrow(() -> new IllegalStateException("System用户不存在"));
+
+        List<ApprovalRequestDTO> requests = approvalService.getPendingApprovals(systemUserId);
+        return ApiResponse.success(requests);
     }
 
     /**

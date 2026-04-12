@@ -1,8 +1,8 @@
 package org.dragon.memory.storage.repo;
-import org.dragon.memory.core.MemoryId;
+import org.dragon.memory.entity.MemoryId;
 
 
-import org.dragon.memory.core.MemoryEntry;
+import org.dragon.memory.entity.MemoryEntry;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,4 +26,9 @@ public interface CharacterMemoryRepository {
     void delete(String characterId, MemoryId memoryId);
 
     void rebuildIndex(String characterId);
+
+    /**
+     * 初始化角色记忆空间，创建目录结构和初始文件
+     */
+    void initSpace(String characterId);
 }

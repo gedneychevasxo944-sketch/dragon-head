@@ -10,6 +10,7 @@ import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.CollaboratorService;
 import org.dragon.permission.dto.InvitationDTO;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.enums.Role;
 import org.dragon.user.security.UserPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -150,6 +152,39 @@ public class CollaboratorController {
     }
 
     /**
+     * 更新成员角色
+     * PUT /api/v1/collaborators/assets/{type}/{id}/members/{userId}/role
+     */
+    @Operation(summary = "更新成员角色")
+    @PutMapping("/assets/{type}/{id}/members/{userId}/role")
+    public ApiResponse<Map<String, Object>> updateMemberRole(
+            @PathVariable String type,
+            @PathVariable String id,
+            @PathVariable Long userId,
+            @RequestBody UpdateRoleRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        ResourceType resourceType = ResourceType.valueOf(type.toUpperCase());
+        assetMemberService.updateRole(resourceType, id, userId, request.getRole());
+        return ApiResponse.success(Map.of("success", true, "message", "角色已更新"));
+    }
+
+    /**
+     * 转让所有权
+     * POST /api/v1/collaborators/assets/{type}/{id}/transfer
+     */
+    @Operation(summary = "转让所有权")
+    @PostMapping("/assets/{type}/{id}/transfer")
+    public ApiResponse<Map<String, Object>> transferOwnership(
+            @PathVariable String type,
+            @PathVariable String id,
+            @RequestBody TransferOwnershipRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        ResourceType resourceType = ResourceType.valueOf(type.toUpperCase());
+        assetMemberService.transferOwner(resourceType, id, principal.getUserId(), request.getNewOwnerId());
+        return ApiResponse.success(Map.of("success", true, "message", "所有权已转让"));
+    }
+
+    /**
      * 邀请请求
      */
     public static class CollaboratorInviteRequest {
@@ -170,6 +205,36 @@ public class CollaboratorController {
 
         public void setReason(String reason) {
             this.reason = reason;
+        }
+    }
+
+    /**
+     * 更新角色请求
+     */
+    public static class UpdateRoleRequest {
+        private Role role;
+
+        public Role getRole() {
+            return role;
+        }
+
+        public void setRole(Role role) {
+            this.role = role;
+        }
+    }
+
+    /**
+     * 转让所有权请求
+     */
+    public static class TransferOwnershipRequest {
+        private Long newOwnerId;
+
+        public Long getNewOwnerId() {
+            return newOwnerId;
+        }
+
+        public void setNewOwnerId(Long newOwnerId) {
+            this.newOwnerId = newOwnerId;
         }
     }
 }

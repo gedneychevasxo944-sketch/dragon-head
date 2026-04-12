@@ -97,4 +97,12 @@ public class MySqlApprovalStore implements ApprovalStore {
     public List<ApprovalRequestEntity> findAll() {
         return mysqlDb.find(ApprovalRequestEntity.class).findList();
     }
+
+    @Override
+    public List<ApprovalRequestEntity> findAllPending() {
+        return mysqlDb.find(ApprovalRequestEntity.class)
+                .where()
+                .eq("status", ApprovalStatus.PENDING.name())
+                .findList();
+    }
 }

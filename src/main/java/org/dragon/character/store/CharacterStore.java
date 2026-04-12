@@ -33,6 +33,11 @@ public interface CharacterStore extends Store {
     Optional<Character> findById(String id);
 
     /**
+     * 批量查找
+     */
+    List<Character> findByIds(List<String> ids);
+
+    /**
      * 获取所有Character
      */
     List<Character> findAll();

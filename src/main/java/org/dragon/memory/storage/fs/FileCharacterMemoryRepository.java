@@ -1,8 +1,8 @@
 package org.dragon.memory.storage.fs;
-import org.dragon.memory.core.MemoryId;
+import org.dragon.memory.entity.MemoryId;
 
 
-import org.dragon.memory.core.MemoryEntry;
+import org.dragon.memory.entity.MemoryEntry;
 import org.dragon.memory.storage.MemoryPathResolver;
 import org.dragon.memory.storage.MemoryMarkdownParser;
 import org.dragon.memory.storage.MemoryIndexParser;
@@ -40,6 +40,16 @@ public class FileCharacterMemoryRepository extends AbstractFileMemoryRepository 
     }
 
     @Override
+    protected Path resolveRootPath(String characterId) {
+        return pathResolver.resolveCharacterRoot(characterId);
+    }
+
+    @Override
+    protected Path resolveBindingsPath(String characterId) {
+        return pathResolver.resolveCharacterBindings(characterId);
+    }
+
+    @Override
     public MemoryEntry create(String characterId, MemoryEntry entry) {
         return super.createMemory(characterId, entry);
     }
@@ -67,5 +77,10 @@ public class FileCharacterMemoryRepository extends AbstractFileMemoryRepository 
     @Override
     public void rebuildIndex(String characterId) {
         super.rebuildIndex(characterId);
+    }
+
+    @Override
+    public void initSpace(String characterId) {
+        super.initSpace(characterId);
     }
 }

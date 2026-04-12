@@ -368,8 +368,11 @@ public class CharacterExecutor {
             defaultMind.loadPersonality(personalityPath);
         }
         // 如果有 trait IDs，从数据库加载 Trait 内容
-        if (profile.getTraits() != null && !profile.getTraits().isEmpty()) {
-            defaultMind.loadPersonalityFromTraitIds(profile.getTraits());
+        if (runtime.getAssetAssociationService() != null) {
+            List<String> traitIds = runtime.getAssetAssociationService().getTraitsForCharacter(profile.getId());
+            if (traitIds != null && !traitIds.isEmpty()) {
+                defaultMind.loadPersonalityFromTraitIds(traitIds);
+            }
         }
         return defaultMind;
     }

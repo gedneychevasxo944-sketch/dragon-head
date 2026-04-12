@@ -63,4 +63,9 @@ public interface ApprovalStore extends Store {
      * 获取所有审批请求
      */
     List<ApprovalRequestEntity> findAll();
+
+    /**
+     * 获取所有待审批请求
+     */
+    List<ApprovalRequestEntity> findAllPending();
 }

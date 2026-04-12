@@ -103,14 +103,6 @@ public class Character {
         profile.setSource(source);
     }
 
-    public Integer getVersion() {
-        return profile.getVersion();
-    }
-
-    public void setVersion(Integer version) {
-        profile.setVersion(version);
-    }
-
     public CharacterProfile.Status getStatus() {
         return profile.getStatus();
     }
@@ -133,30 +125,6 @@ public class Character {
 
     public void setExtensions(Map<String, Object> extensions) {
         profile.setExtensions(extensions);
-    }
-
-    public List<String> getTraits() {
-        return profile.getTraits();
-    }
-
-    public void setTraits(List<String> traits) {
-        profile.setTraits(traits);
-    }
-
-    public Map<String, Object> getTraitConfigs() {
-        return profile.getTraitConfigs();
-    }
-
-    public void setTraitConfigs(Map<String, Object> traitConfigs) {
-        profile.setTraitConfigs(traitConfigs);
-    }
-
-    public List<String> getSkills() {
-        return profile.getSkills();
-    }
-
-    public void setSkills(List<String> skills) {
-        profile.setSkills(skills);
     }
 
     public String getPromptTemplate() {

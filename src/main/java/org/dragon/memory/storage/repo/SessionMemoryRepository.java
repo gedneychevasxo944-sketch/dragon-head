@@ -1,6 +1,6 @@
 package org.dragon.memory.storage.repo;
 
-import org.dragon.memory.core.SessionSnapshot;
+import org.dragon.memory.entity.SessionSnapshot;
 
 import java.util.List;
 import java.util.Optional;

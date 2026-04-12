@@ -3,6 +3,7 @@ package org.dragon.trait.service;
 import lombok.RequiredArgsConstructor;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.datasource.entity.TraitEntity;
+import org.dragon.asset.enums.PublishStatus;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.asset.service.AssetMemberService;
@@ -50,10 +51,10 @@ public class TraitService {
 
         // 添加创建者为 Owner
         Long userId = Long.parseLong(UserUtils.getUserId());
-        assetMemberService.addOwnerDirectly(ResourceType.TRAIT, String.valueOf(trait.getId()), userId);
+        assetMemberService.addOwnerDirectly(ResourceType.TRAIT, trait.getId(), userId);
 
         // 初始化发布状态（默认为 DRAFT）
-        publishStatusService.initializeStatus(ResourceType.TRAIT, String.valueOf(trait.getId()), String.valueOf(userId));
+        publishStatusService.initializeStatus(ResourceType.TRAIT, trait.getId(), String.valueOf(userId));
 
         return toMap(trait);
     }
@@ -61,14 +62,14 @@ public class TraitService {
     /**
      * 获取 Trait 详情
      */
-    public Optional<Map<String, Object>> getTrait(Long id) {
+    public Optional<Map<String, Object>> getTrait(String id) {
         return getStore().findById(id).map(this::toMap);
     }
 
     /**
      * 更新 Trait
      */
-    public Optional<Map<String, Object>> updateTrait(Long id, Map<String, Object> traitData) {
+    public Optional<Map<String, Object>> updateTrait(String id, Map<String, Object> traitData) {
         return getStore().findById(id).map(existing -> {
             if (traitData.containsKey("name")) {
                 existing.setName((String) traitData.get("name"));
@@ -93,7 +94,7 @@ public class TraitService {
     /**
      * 删除 Trait
      */
-    public boolean deleteTrait(Long id) {
+    public boolean deleteTrait(String id) {
         Optional<TraitEntity> existing = getStore().findById(id);
         if (existing.isPresent()) {
             getStore().delete(id);
@@ -104,8 +105,25 @@ public class TraitService {
 
     /**
      * 分页查询 Trait 列表
+     * @param publishStatus 可选，按发布状态筛选（DRAFT/PUBLISHED）
      */
-    public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String category) {
+    public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String category, String publishStatus) {
+        // 获取当前用户可见的 Trait ID（用户作为成员拥有的 + 已发布的）
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> memberTraitIds = assetMemberService.getMemberAssetIds(ResourceType.TRAIT, userId);
+        List<String> publishedTraitIds = publishStatusService.getPublishedAssetIds(ResourceType.TRAIT);
+
+        // 可见性过滤：用户成员资产 + 已发布资产 的并集
+        java.util.Set<String> visibleTraitIds;
+        if (memberTraitIds.isEmpty()) {
+            visibleTraitIds = new java.util.HashSet<>(publishedTraitIds);
+        } else if (publishedTraitIds.isEmpty()) {
+            visibleTraitIds = new java.util.HashSet<>(memberTraitIds);
+        } else {
+            visibleTraitIds = new java.util.HashSet<>(memberTraitIds);
+            visibleTraitIds.addAll(publishedTraitIds);
+        }
+
         List<TraitEntity> allTraits;
 
         // 按条件过滤
@@ -117,10 +135,24 @@ public class TraitService {
             allTraits = getStore().findAll();
         }
 
-        // 进一步过滤
+        // 进一步按 category 过滤
         if (category != null && !category.isBlank() && !"all".equalsIgnoreCase(category)) {
             allTraits = allTraits.stream()
                     .filter(t -> category.equals(t.getCategory()))
+                    .toList();
+        }
+
+        // 按可见性过滤（成员资产 + 已发布资产）
+        final java.util.Set<String> finalVisibleIds = visibleTraitIds;
+        allTraits = allTraits.stream()
+                .filter(t -> finalVisibleIds.contains(String.valueOf(t.getId())))
+                .toList();
+
+        // 按发布状态筛选
+        if (publishStatus != null && !publishStatus.isBlank()) {
+            List<String> filteredIds = publishStatusService.getAssetIdsByStatus(ResourceType.TRAIT, PublishStatus.valueOf(publishStatus));
+            allTraits = allTraits.stream()
+                    .filter(t -> filteredIds.contains(String.valueOf(t.getId())))
                     .toList();
         }
 
@@ -137,14 +169,14 @@ public class TraitService {
     /**
      * 增加引用计数
      */
-    public void incrementUsedByCount(Long traitId) {
+    public void incrementUsedByCount(String traitId) {
         getStore().incrementUsedByCount(traitId);
     }
 
     /**
      * 减少引用计数
      */
-    public void decrementUsedByCount(Long traitId) {
+    public void decrementUsedByCount(String traitId) {
         getStore().decrementUsedByCount(traitId);
     }
 
@@ -162,6 +194,9 @@ public class TraitService {
         map.put("usedByCount", trait.getUsedByCount());
         map.put("createdAt", trait.getCreateTime() != null ? trait.getCreateTime().toString() : null);
         map.put("updatedAt", trait.getUpdateTime() != null ? trait.getUpdateTime().toString() : null);
+        // 添加发布状态
+        PublishStatus status = publishStatusService.getStatusOrDefault(ResourceType.TRAIT, String.valueOf(trait.getId()));
+        map.put("publishStatus", status.name());
         return map;
     }
 }

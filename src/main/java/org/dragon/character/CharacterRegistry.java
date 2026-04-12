@@ -54,8 +54,7 @@ public class CharacterRegistry {
         }
 
         characterStore.save(character);
-        log.info("[CharacterRegistry] Registered character: {}, version: {}",
-                character.getId(), character.getVersion());
+        log.info("[CharacterRegistry] Registered character: {}", character.getId());
     }
 
     /**
@@ -86,6 +85,16 @@ public class CharacterRegistry {
      */
     public Optional<Character> get(String characterId) {
         return characterStore.findById(characterId);
+    }
+
+    /**
+     * 批量获取 Character
+     *
+     * @param characterIds Character ID 列表
+     * @return Character 列表
+     */
+    public List<Character> findByIds(List<String> characterIds) {
+        return characterStore.findByIds(characterIds);
     }
 
     /**

@@ -3,13 +3,9 @@ package org.dragon.api.controller;
 import org.dragon.api.controller.dto.ApiResponse;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.api.controller.dto.memory.SourceDocumentDTO;
-import org.dragon.memory.core.SourceDocumentService;
-import org.dragon.memory.core.MemoryFileService;
-import org.dragon.memory.core.MemoryChunkService;
-import org.dragon.memory.core.BindingService;
-import org.dragon.memory.core.RetrievalService;
-import org.dragon.memory.core.OperationsService;
-import org.dragon.memory.core.StatsService;
+import org.dragon.memory.service.meta.MemoryMetaBindingService;
+import org.dragon.memory.service.meta.MemoryMetaChunkService;
+import org.dragon.memory.service.meta.MemoryMetaSourceDocumentService;
 import org.dragon.permission.checker.PermissionChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,28 +33,16 @@ class MemoryControllerTest {
     private PermissionChecker permissionChecker;
 
     @Mock
-    private SourceDocumentService sourceDocumentService;
+    private MemoryMetaSourceDocumentService sourceDocumentService;
 
     @Mock
-    private MemoryFileService memoryFileService;
+    private MemoryMetaChunkService memoryChunkService;
 
     @Mock
-    private MemoryChunkService memoryChunkService;
-
-    @Mock
-    private BindingService bindingService;
-
-    @Mock
-    private RetrievalService retrievalService;
-
-    @Mock
-    private OperationsService operationsService;
-
-    @Mock
-    private StatsService statsService;
+    private MemoryMetaBindingService bindingService;
 
     @InjectMocks
-    private MemoryController memoryController;
+    private MemoryMetaController memoryMetaController;
 
     @BeforeEach
     void setUp() {
@@ -80,7 +64,7 @@ class MemoryControllerTest {
         when(sourceDocumentService.getSources(any(), any(), any(), anyInt(), anyInt())).thenReturn(pageResponse);
 
         // 调用接口
-        ApiResponse<PageResponse<SourceDocumentDTO>> response = memoryController.getSources(null, null, null, 1, 20);
+        ApiResponse<PageResponse<SourceDocumentDTO>> response = memoryMetaController.getSources(null, null, null, 1, 20);
 
         // 验证响应
         assertNotNull(response);
@@ -109,7 +93,7 @@ class MemoryControllerTest {
         when(sourceDocumentService.createSource(any())).thenReturn(sourceDocumentDTO);
 
         // 调用接口
-        ApiResponse<SourceDocumentDTO> response = memoryController.createSource(any());
+        ApiResponse<SourceDocumentDTO> response = memoryMetaController.createSource(any());
 
         // 验证响应
         assertNotNull(response);
@@ -132,7 +116,7 @@ class MemoryControllerTest {
         when(sourceDocumentService.deleteSource(any())).thenReturn(true);
 
         // 调用接口
-        ApiResponse<Boolean> response = memoryController.deleteSource("1");
+        ApiResponse<Boolean> response = memoryMetaController.deleteSource("1");
 
         // 验证响应
         assertNotNull(response);

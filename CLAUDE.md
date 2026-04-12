@@ -6,6 +6,7 @@
 
 | 规范文件 | 内容 |
 |---------|------|
+| [rule_asset.md](.claude/rules/rule_asset.md) | Asset 资产模块规范 |
 | [rule_prompt.md](.claude/rules/rule_prompt.md) | Prompt 管理规范 |
 | [rule_config.md](.claude/rules/rule_config.md) | 配置管理规范 |
 | [rule_llm.md](.claude/rules/rule_llm.md) | LLM 调用规范 |
@@ -25,6 +26,7 @@
 - [ ] 存储层依赖注入的是接口而非 Memory 实现类
 - [ ] 所有 public 方法有 Javadoc
 - [ ] 日志格式包含类名前缀
+- [ ] Owner/PublishStatus/Association 相关逻辑优先使用 Asset 模块服务，不重复实现
 
 ## Prompt 架构与调用链路
 

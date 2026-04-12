@@ -5,6 +5,7 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.TraitResolutionService;
 import org.dragon.config.service.ConfigApplication;
@@ -85,4 +86,10 @@ public class CharacterRuntime {
      */
     @JsonIgnore
     private TraitResolutionService traitResolutionService;
+
+    /**
+     * 资产关联服务
+     */
+    @JsonIgnore
+    private AssetAssociationService assetAssociationService;
 }

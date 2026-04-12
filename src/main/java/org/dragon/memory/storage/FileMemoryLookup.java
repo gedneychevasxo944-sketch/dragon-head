@@ -1,10 +1,10 @@
 package org.dragon.memory.storage;
-import org.dragon.memory.core.MemoryId;
+import org.dragon.memory.entity.MemoryId;
 
 
-import org.dragon.memory.core.MemoryEntry;
-import org.dragon.memory.core.MemoryType;
-import org.dragon.memory.core.MemoryScope;
+import org.dragon.memory.entity.MemoryEntry;
+import org.dragon.memory.constants.MemoryType;
+import org.dragon.memory.constants.MemoryScope;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

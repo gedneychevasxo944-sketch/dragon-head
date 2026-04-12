@@ -18,33 +18,28 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateChunkRequest {
-    /**
-     * 所属文件 ID
-     */
-    private String fileId;
 
-    /**
-     * 片段标题
-     */
+    /** 所属数据源 ID */
+    private String sourceId;
+
+    /** 片段标题 */
     private String title;
 
-    /**
-     * 片段内容
-     */
+    /** 片段内容（文件全文） */
     private String content;
 
-    /**
-     * 内容摘要
-     */
+    /** 内容摘要 */
     private String summary;
 
-    /**
-     * 标签列表
-     */
+    /** 标签列表 */
     private List<String> tags;
 
-    /**
-     * 源文件位置信息
-     */
-    private SourceLocationDTO sourceLocation;
+    /** 文件路径 */
+    private String filePath;
+
+    /** 文件类型：markdown / json / text / other */
+    private String fileType;
+
+    /** 文件大小（字节） */
+    private Long totalSize;
 }

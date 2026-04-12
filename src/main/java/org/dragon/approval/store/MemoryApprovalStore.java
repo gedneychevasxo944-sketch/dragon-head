@@ -90,4 +90,11 @@ public class MemoryApprovalStore implements ApprovalStore {
     public List<ApprovalRequestEntity> findAll() {
         return store.values().stream().collect(Collectors.toList());
     }
+
+    @Override
+    public List<ApprovalRequestEntity> findAllPending() {
+        return store.values().stream()
+                .filter(r -> ApprovalStatus.PENDING == r.getStatus())
+                .collect(Collectors.toList());
+    }
 }

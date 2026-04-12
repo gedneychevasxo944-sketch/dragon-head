@@ -52,6 +52,17 @@ public class MemoryCharacterStore implements CharacterStore {
     }
 
     @Override
+    public List<Character> findByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return ids.stream()
+                .map(store::get)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Character> findAll() {
         return new ArrayList<>(store.values());
     }
