@@ -1,14 +1,16 @@
 package org.dragon.character;
 
-import org.dragon.character.profile.CharacterProfile;
-import org.dragon.character.store.CharacterStore;
-import org.dragon.store.StoreFactory;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+
+import org.dragon.character.profile.CharacterProfile;
+import org.dragon.character.store.CharacterStore;
+import org.dragon.store.StoreFactory;
+import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Character 注册中心
@@ -38,8 +40,9 @@ public class CharacterRegistry {
      * @param character Character 实例
      */
     public void register(Character character) {
-        if (character == null || character.getId() == null) {
-            throw new IllegalArgumentException("Character or Character id cannot be null");
+        if (character.getId() == null) {
+            String characterId = UUID.randomUUID().toString();
+            character.setId(characterId);
         }
 
         // 设置创建/更新时间

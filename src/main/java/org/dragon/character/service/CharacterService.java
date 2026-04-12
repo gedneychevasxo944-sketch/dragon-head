@@ -1,7 +1,10 @@
 package org.dragon.character.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.dragon.api.controller.dto.CharacterDetailDTO;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.asset.enums.AssociationType;
@@ -11,7 +14,6 @@ import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
-import org.dragon.datasource.entity.TraitEntity;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.skill.store.SkillStore;
@@ -19,10 +21,8 @@ import org.dragon.trait.store.TraitStore;
 import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * CharacterService 角色领域服务
@@ -113,7 +113,7 @@ public class CharacterService {
         characterRegistry.register(character);
 
         // 添加创建者为 Owner
-        Long userId = Long.parseLong(UserUtils.getUserId());
+        Long userId = Long.valueOf(UserUtils.getUserId());
         assetMemberService.addOwnerDirectly(ResourceType.CHARACTER, character.getId(), userId);
 
         // 初始化发布状态（默认为 DRAFT）
