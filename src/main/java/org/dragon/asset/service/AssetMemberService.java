@@ -46,6 +46,20 @@ public class AssetMemberService {
     }
 
     /**
+     * 获取用户作为成员（owner/collaborator）的指定类型资产的 ID 列表
+     *
+     * @param resourceType 资源类型
+     * @param userId      用户 ID
+     * @return 用户作为成员的资产 ID 列表
+     */
+    public List<String> getMemberAssetIds(ResourceType resourceType, Long userId) {
+        return assetMemberStore.findByUserId(userId).stream()
+                .filter(m -> m.getResourceType() == resourceType && Boolean.TRUE.equals(m.getAccepted()))
+                .map(m -> m.getResourceId())
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 添加资产所有者（资产创建时调用）
      */
     public void addOwnerDirectly(ResourceType type, String assetId, Long ownerId) {

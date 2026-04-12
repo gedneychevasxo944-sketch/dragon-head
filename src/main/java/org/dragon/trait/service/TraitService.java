@@ -108,6 +108,22 @@ public class TraitService {
      * @param publishStatus 可选，按发布状态筛选（DRAFT/PUBLISHED）
      */
     public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String category, String publishStatus) {
+        // 获取当前用户可见的 Trait ID（用户作为成员拥有的 + 已发布的）
+        Long userId = Long.parseLong(UserUtils.getUserId());
+        List<String> memberTraitIds = assetMemberService.getMemberAssetIds(ResourceType.TRAIT, userId);
+        List<String> publishedTraitIds = publishStatusService.getPublishedAssetIds(ResourceType.TRAIT);
+
+        // 可见性过滤：用户成员资产 + 已发布资产 的并集
+        java.util.Set<String> visibleTraitIds;
+        if (memberTraitIds.isEmpty()) {
+            visibleTraitIds = new java.util.HashSet<>(publishedTraitIds);
+        } else if (publishedTraitIds.isEmpty()) {
+            visibleTraitIds = new java.util.HashSet<>(memberTraitIds);
+        } else {
+            visibleTraitIds = new java.util.HashSet<>(memberTraitIds);
+            visibleTraitIds.addAll(publishedTraitIds);
+        }
+
         List<TraitEntity> allTraits;
 
         // 按条件过滤
@@ -125,6 +141,12 @@ public class TraitService {
                     .filter(t -> category.equals(t.getCategory()))
                     .toList();
         }
+
+        // 按可见性过滤（成员资产 + 已发布资产）
+        final java.util.Set<String> finalVisibleIds = visibleTraitIds;
+        allTraits = allTraits.stream()
+                .filter(t -> finalVisibleIds.contains(String.valueOf(t.getId())))
+                .toList();
 
         // 按发布状态筛选
         if (publishStatus != null && !publishStatus.isBlank()) {
