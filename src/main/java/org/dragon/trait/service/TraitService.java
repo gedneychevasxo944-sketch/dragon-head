@@ -51,10 +51,10 @@ public class TraitService {
 
         // 添加创建者为 Owner
         Long userId = Long.parseLong(UserUtils.getUserId());
-        assetMemberService.addOwnerDirectly(ResourceType.TRAIT, String.valueOf(trait.getId()), userId);
+        assetMemberService.addOwnerDirectly(ResourceType.TRAIT, trait.getId(), userId);
 
         // 初始化发布状态（默认为 DRAFT）
-        publishStatusService.initializeStatus(ResourceType.TRAIT, String.valueOf(trait.getId()), String.valueOf(userId));
+        publishStatusService.initializeStatus(ResourceType.TRAIT, trait.getId(), String.valueOf(userId));
 
         return toMap(trait);
     }
@@ -62,14 +62,14 @@ public class TraitService {
     /**
      * 获取 Trait 详情
      */
-    public Optional<Map<String, Object>> getTrait(Long id) {
+    public Optional<Map<String, Object>> getTrait(String id) {
         return getStore().findById(id).map(this::toMap);
     }
 
     /**
      * 更新 Trait
      */
-    public Optional<Map<String, Object>> updateTrait(Long id, Map<String, Object> traitData) {
+    public Optional<Map<String, Object>> updateTrait(String id, Map<String, Object> traitData) {
         return getStore().findById(id).map(existing -> {
             if (traitData.containsKey("name")) {
                 existing.setName((String) traitData.get("name"));
@@ -94,7 +94,7 @@ public class TraitService {
     /**
      * 删除 Trait
      */
-    public boolean deleteTrait(Long id) {
+    public boolean deleteTrait(String id) {
         Optional<TraitEntity> existing = getStore().findById(id);
         if (existing.isPresent()) {
             getStore().delete(id);
@@ -169,14 +169,14 @@ public class TraitService {
     /**
      * 增加引用计数
      */
-    public void incrementUsedByCount(Long traitId) {
+    public void incrementUsedByCount(String traitId) {
         getStore().incrementUsedByCount(traitId);
     }
 
     /**
      * 减少引用计数
      */
-    public void decrementUsedByCount(Long traitId) {
+    public void decrementUsedByCount(String traitId) {
         getStore().decrementUsedByCount(traitId);
     }
 

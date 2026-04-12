@@ -27,5 +27,15 @@ public enum AssociationType {
     /**
      * Observer 挂载到 Workspace
      */
-    OBSERVER_WORKSPACE
+    OBSERVER_WORKSPACE,
+
+    /**
+     * Skill 关联到 Character
+     */
+    SKILL_CHARACTER,
+
+    /**
+     * Trait 关联到 Character
+     */
+    TRAIT_CHARACTER
 }

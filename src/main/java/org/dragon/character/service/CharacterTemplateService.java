@@ -1,13 +1,13 @@
 package org.dragon.character.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.dragon.character.Character;
-import org.dragon.character.service.CharacterService;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
+
+import org.dragon.character.Character;
+import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * CharacterTemplateService 角色模板领域服务
@@ -36,7 +36,7 @@ public class CharacterTemplateService {
                     "category", "助手",
                     "scenario", "日常办公、个人助理",
                     "preview", "一个友好、专业的 AI 助手，能够回答各种问题并协助完成日常任务。",
-                    "defaultTraits", List.of("trait_001", "trait_005"),
+                    "defaultTraits", List.of("trait-001", "trait-005"),
                     "defaultPrompt", "你是一位专业的 AI 助手，能够回答各种问题并协助完成日常任务。"
             ),
             Map.of(
@@ -46,7 +46,7 @@ public class CharacterTemplateService {
                     "category", "分析",
                     "scenario", "商业智能、数据报告",
                     "preview", "专业的数据分析师，擅长从数据中提取洞察，生成清晰的可视化报告。",
-                    "defaultTraits", List.of("trait_002", "trait_004"),
+                    "defaultTraits", List.of("trait-002", "trait-004"),
                     "defaultPrompt", "你是一位资深数据分析师，擅长使用统计学方法和可视化技术分析数据。"
             ),
             Map.of(
@@ -56,7 +56,7 @@ public class CharacterTemplateService {
                     "category", "客服",
                     "scenario", "客户支持、问题解答",
                     "preview", "耐心的客服代表，善于理解客户需求，提供贴心的解决方案。",
-                    "defaultTraits", List.of("trait_006", "trait_007"),
+                    "defaultTraits", List.of("trait-006", "trait-007"),
                     "defaultPrompt", "你是一位热情的客服代表，始终以客户满意为首要目标。"
             ),
             Map.of(
@@ -66,7 +66,7 @@ public class CharacterTemplateService {
                     "category", "创作",
                     "scenario", "营销文案、内容创作",
                     "preview", "创意十足的写作者，能够根据不同场景创作吸引人的文案内容。",
-                    "defaultTraits", List.of("trait_008", "trait_009"),
+                    "defaultTraits", List.of("trait-008", "trait-009"),
                     "defaultPrompt", "你是一位创意写作者，擅长用生动的语言和独特的视角创作内容。"
             ),
             Map.of(
@@ -76,7 +76,7 @@ public class CharacterTemplateService {
                     "category", "开发",
                     "scenario", "代码审查、质量把控",
                     "preview", "严格的代码审查员，关注代码质量、性能优化和最佳实践。",
-                    "defaultTraits", List.of("trait_010", "trait_011"),
+                    "defaultTraits", List.of("trait-010", "trait-011"),
                     "defaultPrompt", "你是一位资深的代码审查员，对代码质量和性能有极高要求。"
             ),
             Map.of(
@@ -86,7 +86,7 @@ public class CharacterTemplateService {
                     "category", "研究",
                     "scenario", "文献调研、学术写作",
                     "preview", "专业的研究助手，擅长文献检索、信息整合和学术写作规范。",
-                    "defaultTraits", List.of("trait_012", "trait_004"),
+                    "defaultTraits", List.of("trait-012", "trait-004"),
                     "defaultPrompt", "你是一位专业的研究助手，帮助用户进行文献调研和信息整合。"
             )
     );
@@ -141,11 +141,6 @@ public class CharacterTemplateService {
         }
         character.getExtensions().put("source", "built_in_derived");
         character.getExtensions().put("templateId", templateId);
-
-        // 设置默认 Traits
-        @SuppressWarnings("unchecked")
-        List<String> defaultTraits = (List<String>) template.get("defaultTraits");
-        character.setTraits(defaultTraits != null ? defaultTraits : List.of());
 
         // 设置默认 Prompt
         String defaultPrompt = (String) template.get("defaultPrompt");

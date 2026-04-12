@@ -134,6 +134,12 @@ org.dragon.datasource.entity/
 └── XxxEntity.java
 ```
 
+### Asset 资产模块定位
+
+`org.dragon.asset` 是系统的基础架构模块，提供**统一的 Owner 管理、发布状态控制和关联关系维护**。详见 [rule_asset.md](rule_asset.md)。
+
+**禁止在其他业务服务中重复 owner/status/association 相关逻辑。**
+
 ## API 设计规范
 
 ### REST 路径规范

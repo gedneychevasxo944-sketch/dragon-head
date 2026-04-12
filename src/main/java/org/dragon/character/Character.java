@@ -71,14 +71,6 @@ public class Character {
         profile.setId(id);
     }
 
-    public List<String> getWorkspaceIds() {
-        return profile.getWorkspaceIds();
-    }
-
-    public void setWorkspaceIds(List<String> workspaceIds) {
-        profile.setWorkspaceIds(workspaceIds);
-    }
-
     public String getName() {
         return profile.getName();
     }
@@ -111,14 +103,6 @@ public class Character {
         profile.setSource(source);
     }
 
-    public Integer getVersion() {
-        return profile.getVersion();
-    }
-
-    public void setVersion(Integer version) {
-        profile.setVersion(version);
-    }
-
     public CharacterProfile.Status getStatus() {
         return profile.getStatus();
     }
@@ -141,30 +125,6 @@ public class Character {
 
     public void setExtensions(Map<String, Object> extensions) {
         profile.setExtensions(extensions);
-    }
-
-    public List<String> getTraits() {
-        return profile.getTraits();
-    }
-
-    public void setTraits(List<String> traits) {
-        profile.setTraits(traits);
-    }
-
-    public Map<String, Object> getTraitConfigs() {
-        return profile.getTraitConfigs();
-    }
-
-    public void setTraitConfigs(Map<String, Object> traitConfigs) {
-        profile.setTraitConfigs(traitConfigs);
-    }
-
-    public List<String> getSkills() {
-        return profile.getSkills();
-    }
-
-    public void setSkills(List<String> skills) {
-        profile.setSkills(skills);
     }
 
     public String getPromptTemplate() {
@@ -244,33 +204,33 @@ public class Character {
     // ==================== 执行代理 ====================
 
     public String run(String userInput) {
-        return getExecutor().run(userInput);
+        return acquireExecutor().run(userInput);
     }
 
     public String run(String userInput, Task task) {
-        return getExecutor().run(userInput, task);
+        return acquireExecutor().run(userInput, task);
     }
 
     public ReActResult runReAct(String userInput) {
-        return getExecutor().runReAct(userInput);
+        return acquireExecutor().runReAct(userInput);
     }
 
     public ReActResult runReAct(String userInput, boolean streaming, Task task,
                                 org.dragon.workspace.task.TaskBridgeContext bridgeContext) {
-        return getExecutor().runReAct(userInput, streaming, task, bridgeContext);
+        return acquireExecutor().runReAct(userInput, streaming, task, bridgeContext);
     }
 
     public ReActResult runReAct(String userInput, boolean streaming, Task task) {
-        return getExecutor().runReAct(userInput, streaming, task, null);
+        return acquireExecutor().runReAct(userInput, streaming, task, null);
     }
 
     public WorkflowResult runWorkflow(String workflowId) {
-        return getExecutor().runWorkflow(workflowId);
+        return acquireExecutor().runWorkflow(workflowId);
     }
 
     // ==================== 惰性初始化 ====================
 
-    private CharacterExecutor getExecutor() {
+    private CharacterExecutor acquireExecutor() {
         if (executor == null) {
             executor = CharacterExecutor.builder()
                     .profile(profile)

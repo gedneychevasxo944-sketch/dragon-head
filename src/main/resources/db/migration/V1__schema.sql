@@ -684,17 +684,12 @@ CREATE TABLE IF NOT EXISTS skill_usage_logs (
 -- Character table
 CREATE TABLE IF NOT EXISTS `character` (
     id VARCHAR(64) PRIMARY KEY,
-    workspace_ids JSON,
     organization_ids JSON,
     name VARCHAR(255),
-    version INT DEFAULT 0,
     description TEXT,
     avatar VARCHAR(512),
     source VARCHAR(64),
     allowed_tools JSON,
-    traits JSON,
-    trait_configs JSON,
-    skills JSON,
     prompt_template TEXT,
     default_tools JSON,
     is_running BOOLEAN,
@@ -762,7 +757,7 @@ CREATE TABLE IF NOT EXISTS tool (
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS trait (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
     category VARCHAR(64) NOT NULL,
     description VARCHAR(512),
@@ -857,7 +852,7 @@ CREATE TABLE IF NOT EXISTS asset_publish_status (
     id VARCHAR(64) PRIMARY KEY COMMENT '主键 UUID',
     resource_type VARCHAR(32) NOT NULL COMMENT '资源类型：CHARACTER, SKILL, OBSERVER, MODEL, TEMPLATE',
     resource_id VARCHAR(64) NOT NULL COMMENT '资源 ID',
-    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' COMMENT '发布状态：DRAFT, PUBLISHED, ARCHIVED',
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' COMMENT '发布状态：DRAFT, PENDING, PUBLISHED, ARCHIVED',
     version INT DEFAULT 1 COMMENT '发布版本号',
     published_at DATETIME COMMENT '发布时间',
     published_by VARCHAR(100) COMMENT '发布人 ID',

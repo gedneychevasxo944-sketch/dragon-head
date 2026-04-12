@@ -41,9 +41,6 @@ class MemoryControllerTest {
     @Mock
     private MemoryMetaBindingService bindingService;
 
-    @Mock
-    private StatsService statsService;
-
     @InjectMocks
     private MemoryMetaController memoryMetaController;
 

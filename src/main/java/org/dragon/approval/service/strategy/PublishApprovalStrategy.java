@@ -46,5 +46,10 @@ public class PublishApprovalStrategy implements ApprovalStrategy {
                 context.getRequest().getResourceType(),
                 context.getRequest().getResourceId(),
                 context.getApproverId());
+        // 审批拒绝后，发布状态从 PENDING 回退到 DRAFT
+        publishStatusService.revertPendingToDraft(
+                context.getRequest().getResourceType(),
+                context.getRequest().getResourceId()
+        );
     }
 }

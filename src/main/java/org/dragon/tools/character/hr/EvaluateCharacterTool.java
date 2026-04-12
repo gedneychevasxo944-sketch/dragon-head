@@ -2,6 +2,7 @@ package org.dragon.tools.character.hr;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.tools.AgentTool;
@@ -27,6 +28,7 @@ public class EvaluateCharacterTool implements AgentTool {
 
     private final CharacterRegistry characterRegistry;
     private final WorkspaceRegistry workspaceRegistry;
+    private final AssetAssociationService assetAssociationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -86,7 +88,7 @@ public class EvaluateCharacterTool implements AgentTool {
                 content.append("- Description: ").append(character.getDescription() != null ? character.getDescription() : "N/A").append("\n");
 
                 // 检查是否已在 workspace 中
-                boolean isMember = character.getWorkspaceIds() != null && character.getWorkspaceIds().contains(workspaceId);
+                boolean isMember = assetAssociationService.getWorkspacesForCharacter(characterId).contains(workspaceId);
                 content.append("- Already member: ").append(isMember).append("\n");
 
                 return AgentTool.ToolResult.ok(content.toString());

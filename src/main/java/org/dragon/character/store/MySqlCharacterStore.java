@@ -1,9 +1,13 @@
 package org.dragon.character.store;
 
 import io.ebean.Database;
+import org.dragon.asset.enums.AssociationType;
+import org.dragon.asset.store.AssetAssociationStore;
 import org.dragon.character.Character;
 import org.dragon.character.profile.CharacterProfile;
+import org.dragon.datasource.entity.AssetAssociationEntity;
 import org.dragon.datasource.entity.CharacterEntity;
+import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,8 +54,13 @@ public class MySqlCharacterStore implements CharacterStore {
     }
 
     @Override
-    public List<Character> findAll() {
+    public List<Character> findByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
         return mysqlDb.find(CharacterEntity.class)
+                .where()
+                .in("id", ids)
                 .findList()
                 .stream()
                 .map(CharacterEntity::toCharacter)
@@ -59,10 +68,8 @@ public class MySqlCharacterStore implements CharacterStore {
     }
 
     @Override
-    public List<Character> findByWorkspaceId(String workspaceId) {
+    public List<Character> findAll() {
         return mysqlDb.find(CharacterEntity.class)
-                .where()
-                .contains("workspaceIds", workspaceId)
                 .findList()
                 .stream()
                 .map(CharacterEntity::toCharacter)

@@ -2,20 +2,27 @@ package org.dragon.character.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.api.controller.dto.CharacterDetailDTO;
 import org.dragon.api.controller.dto.PageResponse;
+import org.dragon.asset.enums.AssociationType;
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
+import org.dragon.datasource.entity.TraitEntity;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
+import org.dragon.skill.store.SkillStore;
+import org.dragon.trait.store.TraitStore;
 import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * CharacterService 角色领域服务
@@ -35,6 +42,9 @@ public class CharacterService {
     private final PermissionService permissionService;
     private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
+    private final TraitStore traitStore;
+    private final SkillStore skillStore;
+    private final AssetAssociationService assetAssociationService;
 
     /**
      * 分页获取角色列表，支持状态/搜索筛选。
@@ -124,6 +134,56 @@ public class CharacterService {
     }
 
     /**
+     * 获取角色详情（含 Skill 和 Trait 完整信息）。
+     *
+     * @param characterId 角色 ID
+     * @return CharacterDetailDTO
+     */
+    public Optional<CharacterDetailDTO> getCharacterDetail(String characterId) {
+        Optional<Character> optChar = characterRegistry.get(characterId);
+        if (optChar.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Character character = optChar.get();
+
+        // 查询关联的 Skill（SKILL_CHARACTER: source=CHARACTER, target=SKILL）
+        List<CharacterDetailDTO.SkillInfo> skillInfos = assetAssociationService
+                .findBySource(AssociationType.SKILL_CHARACTER, ResourceType.CHARACTER, characterId)
+                .stream()
+                .map(assoc -> skillStore.findLatestActiveBySkillId(assoc.getTargetId())
+                        .map(skillDO -> CharacterDetailDTO.SkillInfo.builder()
+                                .skillId(skillDO.getSkillId())
+                                .name(skillDO.getName())
+                                .displayName(skillDO.getDisplayName())
+                                .description(skillDO.getDescription())
+                                .category(skillDO.getCategory() != null ? skillDO.getCategory().name() : null)
+                                .build())
+                        .orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // 查询关联的 Trait
+        List<String> traitIds = assetAssociationService.getTraitsForCharacter(characterId);
+        List<CharacterDetailDTO.TraitInfo> traitInfos;
+        if (traitIds == null || traitIds.isEmpty()) {
+            traitInfos = List.of();
+        } else {
+            traitInfos = traitStore.findByIds(traitIds).stream()
+                    .map(CharacterDetailDTO::fromTraitEntity)
+                    .collect(Collectors.toList());
+        }
+
+        CharacterDetailDTO dto = CharacterDetailDTO.builder()
+                .character(character)
+                .skills(skillInfos)
+                .traits(traitInfos)
+                .build();
+
+        return Optional.of(dto);
+    }
+
+    /**
      * 更新角色信息。
      *
      * @param characterId 角色 ID
@@ -189,7 +249,7 @@ public class CharacterService {
 
         // 计算派驻数量
         long totalDeployments = all.stream()
-                .mapToLong(c -> c.getWorkspaceIds() != null ? c.getWorkspaceIds().size() : 0)
+                .mapToLong(c -> assetAssociationService.getWorkspacesForCharacter(c.getId()).size())
                 .sum();
 
         return Map.of(

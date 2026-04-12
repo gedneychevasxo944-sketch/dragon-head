@@ -101,8 +101,6 @@ public class BuiltInCharacterFactory implements CharacterFactory<Character> {
         character.getProfile().setName(definition.name());
         character.getProfile().setDescription(definition.description());
         character.getProfile().setStatus(CharacterProfile.Status.RUNNING);
-        character.getProfile().setWorkspaceIds(List.of());
-        character.getProfile().setVersion(1);
         character.getProfile().setExtensions(new ConcurrentHashMap<>());
         character.getProfile().setAllowedTools(collectToolNames(definition.toolNames()));
         character.getProfile().setCreatedAt(LocalDateTime.now());
@@ -146,8 +144,6 @@ public class BuiltInCharacterFactory implements CharacterFactory<Character> {
         character.getProfile().setName(definition.name());
         character.getProfile().setDescription(definition.description());
         character.getProfile().setStatus(CharacterProfile.Status.RUNNING);
-        character.getProfile().setWorkspaceIds(List.of(workspaceId));
-        character.getProfile().setVersion(1);
         character.getProfile().setExtensions(new ConcurrentHashMap<>());
         character.getProfile().setAllowedTools(collectToolNames(definition.toolNames()));
         character.getProfile().setCreatedAt(LocalDateTime.now());
@@ -188,8 +184,6 @@ public class BuiltInCharacterFactory implements CharacterFactory<Character> {
         character.getProfile().setName(definition.name());
         character.getProfile().setDescription(definition.description());
         character.getProfile().setStatus(CharacterProfile.Status.RUNNING);
-        character.getProfile().setWorkspaceIds(List.of());
-        character.getProfile().setVersion(1);
         character.getProfile().setExtensions(new ConcurrentHashMap<>());
         character.getProfile().setAllowedTools(collectToolNames(definition.toolNames()));
         character.getProfile().setCreatedAt(LocalDateTime.now());
@@ -234,8 +228,6 @@ public class BuiltInCharacterFactory implements CharacterFactory<Character> {
         character.getProfile().setName(definition.name());
         character.getProfile().setDescription(definition.description());
         character.getProfile().setStatus(CharacterProfile.Status.RUNNING);
-        character.getProfile().setWorkspaceIds(List.of(workspaceId));
-        character.getProfile().setVersion(1);
         character.getProfile().setExtensions(new ConcurrentHashMap<>());
         character.getProfile().setAllowedTools(collectToolNames(definition.toolNames()));
         character.getProfile().setCreatedAt(LocalDateTime.now());

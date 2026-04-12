@@ -33,13 +33,7 @@ public class CharacterEntity {
     @Id
     private String id;
 
-    @Column(name = "workspace_ids")
-    @DbJson
-    private List<String> workspaceIds;
-
     private String name;
-
-    private Integer version;
 
     private String description;
 
@@ -50,15 +44,6 @@ public class CharacterEntity {
     @Column(name = "allowed_tools")
     @DbJson
     private Set<String> allowedTools;
-
-    @DbJson
-    private List<String> traits;
-
-    @DbJson
-    private Map<String, Object> traitConfigs;
-
-    @DbJson
-    private List<String> skills;
 
     @Column(name = "prompt_template", columnDefinition = "TEXT")
     private String promptTemplate;
@@ -92,16 +77,11 @@ public class CharacterEntity {
     public Character toCharacter() {
         CharacterProfile profile = new CharacterProfile();
         profile.setId(this.id);
-        profile.setWorkspaceIds(this.workspaceIds);
         profile.setName(this.name);
-        profile.setVersion(this.version);
         profile.setDescription(this.description);
         profile.setAvatar(this.avatar);
         profile.setSource(this.source);
         profile.setAllowedTools(this.allowedTools);
-        profile.setTraits(this.traits);
-        profile.setTraitConfigs(this.traitConfigs);
-        profile.setSkills(this.skills);
         profile.setPromptTemplate(this.promptTemplate);
         profile.setDefaultTools(this.defaultTools);
         profile.setIsRunning(this.isRunning);
@@ -148,16 +128,11 @@ public class CharacterEntity {
 
         return CharacterEntity.builder()
                 .id(profile.getId())
-                .workspaceIds(profile.getWorkspaceIds())
                 .name(profile.getName())
-                .version(profile.getVersion())
                 .description(profile.getDescription())
                 .avatar(profile.getAvatar())
                 .source(profile.getSource())
                 .allowedTools(profile.getAllowedTools())
-                .traits(profile.getTraits())
-                .traitConfigs(profile.getTraitConfigs())
-                .skills(profile.getSkills())
                 .promptTemplate(profile.getPromptTemplate())
                 .defaultTools(profile.getDefaultTools())
                 .isRunning(profile.getIsRunning())

@@ -34,20 +34,9 @@ public class CharacterProfile {
     private String id;
 
     /**
-     * 所属 Workspace ID
-     */
-    private List<String> workspaceIds;
-
-    /**
      * Character 名称
      */
     private String name;
-
-    /**
-     * 版本号
-     */
-    @Builder.Default
-    private Integer version = 0;
 
     /**
      * 描述
@@ -86,21 +75,6 @@ public class CharacterProfile {
      */
     @Builder.Default
     private Set<String> allowedTools = new HashSet<>();
-
-    /**
-     * Trait IDs
-     */
-    private List<String> traits;
-
-    /**
-     * Trait 配置
-     */
-    private Map<String, Object> traitConfigs;
-
-    /**
-     * 技能引用
-     */
-    private List<String> skills;
 
     /**
      * Prompt 模板

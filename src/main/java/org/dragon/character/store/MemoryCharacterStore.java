@@ -52,18 +52,19 @@ public class MemoryCharacterStore implements CharacterStore {
     }
 
     @Override
-    public List<Character> findAll() {
-        return new ArrayList<>(store.values());
+    public List<Character> findByIds(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return ids.stream()
+                .map(store::get)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<Character> findByWorkspaceId(String workspaceId) {
-        return store.values().stream()
-                .filter(c -> {
-                    List<String> workspaceIds = c.getWorkspaceIds();
-                    return workspaceIds != null && workspaceIds.contains(workspaceId);
-                })
-                .collect(Collectors.toList());
+    public List<Character> findAll() {
+        return new ArrayList<>(store.values());
     }
 
     @Override

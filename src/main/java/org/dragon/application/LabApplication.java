@@ -2,6 +2,7 @@ package org.dragon.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.store.StoreFactory;
@@ -38,6 +39,7 @@ public class LabApplication {
     private final CharacterRegistry characterRegistry;
     private final WorkspaceRegistry workspaceRegistry;
     private final StoreFactory storeFactory;
+    private final AssetAssociationService assetAssociationService;
 
     /** 场景内存存储：sceneId -> 场景数据 */
     private final Map<String, Map<String, Object>> sceneStore = new ConcurrentHashMap<>();
@@ -264,19 +266,17 @@ public class LabApplication {
                 nodes.add(node);
 
                 // 构建 Workspace -> Character 边
-                List<String> wsIds = c.getWorkspaceIds();
-                if (wsIds != null) {
-                    for (String wsId : wsIds) {
-                        if (workspaceId == null || workspaceId.isBlank() || workspaceId.equals(wsId)) {
-                            Map<String, Object> edge = new HashMap<>();
-                            edge.put("id", wsId + "_owns_" + c.getId());
-                            edge.put("source", wsId);
-                            edge.put("target", c.getId());
-                            edge.put("type", "owns");
-                            edge.put("weight", 1.0);
-                            edge.put("label", "owns");
-                            edges.add(edge);
-                        }
+                List<String> wsIds = assetAssociationService.getWorkspacesForCharacter(c.getId());
+                for (String wsId : wsIds) {
+                    if (workspaceId == null || workspaceId.isBlank() || workspaceId.equals(wsId)) {
+                        Map<String, Object> edge = new HashMap<>();
+                        edge.put("id", wsId + "_owns_" + c.getId());
+                        edge.put("source", wsId);
+                        edge.put("target", c.getId());
+                        edge.put("type", "owns");
+                        edge.put("weight", 1.0);
+                        edge.put("label", "owns");
+                        edges.add(edge);
                     }
                 }
             }

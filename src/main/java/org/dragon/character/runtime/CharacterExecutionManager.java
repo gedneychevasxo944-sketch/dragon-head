@@ -5,6 +5,7 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.character.Character;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.TraitResolutionService;
@@ -38,6 +39,7 @@ public class CharacterExecutionManager {
     private final OrchestrationService orchestrationService;
     private final SkillRegistry skillRegistry;
     private final TraitResolutionService traitResolutionService;
+    private final AssetAssociationService assetAssociationService;
 
     /**
      * 执行 Character 对话
@@ -105,11 +107,7 @@ public class CharacterExecutionManager {
      * 构建运行时依赖
      */
     private CharacterRuntime buildRuntime(Character character) {
-        String workspaceId = null;
-        if (character.getWorkspaceIds() != null && !character.getWorkspaceIds().isEmpty()) {
-            workspaceId = character.getWorkspaceIds().get(0);
-        }
-
+        // workspaceId 从外部上下文获取，此处不从此提取
         return CharacterRuntime.builder()
                 .reActExecutor(reActExecutor)
                 .configApplication(configApplication)
@@ -119,7 +117,8 @@ public class CharacterExecutionManager {
                 .orchestrationService(orchestrationService)
                 .skillRegistry(skillRegistry)
                 .traitResolutionService(traitResolutionService)
-                .workspaceId(workspaceId != null ? parseWorkspaceId(workspaceId) : null)
+                .assetAssociationService(assetAssociationService)
+                .workspaceId(null)
                 .build();
     }
 

@@ -12,6 +12,7 @@ import org.dragon.user.security.UserPrincipal;
 import org.dragon.user.store.UserStore;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -114,6 +115,19 @@ public class ApprovalController {
         String comment = request != null ? request.getComment() : null;
         approvalService.reject(id, principal.getUserId(), comment);
         return ApiResponse.success(Map.of("success", true, "message", "审批已拒绝"));
+    }
+
+    /**
+     * 撤回我发起的审批申请
+     * DELETE /api/v1/approvals/{id}
+     */
+    @Operation(summary = "撤回审批申请")
+    @DeleteMapping("/{id}")
+    public ApiResponse<Map<String, Object>> withdraw(
+            @PathVariable String id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        approvalService.withdraw(id, principal.getUserId());
+        return ApiResponse.success(Map.of("success", true, "message", "审批已撤回"));
     }
 
     /**

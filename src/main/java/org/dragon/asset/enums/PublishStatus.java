@@ -10,6 +10,11 @@ public enum PublishStatus {
     DRAFT,
 
     /**
+     * 待审批状态（发布审批进行中）
+     */
+    PENDING,
+
+    /**
      * 已发布状态
      */
     PUBLISHED,

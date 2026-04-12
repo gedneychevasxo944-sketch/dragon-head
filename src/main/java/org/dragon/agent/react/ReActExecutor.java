@@ -461,7 +461,7 @@ public class ReActExecutor {
         if (task != null && task.getWorkspaceId() != null) {
             return task.getWorkspaceId();
         }
-        // 从 Character.workspaceIds 获取（需要在调用前设置）
+        // 无法获取 workspaceId
         return null;
     }
 
