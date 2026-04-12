@@ -11,10 +11,12 @@ import org.dragon.approval.dto.ApprovalRequestDTO;
 import org.dragon.approval.enums.ApprovalStatus;
 import org.dragon.approval.enums.ApprovalType;
 import org.dragon.approval.store.ApprovalStore;
+import org.dragon.character.CharacterRegistry;
 import org.dragon.datasource.entity.ApprovalRequestEntity;
 import org.dragon.notification.service.NotificationService;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreFactory;
+import org.dragon.trait.store.TraitStore;
 import org.dragon.user.store.UserStore;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,8 @@ public class ApprovalService {
     private final UserStore userStore;
     private final NotificationService notificationService;
     private final Map<ApprovalType, ApprovalStrategy> strategies;
+    private final TraitStore traitStore;
+    private final CharacterRegistry characterRegistry;
 
     /**
      * 需要审批的资源类型映射
@@ -53,10 +57,13 @@ public class ApprovalService {
 
     public ApprovalService(StoreFactory storeFactory, @Lazy UserStore userStore,
                            NotificationService notificationService,
-                           List<ApprovalStrategy> strategyList) {
+                           List<ApprovalStrategy> strategyList,
+                           CharacterRegistry characterRegistry) {
         this.approvalStore = storeFactory.get(ApprovalStore.class);
         this.userStore = userStore;
         this.notificationService = notificationService;
+        this.traitStore = storeFactory.get(TraitStore.class);
+        this.characterRegistry = characterRegistry;
 
         // 初始化策略映射
         this.strategies = new EnumMap<>(ApprovalType.class);
@@ -310,6 +317,7 @@ public class ApprovalService {
                 .id(entity.getId())
                 .resourceType(entity.getResourceType())
                 .resourceId(entity.getResourceId())
+                .resourceName(resolveResourceName(entity.getResourceType(), entity.getResourceId()))
                 .approvalType(entity.getApprovalType())
                 .requesterId(entity.getRequesterId())
                 .requesterName(requesterName)
@@ -323,5 +331,23 @@ public class ApprovalService {
                 .processedAt(entity.getProcessedAt())
                 .processedComment(entity.getProcessedComment())
                 .build();
+    }
+
+    /**
+     * 根据资源类型和ID解析资产名称
+     */
+    private String resolveResourceName(ResourceType type, String resourceId) {
+        switch (type) {
+            case TRAIT:
+                return traitStore.findById(Long.parseLong(resourceId))
+                        .map(t -> t.getName())
+                        .orElse(null);
+            case CHARACTER:
+                return characterRegistry.get(resourceId)
+                        .map(c -> c.getName())
+                        .orElse(null);
+            default:
+                return null;
+        }
     }
 }

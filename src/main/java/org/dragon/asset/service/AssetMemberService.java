@@ -6,16 +6,19 @@ import org.dragon.asset.dto.AssetMemberDTO;
 import org.dragon.asset.dto.CollaboratorDTO;
 import org.dragon.asset.store.AssetMemberStore;
 import org.dragon.asset.store.AssetPublishStatusStore;
+import org.dragon.character.CharacterRegistry;
 import org.dragon.datasource.entity.AssetMemberEntity;
 import org.dragon.permission.dto.InvitationDTO;
 import org.dragon.permission.enums.Role;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreFactory;
+import org.dragon.trait.store.TraitStore;
 import org.dragon.user.store.UserStore;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -29,11 +32,15 @@ public class AssetMemberService {
     private final AssetMemberStore assetMemberStore;
     private final UserStore userStore;
     private final AssetPublishStatusStore publishStatusStore;
+    private final TraitStore traitStore;
+    private final CharacterRegistry characterRegistry;
 
-    public AssetMemberService(StoreFactory storeFactory) {
+    public AssetMemberService(StoreFactory storeFactory, CharacterRegistry characterRegistry) {
         this.assetMemberStore = storeFactory.get(AssetMemberStore.class);
         this.userStore = storeFactory.get(UserStore.class);
         this.publishStatusStore = storeFactory.get(AssetPublishStatusStore.class);
+        this.traitStore = storeFactory.get(TraitStore.class);
+        this.characterRegistry = characterRegistry;
     }
 
     /**
@@ -314,10 +321,14 @@ public class AssetMemberService {
                 })
                 .orElse("unpublished");
 
+        // 获取资产名称
+        String resourceName = resolveResourceName(member.getResourceType(), member.getResourceId());
+
         return AssetMemberDTO.builder()
                 .id(member.getId())
                 .resourceType(member.getResourceType())
                 .resourceId(member.getResourceId())
+                .resourceName(resourceName)
                 .role(member.getRole())
                 .publishStatus(publishStatus)
                 .invitedBy(member.getInvitedBy())
@@ -326,5 +337,23 @@ public class AssetMemberService {
                 .accepted(member.getAccepted())
                 .createdAt(member.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * 根据资源类型和ID解析资产名称
+     */
+    private String resolveResourceName(ResourceType type, String resourceId) {
+        switch (type) {
+            case TRAIT:
+                return traitStore.findById(Long.parseLong(resourceId))
+                        .map(t -> t.getName())
+                        .orElse(null);
+            case CHARACTER:
+                return characterRegistry.get(resourceId)
+                        .map(c -> c.getName())
+                        .orElse(null);
+            default:
+                return null;
+        }
     }
 }
