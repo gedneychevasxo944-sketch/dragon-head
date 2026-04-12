@@ -40,6 +40,16 @@ public class FileCharacterMemoryRepository extends AbstractFileMemoryRepository 
     }
 
     @Override
+    protected Path resolveRootPath(String characterId) {
+        return pathResolver.resolveCharacterRoot(characterId);
+    }
+
+    @Override
+    protected Path resolveBindingsPath(String characterId) {
+        return pathResolver.resolveCharacterBindings(characterId);
+    }
+
+    @Override
     public MemoryEntry create(String characterId, MemoryEntry entry) {
         return super.createMemory(characterId, entry);
     }
@@ -67,5 +77,10 @@ public class FileCharacterMemoryRepository extends AbstractFileMemoryRepository 
     @Override
     public void rebuildIndex(String characterId) {
         super.rebuildIndex(characterId);
+    }
+
+    @Override
+    public void initSpace(String characterId) {
+        super.initSpace(characterId);
     }
 }

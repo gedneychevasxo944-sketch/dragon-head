@@ -36,18 +36,36 @@ public class FileSessionMemoryRepository implements SessionMemoryRepository {
 
     @Override
     public SessionSnapshot create(String sessionId, String workspaceId, String characterId) {
-        Path sessionRoot = pathResolver.resolveSessionRoot(sessionId);
         try {
+            // 创建 session 根目录
+            Path sessionRoot = pathResolver.resolveSessionRoot(sessionId);
             if (!Files.exists(sessionRoot)) {
                 Files.createDirectories(sessionRoot);
             }
+
+            // 创建 checkpoints/ 子目录
+            Path checkpointsDir = pathResolver.resolveSessionCheckpointsDir(sessionId);
+            if (!Files.exists(checkpointsDir)) {
+                Files.createDirectories(checkpointsDir);
+            }
+
+            // 初始化 session-memory.md（若不存在）
+            Path sessionMemoryFile = pathResolver.resolveSessionMemoryFile(sessionId);
             SessionSnapshot snapshot = new SessionSnapshot();
             snapshot.setSessionId(sessionId);
             snapshot.setWorkspaceId(workspaceId);
             snapshot.setCharacterId(characterId);
             snapshot.setSummary("Session initialized.");
-            Files.writeString(pathResolver.resolveSessionMemoryFile(sessionId),
-                    markdownParser.renderSession(snapshot));
+            if (!Files.exists(sessionMemoryFile)) {
+                Files.writeString(sessionMemoryFile, markdownParser.renderSession(snapshot));
+            }
+
+            // 初始化 events.jsonl（若不存在）
+            Path eventsFile = pathResolver.resolveSessionEventsFile(sessionId);
+            if (!Files.exists(eventsFile)) {
+                Files.createFile(eventsFile);
+            }
+
             return snapshot;
         } catch (IOException e) {
             throw new RuntimeException("Failed to create session memory: " + e.getMessage(), e);

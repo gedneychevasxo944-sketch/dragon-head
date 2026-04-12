@@ -29,8 +29,8 @@ public abstract class AbstractFileMemoryRepository {
     protected final MemoryIndexParser indexParser;
 
     protected AbstractFileMemoryRepository(MemoryPathResolver pathResolver,
-                                          MemoryMarkdownParser markdownParser,
-                                          MemoryIndexParser indexParser) {
+                                           MemoryMarkdownParser markdownParser,
+                                           MemoryIndexParser indexParser) {
         this.pathResolver = pathResolver;
         this.markdownParser = markdownParser;
         this.indexParser = indexParser;
@@ -51,6 +51,22 @@ public abstract class AbstractFileMemoryRepository {
      * @return 索引文件路径
      */
     protected abstract Path resolveIndexPath(String id);
+
+    /**
+     * 解析根目录路径
+     *
+     * @param id 角色ID或工作空间ID
+     * @return 根目录路径
+     */
+    protected abstract Path resolveRootPath(String id);
+
+    /**
+     * 解析 bindings.yml 文件路径
+     *
+     * @param id 角色ID或工作空间ID
+     * @return bindings.yml 文件路径
+     */
+    protected abstract Path resolveBindingsPath(String id);
 
     /**
      * 创建记忆文件
@@ -178,6 +194,38 @@ public abstract class AbstractFileMemoryRepository {
             return entry;
         } catch (IOException e) {
             throw new RuntimeException("Failed to read memory file: " + path, e);
+        }
+    }
+
+    /**
+     * 初始化记忆空间目录结构
+     * 创建根目录、mem/ 子目录，并写入初始 MEMORY.md 和 bindings.yml
+     *
+     * @param id 角色ID或工作空间ID
+     */
+    protected void initSpace(String id) {
+        try {
+            Path root = resolveRootPath(id);
+            Path memDir = resolveMemDir(id);
+            Path indexPath = resolveIndexPath(id);
+            Path bindingsPath = resolveBindingsPath(id);
+
+            // 创建根目录和 mem/ 子目录
+            if (!Files.exists(memDir)) {
+                Files.createDirectories(memDir);
+            }
+
+            // 初始化 MEMORY.md（若不存在）
+            if (!Files.exists(indexPath)) {
+                Files.writeString(indexPath, "# MEMORY\n\n");
+            }
+
+            // 初始化 bindings.yml（若不存在）
+            if (!Files.exists(bindingsPath)) {
+                Files.writeString(bindingsPath, "bindings: {}\n");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to init memory space for id=" + id + ": " + e.getMessage(), e);
         }
     }
 

@@ -40,6 +40,16 @@ public class FileWorkspaceMemoryRepository extends AbstractFileMemoryRepository 
     }
 
     @Override
+    protected Path resolveRootPath(String workspaceId) {
+        return pathResolver.resolveWorkspaceRoot(workspaceId);
+    }
+
+    @Override
+    protected Path resolveBindingsPath(String workspaceId) {
+        return pathResolver.resolveWorkspaceBindings(workspaceId);
+    }
+
+    @Override
     public MemoryEntry create(String workspaceId, MemoryEntry entry) {
         return super.createMemory(workspaceId, entry);
     }
@@ -67,5 +77,10 @@ public class FileWorkspaceMemoryRepository extends AbstractFileMemoryRepository 
     @Override
     public void rebuildIndex(String workspaceId) {
         super.rebuildIndex(workspaceId);
+    }
+
+    @Override
+    public void initSpace(String workspaceId) {
+        super.initSpace(workspaceId);
     }
 }

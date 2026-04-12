@@ -30,7 +30,7 @@ public class MemoryPathResolver {
      * @return 角色记忆根目录路径
      */
     public Path resolveCharacterRoot(String characterId) {
-        return Paths.get(properties.getRootDir(), "characters", characterId);
+        return Paths.get(properties.getRootDir(), "char-" + characterId);
     }
 
     /**
@@ -53,6 +53,16 @@ public class MemoryPathResolver {
         return resolveCharacterRoot(characterId).resolve("mem");
     }
 
+    /**
+     * 解析角色记忆绑定关系文件路径
+     *
+     * @param characterId 角色ID
+     * @return 角色记忆绑定关系文件路径
+     */
+    public Path resolveCharacterBindings(String characterId) {
+        return resolveCharacterRoot(characterId).resolve("bindings.yml");
+    }
+
     // Workspace Memory 路径解析
 
     /**
@@ -62,7 +72,7 @@ public class MemoryPathResolver {
      * @return 工作空间记忆根目录路径
      */
     public Path resolveWorkspaceRoot(String workspaceId) {
-        return Paths.get(properties.getRootDir(), "workspaces", workspaceId);
+        return Paths.get(properties.getRootDir(), "ws-" + workspaceId);
     }
 
     /**
@@ -85,6 +95,16 @@ public class MemoryPathResolver {
         return resolveWorkspaceRoot(workspaceId).resolve("mem");
     }
 
+    /**
+     * 解析工作空间记忆绑定关系文件路径
+     *
+     * @param workspaceId 工作空间ID
+     * @return 工作空间记忆绑定关系文件路径
+     */
+    public Path resolveWorkspaceBindings(String workspaceId) {
+        return resolveWorkspaceRoot(workspaceId).resolve("bindings.yml");
+    }
+
     // Session Memory 路径解析
 
     /**
@@ -94,7 +114,7 @@ public class MemoryPathResolver {
      * @return 会话记忆根目录路径
      */
     public Path resolveSessionRoot(String sessionId) {
-        return Paths.get(properties.getRootDir(), "sessions", sessionId);
+        return Paths.get(properties.getRootDir(), "session-" + sessionId);
     }
 
     /**

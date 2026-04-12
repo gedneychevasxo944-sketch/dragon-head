@@ -26,4 +26,9 @@ public interface CharacterMemoryRepository {
     void delete(String characterId, MemoryId memoryId);
 
     void rebuildIndex(String characterId);
+
+    /**
+     * 初始化角色记忆空间，创建目录结构和初始文件
+     */
+    void initSpace(String characterId);
 }
