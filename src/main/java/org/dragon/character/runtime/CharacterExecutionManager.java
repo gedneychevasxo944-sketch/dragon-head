@@ -105,11 +105,7 @@ public class CharacterExecutionManager {
      * 构建运行时依赖
      */
     private CharacterRuntime buildRuntime(Character character) {
-        String workspaceId = null;
-        if (character.getWorkspaceIds() != null && !character.getWorkspaceIds().isEmpty()) {
-            workspaceId = character.getWorkspaceIds().get(0);
-        }
-
+        // workspaceId 从外部上下文获取，此处不从此提取
         return CharacterRuntime.builder()
                 .reActExecutor(reActExecutor)
                 .configApplication(configApplication)
@@ -119,7 +115,7 @@ public class CharacterExecutionManager {
                 .orchestrationService(orchestrationService)
                 .skillRegistry(skillRegistry)
                 .traitResolutionService(traitResolutionService)
-                .workspaceId(workspaceId != null ? parseWorkspaceId(workspaceId) : null)
+                .workspaceId(null)
                 .build();
     }
 

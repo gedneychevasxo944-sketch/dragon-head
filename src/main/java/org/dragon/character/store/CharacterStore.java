@@ -38,11 +38,6 @@ public interface CharacterStore extends Store {
     List<Character> findAll();
 
     /**
-     * 根据Workspace ID获取Character列表
-     */
-    List<Character> findByWorkspaceId(String workspaceId);
-
-    /**
      * 根据状态获取Character列表
      */
     List<Character> findByStatus(CharacterProfile.Status status);

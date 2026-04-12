@@ -323,8 +323,9 @@ public class CharacterExecutor {
     }
 
     private String resolveWorkspace() {
-        if (profile.getWorkspaceIds() != null && !profile.getWorkspaceIds().isEmpty()) {
-            return profile.getWorkspaceIds().get(0);
+        // 从运行时获取 workspaceId（由 CharacterRuntimeBinder.bind 注入）
+        if (runtime != null && runtime.getWorkspaceId() != null) {
+            return String.valueOf(runtime.getWorkspaceId());
         }
         return null;
     }

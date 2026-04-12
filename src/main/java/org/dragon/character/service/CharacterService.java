@@ -3,6 +3,7 @@ package org.dragon.character.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.controller.dto.PageResponse;
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.character.Character;
@@ -35,6 +36,7 @@ public class CharacterService {
     private final PermissionService permissionService;
     private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
+    private final AssetAssociationService assetAssociationService;
 
     /**
      * 分页获取角色列表，支持状态/搜索筛选。
@@ -184,7 +186,7 @@ public class CharacterService {
 
         // 计算派驻数量
         long totalDeployments = all.stream()
-                .mapToLong(c -> c.getWorkspaceIds() != null ? c.getWorkspaceIds().size() : 0)
+                .mapToLong(c -> assetAssociationService.getWorkspacesForCharacter(c.getId()).size())
                 .sum();
 
         return Map.of(

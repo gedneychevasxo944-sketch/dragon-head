@@ -57,16 +57,6 @@ public class MemoryCharacterStore implements CharacterStore {
     }
 
     @Override
-    public List<Character> findByWorkspaceId(String workspaceId) {
-        return store.values().stream()
-                .filter(c -> {
-                    List<String> workspaceIds = c.getWorkspaceIds();
-                    return workspaceIds != null && workspaceIds.contains(workspaceId);
-                })
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public List<Character> findByStatus(CharacterProfile.Status status) {
         return store.values().stream()
                 .filter(c -> c.getStatus() == status)

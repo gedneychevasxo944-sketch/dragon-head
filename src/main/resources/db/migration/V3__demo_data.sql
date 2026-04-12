@@ -62,9 +62,9 @@ VALUES
 -- ============================================================================
 -- 3. 角色 (Character)
 -- ============================================================================
-INSERT INTO `character` (id, workspace_ids, organization_ids, name, version, description, avatar, source, allowed_tools, traits, trait_configs, skills, prompt_template, default_tools, is_running, deployed_count, mind_config, extensions, status, created_at, updated_at)
+INSERT INTO `character` (id, organization_ids, name, version, description, avatar, source, allowed_tools, traits, trait_configs, skills, prompt_template, default_tools, is_running, deployed_count, mind_config, extensions, status, created_at, updated_at)
 VALUES
-  ('char-001', '["ws-demo"]', NULL, 'AI 项目经理', 1,
+  ('char-001', NULL, 'AI 项目经理', 1,
    '专业的 AI 项目管理者，能够协调多个 AI Agent 之间的工作，擅长资源分配和进度跟踪。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-pm',
    'built_in_derived',
@@ -76,7 +76,7 @@ VALUES
    '["task_tracker", "calendar", "report_generator"]',
    TRUE, 2, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
-  ('char-002', '["ws-demo"]', NULL, '数据分析师', 1,
+  ('char-002', NULL, '数据分析师', 1,
    '数据分析专家，专注于从复杂数据中提取洞察，支持决策制定。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-analyst',
    'built_in_derived',
@@ -88,7 +88,7 @@ VALUES
    '["data_connector", "chart_generator", "sql_query"]',
    TRUE, 1, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
-  ('char-003', '["ws-demo", "ws-test"]', NULL, '客服代表', 1,
+  ('char-003', NULL, '客服代表', 1,
    '温柔的客服代表，善于倾听和理解客户需求，提供贴心的解决方案。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-support',
    'trait_composed',
@@ -100,7 +100,7 @@ VALUES
    '["ticket_system", "knowledge_base", "response_generator"]',
    FALSE, 3, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
-  ('char-pm', '["ws-demo"]', NULL, '产品经理', 1,
+  ('char-pm', NULL, '产品经理', 1,
    '经验丰富的产品经理，擅长需求分析和产品规划。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-product',
    'whiteboard_new',
@@ -112,7 +112,7 @@ VALUES
    '["roadmap_planner", "user_research"]',
    FALSE, 0, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
-  ('char-analyst', '["ws-test"]', NULL, '市场分析师', 1,
+  ('char-analyst', NULL, '市场分析师', 1,
    '专注于市场趋势分析和竞争情报收集。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-market',
    'built_in_derived',
@@ -123,6 +123,18 @@ VALUES
    '你是一位专业的市场分析师，擅长追踪市场趋势和竞争情报。',
    '["market_tracker", "competitor_analysis"]',
    FALSE, 0, NULL, NULL, 'RUNNING', NOW(), NOW());
+
+-- ============================================================================
+-- 3.1 Character-Workspace 关联 (通过 asset_association 表)
+-- ============================================================================
+INSERT INTO asset_association (association_type, source_type, source_id, target_type, target_id, created_at, updated_at)
+VALUES
+  ('CHARACTER_WORKSPACE', 'CHARACTER', 'char-001', 'WORKSPACE', 'ws-demo', NOW(), NOW()),
+  ('CHARACTER_WORKSPACE', 'CHARACTER', 'char-002', 'WORKSPACE', 'ws-demo', NOW(), NOW()),
+  ('CHARACTER_WORKSPACE', 'CHARACTER', 'char-003', 'WORKSPACE', 'ws-demo', NOW(), NOW()),
+  ('CHARACTER_WORKSPACE', 'CHARACTER', 'char-003', 'WORKSPACE', 'ws-test', NOW(), NOW()),
+  ('CHARACTER_WORKSPACE', 'CHARACTER', 'char-pm', 'WORKSPACE', 'ws-demo', NOW(), NOW()),
+  ('CHARACTER_WORKSPACE', 'CHARACTER', 'char-analyst', 'WORKSPACE', 'ws-test', NOW(), NOW());
 
 -- ============================================================================
 -- 4. Trait 种子数据

@@ -110,6 +110,16 @@ public class AssetAssociationService {
     }
 
     /**
+     * 获取某 Character 所属的所有 Workspace ID
+     */
+    public List<String> getWorkspacesForCharacter(String characterId) {
+        return assetAssociationStore.findBySource(AssociationType.CHARACTER_WORKSPACE,
+                ResourceType.CHARACTER, characterId).stream()
+                .map(AssetAssociationEntity::getTargetId)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 获取某 Character 关联的所有 Memory ID
      */
     public List<String> getMemoriesForCharacter(String characterId) {

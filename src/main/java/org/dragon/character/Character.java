@@ -71,14 +71,6 @@ public class Character {
         profile.setId(id);
     }
 
-    public List<String> getWorkspaceIds() {
-        return profile.getWorkspaceIds();
-    }
-
-    public void setWorkspaceIds(List<String> workspaceIds) {
-        profile.setWorkspaceIds(workspaceIds);
-    }
-
     public String getName() {
         return profile.getName();
     }

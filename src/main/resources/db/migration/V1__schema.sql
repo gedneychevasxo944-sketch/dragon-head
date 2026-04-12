@@ -684,7 +684,6 @@ CREATE TABLE IF NOT EXISTS skill_usage_logs (
 -- Character table
 CREATE TABLE IF NOT EXISTS `character` (
     id VARCHAR(64) PRIMARY KEY,
-    workspace_ids JSON,
     organization_ids JSON,
     name VARCHAR(255),
     version INT DEFAULT 0,

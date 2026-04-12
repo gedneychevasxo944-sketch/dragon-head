@@ -33,10 +33,6 @@ public class CharacterEntity {
     @Id
     private String id;
 
-    @Column(name = "workspace_ids")
-    @DbJson
-    private List<String> workspaceIds;
-
     private String name;
 
     private Integer version;
@@ -92,7 +88,6 @@ public class CharacterEntity {
     public Character toCharacter() {
         CharacterProfile profile = new CharacterProfile();
         profile.setId(this.id);
-        profile.setWorkspaceIds(this.workspaceIds);
         profile.setName(this.name);
         profile.setVersion(this.version);
         profile.setDescription(this.description);
@@ -148,7 +143,6 @@ public class CharacterEntity {
 
         return CharacterEntity.builder()
                 .id(profile.getId())
-                .workspaceIds(profile.getWorkspaceIds())
                 .name(profile.getName())
                 .version(profile.getVersion())
                 .description(profile.getDescription())

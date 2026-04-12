@@ -34,11 +34,6 @@ public class CharacterProfile {
     private String id;
 
     /**
-     * 所属 Workspace ID
-     */
-    private List<String> workspaceIds;
-
-    /**
      * Character 名称
      */
     private String name;
