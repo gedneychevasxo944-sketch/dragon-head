@@ -1,9 +1,9 @@
 package org.dragon.memory.storage.fs;
-import org.dragon.memory.core.MemoryId;
+import org.dragon.memory.entity.MemoryId;
 
 
-import org.dragon.memory.core.MemoryEntry;
-import org.dragon.memory.core.MemoryIndexItem;
+import org.dragon.memory.entity.MemoryEntry;
+import org.dragon.memory.entity.MemoryIndexItem;
 import org.dragon.memory.storage.MemoryMarkdownParser;
 import org.dragon.memory.storage.MemoryIndexParser;
 import org.dragon.memory.storage.MemoryPathResolver;

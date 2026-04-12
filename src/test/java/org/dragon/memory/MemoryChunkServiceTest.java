@@ -7,7 +7,7 @@ import org.dragon.api.controller.dto.memory.BatchUpdateIndexStatusRequest;
 import org.dragon.api.controller.dto.memory.CreateChunkRequest;
 import org.dragon.api.controller.dto.memory.MemoryChunkDTO;
 import org.dragon.api.controller.dto.memory.UpdateChunkRequest;
-import org.dragon.memory.app.DefaultMemoryChunkService;
+import org.dragon.memory.service.meta.impl.MemoryMetaChunkServiceImpl;
 import org.dragon.memory.store.MemoryChunkStore;
 import org.dragon.memory.store.MemoryMemoryChunkStore;
 import org.dragon.store.StoreFactory;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 public class MemoryChunkServiceTest {
 
     private MemoryMemoryChunkStore chunkStore;
-    private DefaultMemoryChunkService chunkService;
+    private MemoryMetaChunkServiceImpl chunkService;
 
     @BeforeEach
     void setUp() {
@@ -37,7 +37,7 @@ public class MemoryChunkServiceTest {
         StoreFactory storeFactory = mock(StoreFactory.class);
         when(storeFactory.get(MemoryChunkStore.class)).thenReturn(chunkStore);
 
-        chunkService = new DefaultMemoryChunkService(storeFactory);
+        chunkService = new MemoryMetaChunkServiceImpl(storeFactory);
     }
 
     // ---- createChunk ----

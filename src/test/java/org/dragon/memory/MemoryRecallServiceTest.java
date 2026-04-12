@@ -1,13 +1,13 @@
 package org.dragon.memory;
 
-import org.dragon.memory.app.DefaultMemoryRecallService;
-import org.dragon.memory.core.MemoryEntry;
-import org.dragon.memory.core.MemoryQuery;
-import org.dragon.memory.core.MemoryRanker;
-import org.dragon.memory.core.MemoryScope;
-import org.dragon.memory.core.MemorySearchResult;
-import org.dragon.memory.core.MemoryType;
-import org.dragon.memory.core.SessionSnapshot;
+import org.dragon.memory.service.core.impl.MemoryRecallServiceImpl;
+import org.dragon.memory.entity.MemoryEntry;
+import org.dragon.memory.entity.MemoryQuery;
+import org.dragon.memory.service.core.MemoryRanker;
+import org.dragon.memory.constants.MemoryScope;
+import org.dragon.memory.entity.MemorySearchResult;
+import org.dragon.memory.constants.MemoryType;
+import org.dragon.memory.entity.SessionSnapshot;
 import org.dragon.memory.storage.repo.CharacterMemoryRepository;
 import org.dragon.memory.storage.repo.SessionMemoryRepository;
 import org.dragon.memory.storage.repo.WorkspaceMemoryRepository;
@@ -35,7 +35,7 @@ public class MemoryRecallServiceTest {
     private WorkspaceMemoryRepository workspaceMemoryRepository;
     private SessionMemoryRepository sessionMemoryRepository;
     private MemoryRanker memoryRanker;
-    private DefaultMemoryRecallService recallService;
+    private MemoryRecallServiceImpl recallService;
 
     @BeforeEach
     void setUp() {
@@ -48,7 +48,7 @@ public class MemoryRecallServiceTest {
                 .map(e -> MemorySearchResult.builder().memory(e).score(1.0).build())
                 .toList();
 
-        recallService = new DefaultMemoryRecallService(
+        recallService = new MemoryRecallServiceImpl(
                 characterMemoryRepository,
                 workspaceMemoryRepository,
                 sessionMemoryRepository,
@@ -182,7 +182,7 @@ public class MemoryRecallServiceTest {
                         .map(e -> MemorySearchResult.builder().memory(e).score(1.0).build())
                         .toList();
 
-        DefaultMemoryRecallService svc = new DefaultMemoryRecallService(
+        MemoryRecallServiceImpl svc = new MemoryRecallServiceImpl(
                 characterMemoryRepository, workspaceMemoryRepository,
                 sessionMemoryRepository, orderCapturingRanker);
 

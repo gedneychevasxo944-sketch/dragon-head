@@ -1,10 +1,10 @@
 package org.dragon.memory;
 
-import org.dragon.memory.app.DefaultSessionMemoryService;
-import org.dragon.memory.core.MemoryEntry;
-import org.dragon.memory.core.MemoryExtractionService;
-import org.dragon.memory.core.MemoryType;
-import org.dragon.memory.core.SessionSnapshot;
+import org.dragon.memory.service.core.impl.SessionMemoryServiceImpl;
+import org.dragon.memory.entity.MemoryEntry;
+import org.dragon.memory.service.core.MemoryExtractionService;
+import org.dragon.memory.constants.MemoryType;
+import org.dragon.memory.entity.SessionSnapshot;
 import org.dragon.memory.storage.repo.SessionMemoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,13 +27,13 @@ public class SessionMemoryServiceTest {
 
     private SessionMemoryRepository sessionMemoryRepository;
     private MemoryExtractionService memoryExtractionService;
-    private DefaultSessionMemoryService sessionMemoryService;
+    private SessionMemoryServiceImpl sessionMemoryService;
 
     @BeforeEach
     void setUp() {
         sessionMemoryRepository = mock(SessionMemoryRepository.class);
         memoryExtractionService = mock(MemoryExtractionService.class);
-        sessionMemoryService = new DefaultSessionMemoryService(sessionMemoryRepository, memoryExtractionService);
+        sessionMemoryService = new SessionMemoryServiceImpl(sessionMemoryRepository, memoryExtractionService);
     }
 
     // ---- start / get ----

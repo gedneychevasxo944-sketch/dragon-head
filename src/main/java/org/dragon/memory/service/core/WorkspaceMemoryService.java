@@ -1,20 +1,19 @@
-package org.dragon.memory.storage.repo;
-import org.dragon.memory.entity.MemoryId;
-
+package org.dragon.memory.service.core;
 
 import org.dragon.memory.entity.MemoryEntry;
+import org.dragon.memory.entity.MemoryId;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * 工作空间记忆仓库接口
+ * 工作空间记忆服务接口
  * 负责管理工作空间共享记忆的增删改查和索引维护
  *
  * @author binarytom
  * @version 1.0
  */
-public interface WorkspaceMemoryRepository {
+public interface WorkspaceMemoryService {
     MemoryEntry create(String workspaceId, MemoryEntry entry);
 
     MemoryEntry update(String workspaceId, MemoryEntry entry);
@@ -26,9 +25,4 @@ public interface WorkspaceMemoryRepository {
     void delete(String workspaceId, MemoryId memoryId);
 
     void rebuildIndex(String workspaceId);
-
-    /**
-     * 初始化workSpace记忆空间，创建目录结构和初始文件
-     */
-    void initSpace(String workspaceId);
 }

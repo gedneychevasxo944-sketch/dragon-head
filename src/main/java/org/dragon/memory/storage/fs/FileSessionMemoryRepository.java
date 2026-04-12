@@ -1,7 +1,7 @@
 package org.dragon.memory.storage.fs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.dragon.memory.core.SessionSnapshot;
+import org.dragon.memory.entity.SessionSnapshot;
 import org.dragon.memory.storage.MemoryPathResolver;
 import org.dragon.memory.storage.MemoryMarkdownParser;
 import org.dragon.memory.storage.repo.SessionMemoryRepository;

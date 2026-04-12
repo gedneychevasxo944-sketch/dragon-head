@@ -1,0 +1,86 @@
+package org.dragon.memory.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.dragon.memory.constants.MemoryScope;
+import org.dragon.memory.constants.MemoryType;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 记忆条目类
+ * 表示一条完整的记忆内容，包含元数据和正文
+ *
+ * @author binarytom
+ * @version 1.0
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class MemoryEntry {
+    /**
+     * 记忆ID
+     */
+    private MemoryId id;
+
+    /**
+     * 记忆标题
+     */
+    private String title;
+
+    /**
+     * 记忆描述
+     */
+    private String description;
+
+    /**
+     * 记忆类型
+     */
+    private MemoryType type;
+
+    /**
+     * 记忆作用域
+     */
+    private MemoryScope scope;
+
+    /**
+     * 所属ID（角色ID/工作空间ID/会话ID）
+     */
+    private String ownerId;
+
+    /**
+     * 文件名
+     */
+    private String fileName;
+
+    /**
+     * 文件路径
+     */
+    private String filePath;
+
+    /**
+     * 记忆内容
+     */
+    private String content;
+
+    /**
+     * 创建时间
+     */
+    private Instant createdAt;
+
+    /**
+     * 更新时间
+     */
+    private Instant updatedAt;
+
+    /**
+     * 标签
+     */
+    @Builder.Default
+    private Map<String, String> tags = new HashMap<>();
+}
