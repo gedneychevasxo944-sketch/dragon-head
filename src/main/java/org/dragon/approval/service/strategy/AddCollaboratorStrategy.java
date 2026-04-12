@@ -6,6 +6,7 @@ import org.dragon.approval.enums.ApprovalType;
 import org.dragon.approval.service.ApprovalContext;
 import org.dragon.approval.service.ApprovalStrategy;
 import org.dragon.asset.service.AssetMemberService;
+import org.dragon.notification.service.NotificationService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class AddCollaboratorStrategy implements ApprovalStrategy {
 
     private final AssetMemberService assetMemberService;
+    private final NotificationService notificationService;
 
     @Override
     public ApprovalType getType() {
@@ -27,17 +29,30 @@ public class AddCollaboratorStrategy implements ApprovalStrategy {
 
     @Override
     public void onApprove(ApprovalContext context) {
+        Long targetUserId = context.getRequest().getTargetUserId();
         log.info("[AddCollaboratorStrategy] Approving add collaborator: resourceType={}, resourceId={}, requesterId={}, targetUserId={}",
                 context.getRequest().getResourceType(),
                 context.getRequest().getResourceId(),
                 context.getRequest().getRequesterId(),
-                context.getRequest().getTargetUserId());
+                targetUserId);
 
-        if (context.getRequest().getTargetUserId() != null) {
+        if (targetUserId != null) {
             // 确认协作者邀请（将 pending 状态更新为已接受）
             assetMemberService.acceptInvitationDirectly(
-                    context.getRequest().getTargetUserId(),
+                    targetUserId,
                     context.getRequest().getResourceType(),
+                    context.getRequest().getResourceId()
+            );
+
+            // 通知被邀请人：邀请已通过，您已成为协作者
+            String resourceName = context.getRequest().getResourceType().name() + ":" + context.getRequest().getResourceId();
+            notificationService.sendNotification(
+                    targetUserId,
+                    org.dragon.datasource.entity.NotificationType.SYSTEM,
+                    "已成为协作者",
+                    "您已成功加入资产 " + resourceName,
+                    null,
+                    context.getRequest().getResourceType().name(),
                     context.getRequest().getResourceId()
             );
         }

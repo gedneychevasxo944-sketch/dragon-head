@@ -92,6 +92,18 @@ public class CollaboratorService {
                         .map(m -> m.getRole() == org.dragon.permission.enums.Role.ADMIN)
                         .orElse(false);
 
+        // 通知被移除的协作者
+        String resourceName = type.name() + ":" + assetId;
+        notificationService.sendNotification(
+                collaboratorId,
+                org.dragon.datasource.entity.NotificationType.SYSTEM,
+                "已被移除",
+                "您已被从资产 " + resourceName + " 中移除",
+                null,
+                type.name(),
+                assetId
+        );
+
         if (isOwnerOrAdmin) {
             // OWNER 或 ADMIN 直接移除，无需审批
             assetMemberService.removeMemberDirectly(type, assetId, collaboratorId);
