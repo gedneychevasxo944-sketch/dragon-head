@@ -126,10 +126,9 @@ public class AssetMemberService {
 
             switch (type) {
                 case TRAIT:
-                    List<Long> traitIds = ids.stream().map(Long::parseLong).collect(Collectors.toList());
-                    List<org.dragon.datasource.entity.TraitEntity> traits = traitStore.findByIds(traitIds);
+                    List<org.dragon.datasource.entity.TraitEntity> traits = traitStore.findByIds(ids);
                     for (org.dragon.datasource.entity.TraitEntity t : traits) {
-                        nameMap.put(String.valueOf(t.getId()), t.getName());
+                        nameMap.put(t.getId(), t.getName());
                     }
                     break;
                 case CHARACTER:
@@ -448,7 +447,7 @@ public class AssetMemberService {
      */
     private String resolveResourceName(ResourceType type, String resourceId) {
         return switch (type) {
-            case TRAIT -> traitStore.findById(Long.valueOf(resourceId))
+            case TRAIT -> traitStore.findById(resourceId)
                     .map(t -> t.getName())
                     .orElse(null);
             case CHARACTER -> characterRegistry.get(resourceId)

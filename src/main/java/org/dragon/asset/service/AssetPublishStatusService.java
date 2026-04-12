@@ -286,6 +286,48 @@ public class AssetPublishStatusService {
     }
 
     /**
+     * 设置为待审批状态（发布审批提交后调用）
+     *
+     * @param resourceType 资源类型
+     * @param resourceId 资源 ID
+     */
+    public void setPending(ResourceType resourceType, String resourceId) {
+        AssetPublishStatusEntity entity = publishStatusStore.findByResource(resourceType.name(), resourceId)
+                .orElseThrow(() -> new IllegalArgumentException("发布状态不存在: " + resourceType + ":" + resourceId));
+
+        LocalDateTime now = LocalDateTime.now();
+        entity.setStatus(PublishStatus.PENDING.name());
+        entity.setUpdatedAt(now);
+
+        publishStatusStore.update(entity);
+        log.info("[AssetPublishStatusService] Set to pending: {}:{}", resourceType, resourceId);
+    }
+
+    /**
+     * 从待审批状态回退到草稿（审批撤回或拒绝时调用）
+     *
+     * @param resourceType 资源类型
+     * @param resourceId 资源 ID
+     */
+    public void revertPendingToDraft(ResourceType resourceType, String resourceId) {
+        AssetPublishStatusEntity entity = publishStatusStore.findByResource(resourceType.name(), resourceId)
+                .orElseThrow(() -> new IllegalArgumentException("发布状态不存在: " + resourceType + ":" + resourceId));
+
+        if (!PublishStatus.PENDING.name().equals(entity.getStatus())) {
+            log.warn("[AssetPublishStatusService] Cannot revert non-pending status to draft: {}:{}, current: {}",
+                    resourceType, resourceId, entity.getStatus());
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        entity.setStatus(PublishStatus.DRAFT.name());
+        entity.setUpdatedAt(now);
+
+        publishStatusStore.update(entity);
+        log.info("[AssetPublishStatusService] Reverted pending to draft: {}:{}", resourceType, resourceId);
+    }
+
+    /**
      * 获取资源类型下所有指定状态的资产
      *
      * @param resourceType 资源类型

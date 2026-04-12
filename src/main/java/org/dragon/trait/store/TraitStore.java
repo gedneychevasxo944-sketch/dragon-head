@@ -24,12 +24,12 @@ public interface TraitStore extends Store {
     /**
      * 根据 ID 查找
      */
-    Optional<TraitEntity> findById(Long id);
+    Optional<TraitEntity> findById(String id);
 
     /**
      * 批量查找
      */
-    List<TraitEntity> findByIds(List<Long> ids);
+    List<TraitEntity> findByIds(List<String> ids);
 
     /**
      * 查询所有 Trait
@@ -59,15 +59,15 @@ public interface TraitStore extends Store {
     /**
      * 删除 Trait
      */
-    void delete(Long id);
+    void delete(String id);
 
     /**
      * 增加引用计数
      */
-    void incrementUsedByCount(Long id);
+    void incrementUsedByCount(String id);
 
     /**
      * 减少引用计数
      */
-    void decrementUsedByCount(Long id);
+    void decrementUsedByCount(String id);
 }

@@ -35,7 +35,6 @@ DELETE FROM tool WHERE name IN ('tool-001', 'tool-code-review', 'tool-data-expor
 DELETE FROM skills WHERE skill_id IN ('skill-001', 'skill-002', 'skill-data-analysis');
 DELETE FROM `character` WHERE id IN ('char-001', 'char-002', 'char-003', 'char-pm', 'char-analyst');
 DELETE FROM adeptify_user WHERE id = 1;
-DELETE FROM trait WHERE name IN ('结构化思维', '数据驱动', '风险管理意识');
 
 -- ============================================================================
 -- 1. 测试用户
@@ -70,89 +69,88 @@ VALUES
 -- ============================================================================
 -- 3. 角色 (Character)
 -- ============================================================================
-INSERT INTO `character` (id, workspace_ids, organization_ids, name, version, description, avatar, source, allowed_tools, traits, trait_configs, skills, prompt_template, default_tools, is_running, deployed_count, mind_config, extensions, status, created_at, updated_at)
+INSERT INTO `character` (id, workspace_ids, organization_ids, name, description, avatar, source, allowed_tools, prompt_template, default_tools, is_running, deployed_count, mind_config, extensions, status, created_at, updated_at)
 VALUES
-  ('char-001', '["ws-demo"]', NULL, 'AI 项目经理', 1,
+  ('char-001', '["ws-demo"]', NULL, 'AI 项目经理',
    '专业的 AI 项目管理者，能够协调多个 AI Agent 之间的工作，擅长资源分配和进度跟踪。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-pm',
    'built_in_derived',
    '["task_tracker", "calendar", "report_generator"]',
-   '["结构化思维", "高效协作", "风险管理意识"]',
-   '{"结构化思维": {"intensity": 0.8}, "高效协作": {"approach": "structured"}}',
-   '["skill-001", "skill-002"]',
    '你是一位专业的 AI 项目管理者。你的职责是协调团队工作、跟踪进度、识别风险。',
    '["task_tracker", "calendar", "report_generator"]',
    TRUE, 2, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
-  ('char-002', '["ws-demo"]', NULL, '数据分析师', 1,
+  ('char-002', '["ws-demo"]', NULL, '数据分析师',
    '数据分析专家，专注于从复杂数据中提取洞察，支持决策制定。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-analyst',
    'built_in_derived',
    '["data_connector", "chart_generator", "sql_query"]',
-   '["数据驱动", "学术严谨", "简洁表达"]',
-   '{"数据驱动": {"methodology": "statistical"}}',
-   '["skill-001", "skill-data-analysis"]',
    '你是一位资深数据分析师，擅长使用统计学方法和可视化技术分析数据。',
    '["data_connector", "chart_generator", "sql_query"]',
    TRUE, 1, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
-  ('char-003', '["ws-demo", "ws-test"]', NULL, '客服代表', 1,
+  ('char-003', '["ws-demo", "ws-test"]', NULL, '客服代表',
    '温柔的客服代表，善于倾听和理解客户需求，提供贴心的解决方案。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-support',
    'trait_composed',
    '["ticket_system", "knowledge_base"]',
-   '["温暖同理", "耐心引导", "简洁表达"]',
-   '{"温暖同理": {"tone": "warm"}}',
-   '["skill-001"]',
    '你是一位热情的客服代表，始终以客户满意为首要目标。',
    '["ticket_system", "knowledge_base", "response_generator"]',
    FALSE, 3, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
-  ('char-pm', '["ws-demo"]', NULL, '产品经理', 1,
+  ('char-pm', '["ws-demo"]', NULL, '产品经理',
    '经验丰富的产品经理，擅长需求分析和产品规划。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-product',
    'whiteboard_new',
    '["roadmap_planner", "user_research"]',
-   '["创意发散", "用户中心", "迭代思维"]',
-   '{}',
-   '[]',
    '你是一位经验丰富的的产品经理，擅长用户需求分析和产品路线图规划。',
    '["roadmap_planner", "user_research"]',
    FALSE, 0, NULL, NULL, 'RUNNING', NOW(), NOW()),
 
-  ('char-analyst', '["ws-test"]', NULL, '市场分析师', 1,
+  ('char-analyst', '["ws-test"]', NULL, '市场分析师',
    '专注于市场趋势分析和竞争情报收集。',
    'https://api.dicebear.com/7.x/personas/svg?seed=char-market',
    'built_in_derived',
    '["market_tracker", "competitor_analysis"]',
-   '["数据驱动", "批判性思维", "全渠道营销"]',
-   '{}',
-   '[]',
    '你是一位专业的市场分析师，擅长追踪市场趋势和竞争情报。',
    '["market_tracker", "competitor_analysis"]',
    FALSE, 0, NULL, NULL, 'RUNNING', NOW(), NOW());
 
 -- ============================================================================
--- 4. Trait 种子数据
+-- 4. Trait 关联 (TRAIT_CHARACTER)
+-- 说明: V3 不再在 character 表存储 traits/skills 列，改为 asset_association 表管理
 -- ============================================================================
-INSERT INTO trait (name, category, description, content, enabled, used_by_count, create_time, update_time)
+INSERT INTO asset_association (association_type, source_type, source_id, target_type, target_id, created_at, updated_at)
 VALUES
-  ('结构化思维', 'personality', '倾向于用逻辑和结构化的方式处理信息和问题', '你倾向于用逻辑和结构化的方式处理信息和问题。在分析和解决问题时，你会先梳理框架，再填充细节。', TRUE, 2, NOW(), NOW()),
-  ('数据驱动', 'personality', '决策基于数据分析而非直觉', '你是一个数据驱动的人，决策时会优先考虑数据和分析结果，而非直觉。你会用数据来验证假设和支持结论。', TRUE, 2, NOW(), NOW()),
-  ('风险管理意识', 'personality', '主动识别和评估潜在风险', '你具有强烈的风险管理意识，会主动识别和评估潜在风险。在做决策前，你会考虑各种可能的风险因素。', TRUE, 1, NOW(), NOW()),
-  ('批判性思维', 'personality', '不轻信信息，善于质疑和分析', '你具有批判性思维，不轻信信息，善于质疑和分析。你会对信息进行深入思考，而非盲目接受。', TRUE, 1, NOW(), NOW()),
-  ('高效协作', 'personality', '擅长与他人合作，共同完成任务', '你擅长与他人合作，能够有效协调团队资源，共同完成复杂任务。你注重沟通和分工配合。', TRUE, 1, NOW(), NOW()),
-  ('温暖同理', 'personality', '能够理解和感受他人情绪', '你能够理解和感受他人情绪，与人交流时富有同理心。你善于倾听，能感知对方的真实需求。', TRUE, 1, NOW(), NOW()),
-  ('耐心引导', 'personality', '不急躁，愿意花时间解释和引导', '你耐心细致，不急躁，愿意花时间解释和引导他人。你相信循序渐进的力量。', TRUE, 1, NOW(), NOW()),
-  ('创意发散', 'personality', '思维活跃，善于产生新颖想法', '你思维活跃，善于产生新颖的想法和创意。你不拘泥于常规，能够提供独特的视角和解决方案。', TRUE, 1, NOW(), NOW()),
-  ('简洁表达', 'personality', '追求简洁明了的表达方式', '你追求简洁明了的表达方式，用最精炼的语言传达核心信息。你相信简洁是智慧的灵魂。', TRUE, 2, NOW(), NOW()),
-  ('用户中心', 'personality', '始终以用户价值为出发点', '你始终以用户价值为出发点，在做决策时会优先考虑用户需求和使用体验。你相信为用户创造价值是核心目标。', TRUE, 1, NOW(), NOW()),
-  ('迭代思维', 'personality', '小步快跑，持续改进', '你信奉迭代思维，倾向于小步快跑、持续改进。你相信完美的方案是通过不断迭代打磨出来的。', TRUE, 1, NOW(), NOW()),
-  ('学术严谨', 'config', '引用规范，内容经过验证', '你注重学术严谨性，引用规范，内容经过验证。你会确保信息的准确性和可靠性。', TRUE, 1, NOW(), NOW()),
-  ('全渠道营销', 'config', '覆盖多个营销渠道的整合能力', '你具备全渠道营销能力，能够整合和协调多个营销渠道的策略和执行。你熟悉各渠道的特点和最佳实践。', TRUE, 1, NOW(), NOW());
+  -- char-001 的 Trait 关联
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-001', 'TRAIT', 'trait-001', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-001', 'TRAIT', 'trait-005', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-001', 'TRAIT', 'trait-003', NOW(), NOW()),
+  -- char-002 的 Trait 关联
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-002', 'TRAIT', 'trait-002', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-002', 'TRAIT', 'trait-012', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-002', 'TRAIT', 'trait-009', NOW(), NOW()),
+  -- char-003 的 Trait 关联
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-003', 'TRAIT', 'trait-006', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-003', 'TRAIT', 'trait-007', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-003', 'TRAIT', 'trait-009', NOW(), NOW()),
+  -- char-pm 的 Trait 关联
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-pm', 'TRAIT', 'trait-008', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-pm', 'TRAIT', 'trait-010', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-pm', 'TRAIT', 'trait-011', NOW(), NOW()),
+  -- char-analyst 的 Trait 关联
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-analyst', 'TRAIT', 'trait-002', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-analyst', 'TRAIT', 'trait-004', NOW(), NOW()),
+  ('TRAIT_CHARACTER', 'CHARACTER', 'char-analyst', 'TRAIT', 'trait-013', NOW(), NOW());
 
 -- ============================================================================
--- 5. 技能 (Skills)
+-- 5. Trait 种子数据
+-- 说明: V3 不再 INSERT trait，已由 V2 冷启动插入完整的 16 个 trait
+-- V3 的 Character 引用 V2 已插入的 trait
+-- ============================================================================
+
+-- ============================================================================
+-- 6. 技能 (Skills)
 -- ============================================================================
 INSERT INTO skills (skill_id, name, display_name, description, content, category, visibility, creator_type, creator_id, creator_name, status, version, tags, created_at, published_at)
 VALUES
@@ -172,7 +170,7 @@ VALUES
    '["数据", "分析", "可视化"]', NOW(), NOW());
 
 -- ============================================================================
--- 6. 工具 (Tool)
+-- 7. 工具 (Tool)
 -- ============================================================================
 INSERT INTO tool (name, description, parameter_schema, enabled)
 VALUES
@@ -189,7 +187,7 @@ VALUES
   ('tool-data-export', '数据导出工具', '{"type": "object", "properties": {"format": {"type": "string"}, "source": {"type": "string"}}}', TRUE);
 
 -- ============================================================================
--- 7. 观察者 (Observer)
+-- 8. 观察者 (Observer)
 -- ============================================================================
 INSERT INTO observer (id, name, description, workspace_id, status, evaluation_mode, optimization_threshold, consecutive_low_score_threshold, common_sense_enabled, auto_optimization_enabled, periodic_evaluation_hours, properties, planner_character_ids, reviewer_character_ids, supported_target_types, manual_approval_required, schedule_cron, plan_window_hours, max_plan_items, created_at, updated_at)
 VALUES
@@ -202,7 +200,7 @@ VALUES
    '{}', NULL, NULL, '["CHARACTER"]', TRUE, NULL, 24, 30, NOW(), NOW());
 
 -- ============================================================================
--- 8. 常识/记忆 (Common Sense)
+-- 9. 常识/记忆 (Common Sense)
 -- ============================================================================
 INSERT INTO common_sense (id, workspace_id, folder_id, name, description, category, rule, severity, version, enabled, prompt_template, prompt_variables, content, cached_prompt, last_prompt_update_at, prompt_update_source, created_at, updated_at, created_by)
 VALUES
@@ -216,7 +214,7 @@ VALUES
    '数据安全准则：\n{{rule}}', NULL, '数据安全准则：\n1. 敏感数据脱敏处理\n2. 最小权限原则\n3. 数据加密存储\n4. 审计日志记录', NULL, NOW(), 'MANUAL', NOW(), NOW(), '1');
 
 -- ============================================================================
--- 9. 任务 (Task)
+-- 10. 任务 (Task)
 -- ============================================================================
 INSERT INTO task (id, workspace_id, parent_task_id, creator_id, character_id, name, description, status, input, output, result, error_message, child_task_ids, collaboration_session_id, assigned_member_ids, execution_steps, execution_messages, current_streaming_content, created_at, updated_at, started_at, completed_at, execution_mode, workflow_id, dependency_task_ids, waiting_reason, resume_token, resume_context, source_message_id, source_chat_id, source_channel, material_ids, last_question, interaction_context, metadata, extensions)
 VALUES
@@ -258,7 +256,7 @@ VALUES
    NULL, NULL, NOW(), NOW(), NOW(), NULL, 'AUTO', NULL, NULL, NULL, 'resume-token-005', '{"lastStep": 1, "retryCount": 3}', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ============================================================================
--- 10. Workspace 成员
+-- 11. Workspace 成员
 -- ============================================================================
 INSERT INTO workspace_member (id, workspace_id, character_id, role, layer, permission, tags, weight, priority, reputation, resource_quota, join_at, last_active_at, metadata)
 VALUES
@@ -275,7 +273,7 @@ VALUES
    '{}', NOW(), NOW(), NULL);
 
 -- ============================================================================
--- 11. 资产成员关系 (Asset Member)
+-- 12. 资产成员关系 (Asset Member)
 -- ============================================================================
 INSERT INTO asset_member (resource_type, resource_id, user_id, role, invited_by, invited_at, accepted_at, accepted, created_at, updated_at)
 VALUES
@@ -321,7 +319,7 @@ VALUES
   ('MEMORY', 'cs-003', 1, 'OWNER', '1', NOW(), NOW(), TRUE, NOW(), NOW());
 
 -- ============================================================================
--- 12. 物料文件 (Material)
+-- 13. 物料文件 (Material)
 -- ============================================================================
 INSERT INTO material (id, workspace_id, name, size, type, storage_key, uploader, uploaded_at, kind, parse_status, metadata)
 VALUES
@@ -339,19 +337,9 @@ VALUES
 
   ('mat-007', 'ws-demo', '用户访谈记录_2024Q1.pdf', 1560000, 'application/pdf', 'ws-demo/materials/user-interview-q1.pdf', 'char-003', DATE_SUB(NOW(), INTERVAL 4 DAY), 'DOCUMENT', 'SUCCESS', '{"source": "task_output", "taskId": "task-003"}');
 
--- ============================================================================
--- 13. 通知 (Notification)
--- ============================================================================
-INSERT INTO notification (id, user_id, type, title, content, link, source_type, source_id, is_read, created_at)
-VALUES
-  ('notif-001', 1, 'APPROVAL_RESULT', '任务审批已通过', '您的"完成产品需求文档"任务已通过审批', '/workspace/ws-demo/task/task-001', 'TASK', 'task-001', FALSE, NOW()),
-  ('notif-002', 1, 'COLLABORATOR_INVITE', '新协作者加入', 'char-003 已接受邀请加入工作空间', '/workspace/ws-demo/character/char-003', 'WORKSPACE', 'ws-demo', TRUE, NOW()),
-  ('notif-003', 1, 'SYSTEM', '系统更新通知', '系统将于本周日凌晨进行例行维护，预计耗时 2 小时', '/notice/maintenance', 'SYSTEM', NULL, FALSE, NOW()),
-  ('notif-004', 1, 'APPROVAL_REQUEST', '待处理审批', '您有一条来自 char-002 的任务审批请求需要处理', '/workspace/ws-demo/approval/approval-001', 'TASK', 'task-approval-001', FALSE, NOW()),
-  ('notif-005', 1, 'SYSTEM', '观察者报告', '工作空间观察者已完成本周评估，整体表现良好', '/workspace/ws-demo/observer/obs-001/report', 'OBSERVER', 'obs-001', TRUE, NOW());
 
 -- ============================================================================
--- 13. Skill 绑定关系
+-- 14. Skill 绑定关系
 -- ============================================================================
 INSERT INTO skill_bindings (binding_type, character_id, workspace_id, skill_id, version_type, fixed_version, created_at)
 VALUES
@@ -365,7 +353,7 @@ VALUES
   ('character_workspace', 'char-001', 'ws-demo', 'skill-001', 'fixed', 1, NOW());
 
 -- ============================================================================
--- 14. Model Instance (用于 LLM 调用)
+-- 15. Model Instance (用于 LLM 调用)
 -- ============================================================================
 INSERT INTO model_instance (id, provider, model_name, endpoint, credentials, default_params, enabled, description, priority)
 VALUES
@@ -376,7 +364,7 @@ INSERT INTO model_instance (id, provider, model_name, endpoint, enabled, priorit
 VALUES ('minimax-default', 'MINIMAX', 'abab6.5s-chat', 'https://api.minimax.chat', true, 10);
 
 -- ============================================================================
--- 15. ConfigStore 配置数据（各粒度）
+-- 16. ConfigStore 配置数据（各粒度）
 -- ============================================================================
 --
 -- ID 格式: {scopeBit}:{workspaceId}:{characterId}:{toolId}:{skillId}:{memoryId}:{configKey}

@@ -11,6 +11,7 @@ import org.dragon.approval.dto.ApprovalRequestDTO;
 import org.dragon.approval.enums.ApprovalStatus;
 import org.dragon.approval.enums.ApprovalType;
 import org.dragon.approval.store.ApprovalStore;
+import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.datasource.entity.ApprovalRequestEntity;
 import org.dragon.notification.service.NotificationService;
@@ -39,6 +40,7 @@ public class ApprovalService {
     private final Map<ApprovalType, ApprovalStrategy> strategies;
     private final TraitStore traitStore;
     private final CharacterRegistry characterRegistry;
+    private final AssetPublishStatusService publishStatusService;
 
     /**
      * 需要审批的资源类型映射
@@ -58,12 +60,14 @@ public class ApprovalService {
     public ApprovalService(StoreFactory storeFactory, @Lazy UserStore userStore,
                            NotificationService notificationService,
                            List<ApprovalStrategy> strategyList,
-                           CharacterRegistry characterRegistry) {
+                           CharacterRegistry characterRegistry,
+                           AssetPublishStatusService publishStatusService) {
         this.approvalStore = storeFactory.get(ApprovalStore.class);
         this.userStore = userStore;
         this.notificationService = notificationService;
         this.traitStore = storeFactory.get(TraitStore.class);
         this.characterRegistry = characterRegistry;
+        this.publishStatusService = publishStatusService;
 
         // 初始化策略映射
         this.strategies = new EnumMap<>(ApprovalType.class);
@@ -110,6 +114,11 @@ public class ApprovalService {
         approvalStore.save(request);
         log.info("[ApprovalService] Created approval request: type={}, assetId={}, approvalType={}, requesterId={}",
                 type, assetId, approvalType, requesterId);
+
+        // PUBLISH 审批提交后，同步更新发布状态为 PENDING
+        if (approvalType == ApprovalType.PUBLISH) {
+            publishStatusService.setPending(type, assetId);
+        }
 
         // 发送通知给审批人
         String resourceName = type.name() + ":" + assetId;
@@ -212,6 +221,49 @@ public class ApprovalService {
         }
 
         log.info("[ApprovalService] Rejected request: id={}, approverId={}", requestId, approverId);
+    }
+
+    /**
+     * 撤回我发起的审批申请
+     */
+    public void withdraw(String requestId, Long requesterId) {
+        ApprovalRequestEntity request = approvalStore.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("审批请求不存在"));
+
+        // 验证是否是申请人本人撤回
+        if (!request.getRequesterId().equals(requesterId)) {
+            throw new IllegalArgumentException("只有申请人才能撤回审批");
+        }
+
+        // 只有待审批状态可以撤回
+        if (request.getStatus() != ApprovalStatus.PENDING) {
+            throw new IllegalArgumentException("只有待审批状态的申请才能撤回");
+        }
+
+        // 如果是发布审批，需要重置发布状态为 DRAFT
+        if (request.getApprovalType() == ApprovalType.PUBLISH) {
+            revertPublishStatus(request);
+        }
+
+        // 删除审批请求
+        approvalStore.delete(requestId);
+
+        log.info("[ApprovalService] Withdrawn request: id={}, requesterId={}", requestId, requesterId);
+    }
+
+    /**
+     * 重置发布审批的发布状态为 DRAFT
+     */
+    private void revertPublishStatus(ApprovalRequestEntity request) {
+        // 审批被撤回或拒绝时，从 PENDING 回退到 DRAFT
+        try {
+            publishStatusService.revertPendingToDraft(request.getResourceType(), request.getResourceId());
+            log.info("[ApprovalService] Reverted publish status to DRAFT: {}:{}",
+                    request.getResourceType(), request.getResourceId());
+        } catch (Exception e) {
+            log.warn("[ApprovalService] Failed to revert publish status: {}:{}, error: {}",
+                    request.getResourceType(), request.getResourceId(), e.getMessage());
+        }
     }
 
     /**
@@ -339,7 +391,7 @@ public class ApprovalService {
     private String resolveResourceName(ResourceType type, String resourceId) {
         switch (type) {
             case TRAIT:
-                return traitStore.findById(Long.parseLong(resourceId))
+                return traitStore.findById(resourceId)
                         .map(t -> t.getName())
                         .orElse(null);
             case CHARACTER:

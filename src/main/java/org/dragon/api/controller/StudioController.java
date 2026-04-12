@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.dragon.application.StudioApplication;
 import org.dragon.api.controller.dto.ApiResponse;
+import org.dragon.api.controller.dto.CharacterDetailDTO;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.character.Character;
 import org.dragon.character.service.CharacterService;
@@ -86,9 +87,9 @@ public class StudioController {
      */
     @Operation(summary = "获取角色详情")
     @GetMapping("/characters/{id}")
-    public ApiResponse<Character> getCharacter(@PathVariable String id) {
+    public ApiResponse<CharacterDetailDTO> getCharacter(@PathVariable String id) {
         permissionChecker.checkView("CHARACTER", id);
-        return characterService.getCharacter(id)
+        return characterService.getCharacterDetail(id)
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Character not found: " + id));
     }
@@ -180,7 +181,7 @@ public class StudioController {
     @GetMapping("/traits/{id}")
     public ApiResponse<Map<String, Object>> getTrait(@PathVariable String id) {
         permissionChecker.checkView("TRAIT", id);
-        Optional<Map<String, Object>> trait = traitService.getTrait(Long.parseLong(id));
+        Optional<Map<String, Object>> trait = traitService.getTrait(id);
         return trait.map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Trait not found: " + id));
     }
@@ -195,7 +196,7 @@ public class StudioController {
             @PathVariable String id,
             @RequestBody Map<String, Object> traitData) {
         permissionChecker.checkEdit("TRAIT", id);
-        Optional<Map<String, Object>> updated = traitService.updateTrait(Long.parseLong(id), traitData);
+        Optional<Map<String, Object>> updated = traitService.updateTrait(id, traitData);
         return updated.map(ApiResponse::success)
                 .orElse(ApiResponse.error(404, "Trait not found: " + id));
     }
@@ -208,7 +209,7 @@ public class StudioController {
     @DeleteMapping("/traits/{id}")
     public ApiResponse<Void> deleteTrait(@PathVariable String id) {
         permissionChecker.checkDelete("TRAIT", id);
-        boolean deleted = traitService.deleteTrait(Long.parseLong(id));
+        boolean deleted = traitService.deleteTrait(id);
         return deleted ? ApiResponse.success() : ApiResponse.error(404, "Trait not found: " + id);
     }
 

@@ -54,8 +54,7 @@ public class CharacterRegistry {
         }
 
         characterStore.save(character);
-        log.info("[CharacterRegistry] Registered character: {}, version: {}",
-                character.getId(), character.getVersion());
+        log.info("[CharacterRegistry] Registered character: {}", character.getId());
     }
 
     /**

@@ -687,14 +687,10 @@ CREATE TABLE IF NOT EXISTS `character` (
     workspace_ids JSON,
     organization_ids JSON,
     name VARCHAR(255),
-    version INT DEFAULT 0,
     description TEXT,
     avatar VARCHAR(512),
     source VARCHAR(64),
     allowed_tools JSON,
-    traits JSON,
-    trait_configs JSON,
-    skills JSON,
     prompt_template TEXT,
     default_tools JSON,
     is_running BOOLEAN,
@@ -762,7 +758,7 @@ CREATE TABLE IF NOT EXISTS tool (
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS trait (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
     category VARCHAR(64) NOT NULL,
     description VARCHAR(512),
