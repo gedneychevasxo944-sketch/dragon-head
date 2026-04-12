@@ -27,6 +27,11 @@ public interface TraitStore extends Store {
     Optional<TraitEntity> findById(Long id);
 
     /**
+     * 批量查找
+     */
+    List<TraitEntity> findByIds(List<Long> ids);
+
+    /**
      * 查询所有 Trait
      */
     List<TraitEntity> findAll();

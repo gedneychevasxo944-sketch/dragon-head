@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -47,9 +48,58 @@ public class AssetMemberService {
      * 获取用户的所有资产成员关系（包含 owner 和 collaborator）
      */
     public List<AssetMemberDTO> getMyAssets(Long userId) {
-        return assetMemberStore.findByUserId(userId).stream()
-                .map(this::toAssetMemberDTO)
+        List<AssetMemberEntity> members = assetMemberStore.findByUserId(userId);
+        if (members.isEmpty()) {
+            return List.of();
+        }
+
+        // 批量获取资产名称
+        Map<ResourceType, Map<String, String>> namesByType = batchLoadResourceNames(members);
+
+        return members.stream()
+                .map(m -> toAssetMemberDTOWithNames(m, namesByType))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 批量加载资源名称
+     */
+    private Map<ResourceType, Map<String, String>> batchLoadResourceNames(List<AssetMemberEntity> members) {
+        Map<ResourceType, Map<String, String>> result = new java.util.HashMap<>();
+
+        // 按类型分组
+        Map<ResourceType, List<String>> idsByType = members.stream()
+                .collect(Collectors.groupingBy(
+                        AssetMemberEntity::getResourceType,
+                        Collectors.mapping(AssetMemberEntity::getResourceId, Collectors.toList())
+                ));
+
+        // 批量查询各类型资源名称
+        for (Map.Entry<ResourceType, List<String>> entry : idsByType.entrySet()) {
+            ResourceType type = entry.getKey();
+            List<String> ids = entry.getValue();
+            Map<String, String> nameMap = new java.util.HashMap<>();
+
+            switch (type) {
+                case TRAIT:
+                    List<Long> traitIds = ids.stream().map(Long::parseLong).collect(Collectors.toList());
+                    List<org.dragon.datasource.entity.TraitEntity> traits = traitStore.findByIds(traitIds);
+                    for (org.dragon.datasource.entity.TraitEntity t : traits) {
+                        nameMap.put(String.valueOf(t.getId()), t.getName());
+                    }
+                    break;
+                case CHARACTER:
+                    List<org.dragon.character.Character> characters = characterRegistry.findByIds(ids);
+                    for (org.dragon.character.Character c : characters) {
+                        nameMap.put(c.getId(), c.getName());
+                    }
+                    break;
+                default:
+                    break;
+            }
+            result.put(type, nameMap);
+        }
+        return result;
     }
 
     /**
@@ -323,6 +373,41 @@ public class AssetMemberService {
 
         // 获取资产名称
         String resourceName = resolveResourceName(member.getResourceType(), member.getResourceId());
+
+        return AssetMemberDTO.builder()
+                .id(member.getId())
+                .resourceType(member.getResourceType())
+                .resourceId(member.getResourceId())
+                .resourceName(resourceName)
+                .role(member.getRole())
+                .publishStatus(publishStatus)
+                .invitedBy(member.getInvitedBy())
+                .invitedAt(member.getInvitedAt())
+                .acceptedAt(member.getAcceptedAt())
+                .accepted(member.getAccepted())
+                .createdAt(member.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * 使用预加载的名称映射将 AssetMemberEntity 转换为 DTO
+     */
+    private AssetMemberDTO toAssetMemberDTOWithNames(AssetMemberEntity member, Map<ResourceType, Map<String, String>> namesByType) {
+        // 获取发布状态
+        String publishStatus = publishStatusStore
+                .findByResource(member.getResourceType().name(), member.getResourceId())
+                .map(entity -> {
+                    String status = entity.getStatus();
+                    if ("PUBLISHED".equals(status)) {
+                        return "published";
+                    }
+                    return "unpublished";
+                })
+                .orElse("unpublished");
+
+        // 从预加载的名称映射中获取资产名称
+        Map<String, String> typeNames = namesByType.get(member.getResourceType());
+        String resourceName = typeNames != null ? typeNames.get(member.getResourceId()) : null;
 
         return AssetMemberDTO.builder()
                 .id(member.getId())

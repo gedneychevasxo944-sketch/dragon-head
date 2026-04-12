@@ -45,6 +45,17 @@ public class MySqlTraitStore implements TraitStore {
     }
 
     @Override
+    public List<TraitEntity> findByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return db.find(TraitEntity.class)
+                .where()
+                .in("id", ids)
+                .findList();
+    }
+
+    @Override
     public List<TraitEntity> findAll() {
         return db.find(TraitEntity.class)
                 .orderBy("createTime desc")

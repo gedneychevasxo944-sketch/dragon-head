@@ -89,6 +89,16 @@ public class CharacterRegistry {
     }
 
     /**
+     * 批量获取 Character
+     *
+     * @param characterIds Character ID 列表
+     * @return Character 列表
+     */
+    public List<Character> findByIds(List<String> characterIds) {
+        return characterStore.findByIds(characterIds);
+    }
+
+    /**
      * 获取默认 Character
      *
      * @return Optional Character
