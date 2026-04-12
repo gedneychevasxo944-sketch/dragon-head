@@ -5,6 +5,7 @@ import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActExecutor;
 import org.dragon.agent.workflow.WorkflowExecutor;
 import org.dragon.agent.workflow.WorkflowStore;
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.character.Character;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.TraitResolutionService;
@@ -38,6 +39,7 @@ public class CharacterExecutionManager {
     private final OrchestrationService orchestrationService;
     private final SkillRegistry skillRegistry;
     private final TraitResolutionService traitResolutionService;
+    private final AssetAssociationService assetAssociationService;
 
     /**
      * 执行 Character 对话
@@ -115,6 +117,7 @@ public class CharacterExecutionManager {
                 .orchestrationService(orchestrationService)
                 .skillRegistry(skillRegistry)
                 .traitResolutionService(traitResolutionService)
+                .assetAssociationService(assetAssociationService)
                 .workspaceId(null)
                 .build();
     }
