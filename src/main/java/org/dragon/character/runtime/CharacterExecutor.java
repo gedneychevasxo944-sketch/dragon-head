@@ -26,6 +26,7 @@ import org.dragon.task.Task;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.util.SpringUtils;
 
 /**
  * Character 执行器
@@ -47,7 +48,7 @@ public class CharacterExecutor {
      * Prompt 物料上下文构建器（可选）
      */
     @Builder.Default
-    private final PromptMaterialContextBuilder promptMaterialContextBuilder = null;
+    private final PromptMaterialContextBuilder promptMaterialContextBuilder = SpringUtils.getBean(PromptMaterialContextBuilder.class);
 
     /**
      * Prompt 物料配置属性（可选）
