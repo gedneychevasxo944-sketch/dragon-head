@@ -55,12 +55,19 @@ public class ApprovalController {
     /**
      * 获取需要我审批的待处理请求
      * GET /api/v1/approvals/pending
+     * <p>system 用户会看到所有待审批请求，其他用户只看分配给自己的
      */
     @Operation(summary = "获取需要我审批的待处理请求")
     @GetMapping("/pending")
     public ApiResponse<List<ApprovalRequestDTO>> getPendingApprovals(
             @AuthenticationPrincipal UserPrincipal principal) {
-        List<ApprovalRequestDTO> requests = approvalService.getPendingApprovals(principal.getUserId());
+        List<ApprovalRequestDTO> requests;
+        if (SYSTEM_USERNAME.equals(principal.getUsername())) {
+            // system 用户获取所有待审批请求
+            requests = approvalService.getAllPendingApprovals();
+        } else {
+            requests = approvalService.getPendingApprovals(principal.getUserId());
+        }
         return ApiResponse.success(requests);
     }
 
@@ -120,7 +127,7 @@ public class ApprovalController {
         // 获取 system 用户 ID 作为审批人
         Long systemUserId = userStore.findByUsername(SYSTEM_USERNAME)
                 .map(u -> u.getId())
-                .orElse(null);
+                .orElseThrow(() -> new IllegalStateException("system 用户不存在，请确保 V2 migration 已执行"));
 
         String requestId = approvalService.createApprovalRequest(
                 request.getResourceType(),
