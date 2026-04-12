@@ -24,9 +24,17 @@ public class AssetMemberDTO {
 
     private String resourceId;
 
+    /**
+     * 资源名称（如 trait 名称、character 名称等）
+     */
     private String resourceName;
 
     private Role role;
+
+    /**
+     * 发布状态：unpublished（私有）、pending（待发布）、published（已发布）
+     */
+    private String publishStatus;
 
     private String invitedBy;
 

@@ -31,4 +31,9 @@ public class ApprovalContext {
      * 审批意见/备注
      */
     private String comment;
+
+    /**
+     * 资源名称（用于通知）
+     */
+    private String resourceName;
 }

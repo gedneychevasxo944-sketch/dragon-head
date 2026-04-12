@@ -12,6 +12,7 @@ import org.dragon.approval.enums.ApprovalStatus;
 import org.dragon.approval.enums.ApprovalType;
 import org.dragon.approval.store.ApprovalStore;
 import org.dragon.datasource.entity.ApprovalRequestEntity;
+import org.dragon.notification.service.NotificationService;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreFactory;
 import org.dragon.user.store.UserStore;
@@ -32,6 +33,7 @@ public class ApprovalService {
 
     private final ApprovalStore approvalStore;
     private final UserStore userStore;
+    private final NotificationService notificationService;
     private final Map<ApprovalType, ApprovalStrategy> strategies;
 
     /**
@@ -50,9 +52,11 @@ public class ApprovalService {
     }
 
     public ApprovalService(StoreFactory storeFactory, @Lazy UserStore userStore,
+                           NotificationService notificationService,
                            List<ApprovalStrategy> strategyList) {
         this.approvalStore = storeFactory.get(ApprovalStore.class);
         this.userStore = userStore;
+        this.notificationService = notificationService;
 
         // 初始化策略映射
         this.strategies = new EnumMap<>(ApprovalType.class);
@@ -90,7 +94,6 @@ public class ApprovalService {
                 .requesterId(requesterId)
                 .requesterName(requesterName)
                 .approverId(approverId)
-                .approverId(targetUserId)
                 .targetUserId(targetUserId)
                 .reason(reason)
                 .status(ApprovalStatus.PENDING)
@@ -100,6 +103,16 @@ public class ApprovalService {
         approvalStore.save(request);
         log.info("[ApprovalService] Created approval request: type={}, assetId={}, approvalType={}, requesterId={}",
                 type, assetId, approvalType, requesterId);
+
+        // 发送通知给审批人
+        String resourceName = type.name() + ":" + assetId;
+        notificationService.notifyApprovalRequest(
+                targetUserId,
+                resourceName,
+                requesterName,
+                request.getId(),
+                null
+        );
 
         return request.getId();
     }
@@ -129,6 +142,17 @@ public class ApprovalService {
         // 执行审批通过后的业务操作（策略模式）
         executeStrategy(request, approverId, comment, true);
 
+        // 发送审批结果通知给申请人
+        String resourceName = request.getResourceType().name() + ":" + request.getResourceId();
+        notificationService.notifyApprovalResult(
+                request.getRequesterId(),
+                resourceName,
+                true,
+                approverName,
+                requestId,
+                null
+        );
+
         log.info("[ApprovalService] Approved request: id={}, approverId={}", requestId, approverId);
     }
 
@@ -156,6 +180,29 @@ public class ApprovalService {
 
         // 执行审批拒绝后的业务操作（策略模式）
         executeStrategy(request, approverId, comment, false);
+
+        // 发送审批结果通知给申请人
+        String resourceName = request.getResourceType().name() + ":" + request.getResourceId();
+        notificationService.notifyApprovalResult(
+                request.getRequesterId(),
+                resourceName,
+                false,
+                approverName,
+                requestId,
+                null
+        );
+
+        // 对于 ADD_COLLABORATOR 审批，也需要通知被邀请人（targetUserId）
+        if (request.getApprovalType() == ApprovalType.ADD_COLLABORATOR && request.getTargetUserId() != null) {
+            notificationService.notifyApprovalResult(
+                    request.getTargetUserId(),
+                    resourceName,
+                    false,
+                    approverName,
+                    requestId,
+                    null
+            );
+        }
 
         log.info("[ApprovalService] Rejected request: id={}, approverId={}", requestId, approverId);
     }

@@ -50,15 +50,20 @@ public class CharacterService {
                                                   String status, String source) {
         List<Character> all = characterRegistry.listAll();
 
-        // 按用户可见性过滤
+        // 按用户可见性过滤：成员资产 + 已发布资产
         Long userId = Long.parseLong(UserUtils.getUserId());
-        List<String> visibleIds = permissionService.getVisibleAssets(ResourceType.CHARACTER, userId);
+        List<String> memberCharacterIds = permissionService.getVisibleAssets(ResourceType.CHARACTER, userId);
+        List<String> publishedCharacterIds = publishStatusService.getPublishedAssetIds(ResourceType.CHARACTER);
+
+        // 合并可见性：成员资产 + 已发布资产
+        java.util.Set<String> visibleIds = new java.util.HashSet<>(memberCharacterIds);
+        visibleIds.addAll(publishedCharacterIds);
 
         // 过滤
         List<Character> filtered = all.stream()
                 .filter(c -> {
                     // 可见性过滤
-                    if (visibleIds != null && !visibleIds.isEmpty() && !visibleIds.contains(c.getId())) {
+                    if (!visibleIds.isEmpty() && !visibleIds.contains(c.getId())) {
                         return false;
                     }
                     if (search != null && !search.isBlank()) {
