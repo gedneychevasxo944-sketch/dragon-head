@@ -169,17 +169,17 @@ INSERT INTO skills (skill_id, name, display_name, description, content, category
 VALUES
   ('skill-001', '通用助手', '通用助手', '提供通用的 AI 助手能力，支持多种任务类型',
    '# 通用助手技能\n\n## 能力\n- 问答对话\n- 任务分解\n- 信息检索\n- 文本生成',
-   '通用', 'public', 'official', NULL, '官方助手', 'active', 1,
+   'utility', 'public', 'official', NULL, '官方助手', 'active', 1,
    '["助手", "通用", "问答"]', NOW(), NOW()),
 
   ('skill-002', '任务管理', '任务管理技能', '专业的任务管理和项目跟踪能力',
    '# 任务管理技能\n\n## 能力\n- 创建和分解任务\n- 跟踪任务进度\n- 识别任务依赖\n- 风险预警',
-   '项目管理', 'public', 'official', NULL, '官方助手', 'active', 2,
+   'development', 'public', 'official', NULL, '官方助手', 'active', 2,
    '["任务", "管理", "项目"]', NOW(), NOW()),
 
   ('skill-data-analysis', '数据分析', '数据分析技能', '从复杂数据中提取洞察，支持决策',
    '# 数据分析技能\n\n## 能力\n- 数据清洗和预处理\n- 统计分析和建模\n- 可视化生成\n- 洞察提炼',
-   '数据分析', 'public', 'official', NULL, '官方助手', 'active', 1,
+   'analysis', 'public', 'official', NULL, '官方助手', 'active', 1,
    '["数据", "分析", "可视化"]', NOW(), NOW());
 
 -- ============================================================================

@@ -153,7 +153,7 @@ public class CharacterService {
                 .stream()
                 .map(assoc -> skillStore.findLatestActiveBySkillId(assoc.getTargetId())
                         .map(skillDO -> CharacterDetailDTO.SkillInfo.builder()
-                                .id(skillDO.getSkillId())
+                                .skillId(skillDO.getSkillId())
                                 .name(skillDO.getName())
                                 .displayName(skillDO.getDisplayName())
                                 .description(skillDO.getDescription())

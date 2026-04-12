@@ -234,24 +234,23 @@ public class MySqlSkillStore implements SkillStore {
         String safeSort = resolveSortColumn(sortBy);
         String safeOrder = "asc".equalsIgnoreCase(sortOrder) ? "ASC" : "DESC";
 
-        String sql = """
-                SELECT s.*
-                FROM skills s
-                INNER JOIN (
-                    SELECT skill_id, MAX(version) AS max_ver
-                    FROM skills
-                    WHERE status != 'deleted'
-                    GROUP BY skill_id
-                ) t ON s.skill_id = t.skill_id AND s.version = t.max_ver
-                """ + where + """
-                ORDER BY s.""" + safeSort + " " + safeOrder + """
-                \nLIMIT :limit OFFSET :offset
-                """;
+        // 构建完整 SQL
+        String sql = "SELECT s.* FROM skills s " +
+                "INNER JOIN (SELECT skill_id, MAX(version) AS max_ver FROM skills WHERE status != 'deleted' GROUP BY skill_id) t " +
+                "ON s.skill_id = t.skill_id AND s.version = t.max_ver " +
+                where +
+                " ORDER BY s." + safeSort + " " + safeOrder + " LIMIT :limit OFFSET :offset";
 
         io.ebean.Query<SkillEntity> query = mysqlDb.findNative(SkillEntity.class, sql)
                 .setParameter("limit", limit)
                 .setParameter("offset", offset);
-        bindSearchParams(query, keyword, status, category, visibility, creatorId);
+        // 防御性绑定：确保所有 WHERE 条件中的参数都被设置
+        bindSearchParams(query,
+                (keyword == null || keyword.isBlank()) ? null : keyword,
+                (status == null || status.isBlank()) ? null : status,
+                (category == null || category.isBlank()) ? null : category,
+                (visibility == null || visibility.isBlank()) ? null : visibility,
+                creatorId);
 
         return query.findList()
                 .stream()
@@ -276,7 +275,12 @@ public class MySqlSkillStore implements SkillStore {
                 """ + where;
 
         io.ebean.SqlQuery query = mysqlDb.sqlQuery(sql);
-        bindSearchParams(query, keyword, status, category, visibility, creatorId);
+        bindSearchParams(query,
+                (keyword == null || keyword.isBlank()) ? null : keyword,
+                (status == null || status.isBlank()) ? null : status,
+                (category == null || category.isBlank()) ? null : category,
+                (visibility == null || visibility.isBlank()) ? null : visibility,
+                creatorId);
 
         io.ebean.SqlRow row = query.findOne();
         return row != null ? row.getInteger("cnt") : 0;
