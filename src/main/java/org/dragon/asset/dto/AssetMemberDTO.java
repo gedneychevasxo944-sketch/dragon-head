@@ -45,4 +45,14 @@ public class AssetMemberDTO {
     private boolean accepted;
 
     private LocalDateTime createdAt;
+
+    /**
+     * 用户是否提交过该资产的待审批申请
+     */
+    private boolean hasPendingApproval;
+
+    /**
+     * 是否有需要该用户审批的申请
+     */
+    private boolean needsMyApproval;
 }

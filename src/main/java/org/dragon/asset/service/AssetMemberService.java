@@ -1,26 +1,28 @@
 package org.dragon.asset.service;
 
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.dragon.approval.enums.ApprovalStatus;
+import org.dragon.approval.store.ApprovalStore;
 import org.dragon.asset.dto.AssetMemberDTO;
 import org.dragon.asset.dto.CollaboratorDTO;
 import org.dragon.asset.store.AssetMemberStore;
 import org.dragon.asset.store.AssetPublishStatusStore;
 import org.dragon.character.CharacterRegistry;
+import org.dragon.datasource.entity.ApprovalRequestEntity;
 import org.dragon.datasource.entity.AssetMemberEntity;
 import org.dragon.permission.dto.InvitationDTO;
-import org.dragon.permission.enums.Role;
 import org.dragon.permission.enums.ResourceType;
+import org.dragon.permission.enums.Role;
 import org.dragon.store.StoreFactory;
 import org.dragon.trait.store.TraitStore;
 import org.dragon.user.store.UserStore;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * AssetMemberService 资产成员服务
@@ -35,6 +37,7 @@ public class AssetMemberService {
     private final AssetPublishStatusStore publishStatusStore;
     private final TraitStore traitStore;
     private final CharacterRegistry characterRegistry;
+    private final ApprovalStore approvalStore;
 
     public AssetMemberService(StoreFactory storeFactory, CharacterRegistry characterRegistry) {
         this.assetMemberStore = storeFactory.get(AssetMemberStore.class);
@@ -42,6 +45,7 @@ public class AssetMemberService {
         this.publishStatusStore = storeFactory.get(AssetPublishStatusStore.class);
         this.traitStore = storeFactory.get(TraitStore.class);
         this.characterRegistry = characterRegistry;
+        this.approvalStore = storeFactory.get(ApprovalStore.class);
     }
 
     /**
@@ -56,9 +60,49 @@ public class AssetMemberService {
         // 批量获取资产名称
         Map<ResourceType, Map<String, String>> namesByType = batchLoadResourceNames(members);
 
+        // 批量获取待审批信息
+        PendingApprovalInfo pendingInfo = batchLoadPendingApprovalInfo(userId);
+
         return members.stream()
-                .map(m -> toAssetMemberDTOWithNames(m, namesByType))
+                .map(m -> toAssetMemberDTOWithNames(m, namesByType, pendingInfo))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 批量加载待审批信息
+     */
+    private PendingApprovalInfo batchLoadPendingApprovalInfo(Long userId) {
+        // 查询用户作为申请人提交的待审批请求
+        List<ApprovalRequestEntity> myRequests = approvalStore.findByRequester(userId).stream()
+                .filter(r -> r.getStatus() == ApprovalStatus.PENDING)
+                .collect(Collectors.toList());
+
+        // 查询需要用户审批的待审批请求
+        List<ApprovalRequestEntity> pendingApprovals = approvalStore.findPendingByApprover(userId).stream()
+                .filter(r -> r.getStatus() == ApprovalStatus.PENDING)
+                .collect(Collectors.toList());
+
+        // 构建资源标识 -> 是否是我提交的标识
+        java.util.Set<String> myPendingSet = myRequests.stream()
+                .map(r -> r.getResourceType().name() + ":" + r.getResourceId())
+                .collect(Collectors.toSet());
+
+        // 构建资源标识 -> 是否是需要我审批的标识
+        java.util.Set<String> needsMyApprovalSet = pendingApprovals.stream()
+                .map(r -> r.getResourceType().name() + ":" + r.getResourceId())
+                .collect(Collectors.toSet());
+
+        return new PendingApprovalInfo(myPendingSet, needsMyApprovalSet);
+    }
+
+    private static class PendingApprovalInfo {
+        private final java.util.Set<String> myPendingApprovals;
+        private final java.util.Set<String> needsMyApproval;
+
+        PendingApprovalInfo(java.util.Set<String> myPendingApprovals, java.util.Set<String> needsMyApproval) {
+            this.myPendingApprovals = myPendingApprovals;
+            this.needsMyApproval = needsMyApproval;
+        }
     }
 
     /**
@@ -357,42 +401,10 @@ public class AssetMemberService {
                 .build();
     }
 
-    private AssetMemberDTO toAssetMemberDTO(AssetMemberEntity member) {
-        // 获取发布状态
-        String publishStatus = publishStatusStore
-                .findByResource(member.getResourceType().name(), member.getResourceId())
-                .map(entity -> {
-                    String status = entity.getStatus();
-                    // 转换为前端格式：DRAFT->unpublished, PUBLISHED->published, ARCHIVED->unpublished
-                    if ("PUBLISHED".equals(status)) {
-                        return "published";
-                    }
-                    return "unpublished";
-                })
-                .orElse("unpublished");
-
-        // 获取资产名称
-        String resourceName = resolveResourceName(member.getResourceType(), member.getResourceId());
-
-        return AssetMemberDTO.builder()
-                .id(member.getId())
-                .resourceType(member.getResourceType())
-                .resourceId(member.getResourceId())
-                .resourceName(resourceName)
-                .role(member.getRole())
-                .publishStatus(publishStatus)
-                .invitedBy(member.getInvitedBy())
-                .invitedAt(member.getInvitedAt())
-                .acceptedAt(member.getAcceptedAt())
-                .accepted(member.getAccepted())
-                .createdAt(member.getCreatedAt())
-                .build();
-    }
-
     /**
      * 使用预加载的名称映射将 AssetMemberEntity 转换为 DTO
      */
-    private AssetMemberDTO toAssetMemberDTOWithNames(AssetMemberEntity member, Map<ResourceType, Map<String, String>> namesByType) {
+    private AssetMemberDTO toAssetMemberDTOWithNames(AssetMemberEntity member, Map<ResourceType, Map<String, String>> namesByType, PendingApprovalInfo pendingInfo) {
         // 获取发布状态
         String publishStatus = publishStatusStore
                 .findByResource(member.getResourceType().name(), member.getResourceId())
@@ -409,6 +421,11 @@ public class AssetMemberService {
         Map<String, String> typeNames = namesByType.get(member.getResourceType());
         String resourceName = typeNames != null ? typeNames.get(member.getResourceId()) : null;
 
+        // 检查待审批状态
+        String resourceKey = member.getResourceType().name() + ":" + member.getResourceId();
+        boolean hasPendingApproval = pendingInfo.myPendingApprovals.contains(resourceKey);
+        boolean needsMyApproval = pendingInfo.needsMyApproval.contains(resourceKey);
+
         return AssetMemberDTO.builder()
                 .id(member.getId())
                 .resourceType(member.getResourceType())
@@ -421,6 +438,8 @@ public class AssetMemberService {
                 .acceptedAt(member.getAcceptedAt())
                 .accepted(member.getAccepted())
                 .createdAt(member.getCreatedAt())
+                .hasPendingApproval(hasPendingApproval)
+                .needsMyApproval(needsMyApproval)
                 .build();
     }
 
@@ -428,17 +447,14 @@ public class AssetMemberService {
      * 根据资源类型和ID解析资产名称
      */
     private String resolveResourceName(ResourceType type, String resourceId) {
-        switch (type) {
-            case TRAIT:
-                return traitStore.findById(Long.parseLong(resourceId))
-                        .map(t -> t.getName())
-                        .orElse(null);
-            case CHARACTER:
-                return characterRegistry.get(resourceId)
-                        .map(c -> c.getName())
-                        .orElse(null);
-            default:
-                return null;
-        }
+        return switch (type) {
+            case TRAIT -> traitStore.findById(Long.valueOf(resourceId))
+                    .map(t -> t.getName())
+                    .orElse(null);
+            case CHARACTER -> characterRegistry.get(resourceId)
+                    .map(c -> c.getName())
+                    .orElse(null);
+            default -> null;
+        };
     }
 }
