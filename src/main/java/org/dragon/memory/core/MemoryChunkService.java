@@ -1,12 +1,12 @@
 package org.dragon.memory.core;
 
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.api.controller.dto.memory.MemoryChunkDTO;
-import org.dragon.api.controller.dto.memory.CreateChunkRequest;
-import org.dragon.api.controller.dto.memory.UpdateChunkRequest;
 import org.dragon.api.controller.dto.memory.BatchDeleteChunksRequest;
-import org.dragon.api.controller.dto.memory.BatchUpdateIndexStatusRequest;
 import org.dragon.api.controller.dto.memory.BatchOperationResultDTO;
+import org.dragon.api.controller.dto.memory.BatchUpdateIndexStatusRequest;
+import org.dragon.api.controller.dto.memory.CreateChunkRequest;
+import org.dragon.api.controller.dto.memory.MemoryChunkDTO;
+import org.dragon.api.controller.dto.memory.UpdateChunkRequest;
 
 /**
  * 记忆片段服务接口
@@ -15,19 +15,20 @@ import org.dragon.api.controller.dto.memory.BatchOperationResultDTO;
  * @version 1.0
  */
 public interface MemoryChunkService {
+
     /**
      * 获取片段列表
      *
-     * @param fileId         文件 ID（可选）
-     * @param sourceId       数据源 ID（可选）
-     * @param indexedStatus  索引状态过滤
-     * @param tags           标签过滤
-     * @param search         搜索关键词
-     * @param page           页码
-     * @param pageSize       每页大小
+     * @param sourceId      数据源 ID（可选）
+     * @param syncStatus    同步状态过滤（可选）
+     * @param indexedStatus 索引状态过滤（可选）
+     * @param tags          标签过滤（可选）
+     * @param search        搜索关键词（可选）
+     * @param page          页码
+     * @param pageSize      每页大小
      * @return 片段分页列表
      */
-    PageResponse<MemoryChunkDTO> getChunks(String fileId, String sourceId, String indexedStatus, String tags, String search, int page, int pageSize);
+    PageResponse<MemoryChunkDTO> getChunks(String sourceId, String syncStatus, String indexedStatus, String tags, String search, int page, int pageSize);
 
     /**
      * 获取片段详情
@@ -77,4 +78,12 @@ public interface MemoryChunkService {
      * @return 批量操作结果
      */
     BatchOperationResultDTO batchUpdateIndexStatus(BatchUpdateIndexStatusRequest request);
+
+    /**
+     * 同步片段文件（更新 syncStatus）
+     *
+     * @param chunkId 片段 ID
+     * @return 同步结果描述
+     */
+    String syncChunk(String chunkId);
 }

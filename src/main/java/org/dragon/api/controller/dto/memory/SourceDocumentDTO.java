@@ -90,9 +90,9 @@ public class SourceDocumentDTO {
     private boolean isBuiltIn;
 
     /**
-     * 记忆文件列表
+     * 记忆chunk列表
      */
-    private List<MemoryFileDTO> files;
+    private List<MemoryChunkDTO> files;
 
     /**
      * 创建时间

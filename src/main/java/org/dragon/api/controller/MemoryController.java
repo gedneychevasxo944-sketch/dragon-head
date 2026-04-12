@@ -4,7 +4,6 @@ import org.dragon.api.controller.dto.memory.*;
 import org.dragon.api.controller.dto.ApiResponse;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.memory.core.SourceDocumentService;
-import org.dragon.memory.core.MemoryFileService;
 import org.dragon.memory.core.MemoryChunkService;
 import org.dragon.memory.core.BindingService;
 import org.dragon.memory.core.RetrievalService;
@@ -12,8 +11,6 @@ import org.dragon.memory.core.OperationsService;
 import org.dragon.memory.core.StatsService;
 import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * Memory 模块控制器
@@ -27,7 +24,6 @@ import java.util.List;
 public class MemoryController {
     private final PermissionChecker permissionChecker;
     private final SourceDocumentService sourceDocumentService;
-    private final MemoryFileService memoryFileService;
     private final MemoryChunkService memoryChunkService;
     private final BindingService bindingService;
     private final RetrievalService retrievalService;
@@ -36,7 +32,6 @@ public class MemoryController {
 
     public MemoryController(PermissionChecker permissionChecker,
                            SourceDocumentService sourceDocumentService,
-                           MemoryFileService memoryFileService,
                            MemoryChunkService memoryChunkService,
                            BindingService bindingService,
                            RetrievalService retrievalService,
@@ -44,7 +39,6 @@ public class MemoryController {
                            StatsService statsService) {
         this.permissionChecker = permissionChecker;
         this.sourceDocumentService = sourceDocumentService;
-        this.memoryFileService = memoryFileService;
         this.memoryChunkService = memoryChunkService;
         this.bindingService = bindingService;
         this.retrievalService = retrievalService;
@@ -110,26 +104,6 @@ public class MemoryController {
                 .build());
     }
 
-    // ==================== 记忆文件管理接口 ====================
-
-    /**
-     * 获取文件列表
-     */
-    @GetMapping("/files")
-    public ApiResponse<PageResponse<MemoryFileDTO>> getFiles(@RequestParam(required = false) String sourceId,
-                                                             @RequestParam(defaultValue = "1") int page,
-                                                             @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.success(memoryFileService.getFiles(sourceId, page, pageSize));
-    }
-
-    /**
-     * 获取文件详情
-     */
-    @GetMapping("/files/{fileId}")
-    public ApiResponse<MemoryFileDTO> getFile(@PathVariable String fileId) {
-        return ApiResponse.success(memoryFileService.getFile(fileId));
-    }
-
     /**
      * 获取文件的片段
      */
@@ -139,17 +113,6 @@ public class MemoryController {
                                                                    @RequestParam(defaultValue = "1") int page,
                                                                    @RequestParam(defaultValue = "20") int pageSize) {
         return ApiResponse.success(memoryChunkService.getChunks(fileId, null, indexedStatus, null, null, page, pageSize));
-    }
-
-    /**
-     * 同步文件
-     */
-    @PostMapping("/files/{fileId}/sync")
-    public ApiResponse<SyncResultDTO> syncFile(@PathVariable String fileId) {
-        return ApiResponse.success(SyncResultDTO.builder()
-                .success(true)
-                .message(memoryFileService.syncFile(fileId))
-                .build());
     }
 
     // ==================== 记忆片段管理接口 ====================
