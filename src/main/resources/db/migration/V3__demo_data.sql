@@ -169,17 +169,17 @@ INSERT INTO skills (skill_id, name, display_name, description, content, category
 VALUES
   ('skill-001', '通用助手', '通用助手', '提供通用的 AI 助手能力，支持多种任务类型',
    '# 通用助手技能\n\n## 能力\n- 问答对话\n- 任务分解\n- 信息检索\n- 文本生成',
-   '通用', 'public', 'official', NULL, '官方助手', 'RUNNING', 1,
+   '通用', 'public', 'official', NULL, '官方助手', 'active', 1,
    '["助手", "通用", "问答"]', NOW(), NOW()),
 
   ('skill-002', '任务管理', '任务管理技能', '专业的任务管理和项目跟踪能力',
    '# 任务管理技能\n\n## 能力\n- 创建和分解任务\n- 跟踪任务进度\n- 识别任务依赖\n- 风险预警',
-   '项目管理', 'public', 'official', NULL, '官方助手', 'RUNNING', 2,
+   '项目管理', 'public', 'official', NULL, '官方助手', 'active', 2,
    '["任务", "管理", "项目"]', NOW(), NOW()),
 
   ('skill-data-analysis', '数据分析', '数据分析技能', '从复杂数据中提取洞察，支持决策',
    '# 数据分析技能\n\n## 能力\n- 数据清洗和预处理\n- 统计分析和建模\n- 可视化生成\n- 洞察提炼',
-   '数据分析', 'public', 'official', NULL, '官方助手', 'RUNNING', 1,
+   '数据分析', 'public', 'official', NULL, '官方助手', 'active', 1,
    '["数据", "分析", "可视化"]', NOW(), NOW());
 
 -- ============================================================================
@@ -332,7 +332,33 @@ VALUES
   ('MEMORY', 'cs-003', 1, 'OWNER', '1', NOW(), NOW(), TRUE, NOW(), NOW());
 
 -- ============================================================================
--- 13. 物料文件 (Material)
+-- 13. 资产发布状态 (Asset Publish Status)
+-- 说明: V3 创建的 Character、Skill、Observer、Memory 的初始发布状态均为 DRAFT
+-- ============================================================================
+INSERT INTO asset_publish_status (id, resource_type, resource_id, status, version, created_at, updated_at) VALUES
+  -- Character 资产
+  (UUID(), 'CHARACTER', 'char-001', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'CHARACTER', 'char-002', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'CHARACTER', 'char-003', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'CHARACTER', 'char-pm', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'CHARACTER', 'char-analyst', 'DRAFT', 1, NOW(), NOW()),
+
+  -- Skill 资产
+  (UUID(), 'SKILL', 'skill-001', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'SKILL', 'skill-002', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'SKILL', 'skill-data-analysis', 'DRAFT', 1, NOW(), NOW()),
+
+  -- Observer 资产
+  (UUID(), 'OBSERVER', 'obs-001', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'OBSERVER', 'obs-test', 'DRAFT', 1, NOW(), NOW()),
+
+  -- Memory 资产 (COMMONSENSE)
+  (UUID(), 'COMMONSENSE', 'cs-001', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'COMMONSENSE', 'cs-002', 'DRAFT', 1, NOW(), NOW()),
+  (UUID(), 'COMMONSENSE', 'cs-003', 'DRAFT', 1, NOW(), NOW());
+
+-- ============================================================================
+-- 14. 物料文件 (Material)
 -- ============================================================================
 INSERT INTO material (id, workspace_id, name, size, type, storage_key, uploader, uploaded_at, kind, parse_status, metadata)
 VALUES
