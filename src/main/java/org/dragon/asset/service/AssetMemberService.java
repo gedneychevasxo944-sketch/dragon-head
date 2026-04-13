@@ -404,6 +404,11 @@ public class AssetMemberService {
      * 使用预加载的名称映射将 AssetMemberEntity 转换为 DTO
      */
     private AssetMemberDTO toAssetMemberDTOWithNames(AssetMemberEntity member, Map<ResourceType, Map<String, String>> namesByType, PendingApprovalInfo pendingInfo) {
+        // 检查待审批状态（需要在查询 publishStatus 之前）
+        String resourceKey = member.getResourceType().name() + ":" + member.getResourceId();
+        boolean hasPendingApproval = pendingInfo.myPendingApprovals.contains(resourceKey);
+        boolean needsMyApproval = pendingInfo.needsMyApproval.contains(resourceKey);
+
         // 获取发布状态
         String publishStatus = publishStatusStore
                 .findByResource(member.getResourceType().name(), member.getResourceId())
@@ -416,14 +421,14 @@ public class AssetMemberService {
                 })
                 .orElse("unpublished");
 
+        // 如果有待审批的发布申请，状态应为 pending
+        if (hasPendingApproval && "unpublished".equals(publishStatus)) {
+            publishStatus = "pending";
+        }
+
         // 从预加载的名称映射中获取资产名称
         Map<String, String> typeNames = namesByType.get(member.getResourceType());
         String resourceName = typeNames != null ? typeNames.get(member.getResourceId()) : null;
-
-        // 检查待审批状态
-        String resourceKey = member.getResourceType().name() + ":" + member.getResourceId();
-        boolean hasPendingApproval = pendingInfo.myPendingApprovals.contains(resourceKey);
-        boolean needsMyApproval = pendingInfo.needsMyApproval.contains(resourceKey);
 
         return AssetMemberDTO.builder()
                 .id(member.getId())
