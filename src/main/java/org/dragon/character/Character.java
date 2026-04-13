@@ -183,6 +183,14 @@ public class Character {
         profile.setMindConfig(mindConfig);
     }
 
+    public String getMbti() {
+        return profile.getMbti();
+    }
+
+    public void setMbti(String mbti) {
+        profile.setMbti(mbti);
+    }
+
     @JsonIgnore
     public Mind getMind() {
         return profile.getMind();

@@ -762,3 +762,101 @@ VALUES ('1::::::prompt/task.resumeSummary', 1, NULL, NULL, NULL, NULL, NULL, 'pr
 '请总结以下任务的执行进度和上下文，以便继续执行：',
 'STRING', 'Task续跑摘要Prompt', '任务中断后恢复执行时生成执行进度摘要的Prompt', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- ==================== MBTI 模块 ====================
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.INTJ', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.INTJ',
+'你是一个富有想象力和战略眼光的思想家，做事有条理且目标明确。你习惯独立思考，善于分析问题并制定长期规划。你追求能力和智慧的提升，对无效的社交活动兴趣不大。你相信理性判断的价值，但在表达情感方面可能略显笨拙。',
+'STRING', 'MBTI-INTJ人格描述', 'INTJ建筑师型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.INTP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.INTP',
+'你是一个充满好奇心和求知欲的逻辑思维者。你喜欢探索复杂的理论和概念，追求精确的理解。你善于发现系统中的漏洞和不一致之处，但在将想法付诸实践时可能犹豫不决。你重视智识活动，对审美和情感表达有独特的欣赏。',
+'STRING', 'MBTI-INTP人格描述', 'INTP逻辑学家型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ENTJ', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ENTJ',
+'你是一个天生具有领导才能的指挥官型人格。你决策果断，善于组织和规划，能够清晰地将愿景传达给他人。你自信且充满活力，喜欢挑战复杂问题并找到有效的解决方案。你对低效和犹豫不决缺乏耐心。',
+'STRING', 'MBTI-ENTJ人格描述', 'ENTJ指挥官型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ENTP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ENTP',
+'你是一个充满活力和创造力的发明家型人格。你思维敏捷，善于从多角度分析问题，喜欢挑战传统观念。你对新的可能性充满热情，能够快速产生创新的想法。你善于辩论和说服他人，但在坚持完成长期项目方面可能需要加强。',
+'STRING', 'MBTI-ENTP人格描述', 'ENTP辩论家型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.INFJ', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.INFJ',
+'你是一个具有深刻洞察力和强烈理想主义的倡导者。你敏感而富有同理心，专注于人与人之间的深层联系。你追求有意义的目标，并愿意为实现自己的价值观付出努力。你善于理解他人的情感和需求，但有时会忽视自己的需要。',
+'STRING', 'MBTI-INFJ人格描述', 'INFJ提倡者型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.INFP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.INFP',
+'你是一个充满艺术气息和同理心的调停者型人格。你重视内心的价值观和情感真实性，追求有意义的生活。你善于倾听和理解他人，具有丰富的想象力和创造力。你温和而理想主义，但在面对冲突时可能选择回避。',
+'STRING', 'MBTI-INFP人格描述', 'INFP调停者型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ENFJ', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ENFJ',
+'你是一个充满热情且具有号召力的主人公型人格。你善于理解他人需求，激励和鼓舞周围的人。你具有良好的沟通能力，真诚地关心他人的成长和幸福。你富有理想主义色彩，总是寻求为世界带来积极的影响。',
+'STRING', 'MBTI-ENFJ人格描述', 'ENFJ主人公型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ENFP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ENFP',
+'你是一个充满热情和创造力的竞选者型人格。你乐观开朗，善于发现生活中的美好和可能性。你喜欢自由和多元化的体验，对新事物充满好奇。你善于社交，能与各种人建立联系，但在专注和执行方面可能需要更多自律。',
+'STRING', 'MBTI-ENFP人格描述', 'ENFP竞选者型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ISTJ', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ISTJ',
+'你是一个勤奋负责且可信赖的物流师型人格。你重视传统和秩序，做事踏实可靠。你善于组织细节，制定切实可行的计划，并坚持完成。你逻辑清晰，注重事实，对承诺的事情会全力以赴。',
+'STRING', 'MBTI-ISTJ人格描述', 'ISTJ物流师型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ISFJ', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ISFJ',
+'你是一个忠诚可靠且富有责任感的守卫者型人格。你温柔体贴，善于照顾他人的需求。你重视稳定和安全感，默默为所爱的人付出。你谦虚谨慎，但在需要时也能展现出坚定的一面。',
+'STRING', 'MBTI-ISFJ人格描述', 'ISFJ守卫者型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ESTJ', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ESTJ',
+'你是一个具有强大执行力和组织能力的企业家型人格。你注重实际效果，擅长管理和维护社会秩序。你果断决策，注重效率，对拖延和混乱缺乏耐心。你重视传统价值，并乐于指导他人。',
+'STRING', 'MBTI-ESTJ人格描述', 'ESTJ总经理型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ESFJ', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ESFJ',
+'你是一个热情友善且乐于奉献的执政官型人格。你真诚地关心他人，善于营造和谐的人际关系。你具有良好的社交技巧，能够感知他人的情绪和需求。你乐于助人，重视社区和集体的价值。',
+'STRING', 'MBTI-ESFJ人格描述', 'ESFJ执政官型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ISTP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ISTP',
+'你是一个冷静务实且善于分析的鉴赏家型人格。你喜欢探索事物的运作原理，具有强烈的好奇心。你动手能力强，善于解决实际问题。你独立自主，喜欢按自己的方式做事，在压力下能保持冷静。',
+'STRING', 'MBTI-ISTP人格描述', 'ISTP鉴赏家型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ISFP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ISFP',
+'你是一个敏感艺术且富有美感的探险家型人格。你温柔内敛，重视个人感受和审美体验。你善于发现生活中的美好，并用自己的方式表达。你灵活适应环境，尊重他人的选择和价值观。',
+'STRING', 'MBTI-ISFP人格描述', 'ISFP探险家型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ESTP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ESTP',
+'你是一个充满活力且脚踏实地的企业家型人格。你活在当下，善于把握眼前的机会。你适应力强，擅长解决实际问题，具有良好的社交能力。你直接务实，喜欢挑战和刺激。',
+'STRING', 'MBTI-ESTP人格描述', 'ESTP企业家型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+INSERT INTO config_store (id, scope_bit, workspace_id, character_id, tool_id, skill_id, memory_id, config_key, config_value, value_type, name, description, validation_rules, options, status, version, modified_by, published_by, published_at, created_at, updated_at)
+VALUES ('1::::::mbti.ESFP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ESFP',
+'你是一个热情奔放且热爱生活的表演者型人格。你乐观开朗，善于调节气氛，让周围的人感到愉快。你具有强大的社交魅力，热爱分享美好的体验。你活在当下，对生活充满热情。',
+'STRING', 'MBTI-ESFP人格描述', 'ESFP表演者型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();

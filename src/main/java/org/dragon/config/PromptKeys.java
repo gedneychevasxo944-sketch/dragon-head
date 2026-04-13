@@ -134,6 +134,14 @@ public class PromptKeys {
      */
     public static final String MATERIAL_SUMMARY = "material.summary";
 
+    // ==================== MBTI 模块 ====================
+
+    /**
+     * MBTI 人格描述 prompt 前缀
+     * 完整 key 格式: mbti.{type}，如 mbti.INTJ, mbti.ENFP
+     */
+    public static final String MBTI_PREFIX = "mbti.";
+
     // ==================== 便捷方法 ====================
 
     /**

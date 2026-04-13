@@ -37,7 +37,33 @@ public class MySqlSkillBindingStore implements SkillBindingStore {
     @Override
     public void update(SkillBindingDO binding) {
         SkillBindingEntity entity = SkillBindingEntity.fromDomain(binding);
+        // Fetch existing entity first to preserve fields not being updated
+        SkillBindingEntity existing = mysqlDb.find(SkillBindingEntity.class, binding.getId());
+        if (existing != null) {
+            mergeIfNotNull(entity, existing);
+        }
         mysqlDb.update(entity);
+    }
+
+    private void mergeIfNotNull(SkillBindingEntity target, SkillBindingEntity source) {
+        if (target.getBindingType() == null) {
+            target.setBindingType(source.getBindingType());
+        }
+        if (target.getCharacterId() == null) {
+            target.setCharacterId(source.getCharacterId());
+        }
+        if (target.getWorkspaceId() == null) {
+            target.setWorkspaceId(source.getWorkspaceId());
+        }
+        if (target.getSkillId() == null) {
+            target.setSkillId(source.getSkillId());
+        }
+        if (target.getVersionType() == null) {
+            target.setVersionType(source.getVersionType());
+        }
+        if (target.getFixedVersion() == null) {
+            target.setFixedVersion(source.getFixedVersion());
+        }
     }
 
     @Override

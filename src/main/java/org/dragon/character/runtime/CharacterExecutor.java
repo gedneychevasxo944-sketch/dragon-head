@@ -286,6 +286,9 @@ public class CharacterExecutor {
             prompt = appendWorkspacePersonalityPrompt(prompt, promptMaterialContext.getWorkspacePersonality());
         }
 
+        // 7. 增加 MBTI 人格描述（如果有）
+        prompt = appendMbtiPersonalityDescription(prompt);
+
         return prompt != null ? prompt : "";
     }
 
@@ -324,6 +327,7 @@ public class CharacterExecutor {
     }
 
     /**
+    /**
      * 追加角色特征
      * @param prompt
      * @return
@@ -338,6 +342,36 @@ public class CharacterExecutor {
             prompt = currentMind.getPersonality().toPrompt();
             sb.append(prompt);
         }
+        return sb.toString();
+    }
+
+    /**
+     * 追加 MBTI 人格描述到 System Prompt
+     * 从 ConfigApplication 获取该 MBTI 类型的全局描述
+     */
+    private String appendMbtiPersonalityDescription(String currentPrompt) {
+        String mbti = profile.getMbti();
+        if (mbti == null || mbti.isBlank()) {
+            return currentPrompt;
+        }
+
+        if (runtime.getConfigApplication() == null) {
+            return currentPrompt;
+        }
+
+        String mbtiPrompt = runtime.getConfigApplication().getGlobalPrompt(
+                PromptKeys.MBTI_PREFIX + mbti.toUpperCase(), null);
+        if (mbtiPrompt == null || mbtiPrompt.isBlank()) {
+            return currentPrompt;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (currentPrompt != null && !currentPrompt.isEmpty()) {
+            sb.append(currentPrompt).append("\n\n");
+        }
+        sb.append("## MBTI 人格特征\n");
+        sb.append(mbtiPrompt);
+
         return sb.toString();
     }
 
