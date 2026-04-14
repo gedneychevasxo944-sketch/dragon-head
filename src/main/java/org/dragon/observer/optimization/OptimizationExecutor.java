@@ -12,7 +12,6 @@ import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.PersonalityDescriptor;
-import org.dragon.character.mind.tag.Tag;
 import org.dragon.commonsense.CommonSenseValidator;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.observer.evaluation.EvaluationRecord;

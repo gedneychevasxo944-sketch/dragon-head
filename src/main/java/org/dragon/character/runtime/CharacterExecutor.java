@@ -409,7 +409,7 @@ public class CharacterExecutor {
 
     private Mind initMind() {
         DefaultMind defaultMind = new DefaultMind(
-                profile.getId(), null, null, runtime.getTraitResolutionService());
+                profile.getId(), null, runtime.getTraitResolutionService());
 
         // 从 mindConfig 加载 personality descriptor path（如果有）
         if (profile.getMindConfig() != null) {

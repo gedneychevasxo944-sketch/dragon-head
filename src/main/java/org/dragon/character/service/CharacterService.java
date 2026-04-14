@@ -11,6 +11,8 @@ import org.dragon.asset.enums.AssociationType;
 import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.asset.tag.dto.AssetTagDTO;
+import org.dragon.asset.tag.service.AssetTagService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
@@ -45,6 +47,7 @@ public class CharacterService {
     private final TraitStore traitStore;
     private final SkillStore skillStore;
     private final AssetAssociationService assetAssociationService;
+    private final AssetTagService assetTagService;
 
     /**
      * 分页获取角色列表，支持状态/搜索筛选。
@@ -170,7 +173,11 @@ public class CharacterService {
             traitInfos = List.of();
         } else {
             traitInfos = traitStore.findByIds(traitIds).stream()
-                    .map(CharacterDetailDTO::fromTraitEntity)
+                    .map(entity -> {
+                        List<String> tagNames = assetTagService.getTagsForAsset(ResourceType.TRAIT, entity.getId())
+                                .stream().map(AssetTagDTO::getName).collect(Collectors.toList());
+                        return CharacterDetailDTO.fromTraitEntity(entity, tagNames);
+                    })
                     .collect(Collectors.toList());
         }
 

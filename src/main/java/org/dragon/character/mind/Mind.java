@@ -1,15 +1,14 @@
 package org.dragon.character.mind;
 
 import org.dragon.character.mind.memory.MemoryAccess;
-import org.dragon.character.mind.tag.Tag;
-import org.dragon.character.mind.tag.TagRepository;
+import org.dragon.impression.dto.ImpressionDTO;
 
 import java.util.List;
 import java.util.Map;
 
 /**
  * Mind 心智接口
- * 负责 Character 的性格特征、标签、记忆和技能的统一访问
+ * 负责 Character 的性格特征、记忆和技能的统一访问
  *
  * @author wyj
  * @version 1.0
@@ -45,13 +44,6 @@ public interface Mind {
     void updatePersonality(PersonalityDescriptor descriptor);
 
     /**
-     * 获取标签仓储
-     *
-     * @return TagRepository
-     */
-    TagRepository getTagRepository();
-
-    /**
      * 获取记忆访问接口
      *
      * @return MemoryAccess
@@ -68,11 +60,11 @@ public interface Mind {
     PersonalityDescriptor enhanceByLLM(List<String> suggestions);
 
     /**
-     * 通过 LLM 分析suggestion并更新 tags
+     * 通过 LLM 分析suggestion并更新 impressions
      * 用于更新对其他Character的印象、信任度等
      *
      * @param suggestions 优化建议列表
-     * @return targetCharacterId -> Tag 的映射，表示需要更新的tag
+     * @return targetCharacterId -> ImpressionDTO 的映射，表示需要更新的impression
      */
-    Map<String, Tag> enhanceTagsByLLM(List<String> suggestions);
+    Map<String, ImpressionDTO> enhanceTagsByLLM(List<String> suggestions);
 }

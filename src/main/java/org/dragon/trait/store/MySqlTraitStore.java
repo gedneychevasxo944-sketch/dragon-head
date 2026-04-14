@@ -47,9 +47,6 @@ public class MySqlTraitStore implements TraitStore {
         if (target.getName() == null) {
             target.setName(source.getName());
         }
-        if (target.getCategory() == null) {
-            target.setCategory(source.getCategory());
-        }
         if (target.getDescription() == null) {
             target.setDescription(source.getDescription());
         }
@@ -90,15 +87,6 @@ public class MySqlTraitStore implements TraitStore {
         return db.find(TraitEntity.class)
                 .where()
                 .eq("type", type)
-                .orderBy("createTime desc")
-                .findList();
-    }
-
-    @Override
-    public List<TraitEntity> findByCategory(String category) {
-        return db.find(TraitEntity.class)
-                .where()
-                .eq("category", category)
                 .orderBy("createTime desc")
                 .findList();
     }

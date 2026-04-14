@@ -530,13 +530,11 @@ public class TaskArrangementService {
                         .characterId(m.getCharacterId())
                         .role(m.getRole())
                         .layer(m.getLayer() != null ? m.getLayer().toString() : null)
-                        .capability(m.getTags() != null ? String.join(", ", m.getTags()) : null)
+                        .capability(null)
                         .description(MemberUtils.buildMemberDescription(m))
                         .build())
                 .collect(Collectors.toList());
 
-        Map<String, Object> memberCapabilities = members.stream()
-                .collect(Collectors.toMap(WorkspaceMember::getCharacterId, m -> m.getTags() != null ? m.getTags() : List.of()));
         // 从已构建的 memberInfos 复用 description，避免重复调用 MemberUtils.buildMemberDescription()
         Map<String, String> memberDescriptions = memberInfos.stream()
                 .collect(Collectors.toMap(PromptWriterInput.MemberInfo::getCharacterId, PromptWriterInput.MemberInfo::getDescription));
@@ -547,7 +545,6 @@ public class TaskArrangementService {
         contextHints.put("collaborationMode", "AUTO");
         contextHints.put("allowFollowUp", true);
         contextHints.put("maxChildTasks", 10);
-        contextHints.put("memberCapabilities", memberCapabilities);
         contextHints.put("memberDescriptions", memberDescriptions);
         contextHints.put("collaborationConstraint", "子任务间应保持独立性，按依赖关系顺序执行");
 
@@ -613,7 +610,7 @@ public class TaskArrangementService {
                         .characterId(m.getCharacterId())
                         .role(m.getRole())
                         .layer(m.getLayer() != null ? m.getLayer().toString() : null)
-                        .capability(m.getTags() != null ? String.join(", ", m.getTags()) : null)
+                        .capability(null)
                         .description(MemberUtils.buildMemberDescription(m))
                         .build())
                 .collect(Collectors.toList());

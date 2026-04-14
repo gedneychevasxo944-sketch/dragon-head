@@ -42,11 +42,6 @@ public interface TraitStore extends Store {
     List<TraitEntity> findByType(String type);
 
     /**
-     * 按分类查询
-     */
-    List<TraitEntity> findByCategory(String category);
-
-    /**
      * 搜索 Trait（按名称或描述）
      */
     List<TraitEntity> search(String keyword);

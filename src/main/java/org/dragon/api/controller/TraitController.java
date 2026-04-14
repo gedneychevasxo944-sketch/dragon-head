@@ -48,9 +48,9 @@ public class TraitController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String tagName,
             @RequestParam(required = false) String publishStatus) {
-        return ApiResponse.success(traitService.listTraits(page, pageSize, search, category, publishStatus));
+        return ApiResponse.success(traitService.listTraits(page, pageSize, search, tagName, publishStatus));
     }
 
     /**

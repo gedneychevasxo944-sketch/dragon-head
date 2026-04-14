@@ -83,9 +83,9 @@ public class PersonalityDescriptor {
          */
         private String name;
         /**
-         * Trait 分类
+         * Trait 标签列表
          */
-        private String category;
+        private List<String> tags;
         /**
          * Trait 具体内容
          */

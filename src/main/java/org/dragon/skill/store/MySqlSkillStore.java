@@ -141,9 +141,6 @@ public class MySqlSkillStore implements SkillStore {
         if (target.getPersistMode() == null) {
             target.setPersistMode(source.getPersistMode());
         }
-        if (target.getTags() == null) {
-            target.setTags(source.getTags());
-        }
     }
 
     // ── 读操作 ────────────────────────────────────────────────────────

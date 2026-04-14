@@ -157,7 +157,6 @@ public class SkillQueryService {
                 .effort(s.getEffort())
                 .persist(toBool(s.getPersist()))
                 .persistMode(s.getPersistMode())
-                .tags(parseJsonList(s.getTags()))
                 .category(s.getCategory())
                 .visibility(s.getVisibility())
                 .status(s.getStatus())
@@ -188,7 +187,6 @@ public class SkillQueryService {
                 .creatorName(s.getCreatorName())
                 .createdAt(s.getCreatedAt())
                 .publishedAt(s.getPublishedAt())
-                .tags(parseJsonList(s.getTags()))
                 .build();
     }
 

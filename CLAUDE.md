@@ -27,6 +27,8 @@
 - [ ] 所有 public 方法有 Javadoc
 - [ ] 日志格式包含类名前缀
 - [ ] Owner/PublishStatus/Association 相关逻辑优先使用 Asset 模块服务，不重复实现
+- [ ] 列表接口不在循环中单条查询关联数据（标签、状态等），改用批量查询
+- [ ] 有值得变成常规编码规则的内容，写入Claude.md的规则文件
 
 ## Prompt 架构与调用链路
 
@@ -119,3 +121,70 @@ PromptMaterialContext
 | `PromptMaterialContext.java` | 统一物料上下文 |
 | `PromptMaterialContextBuilder.java` | 物料收集器 |
 | `PromptMaterialConfig.java` | 物料开关配置 |
+
+## 批量加载模式（避免 N+1 查询）
+
+列表接口返回含关联数据（标签、状态等）的对象时，**禁止在循环或 stream 中逐条查询关联**，必须批量加载。
+
+### 标准做法
+
+**1. Store 层提供批量查询接口**
+
+```java
+// AssetAssociationStore
+List<AssetAssociationEntity> findByTargets(
+    AssociationType type, ResourceType targetType, List<String> targetIds);
+```
+
+**2. Service 层提供批量返回 Map 的方法**
+
+```java
+// AssetTagService
+Map<String, List<AssetTagDTO>> getTagsForAssets(
+    ResourceType resourceType, List<String> resourceIds);
+// 返回 Map<resourceId, List<TagDTO>>
+```
+
+**3. 列表接口：先分页，再批量加载，最后转换**
+
+```java
+// 先取当前页数据
+List<TraitEntity> pageTraits = allTraits.subList(fromIndex, toIndex);
+
+// 批量加载关联（一次查询）
+List<String> pageIds = pageTraits.stream().map(TraitEntity::getId).toList();
+Map<String, List<AssetTagDTO>> tagsMap =
+    assetTagService.getTagsForAssets(ResourceType.TRAIT, pageIds);
+
+// 转换时使用预加载数据，不再触发 DB 查询
+List<Map<String, Object>> result = pageTraits.stream()
+    .map(t -> toMap(t, tagsMap.getOrDefault(t.getId(), List.of())))
+    .toList();
+```
+
+**4. toMap 双重重载**
+
+单条场景（创建/详情/更新）保留 `public toMap(entity)` 内部调用 `getTagsForAsset()`；
+列表场景使用 `private toMap(entity, tags)` 接收预加载数据。
+
+```java
+// 单条：外部调用，内部懒加载
+public Map<String, Object> toMap(TraitEntity trait) {
+    List<AssetTagDTO> tags = assetTagService.getTagsForAsset(ResourceType.TRAIT, trait.getId());
+    return toMap(trait, tags);
+}
+
+// 批量：接受预加载 tags，不触发额外查询
+private Map<String, Object> toMap(TraitEntity trait, List<AssetTagDTO> tags) {
+    // ... 直接使用 tags
+}
+```
+
+### 典型文件参考
+
+| 层 | 文件 | 方法 |
+|----|------|------|
+| Store 接口 | `AssetAssociationStore` | `findByTargets()` |
+| Store 实现 | `MySqlAssetAssociationStore` | `.in("targetId", ids)` |
+| Service | `AssetTagService` | `getTagsForAssets()` |
+| 业务 Service | `TraitService` | `listTraits()` + `toMap(entity, tags)` |

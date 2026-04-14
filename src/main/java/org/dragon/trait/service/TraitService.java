@@ -1,22 +1,25 @@
 package org.dragon.trait.service;
 
-import lombok.RequiredArgsConstructor;
-import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.datasource.entity.TraitEntity;
-import org.dragon.asset.enums.PublishStatus;
-import org.dragon.permission.enums.ResourceType;
-import org.dragon.asset.service.AssetPublishStatusService;
-import org.dragon.asset.service.AssetMemberService;
-import org.dragon.store.StoreFactory;
-import org.dragon.trait.store.TraitStore;
-import org.dragon.util.UserUtils;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.dragon.api.controller.dto.PageResponse;
+import org.dragon.asset.enums.PublishStatus;
+import org.dragon.asset.service.AssetMemberService;
+import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.asset.tag.dto.AssetTagDTO;
+import org.dragon.asset.tag.service.AssetTagService;
+import org.dragon.datasource.entity.TraitEntity;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.store.StoreFactory;
+import org.dragon.trait.store.TraitStore;
+import org.dragon.util.UserUtils;
+import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * TraitService 特征片段服务
@@ -28,6 +31,7 @@ public class TraitService {
     private final StoreFactory storeFactory;
     private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
+    private final AssetTagService assetTagService;
 
     private TraitStore getStore() {
         return storeFactory.get(TraitStore.class);
@@ -36,10 +40,10 @@ public class TraitService {
     /**
      * 创建 Trait
      */
+    @SuppressWarnings("unchecked")
     public Map<String, Object> createTrait(Map<String, Object> traitData) {
         TraitEntity trait = TraitEntity.builder()
                 .name((String) traitData.get("name"))
-                .category((String) traitData.get("category"))
                 .description((String) traitData.get("description"))
                 .content((String) traitData.get("content"))
                 .enabled(true)
@@ -50,11 +54,17 @@ public class TraitService {
         getStore().save(trait);
 
         // 添加创建者为 Owner
-        Long userId = Long.parseLong(UserUtils.getUserId());
+        Long userId = Long.valueOf(UserUtils.getUserId());
         assetMemberService.addOwnerDirectly(ResourceType.TRAIT, trait.getId(), userId);
 
         // 初始化发布状态（默认为 DRAFT）
         publishStatusService.initializeStatus(ResourceType.TRAIT, trait.getId(), String.valueOf(userId));
+
+        // 绑定标签
+        List<String> tagIds = (List<String>) traitData.get("tagIds");
+        if (tagIds != null && !tagIds.isEmpty()) {
+            assetTagService.tagAssets(ResourceType.TRAIT, trait.getId(), tagIds);
+        }
 
         return toMap(trait);
     }
@@ -69,13 +79,11 @@ public class TraitService {
     /**
      * 更新 Trait
      */
+    @SuppressWarnings("unchecked")
     public Optional<Map<String, Object>> updateTrait(String id, Map<String, Object> traitData) {
         return getStore().findById(id).map(existing -> {
             if (traitData.containsKey("name")) {
                 existing.setName((String) traitData.get("name"));
-            }
-            if (traitData.containsKey("category")) {
-                existing.setCategory((String) traitData.get("category"));
             }
             if (traitData.containsKey("description")) {
                 existing.setDescription((String) traitData.get("description"));
@@ -87,6 +95,19 @@ public class TraitService {
                 existing.setEnabled((Boolean) traitData.get("enabled"));
             }
             getStore().update(existing);
+
+            // 更新标签（先全量清除再重建）
+            if (traitData.containsKey("tagIds")) {
+                List<String> tagNames = (List<String>) traitData.get("tagIds");
+                // 先移除现有标签
+                assetTagService.getTagsForAsset(ResourceType.TRAIT, id)
+                        .forEach(tag -> assetTagService.untagAsset(ResourceType.TRAIT, id, tag.getName()));
+                // 再绑定新标签
+                if (tagNames != null && !tagNames.isEmpty()) {
+                    assetTagService.tagAssets(ResourceType.TRAIT, id, tagNames);
+                }
+            }
+
             return toMap(existing);
         });
     }
@@ -105,11 +126,13 @@ public class TraitService {
 
     /**
      * 分页查询 Trait 列表
+     *
+     * @param tagName       可选，按标签名称筛选
      * @param publishStatus 可选，按发布状态筛选（DRAFT/PUBLISHED）
      */
-    public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String category, String publishStatus) {
+    public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String tagName, String publishStatus) {
         // 获取当前用户可见的 Trait ID（用户作为成员拥有的 + 已发布的）
-        Long userId = Long.parseLong(UserUtils.getUserId());
+        Long userId = Long.valueOf(UserUtils.getUserId());
         List<String> memberTraitIds = assetMemberService.getMemberAssetIds(ResourceType.TRAIT, userId);
         List<String> publishedTraitIds = publishStatusService.getPublishedAssetIds(ResourceType.TRAIT);
 
@@ -126,19 +149,20 @@ public class TraitService {
 
         List<TraitEntity> allTraits;
 
-        // 按条件过滤
         if (search != null && !search.isBlank()) {
             allTraits = getStore().search(search);
-        } else if (category != null && !category.isBlank() && !"all".equalsIgnoreCase(category)) {
-            allTraits = getStore().findByCategory(category);
         } else {
             allTraits = getStore().findAll();
         }
 
-        // 进一步按 category 过滤
-        if (category != null && !category.isBlank() && !"all".equalsIgnoreCase(category)) {
+        // 按标签筛选
+        if (tagName != null && !tagName.isBlank() && !"all".equalsIgnoreCase(tagName)) {
+            java.util.Set<String> taggedIds = assetTagService.findByTagNameAndResourceType(tagName, ResourceType.TRAIT.name())
+                    .stream()
+                    .map(e -> e.getResourceId())
+                    .collect(java.util.stream.Collectors.toSet());
             allTraits = allTraits.stream()
-                    .filter(t -> category.equals(t.getCategory()))
+                    .filter(t -> taggedIds.contains(t.getId()))
                     .toList();
         }
 
@@ -159,9 +183,17 @@ public class TraitService {
         long total = allTraits.size();
         int fromIndex = Math.max(0, (page - 1) * pageSize);
         int toIndex = Math.min(fromIndex + pageSize, allTraits.size());
-        List<Map<String, Object>> pageData = fromIndex >= allTraits.size()
+        List<TraitEntity> pageTraits = fromIndex >= allTraits.size()
                 ? List.of()
-                : allTraits.subList(fromIndex, toIndex).stream().map(this::toMap).toList();
+                : allTraits.subList(fromIndex, toIndex);
+
+        // 批量加载当前页所有 Trait 的标签，避免 N+1 查询
+        List<String> pageIds = pageTraits.stream().map(TraitEntity::getId).toList();
+        Map<String, List<AssetTagDTO>> tagsMap = assetTagService.getTagsForAssets(ResourceType.TRAIT, pageIds);
+
+        List<Map<String, Object>> pageData = pageTraits.stream()
+                .map(t -> toMap(t, tagsMap.getOrDefault(t.getId(), List.<AssetTagDTO>of())))
+                .toList();
 
         return PageResponse.of(pageData, total, page, pageSize);
     }
@@ -181,22 +213,29 @@ public class TraitService {
     }
 
     /**
-     * 转换为 Map
+     * 转换为 Map（单条查询，内部获取标签）
      */
     public Map<String, Object> toMap(TraitEntity trait) {
+        List<AssetTagDTO> tags = assetTagService.getTagsForAsset(ResourceType.TRAIT, trait.getId());
+        return toMap(trait, tags);
+    }
+
+    /**
+     * 转换为 Map（使用预加载的标签，避免 N+1）
+     */
+    private Map<String, Object> toMap(TraitEntity trait, List<AssetTagDTO> tags) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", String.valueOf(trait.getId()));
         map.put("name", trait.getName());
-        map.put("category", trait.getCategory());
         map.put("description", trait.getDescription());
         map.put("content", trait.getContent());
         map.put("enabled", trait.getEnabled());
         map.put("usedByCount", trait.getUsedByCount());
         map.put("createdAt", trait.getCreateTime() != null ? trait.getCreateTime().toString() : null);
         map.put("updatedAt", trait.getUpdateTime() != null ? trait.getUpdateTime().toString() : null);
-        // 添加发布状态
         PublishStatus status = publishStatusService.getStatusOrDefault(ResourceType.TRAIT, String.valueOf(trait.getId()));
         map.put("publishStatus", status.name());
+        map.put("tags", tags);
         return map;
     }
 }
