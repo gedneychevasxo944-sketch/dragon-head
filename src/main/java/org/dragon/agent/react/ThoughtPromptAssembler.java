@@ -1,8 +1,10 @@
 package org.dragon.agent.react;
 
 import java.util.Iterator;
+import java.util.List;
 
 import org.dragon.agent.react.context.PromptMaterialContext;
+import org.dragon.memory.entity.MemorySearchResult;
 import org.dragon.tools.ToolRegistry;
 import org.springframework.stereotype.Component;
 
@@ -57,6 +59,18 @@ public class ThoughtPromptAssembler {
         if (context.getMaterialContext() != null && !context.getMaterialContext().isEmpty()) {
             prompt.append("## 物料信息\n");
             prompt.append(context.getMaterialContext()).append("\n\n");
+        }
+
+        // 添加记忆召回结果（在历史记录之前，让模型在回顾历史前先看到相关背景记忆）
+        List<MemorySearchResult> recalledMemories = context.getRecalledMemories();
+        if (recalledMemories != null && !recalledMemories.isEmpty()) {
+            prompt.append("## 相关记忆\n");
+            for (MemorySearchResult result: recalledMemories) {
+                if (result.getMemory() != null && result.getMemory().getContent() != null) {
+                    prompt.append("- ").append(result.getMemory().getContent()).append("\n");
+                }
+            }
+            prompt.append("\n");
         }
 
         // 添加历史记录

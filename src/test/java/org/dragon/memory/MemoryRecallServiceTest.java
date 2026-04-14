@@ -1,9 +1,12 @@
 package org.dragon.memory;
 
+import org.dragon.agent.llm.LLMResponse;
+import org.dragon.agent.llm.caller.LLMCaller;
+import org.dragon.agent.llm.caller.LLMCallerSelector;
+import org.dragon.agent.model.ModelInstance;
 import org.dragon.memory.service.core.impl.MemoryRecallServiceImpl;
 import org.dragon.memory.entity.MemoryEntry;
 import org.dragon.memory.entity.MemoryQuery;
-import org.dragon.memory.service.core.MemoryRanker;
 import org.dragon.memory.constants.MemoryScope;
 import org.dragon.memory.entity.MemorySearchResult;
 import org.dragon.memory.constants.MemoryType;
@@ -34,7 +37,7 @@ public class MemoryRecallServiceTest {
     private CharacterMemoryRepository characterMemoryRepository;
     private WorkspaceMemoryRepository workspaceMemoryRepository;
     private SessionMemoryRepository sessionMemoryRepository;
-    private MemoryRanker memoryRanker;
+    private LLMCallerSelector llmCallerSelector;
     private MemoryRecallServiceImpl recallService;
 
     @BeforeEach
@@ -42,17 +45,19 @@ public class MemoryRecallServiceTest {
         characterMemoryRepository = mock(CharacterMemoryRepository.class);
         workspaceMemoryRepository = mock(WorkspaceMemoryRepository.class);
         sessionMemoryRepository = mock(SessionMemoryRepository.class);
-        // MemoryRanker 直接返回所有候选条目，每条得分 1.0
-        memoryRanker = (query, candidates, limit) -> candidates.stream()
-                .limit(limit)
-                .map(e -> MemorySearchResult.builder().memory(e).score(1.0).build())
-                .toList();
+
+        // 默认 LLM caller 返回空响应，searchEntries 降级为全量分会
+        LLMCaller defaultCaller = mock(LLMCaller.class);
+        when(defaultCaller.call(any())).thenReturn(LLMResponse.builder().content("").build());
+        llmCallerSelector = mock(LLMCallerSelector.class);
+        when(llmCallerSelector.getDefault()).thenReturn(defaultCaller);
+        when(llmCallerSelector.selectByProvider(any(ModelInstance.ModelProvider.class))).thenReturn(defaultCaller);
 
         recallService = new MemoryRecallServiceImpl(
                 characterMemoryRepository,
                 workspaceMemoryRepository,
                 sessionMemoryRepository,
-                memoryRanker);
+                llmCallerSelector);
     }
 
     // ---- recallCharacter ----
@@ -62,7 +67,7 @@ public class MemoryRecallServiceTest {
         MemoryEntry entry = entry("char-entry", MemoryType.CHARACTER_PROFILE, MemoryScope.CHARACTER);
         when(characterMemoryRepository.list("char-1")).thenReturn(List.of(entry));
 
-        List<MemorySearchResult> results = recallService.recallCharacter("char-1", "test", 10);
+        List<MemorySearchResult> results = recallService.recallCharacter("char-1", null, 10);
 
         assertEquals(1, results.size());
         assertEquals("char-entry", results.get(0).getMemory().getTitle());
@@ -76,7 +81,7 @@ public class MemoryRecallServiceTest {
                 entry("e3", MemoryType.CHARACTER_PROFILE, MemoryScope.CHARACTER));
         when(characterMemoryRepository.list("char-1")).thenReturn(entries);
 
-        List<MemorySearchResult> results = recallService.recallCharacter("char-1", "test", 2);
+        List<MemorySearchResult> results = recallService.recallCharacter("char-1", null, 2);
 
         assertEquals(2, results.size());
     }
@@ -88,7 +93,7 @@ public class MemoryRecallServiceTest {
         MemoryEntry entry = entry("ws-entry", MemoryType.WORKSPACE_DECISION, MemoryScope.WORKSPACE);
         when(workspaceMemoryRepository.list("ws-1")).thenReturn(List.of(entry));
 
-        List<MemorySearchResult> results = recallService.recallWorkspace("ws-1", "test", 10);
+        List<MemorySearchResult> results = recallService.recallWorkspace("ws-1", null, 10);
 
         assertEquals(1, results.size());
         assertEquals("ws-entry", results.get(0).getMemory().getTitle());
@@ -100,7 +105,7 @@ public class MemoryRecallServiceTest {
     void testRecallSessionReturnsEmptyWhenNoSnapshot() {
         when(sessionMemoryRepository.get("sess-x")).thenReturn(Optional.empty());
 
-        List<MemorySearchResult> results = recallService.recallSession("sess-x", "test", 10);
+        List<MemorySearchResult> results = recallService.recallSession("sess-x", null, 10);
 
         assertTrue(results.isEmpty());
     }
@@ -116,7 +121,7 @@ public class MemoryRecallServiceTest {
                 .build();
         when(sessionMemoryRepository.get("sess-1")).thenReturn(Optional.of(snapshot));
 
-        List<MemorySearchResult> results = recallService.recallSession("sess-1", "test", 10);
+        List<MemorySearchResult> results = recallService.recallSession("sess-1", null, 10);
 
         // summary + 2 decisions + 1 question = 4 entries
         assertEquals(4, results.size());
@@ -133,7 +138,7 @@ public class MemoryRecallServiceTest {
                 .build();
         when(sessionMemoryRepository.get("sess-2")).thenReturn(Optional.of(snapshot));
 
-        List<MemorySearchResult> results = recallService.recallSession("sess-2", "test", 10);
+        List<MemorySearchResult> results = recallService.recallSession("sess-2", null, 10);
 
         assertEquals(1, results.size());
         assertEquals(MemoryType.SESSION_SUMMARY, results.get(0).getMemory().getType());
@@ -151,7 +156,7 @@ public class MemoryRecallServiceTest {
                 .build();
         when(sessionMemoryRepository.get("sess-3")).thenReturn(Optional.of(snapshot));
 
-        List<MemorySearchResult> results = recallService.recallSession("sess-3", "test", 10);
+        List<MemorySearchResult> results = recallService.recallSession("sess-3", null, 10);
 
         // blank summary skipped, only 1 decision
         assertEquals(1, results.size());
@@ -176,18 +181,12 @@ public class MemoryRecallServiceTest {
         when(workspaceMemoryRepository.list("ws-c")).thenReturn(
                 List.of(entry("ws-entry", MemoryType.WORKSPACE_DECISION, MemoryScope.WORKSPACE)));
 
-        // 使用捕获 candidates 顺序的 ranker
-        MemoryRanker orderCapturingRanker = (query, candidates, limit) ->
-                candidates.stream()
-                        .map(e -> MemorySearchResult.builder().memory(e).score(1.0).build())
-                        .toList();
-
         MemoryRecallServiceImpl svc = new MemoryRecallServiceImpl(
                 characterMemoryRepository, workspaceMemoryRepository,
-                sessionMemoryRepository, orderCapturingRanker);
+                sessionMemoryRepository, llmCallerSelector);
 
+        // 空 query 走全量召回，确保三条来源的条目都被返回，验证插入顺序
         MemoryQuery query = MemoryQuery.builder()
-                .text("test")
                 .sessionId("sess-c")
                 .characterId("char-c")
                 .workspaceId("ws-c")
@@ -197,11 +196,9 @@ public class MemoryRecallServiceTest {
         List<MemorySearchResult> results = svc.recallComposite(query);
 
         assertEquals(3, results.size());
-        // 第一条是 session summary
+        // 全量召回时分数相同，顺序由插入顺序决定：session > character > workspace
         assertEquals(MemoryType.SESSION_SUMMARY, results.get(0).getMemory().getType());
-        // 第二条是 character
         assertEquals(MemoryType.CHARACTER_PROFILE, results.get(1).getMemory().getType());
-        // 第三条是 workspace
         assertEquals(MemoryType.WORKSPACE_DECISION, results.get(2).getMemory().getType());
     }
 
@@ -215,7 +212,6 @@ public class MemoryRecallServiceTest {
         when(workspaceMemoryRepository.list(any())).thenReturn(List.of());
 
         MemoryQuery query = MemoryQuery.builder()
-                .text("test")
                 .characterId("char-c")
                 .limit(2)
                 .build();
@@ -234,7 +230,6 @@ public class MemoryRecallServiceTest {
         when(workspaceMemoryRepository.list(any())).thenReturn(List.of());
 
         MemoryQuery query = MemoryQuery.builder()
-                .text("test")
                 .characterId("char-f")
                 .types(Set.of(MemoryType.FEEDBACK))
                 .limit(10)
@@ -254,7 +249,6 @@ public class MemoryRecallServiceTest {
                 entry("ws-entry", MemoryType.WORKSPACE_DECISION, MemoryScope.WORKSPACE)));
 
         MemoryQuery query = MemoryQuery.builder()
-                .text("test")
                 .workspaceId("ws-f")
                 .scopes(Set.of(MemoryScope.CHARACTER))  // 只要 CHARACTER scope，ws 结果被过滤掉
                 .limit(10)
@@ -268,7 +262,6 @@ public class MemoryRecallServiceTest {
     @Test
     void testRecallCompositeSkipsNullIds() {
         MemoryQuery query = MemoryQuery.builder()
-                .text("test")
                 .limit(10)
                 .build();
 

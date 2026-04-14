@@ -1,10 +1,14 @@
 package org.dragon.memory.service.core.impl;
 
+import org.dragon.agent.llm.LLMRequest;
+import org.dragon.agent.llm.LLMResponse;
+import org.dragon.agent.llm.caller.LLMCaller;
+import org.dragon.agent.llm.caller.LLMCallerSelector;
+import org.dragon.agent.model.ModelInstance;
 import org.dragon.memory.entity.MemoryEntry;
 import org.dragon.memory.entity.MemoryQuery;
 import org.dragon.memory.entity.MemorySearchResult;
 import org.dragon.memory.service.core.MemoryRecallService;
-import org.dragon.memory.service.core.MemoryRanker;
 import org.dragon.memory.entity.SessionSnapshot;
 import org.dragon.memory.entity.MemoryId;
 import org.dragon.memory.constants.MemoryType;
@@ -14,9 +18,13 @@ import org.dragon.memory.storage.repo.WorkspaceMemoryRepository;
 import org.dragon.memory.storage.repo.SessionMemoryRepository;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -26,48 +34,62 @@ import java.util.stream.Collectors;
  * @author binarytom
  * @version 1.0
  */
+@Slf4j
 @Service
 public class MemoryRecallServiceImpl implements MemoryRecallService {
     private final CharacterMemoryRepository characterMemoryRepository;
     private final WorkspaceMemoryRepository workspaceMemoryRepository;
     private final SessionMemoryRepository sessionMemoryRepository;
-    private final MemoryRanker memoryRanker;
+    private final LLMCallerSelector llmCallerSelector;
+    private static final String SELECT_MEMORIES_SYSTEM_PROMPT = """
+            You are selecting memories that will be useful to 'adeptify' as it processes a user's query. You will be given the user's query and a list of available memory files with their filenames and descriptions.
+            
+            Return a list of filenames for the memories that will clearly be useful to 'adeptify' as it processes the user's query (up to 5). Only include memories that you are certain will be helpful based on their name and description.
+                    - If you are unsure if a memory will be useful in processing the user's query, then do not include it in your list. Be selective and discerning.
+                    - If there are no memories in the list that would clearly be useful, feel free to return an empty list.
+                    - If a list of recently-used tools is provided, do not select memories that are usage reference or API documentation for those tools ('adeptify' is already exercising them). DO still select memories containing warnings, gotchas, or known issues about those tools \u2014 active use is exactly when those matter.
+            Make sure response content is a purely json object with 'selected_memories' key.
+            """;
 
     public MemoryRecallServiceImpl(CharacterMemoryRepository characterMemoryRepository,
                                    WorkspaceMemoryRepository workspaceMemoryRepository,
                                    SessionMemoryRepository sessionMemoryRepository,
-                                   MemoryRanker memoryRanker) {
+                                   LLMCallerSelector llmCallerSelector) {
         this.characterMemoryRepository = characterMemoryRepository;
         this.workspaceMemoryRepository = workspaceMemoryRepository;
         this.sessionMemoryRepository = sessionMemoryRepository;
-        this.memoryRanker = memoryRanker;
+        this.llmCallerSelector = llmCallerSelector;
     }
 
     @Override
     public List<MemorySearchResult> recallCharacter(String characterId, String query, int limit) {
+        log.info("[mem] recall character memo: {}", characterId);
         List<MemoryEntry> allEntries = characterMemoryRepository.list(characterId);
-        return searchEntries(allEntries, query, limit);
+        return searchRelevantEntries(allEntries, query, limit);
     }
 
     @Override
     public List<MemorySearchResult> recallWorkspace(String workspaceId, String query, int limit) {
+        log.info("[mem] recall workspace memo: {}", workspaceId);
         List<MemoryEntry> allEntries = workspaceMemoryRepository.list(workspaceId);
-        return searchEntries(allEntries, query, limit);
+        return searchRelevantEntries(allEntries, query, limit);
     }
 
     @Override
     public List<MemorySearchResult> recallSession(String sessionId, String query, int limit) {
+        log.info("[mem] recall session memo: {}", sessionId);
         Optional<SessionSnapshot> snapshotOpt = sessionMemoryRepository.get(sessionId);
         if (snapshotOpt.isEmpty()) {
             return new ArrayList<>();
         }
         SessionSnapshot snapshot = snapshotOpt.get();
         List<MemoryEntry> sessionEntries = collectSessionEntries(sessionId, snapshot);
-        return searchEntries(sessionEntries, query, limit);
+        return searchRelevantEntries(sessionEntries, query, limit);
     }
 
     @Override
     public List<MemorySearchResult> recallComposite(MemoryQuery query) {
+        log.info("[mem-recall] recall mem: workspaceId={}, characterId={}, sessionId={}", query.getWorkspaceId(), query.getCharacterId(), query.getSessionId());
         List<MemoryEntry> allEntries = new ArrayList<>();
 
         // 1. 先拿 session summary（最近上下文优先）
@@ -86,9 +108,10 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
         if (query.getWorkspaceId() != null) {
             allEntries.addAll(workspaceMemoryRepository.list(query.getWorkspaceId()));
         }
+        log.info("[mem-recall] recall mem: allEntrySize={}", allEntries.size());
 
-        // 4. 合并排序控量
-        List<MemorySearchResult> results = memoryRanker.rank(query.getText(), allEntries, query.getLimit());
+        // 4. LLM 筛选后应用过滤规则
+        List<MemorySearchResult> results = searchRelevantEntries(allEntries, query.getText(), query.getLimit());
         return applyFilters(results, query);
     }
 
@@ -167,8 +190,144 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
 
     /**
      * 在给定的记忆条目中搜索与查询匹配的结果
+     *
+     * <p>query 非空时调用 LLM（SELECT_MEMORIES_SYSTEM_PROMPT）筛选相关条目，以模型返回结果为准。
+     * LLM 调用失败时降级为全量返回（截取到 limit）。query 为空时直接全量返回。
+     *
+     * @param entries 候选记忆条目
+     * @param query   查询文本
+     * @param limit   返回数量上限
+     * @return LLM 选中的结果列表
      */
-    private List<MemorySearchResult> searchEntries(List<MemoryEntry> entries, String query, int limit) {
-        return memoryRanker.rank(query, entries, limit);
+    private List<MemorySearchResult> searchRelevantEntries(List<MemoryEntry> entries, String query, int limit) {
+        if (entries.isEmpty()) {
+            return List.of();
+        }
+
+        if (query == null || query.isBlank()) {
+            log.info("[mem-recall] query is blank, cut to limit: {}", limit);
+            // 无查询词时全量返回，截取到 limit
+            return toResults(limit > 0 ? entries.stream().limit(limit).collect(Collectors.toList()) : entries);
+        }
+
+        List<MemoryEntry> llmSelected = selectByLLM(entries, query);
+        if (llmSelected == null) {
+            // LLM 调用异常，降级为全量截取
+            log.warn("[mem-recall] LLM 筛选失败，降级为全量返回");
+            return toResults(limit > 0 ? entries.stream().limit(limit).collect(Collectors.toList()) : entries);
+        }
+
+        List<MemoryEntry> limited = (limit > 0 && llmSelected.size() > limit)
+                ? llmSelected.subList(0, limit)
+                : llmSelected;
+        return toResults(limited);
     }
+
+    /**
+     * 将 MemoryEntry 列表直接包装为 MemorySearchResult，不附加评分
+     */
+    private List<MemorySearchResult> toResults(List<MemoryEntry> entries) {
+        return entries.stream()
+                .map(e -> MemorySearchResult.builder().memory(e).build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 调用 LLM 从候选条目中筛选与 query 相关的记忆
+     *
+     * <p>User message 格式：
+     * <pre>
+     * User query: {query}
+     *
+     * Available memory files:
+     * 1. filename: {fileName}  description: {description}
+     * 2. ...
+     * </pre>
+     *
+     * LLM 应返回一个 filename 列表（每行一个，或逗号分隔）。
+     * 返回 null 表示 LLM 调用失败，调用方应降级处理。
+     *
+     * @param candidates 候选条目
+     * @param query      用户查询文本
+     * @return LLM 筛选后的条目子集，或 null（调用失败）
+     */
+    private List<MemoryEntry> selectByLLM(List<MemoryEntry> candidates, String query) {
+        // 构建候选列表描述，每条记忆以 fileName（或 title 作为后备标识）呈现
+        StringBuilder userMessage = new StringBuilder();
+        userMessage.append("User query: ").append(query).append("\n\n");
+        userMessage.append("Available memory files:\n");
+
+        for (int i = 0; i < candidates.size(); i++) {
+            MemoryEntry entry = candidates.get(i);
+            // fileName 优先作为唯一标识；无 fileName 时用 title 代替
+            String identifier = (entry.getFileName() != null && !entry.getFileName().isBlank())
+                    ? entry.getFileName()
+                    : entry.getTitle();
+            String description = entry.getDescription() != null ? entry.getDescription() : entry.getTitle();
+            userMessage.append(i + 1).append(". filename: ").append(identifier)
+                    .append("  description: ").append(description).append("\n");
+        }
+
+        LLMRequest request = LLMRequest.builder()
+                .systemPrompt(SELECT_MEMORIES_SYSTEM_PROMPT)
+                .messages(List.of(
+                        LLMRequest.LLMMessage.builder()
+                                .role(LLMRequest.LLMMessage.Role.USER)
+                                .content(userMessage.toString())
+                                .build()))
+                .build();
+
+        try {
+//            LLMCaller llmCaller = llmCallerSelector.getDefault();
+            LLMCaller llmCaller = llmCallerSelector.selectByProvider(ModelInstance.ModelProvider.MINIMAX);
+            log.info("[mem-recall] 调用 LLM 筛选记忆，模型: {}", llmCaller.getClass());
+            LLMResponse response = llmCaller.call(request);
+            String content = response != null ? response.getContent() : null;
+            if (content == null || content.isBlank()) {
+                return List.of();
+            }
+            return filterByLLMResponse(candidates, content);
+        } catch (Exception e) {
+            log.warn("[MemoryRecallServiceImpl] LLM 记忆筛选调用异常: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 根据 LLM 返回的 filename 列表过滤候选条目
+     *
+     * <p>LLM 可能以换行、逗号、序号等多种格式返回 filename，这里做宽松匹配：
+     * 只要候选条目的 identifier（fileName 或 title）出现在响应文本中即保留。
+     *
+     * @param candidates  候选条目
+     * @param llmResponse LLM 返回的原始文本
+     * @return 被 LLM 选中的条目子集
+     */
+    private List<MemoryEntry> filterByLLMResponse(List<MemoryEntry> candidates, String llmResponse) {
+        // 将响应文本按常见分隔符拆分，构建命中集合
+        Set<String> mentioned = new HashSet<>();
+        for (String token : llmResponse.split("[,\n\\[\\]\"'\\s]+")) {
+            String trimmed = token.trim();
+            if (!trimmed.isEmpty()) {
+                mentioned.add(trimmed.toLowerCase());
+            }
+        }
+        log.info("[mem-recall] LLM 筛选记忆，命中列表: {}", mentioned);
+
+        return candidates.stream()
+                .filter(entry -> {
+                    String identifier = (entry.getFileName() != null && !entry.getFileName().isBlank())
+                            ? entry.getFileName()
+                            : entry.getTitle();
+                    if (identifier == null) {
+                        return false;
+                    }
+                    // 宽松匹配：identifier 出现在任意 token 中，或任意 token 是 identifier 的子串
+                    String lowerIdentifier = identifier.toLowerCase();
+                    return mentioned.stream().anyMatch(token ->
+                            token.contains(lowerIdentifier) || lowerIdentifier.contains(token));
+                })
+                .collect(Collectors.toList());
+    }
+
 }

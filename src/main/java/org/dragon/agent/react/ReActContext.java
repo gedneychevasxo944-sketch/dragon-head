@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dragon.memory.entity.MemorySearchResult;
 import org.dragon.task.Task;
 
 import org.dragon.agent.react.context.PromptMaterialContext;
@@ -197,6 +198,13 @@ public class ReActContext {
      * 物料上下文（独立于 systemPrompt 和 userInput）
      */
     private String materialContext;
+
+    /**
+     * 每轮think() 前从记忆系统召回相关记忆
+     * 由ReActExecutor在每次迭代开始时填充，供 ThoughtPromptAssembler渲染到prompt中
+     */
+    @Builder.Default
+    private List<MemorySearchResult> recalledMemories = new ArrayList<>();
 
     // ==================== Prompt 物料上下文 ====================
 

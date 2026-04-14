@@ -15,6 +15,9 @@ import org.dragon.agent.model.ModelRegistry;
 import org.dragon.character.Character;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.service.ConfigApplication;
+import org.dragon.memory.entity.MemoryQuery;
+import org.dragon.memory.entity.MemorySearchResult;
+import org.dragon.memory.service.core.MemoryFacade;
 import org.dragon.task.Task;
 import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.workspace.task.dto.PromptWriterInput;
@@ -53,6 +56,7 @@ public class ReActExecutor {
     private final ObservationEvaluator observationEvaluator;
     private final ToolRegistry toolRegistry;
     private final SkillRegistry skillRegistry;
+    private final ObjectProvider<MemoryFacade> memoryFacadeProvider;
 
     public ReActExecutor(LLMCallerSelector callerSelector,
                          ModelRegistry modelRegistry,
@@ -64,7 +68,8 @@ public class ReActExecutor {
                          ActionExecutor actionExecutor,
                          ObservationEvaluator observationEvaluator,
                          ToolRegistry toolRegistry,
-                        SkillRegistry skillRegistry) {
+                         SkillRegistry skillRegistry,
+                         ObjectProvider<MemoryFacade> memoryFacadeProvider) {
         this.callerSelector = callerSelector;
         this.modelRegistry = modelRegistry;
         this.configApplication = configApplication;
@@ -77,6 +82,7 @@ public class ReActExecutor {
         this.observationEvaluator = observationEvaluator;
         this.toolRegistry = toolRegistry;
         this.skillRegistry = skillRegistry;
+        this.memoryFacadeProvider = memoryFacadeProvider;
     }
 
     /**
@@ -162,6 +168,10 @@ public class ReActExecutor {
      */
     private String think(ReActContext context) {
         String modelId = resolveModelId(context);
+
+        // 每轮思考前从记忆中召回与当前输入相关的记忆，注入到prompt中
+        recallMemories(context);
+
         String prompt = buildThoughtPrompt(context);
 
         log.info("[ReAct] [{}] 构建 LLM Request - modelId: {}", context.getCurrentIteration(), modelId);
@@ -370,6 +380,41 @@ public class ReActExecutor {
     }
 
     // ==================== 辅助方法 ====================
+
+    /**
+     * 从记忆系统召回与当前用户输入相关的记忆，结果写入到context.recalledMemories
+     * 供后续 ThoughtPromptAssembler 渲染到prompt中
+     *
+     * <p>MemoryFacade 通过ObjectProvider 懒加载，记忆模块未启用时不影响 ReAct执行。
+     */
+    private void recallMemories(ReActContext context) {
+        MemoryFacade memoryFacade = memoryFacadeProvider.getIfAvailable();
+        if (memoryFacade == null) {
+            return;
+        }
+
+        String queryText = context.getUserInput();
+        if (queryText == null || queryText.isBlank()) {
+            return;
+        }
+
+        try {
+            MemoryQuery query = MemoryQuery.builder()
+                    .text(queryText)
+                    .characterId(context.getCharacterId())
+                    .workspaceId(context.getWorkspaceId())
+                    .limit(5)
+                    .build();
+
+            List<MemorySearchResult> results = memoryFacade.recall(query);
+            context.setRecalledMemories(results);
+
+            log.debug("[ReAct] [{}] 记忆召回完成， 共 {} 条", context.getCurrentIteration(), results.size());
+        } catch (Exception e) {
+            // 记忆召回失败不影响主流程
+            log.warn("[ReAct] [{}] 记忆召回失败， 跳过： {}", context.getCurrentIteration(), e.getMessage());
+        }
+    }
 
     /**
      * 处理错误

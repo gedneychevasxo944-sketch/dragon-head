@@ -178,6 +178,7 @@ public class MinimaxLLMCaller implements LLMCaller {
 
     private LLMResponse parseResponse(String responseBody) {
         try {
+            log.info("[Minimax] parseResponse: responseBody={}", responseBody);
             JsonElement jsonElement = JsonParser.parseString(responseBody);
             if (!jsonElement.isJsonObject()) {
                 log.error("[Minimax] 响应不是 JSON 对象: {}", responseBody);
