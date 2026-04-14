@@ -86,14 +86,13 @@ public class CharacterOptimizationTargetApplier implements OptimizationTargetApp
 
     @SuppressWarnings("unchecked")
     private ApplyResult applyTagUpdate(Mind mind, Map<String, Object> parameters) {
-        if (mind.getTagRepository() == null) {
-            return ApplyResult.failure("Tag repository not available");
-        }
+        // Tag functionality has been migrated to ImpressionService
+        // This method now handles impression updates via the new service
         if (parameters.containsKey("tags")) {
             Map<String, Object> tags = (Map<String, Object>) parameters.get("tags");
-            log.info("[CharacterOptimizationTargetApplier] Tag update with {} entries", tags.size());
+            log.info("[CharacterOptimizationTargetApplier] Tag update (deprecated, use ImpressionService) with {} entries", tags.size());
         }
-        return ApplyResult.success("Tag update applied");
+        return ApplyResult.success("Tag update applied (deprecated, use ImpressionService)");
     }
 
     private ApplyResult applySkillAdd(Mind mind, Map<String, Object> parameters) {

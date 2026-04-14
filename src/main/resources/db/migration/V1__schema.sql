@@ -13,6 +13,11 @@
 --   - V103 Config Center Enhancement（config_store 元数据字段）
 --   - V104 Asset Association 表（asset_association）
 --   - V105 Notification 表（notification）
+--   - V4 Team Position 表（team_position）
+--   - V5 Observer Action Log 增强（target_name）
+--   - V6 Character MBTI 支持（mbti）
+--   - V7 Impression 表（印象/评价）
+--   - V8 Asset Tag 表（统一标签）
 -- ============================================================================
 
 use adeptify;
@@ -93,7 +98,6 @@ CREATE TABLE IF NOT EXISTS workspace_member (
     role VARCHAR(64),
     layer VARCHAR(32) DEFAULT 'NORMAL',
     permission VARCHAR(32) NOT NULL DEFAULT 'VIEW' COMMENT 'VIEW, USE, EDIT, ADMIN, OWNER',
-    tags JSON,
     weight DOUBLE DEFAULT 1.0,
     priority INT DEFAULT 0,
     reputation INT DEFAULT 0,
@@ -486,6 +490,7 @@ CREATE TABLE IF NOT EXISTS observer_action_log (
     id VARCHAR(64) PRIMARY KEY,
     target_type VARCHAR(32) NOT NULL,
     target_id VARCHAR(64) NOT NULL,
+    target_name VARCHAR(255) COMMENT '目标名称，用于审计日志',
     action_type VARCHAR(32) NOT NULL,
     operator VARCHAR(64),
     details JSON,
@@ -592,9 +597,6 @@ CREATE TABLE IF NOT EXISTS skills (
     persist                  TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否持续留存（0否1是）',
     persist_mode             VARCHAR(10)  COMMENT '留存模式（full/summary）',
 
-    -- 标签
-    tags                     JSON COMMENT '标签列表，用于技能分类/场景归纳，如 ["数据分析","API","工具类"]',
-
     -- 时间戳
     created_at               DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '本条记录创建时间',
     published_at             DATETIME     DEFAULT NULL COMMENT '发布时间',
@@ -697,6 +699,7 @@ CREATE TABLE IF NOT EXISTS `character` (
     mind_config JSON,
     extensions TEXT,
     status VARCHAR(32),
+    mbti VARCHAR(4) COMMENT 'MBTI人格类型，如 INTJ, ENFP 等',
     created_at DATETIME,
     updated_at DATETIME,
     INDEX idx_character_status (status)
@@ -759,14 +762,12 @@ CREATE TABLE IF NOT EXISTS tool (
 CREATE TABLE IF NOT EXISTS trait (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
-    category VARCHAR(64) NOT NULL,
     description VARCHAR(512),
     content TEXT NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     used_by_count INT NOT NULL DEFAULT 0,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME,
-    INDEX idx_trait_category (category),
     INDEX idx_trait_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -1026,7 +1027,6 @@ CREATE TABLE IF NOT EXISTS memory_chunk (
                                             title           VARCHAR(255)          COMMENT 'Chunk title',
                                             content         TEXT                  COMMENT 'Chunk content',
                                             summary         TEXT                  COMMENT 'Chunk summary',
-                                            tags            TEXT                  COMMENT 'Tag list in JSON format, e.g. ["tag1","tag2"]',
                                             indexed_status  VARCHAR(32)  NOT NULL DEFAULT 'pending' COMMENT 'Index status: pending/indexed/failed',
                                             relations       TEXT                  COMMENT 'Related chunk IDs in JSON format',
                                             file_path       VARCHAR(512)          COMMENT 'File path',
@@ -1061,3 +1061,83 @@ CREATE TABLE IF NOT EXISTS mem_binding (
                                            INDEX idx_binding_chunk (chunk_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Memory binding relationships';
 
+-- ============================================================================
+-- Team Position 表（V4 新增）
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS team_position (
+    id VARCHAR(128) PRIMARY KEY COMMENT '唯一标识 (workspaceId_roleName)',
+    workspace_id VARCHAR(64) NOT NULL COMMENT 'Workspace ID',
+    role_name VARCHAR(128) NOT NULL COMMENT '角色名称',
+    role_package VARCHAR(128) COMMENT '角色包/分类',
+    purpose TEXT COMMENT '岗位目的/职责',
+    scope TEXT COMMENT '岗位范围',
+    assigned_character_id VARCHAR(64) COMMENT '分配的 Character ID（空表示空缺）',
+    enabled BOOLEAN NOT NULL DEFAULT TRUE COMMENT '是否启用',
+    created_at DATETIME COMMENT '创建时间',
+    updated_at DATETIME COMMENT '更新时间',
+    INDEX idx_position_workspace (workspace_id),
+    INDEX idx_position_character (assigned_character_id),
+    UNIQUE KEY uk_workspace_role (workspace_id, role_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团队席位表';
+
+-- ============================================================================
+-- Impression 表（V7 新增）
+-- 用于存储 Character 和 Workspace 之间的印象/评价
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS impression (
+    id VARCHAR(64) PRIMARY KEY,
+    source_type VARCHAR(32) NOT NULL COMMENT 'CHARACTER, WORKSPACE',
+    source_id VARCHAR(64) NOT NULL,
+    target_type VARCHAR(32) NOT NULL COMMENT 'CHARACTER, WORKSPACE',
+    target_id VARCHAR(64) NOT NULL,
+    name VARCHAR(128) NOT NULL COMMENT '印象名称',
+    value VARCHAR(512) COMMENT '印象值',
+    sentiment VARCHAR(16) DEFAULT 'NEUTRAL' COMMENT 'POSITIVE, NEUTRAL, NEGATIVE',
+    trust_level INT DEFAULT 5 COMMENT '信任等级 1-10',
+    summary VARCHAR(512) COMMENT '印象摘要',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    UNIQUE KEY uk_impression (source_type, source_id, target_type, target_id, name),
+    INDEX idx_source (source_type, source_id),
+    INDEX idx_target (target_type, target_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- Asset Tag 表（V8 新增）
+-- 用于统一管理所有资产的标签
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS asset_tag (
+    name VARCHAR(128) NOT NULL COMMENT '标签分类',
+    color VARCHAR(16) COMMENT '标签颜色',
+    description VARCHAR(512) COMMENT '标签描述或说明',
+    resource_type VARCHAR(32) NOT NULL COMMENT '所属资产类型',
+    resource_id VARCHAR(64) NOT NULL COMMENT '所属资产ID',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (resource_type, resource_id, name),
+    INDEX idx_resource (resource_type, resource_id),
+    INDEX idx_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- Template Mark 表
+-- 用于标记某条资产记录是模板，并存储模板特有的元信息
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS template_mark (
+    id VARCHAR(64) PRIMARY KEY COMMENT '主键 UUID',
+    resource_type VARCHAR(32) NOT NULL COMMENT '资产类型：CHARACTER, SKILL, TRAIT, OBSERVER, WORKSPACE, MEMORY',
+    resource_id VARCHAR(64) NOT NULL COMMENT '资产 ID',
+    category VARCHAR(64) COMMENT '模板分类：助手/客服/创作/开发/研究/分析',
+    preview TEXT COMMENT '模板预览文本',
+    target_audience VARCHAR(128) COMMENT '目标用户群体',
+    usage_count INT NOT NULL DEFAULT 0 COMMENT '被派生次数',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_template_mark (resource_type, resource_id),
+    INDEX idx_category (category),
+    INDEX idx_resource_type (resource_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模板标记表';

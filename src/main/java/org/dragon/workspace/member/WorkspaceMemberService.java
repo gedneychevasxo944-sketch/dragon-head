@@ -127,23 +127,6 @@ public class WorkspaceMemberService {
                 characterId, role, workspaceId);
     }
 
-    /**
-     * 更新成员标签
-     *
-     * @param workspaceId 工作空间 ID
-     * @param characterId Character ID
-     * @param tags 新标签列表
-     */
-    public void updateMemberTags(String workspaceId, String characterId, List<String> tags) {
-        WorkspaceMember member = getMemberStore().findByWorkspaceIdAndCharacterId(workspaceId, characterId)
-                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
-
-        member.setTags(tags);
-        member.setLastActiveAt(LocalDateTime.now());
-        getMemberStore().update(member);
-        log.info("[WorkspaceMemberManagementService] Updated member {} tags in workspace {}",
-                characterId, workspaceId);
-    }
 
     /**
      * 获取 Character 所属的所有工作空间

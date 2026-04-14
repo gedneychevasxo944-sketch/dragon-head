@@ -40,9 +40,6 @@ public class WorkspaceMemberEntity {
 
     private String layer;
 
-    @DbJson
-    private List<String> tags;
-
     private double weight;
 
     private int priority;
@@ -69,7 +66,6 @@ public class WorkspaceMemberEntity {
                 .characterId(this.characterId)
                 .role(this.role)
                 .layer(this.layer != null ? WorkspaceMember.Layer.valueOf(this.layer) : null)
-                .tags(this.tags)
                 .weight(this.weight)
                 .priority(this.priority)
                 .reputation(this.reputation)
@@ -90,7 +86,6 @@ public class WorkspaceMemberEntity {
                 .characterId(member.getCharacterId())
                 .role(member.getRole())
                 .layer(member.getLayer() != null ? member.getLayer().name() : null)
-                .tags(member.getTags())
                 .weight(member.getWeight())
                 .priority(member.getPriority())
                 .reputation(member.getReputation())

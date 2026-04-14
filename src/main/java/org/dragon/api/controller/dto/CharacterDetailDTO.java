@@ -59,7 +59,7 @@ public class CharacterDetailDTO {
     public static class TraitInfo {
         private String id;
         private String name;
-        private String category;
+        private List<String> tags;
         private String description;
         private String content;
     }
@@ -67,11 +67,11 @@ public class CharacterDetailDTO {
     /**
      * 从 TraitEntity 转换为 TraitInfo
      */
-    public static TraitInfo fromTraitEntity(TraitEntity entity) {
+    public static TraitInfo fromTraitEntity(TraitEntity entity, List<String> tagNames) {
         return TraitInfo.builder()
                 .id(entity.getId())
                 .name(entity.getName())
-                .category(entity.getCategory())
+                .tags(tagNames)
                 .description(entity.getDescription())
                 .content(entity.getContent())
                 .build();

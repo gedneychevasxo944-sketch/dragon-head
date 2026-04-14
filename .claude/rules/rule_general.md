@@ -134,6 +134,8 @@ org.dragon.datasource.entity/
 └── XxxEntity.java
 ```
 
+**Ebean 仅扫描 `datasource.entity` 包**，在其他包（如 `asset.tag.entity`）放置 Entity 会导致运行时 `NOT an Entity Bean registered` 错误。
+
 ### Asset 资产模块定位
 
 `org.dragon.asset` 是系统的基础架构模块，提供**统一的 Owner 管理、发布状态控制和关联关系维护**。详见 [rule_asset.md](rule_asset.md)。

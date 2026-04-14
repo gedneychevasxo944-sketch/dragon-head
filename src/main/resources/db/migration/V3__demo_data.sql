@@ -165,22 +165,19 @@ VALUES
 -- ============================================================================
 -- 6. 技能 (Skills)
 -- ============================================================================
-INSERT INTO skills (skill_id, name, display_name, description, content, category, visibility, creator_type, creator_id, creator_name, status, version, tags, created_at, published_at)
+INSERT INTO skills (skill_id, name, display_name, description, content, category, visibility, creator_type, creator_id, creator_name, status, version, created_at, published_at)
 VALUES
   ('skill-001', '通用助手', '通用助手', '提供通用的 AI 助手能力，支持多种任务类型',
    '# 通用助手技能\n\n## 能力\n- 问答对话\n- 任务分解\n- 信息检索\n- 文本生成',
-   'utility', 'public', 'official', NULL, '官方助手', 'active', 1,
-   '["助手", "通用", "问答"]', NOW(), NOW()),
+   'utility', 'public', 'official', NULL, '官方助手', 'active', 1, NOW(), NOW()),
 
   ('skill-002', '任务管理', '任务管理技能', '专业的任务管理和项目跟踪能力',
    '# 任务管理技能\n\n## 能力\n- 创建和分解任务\n- 跟踪任务进度\n- 识别任务依赖\n- 风险预警',
-   'development', 'public', 'official', NULL, '官方助手', 'active', 2,
-   '["任务", "管理", "项目"]', NOW(), NOW()),
+   'development', 'public', 'official', NULL, '官方助手', 'active', 2, NOW(), NOW()),
 
   ('skill-data-analysis', '数据分析', '数据分析技能', '从复杂数据中提取洞察，支持决策',
    '# 数据分析技能\n\n## 能力\n- 数据清洗和预处理\n- 统计分析和建模\n- 可视化生成\n- 洞察提炼',
-   'analysis', 'public', 'official', NULL, '官方助手', 'active', 1,
-   '["数据", "分析", "可视化"]', NOW(), NOW());
+   'analysis', 'public', 'official', NULL, '官方助手', 'active', 1, NOW(), NOW());
 
 -- ============================================================================
 -- 7. 工具 (Tool)
@@ -271,18 +268,18 @@ VALUES
 -- ============================================================================
 -- 11. Workspace 成员
 -- ============================================================================
-INSERT INTO workspace_member (id, workspace_id, character_id, role, layer, permission, tags, weight, priority, reputation, resource_quota, join_at, last_active_at, metadata)
+INSERT INTO workspace_member (id, workspace_id, character_id, role, layer, permission, weight, priority, reputation, resource_quota, join_at, last_active_at, metadata)
 VALUES
-  ('wm-001', 'ws-demo', 'char-001', 'PROJECT_MANAGER', 'NORMAL', 'USE', '["核心成员"]', 1.0, 1, 95,
+  ('wm-001', 'ws-demo', 'char-001', 'PROJECT_MANAGER', 'NORMAL', 'USE', 1.0, 1, 95,
    '{"maxTasks": 10, "maxMemory": "1GB"}', NOW(), NOW(), NULL),
 
-  ('wm-002', 'ws-demo', 'char-002', 'DATA_ANALYST', 'NORMAL', 'USE', '["数据"]', 0.8, 2, 88,
+  ('wm-002', 'ws-demo', 'char-002', 'DATA_ANALYST', 'NORMAL', 'USE', 0.8, 2, 88,
    '{"maxTasks": 5}', NOW(), NOW(), NULL),
 
-  ('wm-003', 'ws-demo', 'char-003', 'SUPPORT', 'NORMAL', 'USE', '["客服"]', 0.7, 3, 72,
+  ('wm-003', 'ws-demo', 'char-003', 'SUPPORT', 'NORMAL', 'USE', 0.7, 3, 72,
    '{"maxTasks": 8}', NOW(), NOW(), NULL),
 
-  ('wm-004', 'ws-demo', 'char-pm', 'PRODUCT', 'NORMAL', 'VIEW', '["产品"]', 0.6, 4, 65,
+  ('wm-004', 'ws-demo', 'char-pm', 'PRODUCT', 'NORMAL', 'VIEW', 0.6, 4, 65,
    '{}', NOW(), NOW(), NULL);
 
 -- ============================================================================

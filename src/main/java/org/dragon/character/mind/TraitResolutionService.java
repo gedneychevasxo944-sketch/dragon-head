@@ -2,7 +2,10 @@ package org.dragon.character.mind;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.asset.tag.dto.AssetTagDTO;
+import org.dragon.asset.tag.service.AssetTagService;
 import org.dragon.datasource.entity.TraitEntity;
+import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreFactory;
 import org.dragon.trait.store.TraitStore;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,7 @@ import java.util.Optional;
 public class TraitResolutionService {
 
     private final StoreFactory storeFactory;
+    private final AssetTagService assetTagService;
 
     private TraitStore getStore() {
         return storeFactory.get(TraitStore.class);
@@ -51,10 +55,14 @@ public class TraitResolutionService {
     }
 
     private PersonalityDescriptor.TraitContent toTraitContent(TraitEntity entity) {
+        List<String> tagNames = assetTagService.getTagsForAsset(ResourceType.TRAIT, entity.getId())
+                .stream()
+                .map(AssetTagDTO::getName)
+                .toList();
         return PersonalityDescriptor.TraitContent.builder()
                 .id(entity.getId())
                 .name(entity.getName())
-                .category(entity.getCategory())
+                .tags(tagNames)
                 .content(entity.getContent())
                 .build();
     }

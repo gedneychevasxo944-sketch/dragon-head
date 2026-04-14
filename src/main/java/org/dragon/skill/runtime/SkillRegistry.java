@@ -237,7 +237,6 @@ public class SkillRegistry {
     private SkillDefinition buildDefinition(SkillDO do_) {
         List<String> allowedTools = parseJsonList(do_.getAllowedTools());
         List<String> aliases      = parseJsonList(do_.getAliases());
-        List<String> tags         = parseJsonList(do_.getTags());
 
 
         final String content = do_.getContent();
@@ -254,7 +253,6 @@ public class SkillRegistry {
                 .argumentHint(do_.getArgumentHint())
                 .aliases(aliases)
                 .allowedTools(allowedTools)
-                .tags(tags)
                 .model(do_.getModel())
                 .effort(do_.getEffort())
                 .executionContext(do_.getExecutionContext() != null

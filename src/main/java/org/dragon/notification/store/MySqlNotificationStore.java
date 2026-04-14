@@ -30,7 +30,39 @@ public class MySqlNotificationStore implements NotificationStore {
 
     @Override
     public void update(NotificationEntity notification) {
+        // Fetch existing entity first to preserve fields not being updated
+        NotificationEntity existing = mysqlDb.find(NotificationEntity.class, notification.getId());
+        if (existing != null) {
+            mergeIfNotNull(notification, existing);
+        }
         mysqlDb.update(notification);
+    }
+
+    private void mergeIfNotNull(NotificationEntity target, NotificationEntity source) {
+        if (target.getUserId() == null) {
+            target.setUserId(source.getUserId());
+        }
+        if (target.getType() == null) {
+            target.setType(source.getType());
+        }
+        if (target.getTitle() == null) {
+            target.setTitle(source.getTitle());
+        }
+        if (target.getContent() == null) {
+            target.setContent(source.getContent());
+        }
+        if (target.getLink() == null) {
+            target.setLink(source.getLink());
+        }
+        if (target.getSourceType() == null) {
+            target.setSourceType(source.getSourceType());
+        }
+        if (target.getSourceId() == null) {
+            target.setSourceId(source.getSourceId());
+        }
+        if (target.getIsRead() == null) {
+            target.setIsRead(source.getIsRead());
+        }
     }
 
     @Override

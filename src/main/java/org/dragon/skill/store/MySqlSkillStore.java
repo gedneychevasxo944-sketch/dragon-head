@@ -45,7 +45,102 @@ public class MySqlSkillStore implements SkillStore {
     @Override
     public void update(SkillDO skill) {
         SkillEntity entity = SkillEntity.fromDomain(skill);
+        // Fetch existing entity first to preserve fields not being updated
+        SkillEntity existing = mysqlDb.find(SkillEntity.class, skill.getId());
+        if (existing != null) {
+            mergeIfNotNull(entity, existing);
+        }
         mysqlDb.update(entity);
+    }
+
+    private void mergeIfNotNull(SkillEntity target, SkillEntity source) {
+        if (target.getSkillId() == null) {
+            target.setSkillId(source.getSkillId());
+        }
+        if (target.getName() == null) {
+            target.setName(source.getName());
+        }
+        if (target.getDisplayName() == null) {
+            target.setDisplayName(source.getDisplayName());
+        }
+        if (target.getDescription() == null) {
+            target.setDescription(source.getDescription());
+        }
+        if (target.getContent() == null) {
+            target.setContent(source.getContent());
+        }
+        if (target.getAliases() == null) {
+            target.setAliases(source.getAliases());
+        }
+        if (target.getWhenToUse() == null) {
+            target.setWhenToUse(source.getWhenToUse());
+        }
+        if (target.getArgumentHint() == null) {
+            target.setArgumentHint(source.getArgumentHint());
+        }
+        if (target.getAllowedTools() == null) {
+            target.setAllowedTools(source.getAllowedTools());
+        }
+        if (target.getModel() == null) {
+            target.setModel(source.getModel());
+        }
+        if (target.getDisableModelInvocation() == null) {
+            target.setDisableModelInvocation(source.getDisableModelInvocation());
+        }
+        if (target.getUserInvocable() == null) {
+            target.setUserInvocable(source.getUserInvocable());
+        }
+        if (target.getExecutionContext() == null) {
+            target.setExecutionContext(source.getExecutionContext());
+        }
+        if (target.getEffort() == null) {
+            target.setEffort(source.getEffort());
+        }
+        if (target.getCategory() == null) {
+            target.setCategory(source.getCategory());
+        }
+        if (target.getVisibility() == null) {
+            target.setVisibility(source.getVisibility());
+        }
+        if (target.getCreatorType() == null) {
+            target.setCreatorType(source.getCreatorType());
+        }
+        if (target.getCreatorId() == null) {
+            target.setCreatorId(source.getCreatorId());
+        }
+        if (target.getCreatorName() == null) {
+            target.setCreatorName(source.getCreatorName());
+        }
+        if (target.getEditorId() == null) {
+            target.setEditorId(source.getEditorId());
+        }
+        if (target.getEditorName() == null) {
+            target.setEditorName(source.getEditorName());
+        }
+        if (target.getStatus() == null) {
+            target.setStatus(source.getStatus());
+        }
+        if (target.getVersion() == null) {
+            target.setVersion(source.getVersion());
+        }
+        if (target.getStorageType() == null) {
+            target.setStorageType(source.getStorageType());
+        }
+        if (target.getStorageInfo() == null) {
+            target.setStorageInfo(source.getStorageInfo());
+        }
+        if (target.getCreatedAt() == null) {
+            target.setCreatedAt(source.getCreatedAt());
+        }
+        if (target.getPublishedAt() == null) {
+            target.setPublishedAt(source.getPublishedAt());
+        }
+        if (target.getPersist() == null) {
+            target.setPersist(source.getPersist());
+        }
+        if (target.getPersistMode() == null) {
+            target.setPersistMode(source.getPersistMode());
+        }
     }
 
     // ── 读操作 ────────────────────────────────────────────────────────

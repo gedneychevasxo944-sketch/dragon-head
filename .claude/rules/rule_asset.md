@@ -138,6 +138,55 @@ Only ARCHIVED 可 REVERT 回 DRAFT
 - `asset_publish_status` - 发布状态表（resourceType, resourceId, status, version...）
 - `asset_association` - 关联关系表（associationType, sourceType, sourceId, targetType, targetId）
 
+## 资产标签（asset_tag）
+
+资产标签用于为任意资产附加标签，标签**不是独立资产**，无 Owner/PublishStatus，通过 `AssetTagService` 管理。
+
+**Entity 放置：必须放在 `org.dragon.datasource.entity.AssetTagEntity`**，因为 Ebean 仅扫描 `datasource.entity` 包。
+
+**表结构：**
+
+```sql
+CREATE TABLE asset_tag (
+    name VARCHAR(128) NOT NULL,
+    color VARCHAR(16),
+    description VARCHAR(512),
+    resource_type VARCHAR(32) NOT NULL,
+    resource_id VARCHAR(64) NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (resource_type, resource_id, name),
+    INDEX idx_resource (resource_type, resource_id),
+    INDEX idx_name (name)
+);
+```
+
+## 标签规范
+
+**所有资产的标签统一通过 `asset_tag` 表管理，其他实体（Skill、WorkspaceMember 等）禁止维护 `tags` 字段。**
+
+标签存储位置：
+- **Entity**: `org.dragon.datasource.entity.AssetTagEntity`
+- **Service**: `org.dragon.asset.tag.service.AssetTagService`
+- **Controller**: `org.dragon.asset.tag.controller.AssetTagController`
+
+标签使用方式：
+```java
+// 绑定标签
+assetTagService.tagAsset(ResourceType.SKILL, skillId, "数据分析");
+
+// 批量绑定
+assetTagService.tagAssets(ResourceType.SKILL, skillId, List.of("数据分析", "API"));
+
+// 获取资产的所有标签
+List<AssetTagDTO> tags = assetTagService.getTagsForAsset(ResourceType.SKILL, skillId);
+
+// 按资产类型获取所有去重标签名
+Set<String> tagNames = assetTagService.getTagNamesByResourceType(ResourceType.SKILL);
+```
+
+**禁止在其他 Entity 中添加 `tags` 字段**，如 SkillEntity、WorkspaceMemberEntity 等。标签信息全部通过 `asset_tag` 表关联。
+
 ## 禁止事项
 
 ```java

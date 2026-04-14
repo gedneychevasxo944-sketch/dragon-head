@@ -67,6 +67,8 @@ public class CharacterEntity {
 
     private String status;
 
+    private String mbti;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -88,6 +90,7 @@ public class CharacterEntity {
         profile.setDeployedCount(this.deployedCount);
         profile.setMindConfig(this.mindConfig);
         profile.setStatus(this.status != null ? CharacterProfile.Status.valueOf(this.status) : null);
+        profile.setMbti(this.mbti);
         profile.setCreatedAt(this.createdAt);
         profile.setUpdatedAt(this.updatedAt);
 
@@ -140,6 +143,7 @@ public class CharacterEntity {
                 .mindConfig(profile.getMindConfig())
                 .extensions(extensionsJson)
                 .status(profile.getStatus() != null ? profile.getStatus().name() : null)
+                .mbti(profile.getMbti())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();

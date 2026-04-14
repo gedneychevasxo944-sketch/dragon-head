@@ -1,17 +1,21 @@
 package org.dragon.character.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.dragon.api.controller.dto.CharacterDetailDTO;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.asset.enums.AssociationType;
 import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.asset.tag.dto.AssetTagDTO;
+import org.dragon.asset.tag.service.AssetTagService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
-import org.dragon.datasource.entity.TraitEntity;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.skill.store.SkillStore;
@@ -19,10 +23,8 @@ import org.dragon.trait.store.TraitStore;
 import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * CharacterService 角色领域服务
@@ -45,6 +47,7 @@ public class CharacterService {
     private final TraitStore traitStore;
     private final SkillStore skillStore;
     private final AssetAssociationService assetAssociationService;
+    private final AssetTagService assetTagService;
 
     /**
      * 分页获取角色列表，支持状态/搜索筛选。
@@ -113,7 +116,7 @@ public class CharacterService {
         characterRegistry.register(character);
 
         // 添加创建者为 Owner
-        Long userId = Long.parseLong(UserUtils.getUserId());
+        Long userId = Long.valueOf(UserUtils.getUserId());
         assetMemberService.addOwnerDirectly(ResourceType.CHARACTER, character.getId(), userId);
 
         // 初始化发布状态（默认为 DRAFT）
@@ -170,7 +173,11 @@ public class CharacterService {
             traitInfos = List.of();
         } else {
             traitInfos = traitStore.findByIds(traitIds).stream()
-                    .map(CharacterDetailDTO::fromTraitEntity)
+                    .map(entity -> {
+                        List<String> tagNames = assetTagService.getTagsForAsset(ResourceType.TRAIT, entity.getId())
+                                .stream().map(AssetTagDTO::getName).collect(Collectors.toList());
+                        return CharacterDetailDTO.fromTraitEntity(entity, tagNames);
+                    })
                     .collect(Collectors.toList());
         }
 

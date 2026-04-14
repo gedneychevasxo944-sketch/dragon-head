@@ -26,9 +26,6 @@ public class TraitEntity {
     @Column(nullable = false, length = 64)
     private String name;
 
-    @Column(nullable = false, length = 64)
-    private String category;
-
     @Column(length = 512)
     private String description;
 

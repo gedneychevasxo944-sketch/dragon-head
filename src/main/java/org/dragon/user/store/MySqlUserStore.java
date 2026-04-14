@@ -29,7 +29,45 @@ public class MySqlUserStore implements UserStore {
 
     @Override
     public void update(UserEntity user) {
+        // Fetch existing entity first to preserve fields not being updated
+        UserEntity existing = mysqlDb.find(UserEntity.class, user.getId());
+        if (existing != null) {
+            mergeIfNotNull(user, existing);
+        }
         mysqlDb.update(user);
+    }
+
+    private void mergeIfNotNull(UserEntity target, UserEntity source) {
+        if (target.getUsername() == null) {
+            target.setUsername(source.getUsername());
+        }
+        if (target.getPhone() == null) {
+            target.setPhone(source.getPhone());
+        }
+        if (target.getPasswordHash() == null) {
+            target.setPasswordHash(source.getPasswordHash());
+        }
+        if (target.getNickname() == null) {
+            target.setNickname(source.getNickname());
+        }
+        if (target.getAvatar() == null) {
+            target.setAvatar(source.getAvatar());
+        }
+        if (target.getStatus() == null) {
+            target.setStatus(source.getStatus());
+        }
+        if (target.getLastLoginAt() == null) {
+            target.setLastLoginAt(source.getLastLoginAt());
+        }
+        if (target.getLastLoginIp() == null) {
+            target.setLastLoginIp(source.getLastLoginIp());
+        }
+        if (target.getLoginFailCount() == null) {
+            target.setLoginFailCount(source.getLoginFailCount());
+        }
+        if (target.getLockUntil() == null) {
+            target.setLockUntil(source.getLockUntil());
+        }
     }
 
     @Override

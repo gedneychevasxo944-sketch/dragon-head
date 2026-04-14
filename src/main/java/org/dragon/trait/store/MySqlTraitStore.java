@@ -35,7 +35,27 @@ public class MySqlTraitStore implements TraitStore {
     @Override
     public void update(TraitEntity trait) {
         trait.setUpdateTime(java.time.LocalDateTime.now());
+        // Fetch existing entity first to preserve fields not being updated
+        TraitEntity existing = db.find(TraitEntity.class, trait.getId());
+        if (existing != null) {
+            mergeIfNotNull(trait, existing);
+        }
         db.update(trait);
+    }
+
+    private void mergeIfNotNull(TraitEntity target, TraitEntity source) {
+        if (target.getName() == null) {
+            target.setName(source.getName());
+        }
+        if (target.getDescription() == null) {
+            target.setDescription(source.getDescription());
+        }
+        if (target.getContent() == null) {
+            target.setContent(source.getContent());
+        }
+        if (target.getEnabled() == null) {
+            target.setEnabled(source.getEnabled());
+        }
     }
 
     @Override
@@ -67,15 +87,6 @@ public class MySqlTraitStore implements TraitStore {
         return db.find(TraitEntity.class)
                 .where()
                 .eq("type", type)
-                .orderBy("createTime desc")
-                .findList();
-    }
-
-    @Override
-    public List<TraitEntity> findByCategory(String category) {
-        return db.find(TraitEntity.class)
-                .where()
-                .eq("category", category)
                 .orderBy("createTime desc")
                 .findList();
     }

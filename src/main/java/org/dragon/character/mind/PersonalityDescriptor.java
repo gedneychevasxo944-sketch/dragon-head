@@ -27,6 +27,11 @@ public class PersonalityDescriptor {
     private String name;
 
     /**
+     * Character 描述
+     */
+    private String description;
+
+    /**
      * 性格特征列表（存储完整 Trait 内容）
      */
     private List<TraitContent> traits;
@@ -78,9 +83,9 @@ public class PersonalityDescriptor {
          */
         private String name;
         /**
-         * Trait 分类
+         * Trait 标签列表
          */
-        private String category;
+        private List<String> tags;
         /**
          * Trait 具体内容
          */
@@ -98,6 +103,10 @@ public class PersonalityDescriptor {
 
         if (name != null && !name.isEmpty()) {
             prompt.append("你是 ").append(name).append("。\n");
+        }
+
+        if (description != null && !description.isEmpty()) {
+            prompt.append("你被描述为 ").append( description).append("\n");
         }
 
         if (traits != null && !traits.isEmpty()) {

@@ -2,8 +2,7 @@ package org.dragon.character.mind;
 
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.character.mind.memory.MemoryAccess;
-import org.dragon.character.mind.tag.Tag;
-import org.dragon.character.mind.tag.TagRepository;
+import org.dragon.impression.dto.ImpressionDTO;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,24 +21,19 @@ public class DefaultMind implements Mind {
 
     private PersonalityDescriptor personality;
 
-    private final TagRepository tagRepository;
-
     private final MemoryAccess memoryAccess;
 
     private final TraitResolutionService traitResolutionService;
 
     public DefaultMind(String characterId,
-                       TagRepository tagRepository,
                        MemoryAccess memoryAccess) {
-        this(characterId, tagRepository, memoryAccess, null);
+        this(characterId, memoryAccess, null);
     }
 
     public DefaultMind(String characterId,
-                       TagRepository tagRepository,
                        MemoryAccess memoryAccess,
                        TraitResolutionService traitResolutionService) {
         this.characterId = characterId;
-        this.tagRepository = tagRepository;
         this.memoryAccess = memoryAccess;
         this.traitResolutionService = traitResolutionService;
     }
@@ -83,11 +77,6 @@ public class DefaultMind implements Mind {
     public void updatePersonality(PersonalityDescriptor descriptor) {
         this.personality = descriptor;
         log.info("[Mind] Updated personality for character: {}", characterId);
-    }
-
-    @Override
-    public TagRepository getTagRepository() {
-        return tagRepository;
     }
 
     @Override
@@ -137,24 +126,24 @@ public class DefaultMind implements Mind {
     }
 
     @Override
-    public Map<String, Tag> enhanceTagsByLLM(List<String> suggestions) {
-        log.info("[DefaultMind] Enhancing tags with {} suggestions", suggestions.size());
+    public Map<String, ImpressionDTO> enhanceTagsByLLM(List<String> suggestions) {
+        log.info("[DefaultMind] Enhancing impressions with {} suggestions", suggestions.size());
 
-        Map<String, Tag> tagUpdates = new HashMap<>();
+        Map<String, ImpressionDTO> impressionUpdates = new HashMap<>();
 
-        // 简化实现：解析 suggestions 中关于 tag 的建议
-        // 实际生产环境应该调用 LLM 来确定需要更新哪些 tag
+        // 简化实现：解析 suggestions 中关于 impression 的建议
+        // 实际生产环境应该调用 LLM 来确定需要更新哪些 impression
         for (String suggestion : suggestions) {
             String lowerSuggestion = suggestion.toLowerCase();
 
-            if (lowerSuggestion.contains("印象") || lowerSuggestion.contains("tag") || lowerSuggestion.contains("信任")) {
-                // 解析 target character 和 tag 信息
+            if (lowerSuggestion.contains("印象") || lowerSuggestion.contains("impression") || lowerSuggestion.contains("信任")) {
+                // 解析 target character 和 impression 信息
                 // 这是一个简化实现
-                log.info("[DefaultMind] Tag suggestion: {}", suggestion);
+                log.info("[DefaultMind] Impression suggestion: {}", suggestion);
             }
         }
 
-        return tagUpdates;
+        return impressionUpdates;
     }
 
     /**

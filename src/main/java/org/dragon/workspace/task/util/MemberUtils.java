@@ -19,7 +19,7 @@ public final class MemberUtils {
      * 构建成员描述信息
      *
      * @param m 成员
-     * @return 描述字符串，格式：角色: xxx | 层级: xxx | 标签: xxx
+     * @return 描述字符串，格式：角色: xxx | 层级: xxx
      */
     public static String buildMemberDescription(WorkspaceMember m) {
         StringBuilder sb = new StringBuilder();
@@ -31,12 +31,6 @@ public final class MemberUtils {
                 sb.append(" | ");
             }
             sb.append("层级: ").append(m.getLayer());
-        }
-        if (m.getTags() != null && !m.getTags().isEmpty()) {
-            if (sb.length() > 0) {
-                sb.append(" | ");
-            }
-            sb.append("标签: ").append(String.join(", ", m.getTags()));
         }
         return sb.toString();
     }

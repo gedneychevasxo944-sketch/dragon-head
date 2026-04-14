@@ -1,22 +1,20 @@
 package org.dragon.character.runtime;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
+import lombok.Builder;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.dragon.agent.orchestration.OrchestrationService;
 import org.dragon.agent.react.ReActContext;
 import org.dragon.agent.react.ReActResult;
-import org.dragon.agent.react.context.PromptMaterialContext;
 import org.dragon.agent.react.context.PromptMaterialConfig;
+import org.dragon.agent.react.context.PromptMaterialContext;
 import org.dragon.agent.react.context.PromptMaterialContextBuilder;
 import org.dragon.agent.workflow.Workflow;
 import org.dragon.agent.workflow.WorkflowResult;
 import org.dragon.character.config.CharacterExecutorConfig;
 import org.dragon.character.mind.DefaultMind;
 import org.dragon.character.mind.Mind;
-import org.dragon.character.mind.PersonalityDescriptor;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.config.PromptMaterialConfigProperties;
@@ -24,11 +22,11 @@ import org.dragon.skill.runtime.SkillDefinition;
 import org.dragon.skill.runtime.SkillDirectoryBuilder;
 import org.dragon.skill.runtime.SkillRegistry;
 import org.dragon.task.Task;
-
-import lombok.Builder;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.dragon.util.SpringUtils;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Character 执行器
@@ -278,98 +276,20 @@ public class CharacterExecutor {
         }
 
         // 2. 如果未获取到，使用 Mind.personality.toPrompt()
-        if (StringUtils.isBlank(prompt)) {
-            Mind currentMind = getMind();
-            if (currentMind != null && currentMind.getPersonality() != null) {
-                prompt = currentMind.getPersonality().toPrompt();
-            }
-        }
+        prompt = appendCharacterMind(prompt);
 
-        // 3. 追加 Character 基本信息（profile.description）
-        prompt = appendCharacterBasicInfo(prompt);
-
-        // 4. 追加 Character 特征（traits）
-        prompt = appendCharacterTraitsInfo(prompt);
-
-        // 5. 增加 skill 的 prompt
+        // 3. 增加 skill 的 prompt
         prompt += SkillDirectoryBuilder.buildDirectoryPrompt(runtime.getSkillRegistry().getSkills(profile.getId(), workspace));
 
-        // 6. 增加 Workspace Personality（如果有）
+        // 4. 增加 Workspace Personality（如果有）
         if (promptMaterialContext != null && promptMaterialContext.getWorkspacePersonality() != null) {
             prompt = appendWorkspacePersonalityPrompt(prompt, promptMaterialContext.getWorkspacePersonality());
         }
 
+        // 7. 增加 MBTI 人格描述（如果有）
+        prompt = appendMbtiPersonalityDescription(prompt);
+
         return prompt != null ? prompt : "";
-    }
-
-    /**
-     * 追加 Character 基本信息到 System Prompt
-     * 包含 profile.description，确保 LLM 能获取到角色描述
-     */
-    private String appendCharacterBasicInfo(String currentPrompt) {
-        StringBuilder sb = new StringBuilder();
-        if (currentPrompt != null && !currentPrompt.isEmpty()) {
-            sb.append(currentPrompt).append("\n\n");
-        }
-
-        boolean hasInfo = false;
-
-        // 追加 Character 描述
-        if (profile.getDescription() != null && !profile.getDescription().isBlank()) {
-            sb.append("## Character 描述\n");
-            sb.append(profile.getDescription()).append("\n");
-            hasInfo = true;
-        }
-
-        // 追加 Character 名称（如果与描述不同）
-        if (profile.getName() != null && !profile.getName().isBlank()) {
-            // 只有当描述中没有包含名称时才追加
-            if (currentPrompt == null || !currentPrompt.contains(profile.getName())) {
-                sb.append("## Character 名称\n");
-                sb.append(profile.getName()).append("\n");
-                hasInfo = true;
-            }
-        }
-
-        return hasInfo ? sb.toString() : (currentPrompt != null ? currentPrompt : "");
-    }
-
-    /**
-     * 追加 Character 特征（Traits）到 System Prompt
-     * 通过 AssetAssociationService 获取关联的 traitIds，再通过 TraitResolutionService 解析具体内容
-     */
-    private String appendCharacterTraitsInfo(String currentPrompt) {
-        if (runtime.getAssetAssociationService() == null || runtime.getTraitResolutionService() == null) {
-            return currentPrompt;
-        }
-
-        List<String> traitIds = runtime.getAssetAssociationService().getTraitsForCharacter(profile.getId());
-        if (traitIds == null || traitIds.isEmpty()) {
-            return currentPrompt;
-        }
-
-        List<PersonalityDescriptor.TraitContent> traits = runtime.getTraitResolutionService().resolveTraits(traitIds);
-        if (traits == null || traits.isEmpty()) {
-            return currentPrompt;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        if (currentPrompt != null && !currentPrompt.isEmpty()) {
-            sb.append(currentPrompt).append("\n\n");
-        }
-
-        sb.append("## Character 品质特征\n");
-        for (PersonalityDescriptor.TraitContent trait : traits) {
-            if (trait.getName() != null && !trait.getName().isBlank()) {
-                sb.append("- ").append(trait.getName());
-                if (trait.getCategory() != null && !trait.getCategory().isBlank()) {
-                    sb.append(" (").append(trait.getCategory()).append(")");
-                }
-                sb.append(": ").append(trait.getContent() != null ? trait.getContent() : "").append("\n");
-            }
-        }
-
-        return sb.toString();
     }
 
     /**
@@ -406,6 +326,55 @@ public class CharacterExecutor {
         return sb.toString();
     }
 
+    /**
+    /**
+     * 追加角色特征
+     * @param prompt
+     * @return
+     */
+    private String appendCharacterMind(String prompt) {
+       StringBuilder sb = new StringBuilder();
+       if (StringUtils.isNotBlank(prompt)) {
+           sb.append(prompt).append("\n\n");
+       }
+        Mind currentMind = getMind();
+        if (currentMind != null && currentMind.getPersonality() != null) {
+            prompt = currentMind.getPersonality().toPrompt();
+            sb.append(prompt);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 追加 MBTI 人格描述到 System Prompt
+     * 从 ConfigApplication 获取该 MBTI 类型的全局描述
+     */
+    private String appendMbtiPersonalityDescription(String currentPrompt) {
+        String mbti = profile.getMbti();
+        if (mbti == null || mbti.isBlank()) {
+            return currentPrompt;
+        }
+
+        if (runtime.getConfigApplication() == null) {
+            return currentPrompt;
+        }
+
+        String mbtiPrompt = runtime.getConfigApplication().getGlobalPrompt(
+                PromptKeys.MBTI_PREFIX + mbti.toUpperCase(), null);
+        if (mbtiPrompt == null || mbtiPrompt.isBlank()) {
+            return currentPrompt;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (currentPrompt != null && !currentPrompt.isEmpty()) {
+            sb.append(currentPrompt).append("\n\n");
+        }
+        sb.append("## MBTI 人格特征\n");
+        sb.append(mbtiPrompt);
+
+        return sb.toString();
+    }
+
     private String resolveWorkspace() {
         // 从运行时获取 workspaceId（由 CharacterRuntimeBinder.bind 注入）
         if (runtime != null && runtime.getWorkspaceId() != null) {
@@ -435,22 +404,21 @@ public class CharacterExecutor {
         if (profile.getMind() != null) {
             return profile.getMind();
         }
-        if (profile.getMindConfig() != null) {
-            return initMind();
-        }
-        return null;
+        return initMind();
     }
 
     private Mind initMind() {
-        if (profile.getMindConfig() == null) {
-            return null;
-        }
         DefaultMind defaultMind = new DefaultMind(
-                profile.getId(), null, null, runtime.getTraitResolutionService());
-         String personalityPath = profile.getMindConfig().getPersonalityDescriptorPath();
-        if (personalityPath != null && !personalityPath.isEmpty()) {
-            defaultMind.loadPersonality(personalityPath);
+                profile.getId(), null, runtime.getTraitResolutionService());
+
+        // 从 mindConfig 加载 personality descriptor path（如果有）
+        if (profile.getMindConfig() != null) {
+            String personalityPath = profile.getMindConfig().getPersonalityDescriptorPath();
+            if (personalityPath != null && !personalityPath.isEmpty()) {
+                defaultMind.loadPersonality(personalityPath);
+            }
         }
+
         // 如果有 trait IDs，从数据库加载 Trait 内容
         if (runtime.getAssetAssociationService() != null) {
             List<String> traitIds = runtime.getAssetAssociationService().getTraitsForCharacter(profile.getId());
@@ -458,6 +426,11 @@ public class CharacterExecutor {
                 defaultMind.loadPersonalityFromTraitIds(traitIds);
             }
         }
+
+        // 设置角色和描述
+        defaultMind.getPersonality().setName(profile.getName());
+        defaultMind.getPersonality().setDescription(profile.getDescription());
+
         return defaultMind;
     }
 }

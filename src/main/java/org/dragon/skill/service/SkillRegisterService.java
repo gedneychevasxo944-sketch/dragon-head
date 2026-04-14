@@ -210,9 +210,6 @@ public class SkillRegisterService {
         if (request.getUserInvocable() != null) {
             skill.setUserInvocable(request.getUserInvocable() ? 1 : 0);
         }
-        if (request.getTags() != null) {
-            skill.setTags(toJson(request.getTags()));
-        }
     }
 
     // ── 统一内部方法 ─────────────────────────────────────────────────
@@ -389,8 +386,6 @@ public class SkillRegisterService {
         d.setUserInvocable(Boolean.FALSE.equals(parsed.getUserInvocable()) ? 0 : 1);
         d.setExecutionContext(ExecutionContext.fromValue(parsed.getExecutionContext()));
         d.setEffort(defaultIfNull(SkillEffort.fromValue(parsed.getEffort()), SkillEffort.AUTO));
-        // tags 从 request 直接获取，不走 frontmatter 解析
-        d.setTags(request != null && request.getTags() != null ? toJson(request.getTags()) : null);
         d.setCategory(defaultIfNull(SkillCategory.fromValue(parsed.getCategory()), SkillCategory.OTHER));
         d.setVisibility(SkillVisibility.fromValue(parsed.getVisibility()));
         d.setCreatorType(CreatorType.PERSONAL);

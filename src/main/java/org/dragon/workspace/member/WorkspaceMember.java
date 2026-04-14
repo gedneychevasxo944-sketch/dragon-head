@@ -1,7 +1,6 @@
 package org.dragon.workspace.member;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
@@ -58,12 +57,6 @@ public class WorkspaceMember {
      */
     @Builder.Default
     private Layer layer = Layer.NORMAL;
-
-    /**
-     * 标签列表
-     * 描述成员擅长领域、历史表现、可信度等
-     */
-    private List<String> tags;
 
     /**
      * 调度权重
