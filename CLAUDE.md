@@ -188,3 +188,79 @@ private Map<String, Object> toMap(TraitEntity trait, List<AssetTagDTO> tags) {
 | Store 实现 | `MySqlAssetAssociationStore` | `.in("targetId", ids)` |
 | Service | `AssetTagService` | `getTagsForAssets()` |
 | 业务 Service | `TraitService` | `listTraits()` + `toMap(entity, tags)` |
+
+## 资产复制规范（CopyStrategy）
+
+Expert 模块通过 `CopyStrategy` 实现资产的深度复制（fork/派生）。复制资产时必须遵循以下规范：
+
+### 核心原则
+
+**复制的子资产必须设置 owner 和 publishStatus**，否则子资产无法被正常访问。
+
+### 架构角色划分
+
+| 角色 | 职责 |
+|------|------|
+| `ExpertService` | 业务编排：创建 Expert 标记、关联关系 |
+| `CopyStrategy` | 深度复制：复制实体及关联的子资产 |
+| `AssetFactory` | 工厂方法：创建空白资产并设置 owner/publishStatus（避免循环依赖） |
+
+### 标准做法
+
+**1. 使用 AssetFactory 创建空白资产**
+
+```java
+// 正确 —— 通过 AssetFactory 创建，设置 owner 和 publishStatus
+Character copied = assetFactory.createBlankCharacter(source.getName(), source.getDescription());
+
+// 错误 —— 直接 new 实体，不设置 owner/publishStatus
+Character copied = new Character();
+copied.setName(source.getName());
+characterRegistry.register(copied);
+// 子资产没有 owner，无法被用户访问
+```
+
+**2. CopyStrategy 中复制子资产必须调用服务**
+
+```java
+// CharacterCopyStrategy.copySkill() 示例
+private String copySkill(String sourceSkillId, String targetCharacterId, Long operatorId) {
+    SkillDO source = skillStore.findLatestBySkillId(sourceSkillId).orElse(null);
+    // ...
+    SkillDO copy = new SkillDO();
+    // ... 复制字段 ...
+    skillStore.save(copy);
+
+    // 必须设置 owner 和 publishStatus
+    assetMemberService.addOwnerDirectly(ResourceType.SKILL, copy.getSkillId(), operatorId);
+    publishStatusService.initializeStatus(ResourceType.SKILL, copy.getSkillId(), String.valueOf(operatorId));
+
+    return copy.getSkillId();
+}
+```
+
+**3. 禁止调用包含业务逻辑的高级 Service**
+
+CopyStrategy 应只依赖底层存储（Store）和基础设施服务（AssetMemberService、AssetPublishStatusService），**禁止调用包含复杂业务逻辑的 Service**（如 CharacterService），避免循环依赖。
+
+```java
+// 错误 —— 可能导致循环依赖
+// CharacterService → ExpertService → CopyStrategy → CharacterService
+
+// 正确 —— 使用 AssetFactory 或直接调用 Store + 基础设施服务
+private final AssetFactory assetFactory;
+private final SkillStore skillStore;
+private final AssetMemberService assetMemberService;
+private final AssetPublishStatusService publishStatusService;
+```
+
+### 典型文件参考
+
+| 文件 | 职责 |
+|------|------|
+| `ExpertService` | 业务编排入口 |
+| `CopyStrategyFactory` | 策略分发（按 ResourceType 获取对应 CopyStrategy） |
+| `CharacterCopyStrategy` | Character 复制（委托 AssetFactory） |
+| `SkillCopyStrategy` | Skill 复制（委托 AssetFactory） |
+| `TraitCopyStrategy` | Trait 复制（委托 AssetFactory） |
+| `AssetFactory` | 空白资产创建 + 深度复制（统一设置 owner/publishStatus） |

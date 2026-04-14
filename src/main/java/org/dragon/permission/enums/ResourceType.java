@@ -10,6 +10,7 @@ public enum ResourceType {
     TOOL,
     OBSERVER,
     MEMORY,
+    MEMORY_CHUNK,
     CONFIG,
     MODEL,
     TRAIT,

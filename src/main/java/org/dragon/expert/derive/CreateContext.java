@@ -1,4 +1,4 @@
-package org.dragon.template.derive;
+package org.dragon.expert.derive;
 
 import lombok.Builder;
 import lombok.Data;
@@ -7,7 +7,7 @@ import org.dragon.permission.enums.ResourceType;
 import java.util.Map;
 
 /**
- * CreateContext 创建模板上下文
+ * CreateContext 创建 Expert 上下文
  *
  * @author yijunw
  */
@@ -31,7 +31,7 @@ public class CreateContext {
     private String description;
 
     /**
-     * 模板分类
+     * Expert 分类
      */
     private String category;
 

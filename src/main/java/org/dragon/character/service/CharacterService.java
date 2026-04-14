@@ -14,6 +14,7 @@ import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.asset.tag.dto.AssetTagDTO;
 import org.dragon.asset.tag.service.AssetTagService;
 import org.dragon.character.Character;
+import org.dragon.expert.service.ExpertService;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.permission.enums.ResourceType;
@@ -48,6 +49,7 @@ public class CharacterService {
     private final SkillStore skillStore;
     private final AssetAssociationService assetAssociationService;
     private final AssetTagService assetTagService;
+    private final ExpertService expertService;
 
     /**
      * 分页获取角色列表，支持状态/搜索筛选。
@@ -72,11 +74,15 @@ public class CharacterService {
         java.util.Set<String> visibleIds = new java.util.HashSet<>(memberCharacterIds);
         visibleIds.addAll(publishedCharacterIds);
 
+        // 排除 Expert 标记的资产
+        java.util.Set<String> visibleNonExpertIds = expertService.filterOutExpertMarked(
+                ResourceType.CHARACTER, java.util.List.copyOf(visibleIds));
+
         // 过滤
         List<Character> filtered = all.stream()
                 .filter(c -> {
-                    // 可见性过滤
-                    if (!visibleIds.isEmpty() && !visibleIds.contains(c.getId())) {
+                    // 可见性过滤（排除 Expert 标记的资产）
+                    if (!visibleNonExpertIds.contains(c.getId())) {
                         return false;
                     }
                     if (search != null && !search.isBlank()) {

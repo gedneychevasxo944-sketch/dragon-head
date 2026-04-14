@@ -1,10 +1,10 @@
-package org.dragon.template.store;
+package org.dragon.expert.store;
 
 import io.ebean.Database;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
-import org.dragon.datasource.entity.TemplateMarkEntity;
+import org.dragon.datasource.entity.ExpertEntity;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -13,47 +13,47 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * MySqlTemplateMarkStore 模板标记 MySQL 存储实现
+ * MySqlExpertStore Expert 标记 MySQL 存储实现
  *
  * @author yijunw
  */
 @Component
 @StoreTypeAnn(StoreType.MYSQL)
-public class MySqlTemplateMarkStore implements TemplateMarkStore {
+public class MySqlExpertStore implements ExpertStore {
 
     private final Database db;
 
-    public MySqlTemplateMarkStore(@Qualifier("mysqlEbeanDatabase") Database db) {
+    public MySqlExpertStore(@Qualifier("mysqlEbeanDatabase") Database db) {
         this.db = db;
     }
 
     @Override
-    public void save(TemplateMarkEntity templateMark) {
-        if (templateMark.getId() == null) {
-            templateMark.setId(java.util.UUID.randomUUID().toString());
+    public void save(ExpertEntity expertMark) {
+        if (expertMark.getId() == null) {
+            expertMark.setId(java.util.UUID.randomUUID().toString());
         }
-        if (templateMark.getCreatedAt() == null) {
-            templateMark.setCreatedAt(LocalDateTime.now());
+        if (expertMark.getCreatedAt() == null) {
+            expertMark.setCreatedAt(LocalDateTime.now());
         }
-        templateMark.setUpdatedAt(LocalDateTime.now());
-        db.save(templateMark);
+        expertMark.setUpdatedAt(LocalDateTime.now());
+        db.save(expertMark);
     }
 
     @Override
-    public void update(TemplateMarkEntity templateMark) {
-        templateMark.setUpdatedAt(LocalDateTime.now());
-        db.update(templateMark);
+    public void update(ExpertEntity expertMark) {
+        expertMark.setUpdatedAt(LocalDateTime.now());
+        db.update(expertMark);
     }
 
     @Override
-    public Optional<TemplateMarkEntity> findById(String id) {
-        TemplateMarkEntity entity = db.find(TemplateMarkEntity.class, id);
+    public Optional<ExpertEntity> findById(String id) {
+        ExpertEntity entity = db.find(ExpertEntity.class, id);
         return Optional.ofNullable(entity);
     }
 
     @Override
-    public Optional<TemplateMarkEntity> findByResource(ResourceType resourceType, String resourceId) {
-        TemplateMarkEntity entity = db.find(TemplateMarkEntity.class)
+    public Optional<ExpertEntity> findByResource(ResourceType resourceType, String resourceId) {
+        ExpertEntity entity = db.find(ExpertEntity.class)
                 .where()
                 .eq("resourceType", resourceType.name())
                 .eq("resourceId", resourceId)
@@ -62,21 +62,21 @@ public class MySqlTemplateMarkStore implements TemplateMarkStore {
     }
 
     @Override
-    public List<TemplateMarkEntity> findAll() {
-        return db.find(TemplateMarkEntity.class).findList();
+    public List<ExpertEntity> findAll() {
+        return db.find(ExpertEntity.class).findList();
     }
 
     @Override
-    public List<TemplateMarkEntity> findByResourceType(ResourceType resourceType) {
-        return db.find(TemplateMarkEntity.class)
+    public List<ExpertEntity> findByResourceType(ResourceType resourceType) {
+        return db.find(ExpertEntity.class)
                 .where()
                 .eq("resourceType", resourceType.name())
                 .findList();
     }
 
     @Override
-    public List<TemplateMarkEntity> findByCategory(String category) {
-        return db.find(TemplateMarkEntity.class)
+    public List<ExpertEntity> findByCategory(String category) {
+        return db.find(ExpertEntity.class)
                 .where()
                 .eq("category", category)
                 .findList();
@@ -84,7 +84,7 @@ public class MySqlTemplateMarkStore implements TemplateMarkStore {
 
     @Override
     public void incrementUsageCount(String id) {
-        TemplateMarkEntity mark = db.find(TemplateMarkEntity.class, id);
+        ExpertEntity mark = db.find(ExpertEntity.class, id);
         if (mark != null) {
             mark.setUsageCount(mark.getUsageCount() + 1);
             mark.setUpdatedAt(LocalDateTime.now());
@@ -94,12 +94,12 @@ public class MySqlTemplateMarkStore implements TemplateMarkStore {
 
     @Override
     public void delete(String id) {
-        db.delete(TemplateMarkEntity.class, id);
+        db.delete(ExpertEntity.class, id);
     }
 
     @Override
     public void deleteByResource(ResourceType resourceType, String resourceId) {
-        db.find(TemplateMarkEntity.class)
+        db.find(ExpertEntity.class)
                 .where()
                 .eq("resourceType", resourceType.name())
                 .eq("resourceId", resourceId)

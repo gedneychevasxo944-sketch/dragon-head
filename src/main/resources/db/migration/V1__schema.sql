@@ -1123,21 +1123,21 @@ CREATE TABLE IF NOT EXISTS asset_tag (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- Template Mark 表
--- 用于标记某条资产记录是模板，并存储模板特有的元信息
+-- Expert Mark 表
+-- 用于标记某条资产记录是 Expert，并存储 Expert 特有的元信息
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS template_mark (
+CREATE TABLE IF NOT EXISTS expert_mark (
     id VARCHAR(64) PRIMARY KEY COMMENT '主键 UUID',
     resource_type VARCHAR(32) NOT NULL COMMENT '资产类型：CHARACTER, SKILL, TRAIT, OBSERVER, WORKSPACE, MEMORY',
     resource_id VARCHAR(64) NOT NULL COMMENT '资产 ID',
-    category VARCHAR(64) COMMENT '模板分类：助手/客服/创作/开发/研究/分析',
-    preview TEXT COMMENT '模板预览文本',
+    category VARCHAR(64) COMMENT 'Expert 分类：助手/客服/创作/开发/研究/分析',
+    preview TEXT COMMENT 'Expert 预览文本',
     target_audience VARCHAR(128) COMMENT '目标用户群体',
     usage_count INT NOT NULL DEFAULT 0 COMMENT '被派生次数',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    UNIQUE KEY uk_template_mark (resource_type, resource_id),
+    UNIQUE KEY uk_expert_mark (resource_type, resource_id),
     INDEX idx_category (category),
     INDEX idx_resource_type (resource_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模板标记表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Expert 标记表';

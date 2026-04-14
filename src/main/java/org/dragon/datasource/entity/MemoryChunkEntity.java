@@ -52,11 +52,6 @@ public class MemoryChunkEntity {
     private String summary;
 
     /**
-     * 标签列表（JSON 序列化，如 ["tag1","tag2"]）
-     */
-    private String tags;
-
-    /**
      * 索引状态：pending / indexed / failed
      */
     private String indexedStatus;

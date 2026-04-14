@@ -47,12 +47,11 @@ public class MemoryMemoryChunkStore implements MemoryChunkStore {
     }
 
     @Override
-    public List<MemoryChunkEntity> findByCondition(String sourceId, String syncStatus, String indexedStatus, String tags, String search) {
+    public List<MemoryChunkEntity> findByCondition(String sourceId, String syncStatus, String indexedStatus, String search) {
         return storage.values().stream()
                 .filter(e -> sourceId == null || sourceId.equals(e.getSourceId()))
                 .filter(e -> syncStatus == null || syncStatus.equals(e.getSyncStatus()))
                 .filter(e -> indexedStatus == null || indexedStatus.equals(e.getIndexedStatus()))
-                .filter(e -> tags == null || (e.getTags() != null && e.getTags().contains(tags)))
                 .filter(e -> search == null
                         || (e.getContent() != null && e.getContent().contains(search))
                         || (e.getTitle() != null && e.getTitle().contains(search)))
@@ -73,8 +72,8 @@ public class MemoryMemoryChunkStore implements MemoryChunkStore {
     }
 
     @Override
-    public long countByCondition(String sourceId, String syncStatus, String indexedStatus, String tags, String search) {
-        return findByCondition(sourceId, syncStatus, indexedStatus, tags, search).size();
+    public long countByCondition(String sourceId, String syncStatus, String indexedStatus, String search) {
+        return findByCondition(sourceId, syncStatus, indexedStatus, search).size();
     }
 
     @Override

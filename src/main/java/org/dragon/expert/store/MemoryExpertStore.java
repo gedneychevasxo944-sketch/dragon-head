@@ -1,9 +1,9 @@
-package org.dragon.template.store;
+package org.dragon.expert.store;
 
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
-import org.dragon.datasource.entity.TemplateMarkEntity;
+import org.dragon.datasource.entity.ExpertEntity;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -14,49 +14,45 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * MemoryTemplateMarkStore 模板标记内存存储实现
+ * MemoryExpertStore Expert 标记内存存储实现
  *
  * @author yijunw
  */
 @Component
 @StoreTypeAnn(StoreType.MEMORY)
-public class MemoryTemplateMarkStore implements TemplateMarkStore {
+public class MemoryExpertStore implements ExpertStore {
 
-    private final Map<String, TemplateMarkEntity> store = new ConcurrentHashMap<>();
-
-    private String key(ResourceType resourceType, String resourceId) {
-        return resourceType.name() + ":" + resourceId;
-    }
+    private final Map<String, ExpertEntity> store = new ConcurrentHashMap<>();
 
     private String keyById(String id) {
         return id;
     }
 
     @Override
-    public void save(TemplateMarkEntity templateMark) {
-        if (templateMark.getId() == null) {
-            templateMark.setId(java.util.UUID.randomUUID().toString());
+    public void save(ExpertEntity expertMark) {
+        if (expertMark.getId() == null) {
+            expertMark.setId(java.util.UUID.randomUUID().toString());
         }
-        if (templateMark.getCreatedAt() == null) {
-            templateMark.setCreatedAt(LocalDateTime.now());
+        if (expertMark.getCreatedAt() == null) {
+            expertMark.setCreatedAt(LocalDateTime.now());
         }
-        templateMark.setUpdatedAt(LocalDateTime.now());
-        store.put(keyById(templateMark.getId()), templateMark);
+        expertMark.setUpdatedAt(LocalDateTime.now());
+        store.put(keyById(expertMark.getId()), expertMark);
     }
 
     @Override
-    public void update(TemplateMarkEntity templateMark) {
-        templateMark.setUpdatedAt(LocalDateTime.now());
-        store.put(keyById(templateMark.getId()), templateMark);
+    public void update(ExpertEntity expertMark) {
+        expertMark.setUpdatedAt(LocalDateTime.now());
+        store.put(keyById(expertMark.getId()), expertMark);
     }
 
     @Override
-    public Optional<TemplateMarkEntity> findById(String id) {
+    public Optional<ExpertEntity> findById(String id) {
         return Optional.ofNullable(store.get(keyById(id)));
     }
 
     @Override
-    public Optional<TemplateMarkEntity> findByResource(ResourceType resourceType, String resourceId) {
+    public Optional<ExpertEntity> findByResource(ResourceType resourceType, String resourceId) {
         return store.values().stream()
                 .filter(e -> resourceType.equals(e.getResourceType())
                         && resourceId.equals(e.getResourceId()))
@@ -64,19 +60,19 @@ public class MemoryTemplateMarkStore implements TemplateMarkStore {
     }
 
     @Override
-    public List<TemplateMarkEntity> findAll() {
+    public List<ExpertEntity> findAll() {
         return store.values().stream().collect(Collectors.toList());
     }
 
     @Override
-    public List<TemplateMarkEntity> findByResourceType(ResourceType resourceType) {
+    public List<ExpertEntity> findByResourceType(ResourceType resourceType) {
         return store.values().stream()
                 .filter(e -> resourceType.equals(e.getResourceType()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<TemplateMarkEntity> findByCategory(String category) {
+    public List<ExpertEntity> findByCategory(String category) {
         return store.values().stream()
                 .filter(e -> category.equals(e.getCategory()))
                 .collect(Collectors.toList());
@@ -84,7 +80,7 @@ public class MemoryTemplateMarkStore implements TemplateMarkStore {
 
     @Override
     public void incrementUsageCount(String id) {
-        TemplateMarkEntity mark = store.get(keyById(id));
+        ExpertEntity mark = store.get(keyById(id));
         if (mark != null) {
             mark.setUsageCount(mark.getUsageCount() + 1);
             mark.setUpdatedAt(LocalDateTime.now());

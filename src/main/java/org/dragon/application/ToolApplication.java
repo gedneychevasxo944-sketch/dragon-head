@@ -1,20 +1,20 @@
 package org.dragon.application;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.permission.enums.ResourceType;
 import org.dragon.asset.service.AssetMemberService;
+import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.tools.ToolRegistry;
 import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ToolApplication Tool 模块应用服务
@@ -136,7 +136,7 @@ public class ToolApplication {
             String toolName = (String) result.get("name");
             if (toolName != null) {
                 try {
-                    Long userId = Long.parseLong(UserUtils.getUserId());
+                    Long userId = Long.valueOf(UserUtils.getUserId());
                     assetMemberService.addOwnerDirectly(ResourceType.TOOL, toolName, userId);
                     log.info("[ToolApplication] Added owner for tool: {}", toolName);
                 } catch (Exception e) {

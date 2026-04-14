@@ -43,11 +43,10 @@ public interface MemoryChunkStore extends Store {
      * @param sourceId      数据源 ID（可为 null）
      * @param syncStatus    同步状态（可为 null）
      * @param indexedStatus 索引状态（可为 null）
-     * @param tags          标签关键词（可为 null）
      * @param search        内容关键词（可为 null）
      * @return 记忆片段列表
      */
-    List<MemoryChunkEntity> findByCondition(String sourceId, String syncStatus, String indexedStatus, String tags, String search);
+    List<MemoryChunkEntity> findByCondition(String sourceId, String syncStatus, String indexedStatus, String search);
 
     /**
      * 删除记忆片段
@@ -71,11 +70,10 @@ public interface MemoryChunkStore extends Store {
      * @param sourceId      数据源 ID（可为 null）
      * @param syncStatus    同步状态（可为 null）
      * @param indexedStatus 索引状态（可为 null）
-     * @param tags          标签关键词（可为 null）
      * @param search        内容关键词（可为 null）
      * @return 数量
      */
-    long countByCondition(String sourceId, String syncStatus, String indexedStatus, String tags, String search);
+    long countByCondition(String sourceId, String syncStatus, String indexedStatus, String search);
 
     /**
      * 更新单个片段的索引状态

@@ -42,5 +42,10 @@ public enum AssociationType {
     /**
      * 模板派生出的资产
      */
-    TEMPLATE_ASSET
+    TEMPLATE_ASSET,
+
+    /**
+     * Expert fork 源资产（source -> expert）
+     */
+    EXPERT_SOURCE
 }

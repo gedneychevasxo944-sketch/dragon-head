@@ -6,13 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.dragon.api.controller.dto.ApiResponse;
-import org.dragon.character.Character;
 import org.dragon.permission.checker.PermissionChecker;
 import org.dragon.permission.enums.ResourceType;
-import org.dragon.template.derive.CreateContext;
-import org.dragon.template.derive.DeriveTemplateRequest;
-import org.dragon.datasource.entity.TemplateMarkEntity;
-import org.dragon.template.service.TemplateMarkService;
+import org.dragon.expert.derive.CreateContext;
+import org.dragon.datasource.entity.ExpertEntity;
+import org.dragon.expert.service.ExpertService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,32 +25,30 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * TemplateController 模板管理 API
+ * ExpertController Expert 管理 API
  *
- * <p>提供通用的模板管理功能，支持将各类资产（Character、Skill、Trait等）标记为模板，
- * 并通过模板派生创建新资产。
+ * <p>提供 Expert 的创建、查询、派生等功能。
  *
  * @author yijunw
- * @version 1.0
  */
-@Tag(name = "Template", description = "模板管理")
+@Tag(name = "Expert", description = "Expert 管理")
 @RestController
-@RequestMapping("/api/v1/templates")
+@RequestMapping("/api/v1/experts")
 @RequiredArgsConstructor
-public class TemplateController {
+public class ExpertController {
 
-    private final TemplateMarkService templateMarkService;
+    private final ExpertService expertService;
     private final PermissionChecker permissionChecker;
 
-    // ==================== 白板创建模板 ====================
+    // ==================== 创建 Expert ====================
 
     /**
-     * 白板创建模板（一步完成）
-     * POST /api/v1/templates/create-with-template
+     * 白板创建 Expert（一步完成）
+     * POST /api/v1/experts/create-with-expert
      */
-    @Operation(summary = "白板创建模板")
-    @PostMapping("/create-with-template")
-    public ApiResponse<Object> createWithTemplate(@RequestBody CreateTemplateRequest request) {
+    @Operation(summary = "白板创建 Expert")
+    @PostMapping("/create-with-expert")
+    public ApiResponse<Object> createWithExpert(@RequestBody CreateExpertRequest request) {
         permissionChecker.checkEdit(request.getResourceType().name(), null);
 
         CreateContext context = CreateContext.builder()
@@ -65,22 +61,20 @@ public class TemplateController {
                 .config(request.getConfig())
                 .build();
 
-        Object asset = templateMarkService.createWithTemplate(context);
+        Object asset = expertService.createWithExpert(context);
         return ApiResponse.success(asset);
     }
 
-    // ==================== 标记/取消标记 ====================
-
     /**
-     * 将资产标记为模板
-     * POST /api/v1/templates/mark
+     * 从已有资产创建 Expert（fork）
+     * POST /api/v1/experts/from-asset
      */
-    @Operation(summary = "将资产标记为模板")
-    @PostMapping("/mark")
-    public ApiResponse<TemplateMarkVO> markAsTemplate(@RequestBody MarkTemplateRequest request) {
+    @Operation(summary = "从资产创建 Expert")
+    @PostMapping("/from-asset")
+    public ApiResponse<ExpertVO> createExpertFromAsset(@RequestBody CreateExpertFromAssetRequest request) {
         permissionChecker.checkEdit(request.getResourceType().name(), request.getResourceId());
 
-        TemplateMarkEntity mark = templateMarkService.markAsTemplate(
+        ExpertEntity mark = expertService.createExpertFromAsset(
                 request.getResourceType(),
                 request.getResourceId(),
                 request.getCategory(),
@@ -90,72 +84,73 @@ public class TemplateController {
         return ApiResponse.success(toVO(mark));
     }
 
+    // ==================== 标记/取消标记 ====================
+
     /**
-     * 取消模板标记
-     * DELETE /api/v1/templates/mark/{resourceType}/{resourceId}
+     * 取消 Expert 标记
+     * DELETE /api/v1/experts/{resourceType}/{resourceId}
      */
-    @Operation(summary = "取消模板标记")
-    @DeleteMapping("/mark/{resourceType}/{resourceId}")
-    public ApiResponse<Void> unmarkTemplate(
+    @Operation(summary = "取消 Expert 标记")
+    @DeleteMapping("/{resourceType}/{resourceId}")
+    public ApiResponse<Void> unmarkExpert(
             @PathVariable ResourceType resourceType,
             @PathVariable String resourceId) {
         permissionChecker.checkEdit(resourceType.name(), resourceId);
-        templateMarkService.unmarkTemplate(resourceType, resourceId);
+        expertService.unmarkExpert(resourceType, resourceId);
         return ApiResponse.success();
     }
 
     // ==================== 查询 ====================
 
     /**
-     * 获取模板列表
-     * GET /api/v1/templates?resourceType=CHARACTER&category=助手
+     * 获取 Expert 列表
+     * GET /api/v1/experts?resourceType=CHARACTER&category=助手
      */
-    @Operation(summary = "获取模板列表")
+    @Operation(summary = "获取 Expert 列表")
     @GetMapping
-    public ApiResponse<List<TemplateMarkVO>> listTemplates(
+    public ApiResponse<List<ExpertVO>> listExperts(
             @RequestParam(required = false) ResourceType resourceType,
             @RequestParam(required = false) String category) {
-        List<TemplateMarkEntity> marks = templateMarkService.listTemplates(resourceType, category);
-        List<TemplateMarkVO> vos = marks.stream().map(this::toVOWithAsset).toList();
+        List<ExpertEntity> marks = expertService.listExperts(resourceType, category);
+        List<ExpertVO> vos = marks.stream().map(this::toVOWithAsset).toList();
         return ApiResponse.success(vos);
     }
 
     /**
-     * 获取模板详情
-     * GET /api/v1/templates/{resourceType}/{resourceId}
+     * 获取 Expert 详情
+     * GET /api/v1/experts/{resourceType}/{resourceId}
      */
-    @Operation(summary = "获取模板详情")
+    @Operation(summary = "获取 Expert 详情")
     @GetMapping("/{resourceType}/{resourceId}")
-    public ApiResponse<TemplateMarkVO> getTemplate(
+    public ApiResponse<ExpertVO> getExpert(
             @PathVariable ResourceType resourceType,
             @PathVariable String resourceId) {
-        Optional<TemplateMarkEntity> markOpt = templateMarkService.getTemplateMark(resourceType, resourceId);
+        Optional<ExpertEntity> markOpt = expertService.getExpertMark(resourceType, resourceId);
         return markOpt.map(m -> ApiResponse.success(toVOWithAsset(m)))
-                .orElse(ApiResponse.error(404, "Template not found"));
+                .orElse(ApiResponse.error(404, "Expert not found"));
     }
 
     // ==================== 派生 ====================
 
     /**
-     * 从模板派生创建资产
-     * POST /api/v1/templates/{resourceType}/{resourceId}/derive
+     * 从 Expert 派生创建新资产
+     * POST /api/v1/experts/{resourceType}/{resourceId}/derive
      */
-    @Operation(summary = "从模板派生创建资产")
+    @Operation(summary = "从 Expert 派生创建新资产")
     @PostMapping("/{resourceType}/{resourceId}/derive")
-    public ApiResponse<Object> deriveFromTemplate(
+    public ApiResponse<Object> deriveFromExpert(
             @PathVariable ResourceType resourceType,
-            @PathVariable String resourceId,
-            @RequestBody DeriveTemplateRequest request) {
-        permissionChecker.checkEdit(resourceType.name(), resourceId);
+            @PathVariable String resourceId) {
+        // permissionChecker.checkEdit(resourceType.name(), resourceId);
 
-        Object derived = templateMarkService.derive(resourceType, resourceId, request);
+        Object derived = expertService.deriveFromExpert(resourceType, resourceId);
         return ApiResponse.success(derived);
     }
 
     // ==================== DTO ==========
 
     @Data
-    public static class CreateTemplateRequest {
+    public static class CreateExpertRequest {
         private ResourceType resourceType;
         private String name;
         private String description;
@@ -166,7 +161,7 @@ public class TemplateController {
     }
 
     @Data
-    public static class MarkTemplateRequest {
+    public static class CreateExpertFromAssetRequest {
         private ResourceType resourceType;
         private String resourceId;
         private String category;
@@ -176,7 +171,7 @@ public class TemplateController {
 
     @Data
     @Builder
-    public static class TemplateMarkVO {
+    public static class ExpertVO {
         private String id;
         private ResourceType resourceType;
         private String resourceId;
@@ -189,8 +184,8 @@ public class TemplateController {
 
     // ==================== 内部方法 ==========
 
-    private TemplateMarkVO toVO(TemplateMarkEntity mark) {
-        return TemplateMarkVO.builder()
+    private ExpertVO toVO(ExpertEntity mark) {
+        return ExpertVO.builder()
                 .id(mark.getId())
                 .resourceType(mark.getResourceType())
                 .resourceId(mark.getResourceId())
@@ -201,9 +196,9 @@ public class TemplateController {
                 .build();
     }
 
-    private TemplateMarkVO toVOWithAsset(TemplateMarkEntity mark) {
-        TemplateMarkVO vo = toVO(mark);
-        vo.setAsset(templateMarkService.getTemplateAsset(mark.getResourceType(), mark.getResourceId()));
+    private ExpertVO toVOWithAsset(ExpertEntity mark) {
+        ExpertVO vo = toVO(mark);
+        vo.setAsset(expertService.getExpertAsset(mark.getResourceType(), mark.getResourceId()));
         return vo;
     }
 }

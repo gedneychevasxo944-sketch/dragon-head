@@ -1,5 +1,7 @@
 package org.dragon.skill.service;
 
+import org.dragon.expert.service.ExpertService;
+import org.dragon.permission.enums.ResourceType;
 import org.dragon.skill.domain.SkillDO;
 import org.dragon.skill.dto.PageResult;
 import org.dragon.skill.dto.SkillDetailVO;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -35,6 +38,7 @@ public class SkillQueryService {
 
     private final SkillStore skillStore;
     private final SkillUsageService usageService;
+    private final ExpertService expertService;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -128,6 +132,14 @@ public class SkillQueryService {
 
         List<SkillSummaryVO> items = rows.stream()
                 .map(this::toSummaryVO)
+                .collect(Collectors.toList());
+
+        // 过滤掉 Expert 标记的资产
+        Set<String> nonExpertIds = expertService.filterOutExpertMarked(
+                ResourceType.SKILL,
+                items.stream().map(SkillSummaryVO::getSkillId).collect(Collectors.toList()));
+        items = items.stream()
+                .filter(s -> nonExpertIds.contains(s.getSkillId()))
                 .collect(Collectors.toList());
 
         return PageResult.of(items, total, req.getPage(), limit);

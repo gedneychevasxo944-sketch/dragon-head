@@ -51,7 +51,7 @@ public class MySqlMemoryChunkStore implements MemoryChunkStore {
     }
 
     @Override
-    public List<MemoryChunkEntity> findByCondition(String sourceId, String syncStatus, String indexedStatus, String tags, String search) {
+    public List<MemoryChunkEntity> findByCondition(String sourceId, String syncStatus, String indexedStatus, String search) {
         var query = mysqlDb.find(MemoryChunkEntity.class).where();
         if (sourceId != null && !sourceId.isBlank()) {
             query = query.eq("sourceId", sourceId);
@@ -61,9 +61,6 @@ public class MySqlMemoryChunkStore implements MemoryChunkStore {
         }
         if (indexedStatus != null && !indexedStatus.isBlank()) {
             query = query.eq("indexedStatus", indexedStatus);
-        }
-        if (tags != null && !tags.isBlank()) {
-            query = query.contains("tags", tags);
         }
         if (search != null && !search.isBlank()) {
             query = query.or()
@@ -91,7 +88,7 @@ public class MySqlMemoryChunkStore implements MemoryChunkStore {
     }
 
     @Override
-    public long countByCondition(String sourceId, String syncStatus, String indexedStatus, String tags, String search) {
+    public long countByCondition(String sourceId, String syncStatus, String indexedStatus, String search) {
         var query = mysqlDb.find(MemoryChunkEntity.class).where();
         if (sourceId != null && !sourceId.isBlank()) {
             query = query.eq("sourceId", sourceId);
@@ -101,9 +98,6 @@ public class MySqlMemoryChunkStore implements MemoryChunkStore {
         }
         if (indexedStatus != null && !indexedStatus.isBlank()) {
             query = query.eq("indexedStatus", indexedStatus);
-        }
-        if (tags != null && !tags.isBlank()) {
-            query = query.contains("tags", tags);
         }
         if (search != null && !search.isBlank()) {
             query = query.or()

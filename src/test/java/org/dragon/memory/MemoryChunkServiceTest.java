@@ -7,14 +7,24 @@ import org.dragon.api.controller.dto.memory.BatchUpdateIndexStatusRequest;
 import org.dragon.api.controller.dto.memory.CreateChunkRequest;
 import org.dragon.api.controller.dto.memory.MemoryChunkDTO;
 import org.dragon.api.controller.dto.memory.UpdateChunkRequest;
+import org.dragon.asset.tag.dto.AssetTagDTO;
+import org.dragon.asset.tag.service.AssetTagService;
+import org.dragon.permission.enums.ResourceType;
+import org.dragon.store.StoreFactory;
 import org.dragon.memory.service.meta.impl.MemoryMetaChunkServiceImpl;
 import org.dragon.memory.store.MemoryChunkStore;
 import org.dragon.memory.store.MemoryMemoryChunkStore;
+import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -28,16 +38,73 @@ import static org.mockito.Mockito.*;
 public class MemoryChunkServiceTest {
 
     private MemoryMemoryChunkStore chunkStore;
+    private FakeAssetTagService assetTagService;
     private MemoryMetaChunkServiceImpl chunkService;
 
     @BeforeEach
     void setUp() {
         chunkStore = new MemoryMemoryChunkStore();
+        assetTagService = new FakeAssetTagService();
 
         StoreFactory storeFactory = mock(StoreFactory.class);
         when(storeFactory.get(MemoryChunkStore.class)).thenReturn(chunkStore);
 
-        chunkService = new MemoryMetaChunkServiceImpl(storeFactory);
+        chunkService = new MemoryMetaChunkServiceImpl(storeFactory, assetTagService);
+    }
+
+    /**
+     * 内存实现的 AssetTagService，用于测试
+     */
+    static class FakeAssetTagService extends AssetTagService {
+        private final Map<String, List<AssetTagDTO>> tagStore = new HashMap<>();
+
+        FakeAssetTagService() {
+            super(mock(StoreFactory.class));
+        }
+
+        @Override
+        public void tagAsset(ResourceType resourceType, String resourceId, String tagName) {
+            tagStore.computeIfAbsent(resourceId, k -> new ArrayList<>())
+                    .add(AssetTagDTO.builder().name(tagName).build());
+        }
+
+        @Override
+        public void tagAsset(ResourceType resourceType, String resourceId, String tagName, String color, String description) {
+            tagStore.computeIfAbsent(resourceId, k -> new ArrayList<>())
+                    .add(AssetTagDTO.builder().name(tagName).color(color).description(description).build());
+        }
+
+        @Override
+        public void tagAssets(ResourceType resourceType, String resourceId, List<String> tagNames) {
+            for (String tagName : tagNames) {
+                tagAsset(resourceType, resourceId, tagName);
+            }
+        }
+
+        @Override
+        public List<AssetTagDTO> getTagsForAsset(ResourceType resourceType, String resourceId) {
+            return tagStore.getOrDefault(resourceId, Collections.emptyList());
+        }
+
+        @Override
+        public Map<String, List<AssetTagDTO>> getTagsForAssets(ResourceType resourceType, List<String> resourceIds) {
+            Map<String, List<AssetTagDTO>> result = new HashMap<>();
+            for (String id : resourceIds) {
+                List<AssetTagDTO> tags = tagStore.getOrDefault(id, Collections.emptyList());
+                if (!tags.isEmpty()) {
+                    result.put(id, tags);
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public void untagAsset(ResourceType resourceType, String resourceId, String tagName) {
+            List<AssetTagDTO> tags = tagStore.get(resourceId);
+            if (tags != null) {
+                tags.removeIf(t -> t.getName().equals(tagName));
+            }
+        }
     }
 
     // ---- createChunk ----

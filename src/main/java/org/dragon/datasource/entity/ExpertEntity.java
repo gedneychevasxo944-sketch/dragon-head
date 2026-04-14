@@ -15,10 +15,10 @@ import org.dragon.permission.enums.ResourceType;
 import java.time.LocalDateTime;
 
 /**
- * TemplateMarkEntity 模板标记实体
+ * ExpertEntity Expert 标记实体
  *
- * <p>用于标记某条资产记录是模板，并存储模板特有的元信息。
- * template_mark 表只做标记，不存储 name/description 等字段（这些直接在源资产表中）。
+ * <p>用于标记某条资产记录是 Expert，并存储 Expert 特有的元信息。
+ * expert_mark 表只做标记，不存储 name/description 等字段（这些直接在源资产表中）。
  *
  * @author yijunw
  */
@@ -27,8 +27,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "template_mark")
-public class TemplateMarkEntity {
+@Table(name = "expert_mark")
+public class ExpertEntity {
 
     /**
      * 主键 UUID
@@ -49,13 +49,13 @@ public class TemplateMarkEntity {
     private String resourceId;
 
     /**
-     * 模板分类：助手/客服/创作/开发/研究/分析
+     * Expert 分类：助手/客服/创作/开发/研究/分析
      */
     @Column(name = "category", length = 64)
     private String category;
 
     /**
-     * 模板预览文本
+     * Expert 预览文本
      */
     @Column(name = "preview", columnDefinition = "TEXT")
     private String preview;
