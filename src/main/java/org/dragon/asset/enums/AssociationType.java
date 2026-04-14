@@ -37,5 +37,10 @@ public enum AssociationType {
     /**
      * Trait 关联到 Character
      */
-    TRAIT_CHARACTER
+    TRAIT_CHARACTER,
+
+    /**
+     * 模板派生出的资产
+     */
+    TEMPLATE_ASSET
 }
