@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.dragon.workspace.skill.WorkspaceSkill;
 import org.dragon.application.WorkspaceApiApplication;
 import org.dragon.api.controller.dto.ApiResponse;
 import org.dragon.api.controller.dto.PageResponse;
@@ -232,6 +233,20 @@ public class WorkspaceController {
             @RequestParam(defaultValue = "20") int pageSize) {
         PageResponse<Task> result = workspaceApiApplication.listTasks(workspaceId, status, page, pageSize);
         return ApiResponse.success(result);
+    }
+
+    // ==================== Skill（技能）====================
+
+    /**
+     * 获取 Workspace 绑定的 Skill 列表（含启用状态）
+     * GET /api/v1/workspaces/:workspaceId/skills
+     */
+    @Operation(summary = "获取 Workspace 绑定的 Skill 列表（含启用状态）")
+    @GetMapping("/{workspaceId}/skills")
+    public ApiResponse<List<WorkspaceSkill>> listSkills(@PathVariable String workspaceId) {
+        permissionChecker.checkView("WORKSPACE", workspaceId);
+        List<WorkspaceSkill> skills = workspaceApiApplication.listWorkspaceSkillDetails(workspaceId);
+        return ApiResponse.success(skills);
     }
 
     // ==================== 请求体 DTO ====================

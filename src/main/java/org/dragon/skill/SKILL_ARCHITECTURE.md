@@ -262,7 +262,7 @@ org.dragon.skill/
 │   ├── SkillExecutor.java              # 执行器
 │   ├── SkillWorkspaceManager.java      # 工作区管理
 │   ├── SkillDirectoryBuilder.java      # 静态工具类
-│   ├── SkillDefinition.java            # 运行时定义
+│   ├── SkillDefinition.java         # 运行时实体
 │   ├── SkillToolData.java              # 执行结果
 │   ├── ContextPatch.java               # 上下文变更声明
 │   ├── AgentContext.java               # Agent 执行上下文

@@ -97,4 +97,20 @@ public class MemoryAssetAssociationStore implements AssetAssociationStore {
                     && targetId.equals(a.getTargetId());
         });
     }
+
+    @Override
+    public void setEnabled(AssociationType type, ResourceType sourceType, String sourceId,
+                           ResourceType targetType, String targetId, boolean enabled) {
+        AssetAssociationEntity entity = store.values().stream()
+                .filter(a -> type == a.getAssociationType()
+                        && sourceType == a.getSourceType()
+                        && sourceId.equals(a.getSourceId())
+                        && targetType == a.getTargetType()
+                        && targetId.equals(a.getTargetId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("AssetAssociation not found: type=%s, source=%s:%s, target=%s:%s",
+                                type, sourceType, sourceId, targetType, targetId)));
+        entity.setEnabled(enabled);
+    }
 }

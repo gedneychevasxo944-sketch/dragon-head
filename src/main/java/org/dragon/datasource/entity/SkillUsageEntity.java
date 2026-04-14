@@ -1,7 +1,5 @@
 package org.dragon.datasource.entity;
 
-import org.dragon.skill.domain.SkillUsageDO;
-import org.dragon.skill.enums.ExecutionContext;
 import io.ebean.annotation.WhenCreated;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,11 +11,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dragon.skill.domain.SkillUsageDO;
+import org.dragon.skill.enums.ExecutionContext;
 
 import java.time.LocalDateTime;
 
 /**
- * SkillUsageEntity — 映射 skill_usage_logs 表。
+ * SkillUsageEntity — 映射 skill_usage_log 表。
  *
  * <p>每次 Skill 执行时写入一条记录，兼顾以下用途：
  * <ul>
@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
  *
  * <p>建表 SQL 参考：
  * <pre>
- * CREATE TABLE skill_usage_logs (
+ * CREATE TABLE skill_usage_log (
  *   id             BIGINT        NOT NULL AUTO_INCREMENT PRIMARY KEY,
  *   skill_id       VARCHAR(64)   NOT NULL COMMENT '技能业务 UUID',
  *   skill_name     VARCHAR(128)  NOT NULL COMMENT '技能名称（冗余，便于查询无需 JOIN）',
@@ -56,7 +56,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "skill_usage_logs")
+@Table(name = "skill_usage_log")
 public class SkillUsageEntity {
 
     @Id

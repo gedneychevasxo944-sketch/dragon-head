@@ -4,17 +4,22 @@ import io.ebean.annotation.DbEnumValue;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Skill 分类。{@link #BUILTIN} 为系统保留类型，不允许用户创建同类型 Skill。
+ * Skill 功能分类。仅描述"这个 Skill 是干什么的"，与来源/加载策略无关。
+ *
+ * <p>"是否系统内置"由 {@link org.dragon.skill.domain.SkillDO#isBuiltin()} 字段单独表达，
+ * 两者正交，一个内置 Skill 可以同时拥有任意功能分类（如 CODER、DATA_ANALYSIS 等）。
  */
 @RequiredArgsConstructor
 public enum SkillCategory {
 
-    BUILTIN("builtin"),
-    DEVELOPMENT("development"),
-    DEPLOYMENT("deployment"),
-    ANALYSIS("analysis"),
-    UTILITY("utility"),
-    INTEGRATION("integration"),
+    CONVERSATION("conversation"),
+    CODER("coder"),
+    DATA_ANALYSIS("data_analysis"),
+    IMAGE_GENERATION("image_generation"),
+    KNOWLEDGE_RETRIEVAL("knowledge_retrieval"),
+    TOOL_CALLING("tool_calling"),
+    DATA_PROCESSING("data_processing"),
+    TEXT_GENERATION("text_generation"),
     OTHER("other");
 
     private final String value;

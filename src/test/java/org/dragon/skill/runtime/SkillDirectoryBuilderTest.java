@@ -2,6 +2,7 @@ package org.dragon.skill.runtime;
 
 import org.dragon.skill.enums.ExecutionContext;
 import org.dragon.skill.enums.SkillCategory;
+import org.dragon.skill.util.SkillDirectoryBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -225,10 +226,9 @@ class SkillDirectoryBuilderTest {
     private SkillDefinition createSkill(String name, String displayName, String whenToUse) {
         return SkillDefinition.builder()
                 .name(name)
-                .displayName(displayName)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .whenToUse(whenToUse)
                 .description("Description for " + name)

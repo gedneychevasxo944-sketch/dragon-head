@@ -112,13 +112,6 @@ public class CharacterProfile {
     private Status status;
 
     /**
-     * MBTI 人格类型
-     * 16种类型: INTJ, INTP, ENTJ, ENTP, INFJ, INFP, ENFJ, ENFP,
-     *           ISTJ, ISFJ, ESTJ, ESFJ, ISTP, ISFP, ESTP, ESFP
-     */
-    private String mbti;
-
-    /**
      * Character 状态枚举
      */
     public enum Status {

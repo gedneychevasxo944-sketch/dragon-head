@@ -219,7 +219,6 @@ public class TaskArrangementService {
             getTaskStore().update(task);
             return;
         }
-        // TODO: 这里是从所有character里面取的第一个，后面应该需要根据配置来选
         String characterId = members.get(0).getCharacterId();
         createAndExecuteSingleChildTask(task, characterId, List.of(characterId));
     }

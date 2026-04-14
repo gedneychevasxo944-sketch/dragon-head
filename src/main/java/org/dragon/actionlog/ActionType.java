@@ -96,9 +96,47 @@ public enum ActionType {
     /** 定时任务执行 */
     SCHEDULE_EXECUTE,
 
-    // ==================== Skill 绑定 ====================
-    /** 绑定 Skill */
-    BIND,
-    /** 解绑 Skill */
-    UNBIND
+    // ==================== Skill 生命周期 ====================
+    /** 注册 Skill */
+    SKILL_REGISTER,
+    /** 更新 Skill */
+    SKILL_UPDATE,
+    /** 保存 Skill 草稿 */
+    SKILL_SAVE_DRAFT,
+    /** 发布 Skill */
+    SKILL_PUBLISH,
+    /** 下架 Skill */
+    SKILL_DISABLE,
+    /** 重新发布 Skill */
+    SKILL_REPUBLISH,
+    /** 删除 Skill */
+    SKILL_DELETE,
+    /** Skill 关联到 Character */
+    SKILL_BIND_CHARACTER,
+    /** Skill 关联到 Workspace */
+    SKILL_BIND_WORKSPACE,
+    /** Skill 解除关联 */
+    SKILL_UNBIND,
+
+    // ==================== Tool 生命周期 ====================
+    /** 注册 Tool */
+    TOOL_REGISTER,
+    /** 更新 Tool */
+    TOOL_UPDATE,
+    /** 保存 Tool 草稿 */
+    TOOL_SAVE_DRAFT,
+    /** 发布 Tool */
+    TOOL_PUBLISH,
+    /** 禁用 Tool */
+    TOOL_DISABLE,
+    /** 启用 Tool */
+    TOOL_ENABLE,
+    /** 删除 Tool */
+    TOOL_DELETE,
+    /** Tool 绑定到 Workspace */
+    TOOL_BIND_WORKSPACE,
+    /** Tool 绑定到 Character */
+    TOOL_BIND_CHARACTER,
+    /** Tool 解除绑定 */
+    TOOL_UNBIND
 }

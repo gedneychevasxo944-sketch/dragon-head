@@ -59,4 +59,17 @@ public interface AssetAssociationStore extends Store {
      */
     void deleteBySourceAndTarget(AssociationType type, ResourceType sourceType, String sourceId,
                                  ResourceType targetType, String targetId);
+
+    /**
+     * 启用/禁用指定关联关系（通过五元组定位）
+     *
+     * @param type       关联类型
+     * @param sourceType 源资产类型
+     * @param sourceId   源资产 ID
+     * @param targetType 目标资产类型
+     * @param targetId   目标资产 ID
+     * @param enabled    true=启用，false=禁用
+     */
+    void setEnabled(AssociationType type, ResourceType sourceType, String sourceId,
+                    ResourceType targetType, String targetId, boolean enabled);
 }

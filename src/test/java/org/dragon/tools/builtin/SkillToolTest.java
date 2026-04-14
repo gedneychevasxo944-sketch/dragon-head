@@ -160,10 +160,9 @@ class SkillToolTest {
 
         SkillDefinition skill = SkillDefinition.builder()
                 .name(skillName)
-                .displayName("Code Generator")
                 .skillId("skill-id")
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.FORK)
                 .build();
 
@@ -229,7 +228,6 @@ class SkillToolTest {
         String skillName = "manual-only";
         SkillDefinition skill = SkillDefinition.builder()
                 .name(skillName)
-                .displayName("Manual Only")
                 .skillId("skill-id")
                 .version(1)
                 .disableModelInvocation(true)
@@ -339,10 +337,9 @@ class SkillToolTest {
     private SkillDefinition createSkillDefinition(String name) {
         return SkillDefinition.builder()
                 .name(name)
-                .displayName(name)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .disableModelInvocation(false)
                 .userInvocable(true)

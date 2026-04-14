@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.api.controller.dto.TeamPositionResponse;
-import org.dragon.api.controller.WorkspaceController.AddMemberRequest;
+import org.dragon.workspace.skill.WorkspaceSkill;
 import org.dragon.api.controller.WorkspaceController.AddPositionRequest;
 import org.dragon.api.controller.WorkspaceController.UpdatePositionRequest;
 import org.dragon.task.Task;
@@ -14,6 +14,7 @@ import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.WorkspaceFacadeService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -95,7 +96,7 @@ public class WorkspaceApiApplication {
     /**
      * 获取成员列表。
      */
-    public java.util.List<WorkspaceMember> listMembers(String workspaceId) {
+    public List<WorkspaceMember> listMembers(String workspaceId) {
         return workspaceService.listMembers(workspaceId);
     }
 
@@ -121,12 +122,21 @@ public class WorkspaceApiApplication {
         workspaceService.removeMember(workspaceId, memberId);
     }
 
+    // ==================== 技能管理 ====================
+
+    /**
+     * 获取 workspace 已圈选的 Skill 列表（含元信息及启用状态）。
+     */
+    public List<WorkspaceSkill> listWorkspaceSkillDetails(String workspaceId) {
+        return workspaceService.listWorkspaceSkillDetails(workspaceId);
+    }
+
     // ==================== 岗位管理 ====================
 
     /**
      * 获取岗位列表。
      */
-    public java.util.List<TeamPositionResponse> listTeamPositions(String workspaceId) {
+    public List<TeamPositionResponse> listTeamPositions(String workspaceId) {
         return workspaceService.listTeamPositions(workspaceId);
     }
 

@@ -30,4 +30,3 @@ public enum VersionType {
         return LATEST;
     }
 }
-

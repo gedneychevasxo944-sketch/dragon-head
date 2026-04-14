@@ -1,11 +1,11 @@
 package org.dragon.skill.store;
 
-import org.dragon.skill.domain.SkillUsageDO;
-import org.dragon.datasource.entity.SkillUsageEntity;
-import org.dragon.skill.service.SkillUsageService.SkillRankItem;
 import io.ebean.Database;
 import io.ebean.SqlQuery;
 import io.ebean.SqlRow;
+import org.dragon.datasource.entity.SkillUsageEntity;
+import org.dragon.skill.domain.SkillUsageDO;
+import org.dragon.skill.service.SkillUsageService.SkillRankItem;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +48,7 @@ public class MySqlSkillUsageStore implements SkillUsageStore {
                        COUNT(*)                                     AS total_count,
                        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS success_count,
                        AVG(duration_ms)                             AS avg_duration_ms
-                FROM skill_usage_logs
+                FROM skill_usage_log
                 """);
         List<Object> params = new ArrayList<>();
         if (since != null) {
@@ -73,7 +73,7 @@ public class MySqlSkillUsageStore implements SkillUsageStore {
                        COUNT(*)                                     AS total_count,
                        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS success_count,
                        AVG(duration_ms)                             AS avg_duration_ms
-                FROM skill_usage_logs
+                FROM skill_usage_log
                 WHERE character_id = ?
                 """);
         List<Object> params = new ArrayList<>();
@@ -100,7 +100,7 @@ public class MySqlSkillUsageStore implements SkillUsageStore {
                        COUNT(*)                                     AS total_count,
                        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS success_count,
                        AVG(duration_ms)                             AS avg_duration_ms
-                FROM skill_usage_logs
+                FROM skill_usage_log
                 WHERE workspace_id = ?
                 """);
         List<Object> params = new ArrayList<>();

@@ -2,9 +2,9 @@ package org.dragon.skill.runtime;
 
 import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.service.ConfigApplication;
-import org.dragon.skill.domain.StorageInfoVO;
+import org.dragon.skill.dto.StorageInfo;
 import org.dragon.skill.exception.SkillValidationException;
-import org.dragon.skill.service.SkillStorageService;
+import org.dragon.skill.service.SkillFileService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalListener;
@@ -65,7 +65,7 @@ public class SkillWorkspaceManager {
     private final String execBaseDir;
 
     @Autowired
-    private SkillStorageService storageService;
+    private SkillFileService storageService;
 
     @Autowired
     public SkillWorkspaceManager(ConfigApplication configApplication) {
@@ -141,7 +141,7 @@ public class SkillWorkspaceManager {
      * @param storageInfo 存储元信息（含文件列表）
      * @return 本次执行的工作目录路径（调用方执行结束后调用 {@link #releaseExecDir} 清理）
      */
-    public Path prepareExecDir(String skillId, int version, StorageInfoVO storageInfo) {
+    public Path prepareExecDir(String skillId, int version, StorageInfo storageInfo) {
         // 1. 获取或物化模板目录（只读，进程级共享）
         Path templateDir = getOrMaterializeTemplate(skillId, version, storageInfo);
 
@@ -188,16 +188,16 @@ public class SkillWorkspaceManager {
      * @param storageInfo 存储元信息
      * @return true = 需要物化
      */
-    public boolean needsMaterialization(StorageInfoVO storageInfo) {
+    public boolean needsMaterialization(StorageInfo storageInfo) {
         if (storageInfo == null) return false;
-        List<StorageInfoVO.SkillFileItem> files = storageInfo.getFiles();
+        List<StorageInfo.SkillFileItem> files = storageInfo.getFiles();
         // 有超过 1 个文件（即除了 SKILL.md 还有其他文件）才需要物化目录
         return files != null && files.size() > 1;
     }
 
     // ── 模板层：获取或物化 ───────────────────────────────────────────
 
-    private Path getOrMaterializeTemplate(String skillId, int version, StorageInfoVO storageInfo) {
+    private Path getOrMaterializeTemplate(String skillId, int version, StorageInfo storageInfo) {
         String key = buildKey(skillId, version);
 
         // 快速路径：缓存命中，直接返回
@@ -233,7 +233,7 @@ public class SkillWorkspaceManager {
      * 将 storageInfo 中所有文件下载到模板目录，还原原始目录结构。
      * 模板目录设置为只读（防止意外修改影响其他执行）。
      */
-    private Path materializeTemplate(String skillId, int version, StorageInfoVO storageInfo) {
+    private Path materializeTemplate(String skillId, int version, StorageInfo storageInfo) {
         Path templateDir = Paths.get(templateBaseDir, skillId, "v" + version);
 
         try {
@@ -243,9 +243,9 @@ public class SkillWorkspaceManager {
             }
             Files.createDirectories(templateDir);
 
-            List<StorageInfoVO.SkillFileItem> files = storageInfo.getFiles();
+            List<StorageInfo.SkillFileItem> files = storageInfo.getFiles();
             if (files != null) {
-                for (StorageInfoVO.SkillFileItem fileItem : files) {
+                for (StorageInfo.SkillFileItem fileItem : files) {
                     // 路径遍历防护：校验 fileItem.getPath() 不能逃逸 templateDir
                     validateRelativePath(fileItem.getPath(), templateDir);
 

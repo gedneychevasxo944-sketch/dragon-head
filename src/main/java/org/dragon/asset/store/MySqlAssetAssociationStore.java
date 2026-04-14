@@ -102,4 +102,24 @@ public class MySqlAssetAssociationStore implements AssetAssociationStore {
                 .eq("targetId", targetId)
                 .delete();
     }
+
+    @Override
+    public void setEnabled(AssociationType type, ResourceType sourceType, String sourceId,
+                           ResourceType targetType, String targetId, boolean enabled) {
+        AssetAssociationEntity entity = mysqlDb.find(AssetAssociationEntity.class)
+                .where()
+                .eq("associationType", type.name())
+                .eq("sourceType", sourceType.name())
+                .eq("sourceId", sourceId)
+                .eq("targetType", targetType.name())
+                .eq("targetId", targetId)
+                .findOne();
+        if (entity == null) {
+            throw new IllegalArgumentException(
+                    String.format("AssetAssociation not found: type=%s, source=%s:%s, target=%s:%s",
+                            type, sourceType, sourceId, targetType, targetId));
+        }
+        entity.setEnabled(enabled);
+        mysqlDb.update(entity);
+    }
 }

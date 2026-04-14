@@ -1,12 +1,7 @@
 package org.dragon.character.builtin;
 
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterFactory;
 import org.dragon.character.CharacterRegistry;
@@ -18,8 +13,12 @@ import org.dragon.workspace.WorkspaceRegistry;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 统一的 Built-in Character 工厂

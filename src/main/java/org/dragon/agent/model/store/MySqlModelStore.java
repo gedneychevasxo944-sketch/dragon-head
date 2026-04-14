@@ -34,39 +34,7 @@ public class MySqlModelStore implements ModelStore {
     @Override
     public void update(ModelInstance modelInstance) {
         ModelInstanceEntity entity = ModelInstanceEntity.fromModelInstance(modelInstance);
-        // Fetch existing entity first to preserve fields not being updated
-        ModelInstanceEntity existing = mysqlDb.find(ModelInstanceEntity.class, modelInstance.getId());
-        if (existing != null) {
-            mergeIfNotNull(entity, existing);
-        }
         mysqlDb.update(entity);
-    }
-
-    private void mergeIfNotNull(ModelInstanceEntity target, ModelInstanceEntity source) {
-        if (target.getProvider() == null) {
-            target.setProvider(source.getProvider());
-        }
-        if (target.getModelName() == null) {
-            target.setModelName(source.getModelName());
-        }
-        if (target.getEndpoint() == null) {
-            target.setEndpoint(source.getEndpoint());
-        }
-        if (target.getCredentials() == null) {
-            target.setCredentials(source.getCredentials());
-        }
-        if (target.getDefaultParams() == null) {
-            target.setDefaultParams(source.getDefaultParams());
-        }
-        if (target.getEnabled() == null) {
-            target.setEnabled(source.getEnabled());
-        }
-        if (target.getDescription() == null) {
-            target.setDescription(source.getDescription());
-        }
-        if (target.getPriority() == null) {
-            target.setPriority(source.getPriority());
-        }
     }
 
     @Override

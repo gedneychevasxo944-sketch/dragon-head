@@ -65,4 +65,24 @@ public interface ActionLogStore extends Store {
      * 清空所有日志
      */
     void clear();
+
+    /**
+     * 分页查询指定目标的日志，按时间降序。
+     *
+     * @param targetType 目标类型
+     * @param targetId   目标 ID
+     * @param offset     偏移量
+     * @param limit      每页条数
+     * @return 日志列表
+     */
+    List<ObserverActionLog> findByTarget(String targetType, String targetId, int offset, int limit);
+
+    /**
+     * 统计指定目标的日志总数。
+     *
+     * @param targetType 目标类型
+     * @param targetId   目标 ID
+     * @return 日志总数
+     */
+    int countByTarget(String targetType, String targetId);
 }

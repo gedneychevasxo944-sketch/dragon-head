@@ -1,12 +1,14 @@
 package org.dragon.agent.react;
 
-import java.util.Iterator;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.dragon.agent.react.context.PromptMaterialContext;
-import org.dragon.tools.ToolRegistry;
+import org.dragon.tool.runtime.ToolDefinition;
+import org.dragon.tool.runtime.ToolRegistry;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Thought Prompt 装配器
@@ -17,6 +19,8 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 @Component
 public class ThoughtPromptAssembler {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final ToolRegistry toolRegistry;
 
@@ -94,37 +98,57 @@ public class ThoughtPromptAssembler {
             prompt.append(appendCollaborationContext(context));
         }
 
-        // 添加可用工具信息
-        if (!context.getAllowedTools().isEmpty()) {
-            prompt.append("## 可用工具\n");
-            prompt.append("你可以使用以下工具来完成用户的请求：\n\n");
-            for (String toolName : context.getAllowedTools()) {
-                toolRegistry.get(toolName).ifPresent(tool -> {
-                    prompt.append(String.format("- **%s**: %s\n",
-                            tool.getName(),
-                            tool.getDescription() != null ? tool.getDescription() : "无描述"));
-                    JsonNode paramSchema = tool.getParameterSchema();
-                    if (paramSchema != null && paramSchema.has("properties")) {
-                        JsonNode properties = paramSchema.get("properties");
-                        JsonNode required = paramSchema.has("required") ? paramSchema.get("required") : null;
-                        Iterator<String> fieldNames = properties.fieldNames();
-                        if (fieldNames.hasNext()) {
-                            prompt.append("  参数:\n");
-                            while (fieldNames.hasNext()) {
-                                String fieldName = fieldNames.next();
-                                JsonNode fieldSchema = properties.get(fieldName);
-                                boolean isRequired = required != null && required.has(fieldName);
-                                prompt.append(String.format("    - %s (%s): %s %s\n",
-                                        fieldName,
-                                        fieldSchema.has("type") ? fieldSchema.get("type").asText() : "string",
-                                        fieldSchema.has("description") ? fieldSchema.get("description").asText() : "",
-                                        isRequired ? "[必填]" : "[可选]"));
+        // 添加可用工具信息（从新 ToolRegistry 按 characterId/workspaceId 上下文获取）
+        String characterId = context.getCharacterId();
+        String workspaceId = context.getWorkspaceId();
+        if (characterId != null || workspaceId != null) {
+            List<ToolDefinition> definitions = toolRegistry.getDefinitions(characterId, workspaceId);
+            if (!definitions.isEmpty()) {
+                // 如果 context 配置了 allowedTools 白名单，则过滤；否则展示全部可见工具
+                java.util.Set<String> allowedTools = context.getAllowedTools();
+                List<ToolDefinition> visibleDefs = (allowedTools != null && !allowedTools.isEmpty())
+                        ? definitions.stream()
+                                .filter(d -> allowedTools.contains(d.getName()))
+                                .collect(java.util.stream.Collectors.toList())
+                        : definitions;
+
+                if (!visibleDefs.isEmpty()) {
+                    prompt.append("## 可用工具\n");
+                    prompt.append("你可以使用以下工具来完成用户的请求：\n\n");
+                    for (ToolDefinition def : visibleDefs) {
+                        prompt.append(String.format("- **%s**: %s\n",
+                                def.getName(),
+                                def.getDescription() != null ? def.getDescription() : "无描述"));
+                        // 解析 parameters JSON 字段展示参数说明
+                        if (def.getParameters() != null && !def.getParameters().isBlank()) {
+                            try {
+                                JsonNode paramSchema = OBJECT_MAPPER.readTree(def.getParameters());
+                                if (paramSchema.has("properties")) {
+                                    JsonNode properties = paramSchema.get("properties");
+                                    JsonNode required = paramSchema.has("required") ? paramSchema.get("required") : null;
+                                    Iterator<String> fieldNames = properties.fieldNames();
+                                    if (fieldNames.hasNext()) {
+                                        prompt.append("  参数:\n");
+                                        while (fieldNames.hasNext()) {
+                                            String fieldName = fieldNames.next();
+                                            JsonNode fieldSchema = properties.get(fieldName);
+                                            boolean isRequired = required != null && required.has(fieldName);
+                                            prompt.append(String.format("    - %s (%s): %s %s\n",
+                                                    fieldName,
+                                                    fieldSchema.has("type") ? fieldSchema.get("type").asText() : "string",
+                                                    fieldSchema.has("description") ? fieldSchema.get("description").asText() : "",
+                                                    isRequired ? "[必填]" : "[可选]"));
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                // 解析失败时跳过参数展示
                             }
                         }
                     }
-                });
+                    prompt.append("\n");
+                }
             }
-            prompt.append("\n");
         }
 
         prompt.append("请分析上述信息，给出下一步的行动。\n");

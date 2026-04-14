@@ -1,32 +1,30 @@
 package org.dragon.agent.react;
 
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
+import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
 import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
 import org.dragon.agent.llm.caller.LLMCaller;
 import org.dragon.agent.llm.caller.LLMCallerSelector;
+import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.agent.model.ModelInstance;
 import org.dragon.agent.model.ModelRegistry;
 import org.dragon.character.Character;
+import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.service.ConfigApplication;
-import org.dragon.task.Task;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
-import org.dragon.workspace.task.dto.PromptWriterInput;
-import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.skill.runtime.SkillRegistry;
-import org.dragon.tools.ToolRegistry;
+import org.dragon.task.Task;
+import org.dragon.tool.runtime.ToolRegistry;
+import org.dragon.workspace.task.dto.PromptWriterInput;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
-import com.google.gson.Gson;
-
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * ReAct 执行器
@@ -53,6 +51,7 @@ public class ReActExecutor {
     private final ObservationEvaluator observationEvaluator;
     private final ToolRegistry toolRegistry;
     private final SkillRegistry skillRegistry;
+    private final org.dragon.tool.service.ToolExecutionService toolExecutionService;
 
     public ReActExecutor(LLMCallerSelector callerSelector,
                          ModelRegistry modelRegistry,
@@ -61,10 +60,11 @@ public class ReActExecutor {
                          ObjectProvider<CharacterCaller> characterCallerProvider,
                          ThoughtPromptAssembler thoughtPromptAssembler,
                          ActionParser actionParser,
-                         ActionExecutor actionExecutor,
-                         ObservationEvaluator observationEvaluator,
-                         ToolRegistry toolRegistry,
-                        SkillRegistry skillRegistry) {
+                        ActionExecutor actionExecutor,
+                        ObservationEvaluator observationEvaluator,
+                        ToolRegistry toolRegistry,
+                        SkillRegistry skillRegistry,
+                        org.dragon.tool.service.ToolExecutionService toolExecutionService) {
         this.callerSelector = callerSelector;
         this.modelRegistry = modelRegistry;
         this.configApplication = configApplication;
@@ -77,6 +77,7 @@ public class ReActExecutor {
         this.observationEvaluator = observationEvaluator;
         this.toolRegistry = toolRegistry;
         this.skillRegistry = skillRegistry;
+        this.toolExecutionService = toolExecutionService;
     }
 
     /**
@@ -177,7 +178,7 @@ public class ReActExecutor {
                                 .build()
                 ))
                 .systemPrompt(context.getSystemPrompt())
-                .tools(toolRegistry.toDefinitions())
+                .tools(toolRegistry.buildToolDeclarations(context.getCharacterId(), context.getWorkspaceId()))
                 .build();
 
         log.info("[ReAct] [{}] 工具数量: {}", context.getCurrentIteration(),

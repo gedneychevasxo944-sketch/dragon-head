@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * SkillUsageStore — skill_usage_logs 表的存储抽象接口。
+ * SkillUsageStore — skill_usage_log 表的存储抽象接口。
  */
 public interface SkillUsageStore {
 

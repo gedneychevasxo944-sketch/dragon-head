@@ -1,21 +1,23 @@
 package org.dragon.skill.runtime;
 
-import org.dragon.skill.domain.StorageInfoVO;
-import org.dragon.skill.enums.ExecutionContext;
-import org.dragon.skill.enums.PersistMode;
-import org.dragon.skill.enums.SkillCategory;
-import org.dragon.skill.enums.SkillEffort;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dragon.skill.dto.StorageInfo;
+import org.dragon.skill.enums.ExecutionContext;
+import org.dragon.skill.enums.PersistMode;
+import org.dragon.skill.enums.SkillCategory;
+import org.dragon.skill.enums.SkillEffort;
 
 import java.util.List;
 
 /**
- * Skill 运行时定义（内存对象，非 DB 实体）。
+ * Skill 执行定义（内存对象，非 DB 实体）。
  *
  * <p>由 SkillRegistry 从 DB 加载后聚合，供 SkillFilter、SkillDirectoryBuilder、SkillExecutor 使用。
+ *
+ * <p>仅包含 Skill 执行所需的信息，不包含管理端元数据（如 creatorId、createdAt、publishedAt 等）。
  */
 @Data
 @Builder
@@ -23,16 +25,9 @@ import java.util.List;
 @AllArgsConstructor
 public class SkillDefinition {
 
-    // ── 分类 ──────────────────────────────────────────────────────────
-
-    /**
-     * 技能分类。{@link SkillCategory#BUILTIN} 类型对所有 Character 全量可见，不走绑定关系。
-     */
-    private SkillCategory category;
-
     // ── 标识 ─────────────────────────────────────────────────────────
 
-    /** 技能业务 UUID */
+    /** 技能 ID */
     private String skillId;
 
     /** 技能调用名称（/name 触发） */
@@ -41,16 +36,16 @@ public class SkillDefinition {
     /** 当前有效版本号 */
     private int version;
 
-    // ── 目录字段（注入 system prompt 目录部分，不含完整正文） ──────────
+    /** 技能分类 */
+    private SkillCategory category;
 
-    /** 展示名称 */
-    private String displayName;
+    // ── 目录字段（注入 system prompt 目录部分，不含完整正文） ──────────
 
     /** 描述 */
     private String description;
 
     /**
-     * 使用场景说明（设计点 2）。
+     * 使用场景说明。
      * 驱动模型自动判断"何时应该调用此 Skill"，注入目录 prompt。
      */
     private String whenToUse;
@@ -63,10 +58,7 @@ public class SkillDefinition {
 
     // ── 执行行为 ─────────────────────────────────────────────────────
 
-    /**
-     * 允许使用的工具列表（细粒度权限，设计点 5）。
-     * 如 ["Bash(git:*)", "FileRead", "Grep"]。
-     */
+    /** 允许使用的工具列表 */
     private List<String> allowedTools;
 
     /** 指定模型（覆盖默认），null 表示不覆盖 */
@@ -76,7 +68,7 @@ public class SkillDefinition {
     private SkillEffort effort;
 
     /**
-     * 执行上下文（设计点 4）。
+     * 执行上下文。
      * {@link ExecutionContext#INLINE} 在当前对话展开；
      * {@link ExecutionContext#FORK} 创建独立 sub-AgentTask。
      */
@@ -88,30 +80,30 @@ public class SkillDefinition {
     /** 用户是否可通过 /name 手动调用 */
     private boolean userInvocable;
 
-    // ── 持续留存（设计点 6） ──────────────────────────────────────────
+    // ── 持续留存 ─────────────────────────────────────────────────────
 
     /**
-     * 调用后是否持续留存在上下文（设计点 6）。
-     * true 时每轮对话将内容以 &lt;skill-context&gt; 形式重新注入，防止模型"遗忘"强制约束规则。
+     * 调用后是否持续留存在上下文。
+     * true 时每轮对话将内容以 &lt;skill-context&gt; 形式重新注入。
      */
     private boolean persist;
 
     /**
      * 留存模式（persist=true 时生效）。
      * {@link PersistMode#FULL} 注入完整正文；
-     * {@link PersistMode#SUMMARY} 只注入约束片段（节省 token）。
+     * {@link PersistMode#SUMMARY} 只注入约束片段。
      */
     private PersistMode persistMode;
 
-    // ── 标签 ────────────────────────────────────────────────────────
+    // ── 标签 ───────────────────────────────────────────────────────
 
-    /** 标签列表，用于技能分类/场景归纳 */
+    /** 标签列表 */
     private List<String> tags;
 
-    // ── 存储元信息（执行工作区物化用） ──────────────────────────────
+    // ── 存储元信息 ────────────────────────────────────────────────
 
     /**
-     * 存储元信息（由 storage_info 字段反序列化而来）。
+     * 存储元信息。
      *
      * <p>在 SkillExecutor 执行前，{@link SkillWorkspaceManager} 会检查此字段：
      * <ul>
@@ -119,16 +111,11 @@ public class SkillDefinition {
      *   <li>若只有 SKILL.md，则直接读取文本，无需物化</li>
      * </ul>
      */
-    private StorageInfoVO storageInfo;
+    private StorageInfo storageInfo;
 
     // ── 正文内容 ───────────────────────────────────────────────────
 
     /** 完整 prompt 正文 */
     private String content;
-
-    /** 是否是内置 Skill（category = BUILTIN） */
-    public boolean isBuiltin() {
-        return SkillCategory.BUILTIN == category;
-    }
 }
 

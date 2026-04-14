@@ -1,13 +1,16 @@
 package org.dragon.workspace;
 
-import java.util.List;
-import java.util.Optional;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.api.controller.dto.TeamPositionResponse;
+import org.dragon.asset.enums.AssociationType;
+import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
+import org.dragon.skill.dto.SkillVO;
+import org.dragon.skill.service.SkillQueryService;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.util.UserUtils;
@@ -16,6 +19,7 @@ import org.dragon.workspace.member.TeamPositionService;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
 import org.dragon.workspace.plugin.WorkspacePluginService;
+import org.dragon.workspace.skill.WorkspaceSkill;
 import org.dragon.workspace.task.TaskArrangementService;
 import org.dragon.workspace.task.TaskArrangementService.TaskExecutionMode;
 import org.dragon.workspace.task.TaskExecutionService;
@@ -24,8 +28,10 @@ import org.dragon.workspace.task.WorkspaceTaskService;
 import org.dragon.workspace.task.dto.TaskCreationCommand;
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Workspace 门面服务
@@ -50,6 +56,8 @@ public class WorkspaceFacadeService {
     private final TaskArrangementService taskArrangementService;
     private final TaskResumeService taskResumeService;
     private final TaskExecutionService taskExecutionService;
+    private final AssetAssociationService assetAssociationService;
+    private final SkillQueryService skillQueryService;
     // private final TaskStore taskStore;
 
     // ==================== Workspace CRUD ====================
@@ -147,14 +155,14 @@ public class WorkspaceFacadeService {
     }
 
     public TeamPositionResponse addTeamPosition(String workspaceId, String roleName,
-            String rolePackage, String purpose, String scope) {
+                                                String rolePackage, String purpose, String scope) {
         TeamPosition position = teamPositionService.addPosition(
                 workspaceId, roleName, rolePackage, purpose, scope);
         return teamPositionService.toResponse(position);
     }
 
     public TeamPositionResponse updateTeamPosition(String workspaceId, String positionId,
-            String assignedCharacterId, String assignedBuiltinType, Boolean enabled) {
+                                                   String assignedCharacterId, String assignedBuiltinType, Boolean enabled) {
         TeamPosition position = teamPositionService.updatePosition(
                 workspaceId, positionId, assignedCharacterId, assignedBuiltinType, enabled);
 
@@ -234,7 +242,7 @@ public class WorkspaceFacadeService {
 
             Task parentTask = matchedTask.getParentTaskId() != null
                     ? workspaceTaskService.getTask(workspaceId, matchedTask.getParentTaskId())
-                            .orElse(matchedTask)
+                    .orElse(matchedTask)
                     : matchedTask;
 
             executableTask = workspaceTaskService.resumeTask(workspaceId, executableTask.getId(), message.getTextContent());
@@ -259,5 +267,33 @@ public class WorkspaceFacadeService {
     public Task executeTask(String workspaceId, TaskCreationCommand command) {
         return taskArrangementService.submitTask(
                 workspaceId, command, TaskExecutionMode.AUTO, null);
+    }
+
+    // ==================== 技能管理 ====================
+
+    /**
+     * 查询 workspace 已圈选的 Skill 列表（含元信息及启用状态）。
+     *
+     * @param workspaceId Workspace ID
+     * @return Skill 响应列表
+     */
+    public List<WorkspaceSkill> listWorkspaceSkillDetails(String workspaceId) {
+        return assetAssociationService.getSkillBindingsForWorkspace(workspaceId).stream()
+                .map(assoc -> {
+                    SkillVO skill = skillQueryService.getDetail(assoc.getSourceId());
+                    if (skill == null) return null;
+                    return WorkspaceSkill.builder()
+                            .skillId(skill.getId())
+                            .name(skill.getName())
+                            .displayName(skill.getDisplayName())
+                            .introduction(skill.getIntroduction())
+                            .category(skill.getCategory())
+                            .status(skill.getStatus())
+                            .version(skill.getVersion())
+                            .enabled(assoc.getEnabled())
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }

@@ -1,18 +1,17 @@
 package org.dragon.agent.react;
 
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import org.dragon.character.mind.memory.MemoryAccess;
-import org.dragon.tools.AgentTool;
-import org.dragon.tools.ToolRegistry;
-import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dragon.character.mind.memory.MemoryAccess;
+import org.dragon.tool.runtime.ToolUseContext;
+import org.dragon.tool.runtime.adapter.ToolCallRequest;
+import org.dragon.tool.service.ToolExecutionService;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Action 执行器
@@ -27,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ActionExecutor {
 
-    private final ToolRegistry toolRegistry;
+    private final ToolExecutionService toolExecutionService;
     private final MemoryAccess memoryAccess;
 
     /**
@@ -46,25 +45,39 @@ public class ActionExecutor {
                     log.warn("[ActionExecutor] Tool {} not allowed for this character", toolName);
                     return "Tool not allowed: " + toolName;
                 }
-                Optional<AgentTool> toolOpt = toolRegistry.get(toolName);
-                if (toolOpt.isPresent()) {
-                    AgentTool tool = toolOpt.get();
+                try {
                     JsonNode paramsNode = new ObjectMapper().valueToTree(action.getParameters());
-                    AgentTool.ToolContext toolContext = AgentTool.ToolContext.builder()
-                            .parameters(paramsNode)
-                            .characterId(context.getCharacterId())
-                            .workspaceId(context.getWorkspaceId())
+                    String toolCallId = UUID.randomUUID().toString();
+                    ToolCallRequest toolCallRequest = new ToolCallRequest(toolCallId, toolName, paramsNode, modelId);
+                    ToolUseContext toolUseContext = ToolUseContext.builder()
+                            .sessionId(context.getExecutionId())
+                            .agentId(context.getCharacterId())
+                            .tenantId(context.getWorkspaceId())
                             .build();
-                    try {
-                        AgentTool.ToolResult result = tool.execute(toolContext)
-                                .toCompletableFuture()
-                                .get(30, TimeUnit.SECONDS);
-                        return result.isSuccess() ? result.getOutput() : "Tool error: " + result.getError();
-                    } catch (Exception e) {
-                        return "Tool execution failed: " + e.getMessage();
+                    ToolExecutionService.MessageUpdate update = toolExecutionService
+                            .runToolUse(toolCallRequest, context.getCharacterId(), context.getWorkspaceId(),
+                                    toolUseContext, null)
+                            .get(60, java.util.concurrent.TimeUnit.SECONDS);
+                    // 从 MessageUpdate 提取工具结果文本
+                    if (update != null && update.getMessage() != null) {
+                        Object content = update.getMessage().get("content");
+                        if (content instanceof java.util.List<?> blocks && !blocks.isEmpty()) {
+                            Object firstBlock = blocks.getFirst();
+                            if (firstBlock instanceof org.dragon.tool.runtime.ToolResultBlockParam block) {
+                                return block.getContent() != null ? block.getContent().toString() : "";
+                            } else if (firstBlock instanceof Map<?, ?> blockMap) {
+                                Object c = blockMap.get("content");
+                                return c != null ? c.toString() : "";
+                            }
+                        }
+                        Object toolUseResult = update.getMessage().get("toolUseResult");
+                        return toolUseResult != null ? toolUseResult.toString() : "";
                     }
+                    return "Tool execution returned no result";
+                } catch (Exception e) {
+                    log.error("[ActionExecutor] Tool execution failed: tool={}, error={}", action.getToolName(), e.getMessage(), e);
+                    return "Tool execution failed: " + e.getMessage();
                 }
-                return "Tool not found: " + toolName;
             }
 
             case MEMORY -> {

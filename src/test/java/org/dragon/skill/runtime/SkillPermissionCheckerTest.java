@@ -144,9 +144,8 @@ class SkillPermissionCheckerTest {
         // 只含安全属性
         SkillDefinition skill = SkillDefinition.builder()
                 .name("git-commit")
-                .displayName("Git Commit")
                 .description("Generate commit message")
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .build();
 
@@ -254,10 +253,9 @@ class SkillPermissionCheckerTest {
     private SkillDefinition createSkill(String name) {
         return SkillDefinition.builder()
                 .name(name)
-                .displayName(name)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .build();
     }

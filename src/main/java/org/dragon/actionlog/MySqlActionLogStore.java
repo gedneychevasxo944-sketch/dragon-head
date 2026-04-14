@@ -95,4 +95,29 @@ public class MySqlActionLogStore implements ActionLogStore {
     public void clear() {
         mysqlDb.find(ObserverActionLogEntity.class).delete();
     }
+
+    @Override
+    public List<ObserverActionLog> findByTarget(String targetType, String targetId, int offset, int limit) {
+        return mysqlDb.find(ObserverActionLogEntity.class)
+                .where()
+                .eq("targetType", targetType)
+                .eq("targetId", targetId)
+                .orderBy()
+                .desc("createdAt")
+                .setFirstRow(offset)
+                .setMaxRows(limit)
+                .findList()
+                .stream()
+                .map(ObserverActionLogEntity::toObserverActionLog)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public int countByTarget(String targetType, String targetId) {
+        return (int) mysqlDb.find(ObserverActionLogEntity.class)
+                .where()
+                .eq("targetType", targetType)
+                .eq("targetId", targetId)
+                .findCount();
+    }
 }

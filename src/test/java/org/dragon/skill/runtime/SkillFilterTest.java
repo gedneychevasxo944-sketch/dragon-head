@@ -88,10 +88,9 @@ class SkillFilterTest {
     private SkillDefinition createSkill(String name, boolean disableModelInvocation) {
         return SkillDefinition.builder()
                 .name(name)
-                .displayName(name)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .disableModelInvocation(disableModelInvocation)
                 .userInvocable(true)

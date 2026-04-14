@@ -1,6 +1,6 @@
 package org.dragon.skill.runtime;
 
-import org.dragon.skill.domain.StorageInfoVO;
+import org.dragon.skill.dto.StorageInfo;
 import org.dragon.skill.enums.ExecutionContext;
 import org.dragon.skill.enums.PersistMode;
 import org.dragon.skill.enums.SkillCategory;
@@ -14,7 +14,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -53,10 +52,9 @@ class SkillExecutorTest {
         // given
         SkillDefinition skill = SkillDefinition.builder()
                 .name("git-commit")
-                .displayName("Git Commit")
                 .skillId("skill-id")
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.INLINE)
                 .content("# Git Commit Prompt")
                 .build();
@@ -81,10 +79,9 @@ class SkillExecutorTest {
         // given
         SkillDefinition skill = SkillDefinition.builder()
                 .name("code-gen")
-                .displayName("Code Generator")
                 .skillId("skill-id")
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(ExecutionContext.FORK)
                 .content("# Code Gen Prompt")
                 .build();
@@ -134,7 +131,7 @@ class SkillExecutorTest {
     @Test
     void testNeedsMaterialization_True() {
         // given
-        StorageInfoVO storageInfo = new StorageInfoVO();
+        StorageInfo storageInfo = new StorageInfo();
         when(workspaceManager.needsMaterialization(storageInfo)).thenReturn(true);
 
         // then
@@ -147,7 +144,7 @@ class SkillExecutorTest {
     @Test
     void testNeedsMaterialization_False() {
         // given
-        StorageInfoVO storageInfo = new StorageInfoVO();
+        StorageInfo storageInfo = new StorageInfo();
         when(workspaceManager.needsMaterialization(storageInfo)).thenReturn(false);
 
         // then
@@ -342,10 +339,9 @@ class SkillExecutorTest {
     private SkillDefinition createSkill(String name, ExecutionContext context) {
         return SkillDefinition.builder()
                 .name(name)
-                .displayName(name)
                 .skillId("skill-id-" + name)
                 .version(1)
-                .category(SkillCategory.DEVELOPMENT)
+                .category(SkillCategory.CODER)
                 .executionContext(context)
                 .disableModelInvocation(false)
                 .userInvocable(true)

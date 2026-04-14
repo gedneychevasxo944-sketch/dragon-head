@@ -39,59 +39,7 @@ public class MySqlCharacterStore implements CharacterStore {
     @Override
     public void update(Character character) {
         CharacterEntity entity = CharacterEntity.fromCharacter(character);
-        // Fetch existing entity first to preserve fields not being updated
-        CharacterEntity existing = mysqlDb.find(CharacterEntity.class, character.getId());
-        if (existing != null) {
-            entity.setCreatedAt(existing.getCreatedAt());
-            // Merge non-null fields from incoming entity
-            mergeIfNotNull(entity, existing);
-        }
         mysqlDb.update(entity);
-    }
-
-    /**
-     * 将源实体中的非null字段合并到目标实体
-     */
-    private void mergeIfNotNull(CharacterEntity target, CharacterEntity source) {
-        if (target.getName() == null) {
-            target.setName(source.getName());
-        }
-        if (target.getDescription() == null) {
-            target.setDescription(source.getDescription());
-        }
-        if (target.getAvatar() == null) {
-            target.setAvatar(source.getAvatar());
-        }
-        if (target.getSource() == null) {
-            target.setSource(source.getSource());
-        }
-        if (target.getAllowedTools() == null) {
-            target.setAllowedTools(source.getAllowedTools());
-        }
-        if (target.getPromptTemplate() == null) {
-            target.setPromptTemplate(source.getPromptTemplate());
-        }
-        if (target.getDefaultTools() == null) {
-            target.setDefaultTools(source.getDefaultTools());
-        }
-        if (target.getIsRunning() == null) {
-            target.setIsRunning(source.getIsRunning());
-        }
-        if (target.getDeployedCount() == null) {
-            target.setDeployedCount(source.getDeployedCount());
-        }
-        if (target.getMindConfig() == null) {
-            target.setMindConfig(source.getMindConfig());
-        }
-        if (target.getExtensions() == null) {
-            target.setExtensions(source.getExtensions());
-        }
-        if (target.getStatus() == null) {
-            target.setStatus(source.getStatus());
-        }
-        if (target.getMbti() == null) {
-            target.setMbti(source.getMbti());
-        }
     }
 
     @Override

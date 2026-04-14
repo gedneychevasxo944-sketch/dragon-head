@@ -36,6 +36,14 @@ import java.util.Map;
 @Data
 public class ParsedSkillContent {
 
+    // ── frontmatter ─────────────────────────────────────────────────
+
+    /**
+     * SKILL.md 原始 frontmatter 内容（YAML 格式，不含正文）。
+     * 用于存储原始 YAML，供前端展示和编辑。
+     */
+    private String frontmatter;
+
     // ── frontmatter 解析结果 ──────────────────────────────────────────
 
     private String name;

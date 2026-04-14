@@ -3,16 +3,17 @@ package org.dragon.application;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.controller.dto.PageResponse;
-import org.dragon.skill.actionlog.SkillActionLogService;
-import org.dragon.skill.actionlog.SkillActionLogVO;
+import org.dragon.skill.service.SkillActionLogService;
+import org.dragon.skill.dto.SkillActionLog;
 import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.asset.service.CollaboratorService;
-import org.dragon.skill.dto.SkillDetailVO;
+import org.dragon.skill.dto.SkillVO;
 import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillQueryRequest;
 import org.dragon.skill.dto.SkillRegisterResult;
-import org.dragon.skill.dto.SkillSummaryVO;
+import org.dragon.skill.dto.SkillVersionVO;
 import org.dragon.skill.enums.SkillCategory;
+import org.dragon.skill.enums.SkillStatus;
 import org.dragon.skill.enums.SkillVisibility;
 import org.dragon.skill.service.SkillLifecycleService;
 import org.dragon.skill.service.SkillQueryService;
@@ -49,31 +50,31 @@ public class SkillApplication {
     /**
      * 创建技能。
      */
-    public SkillDetailVO create(MultipartFile file, SkillRegisterRequest request) {
+    public SkillVO create(MultipartFile file, SkillRegisterRequest request) {
         UserInfo user = UserUtils.getUserInfo();
         SkillRegisterResult result = registerService.register(file, request, user);
         log.info("[SkillApplication] Created skill: skillId={}, version={}",
                 result.getSkillId(), result.getVersion());
-        return queryService.getDetail(result.getSkillId(), false);
+        return queryService.getDetail(result.getSkillId());
     }
 
     /**
      * 更新技能。
      */
-    public SkillDetailVO update(String skillId, MultipartFile file, SkillRegisterRequest request) {
+    public SkillVO update(String skillId, MultipartFile file, SkillRegisterRequest request) {
         UserInfo user = UserUtils.getUserInfo();
         SkillRegisterResult result = registerService.update(skillId, file, request, user);
         log.info("[SkillApplication] Updated skill: skillId={}, version={}",
                 result.getSkillId(), result.getVersion());
-        return queryService.getDetail(result.getSkillId(), false);
+        return queryService.getDetail(result.getSkillId());
     }
 
     /**
      * 分页获取技能列表。
      */
-    public PageResponse<SkillSummaryVO> listSkills(int page, int pageSize, String search,
-                                                  String visibility, String assetState,
-                                                  String runtimeStatus, String category) {
+    public PageResponse<SkillVO> listSkills(int page, int pageSize, String search,
+                                               String visibility, String status,
+                                               String category) {
         SkillQueryRequest request = new SkillQueryRequest();
         request.setKeyword(search);
         // 转换 String 到枚举类型
@@ -91,24 +92,25 @@ public class SkillApplication {
                 // 忽略无效的 visibility 值
             }
         }
-        // assetState 和 runtimeStatus 目前映射为 status 筛选
-        if (runtimeStatus != null && !runtimeStatus.isBlank()) {
+        if (status != null && !status.isBlank()) {
             try {
-                request.setStatus(org.dragon.skill.enums.SkillStatus.valueOf(runtimeStatus.toUpperCase()));
+                request.setStatus(SkillStatus.valueOf(status.toUpperCase()));
             } catch (IllegalArgumentException ignored) {
                 // 忽略无效的状态值
             }
         }
+        request.setPage(page);
+        request.setPageSize(pageSize);
 
         var result = queryService.pageSearch(request);
-        return PageResponse.of(result.getItems(), result.getTotal(), result.getPage(), result.getPageSize());
+        return PageResponse.of(result.getList(), result.getTotal(), result.getPage(), result.getPageSize());
     }
 
     /**
      * 获取技能详情。
      */
-    public SkillDetailVO getSkill(String skillId) {
-        return queryService.getDetail(skillId, true);
+    public SkillVO getSkill(String skillId) {
+        return queryService.getDetail(skillId);
     }
 
     /**
@@ -123,11 +125,12 @@ public class SkillApplication {
     /**
      * 发布技能版本。
      */
-    public SkillDetailVO publishSkill(String skillId, String version, String changelog) {
+    public SkillVO publishSkill(String skillId, String version, String changelog) {
         UserInfo user = UserUtils.getUserInfo();
-        lifecycleService.publish(skillId, user);
+        int ver = version != null ? Integer.parseInt(version) : 1;
+        lifecycleService.publish(skillId, ver, changelog, user);
         log.info("[SkillApplication] Published skill: {} version: {}", skillId, version);
-        return queryService.getDetail(skillId, false);
+        return queryService.getDetail(skillId);
     }
 
     /**
@@ -149,7 +152,7 @@ public class SkillApplication {
     /**
      * 获取技能版本列表。
      */
-    public List<SkillDetailVO> listVersions(String skillId) {
+    public List<SkillVersionVO> listVersions(String skillId) {
         return queryService.listVersions(skillId);
     }
 
@@ -162,21 +165,22 @@ public class SkillApplication {
      * @return 注册结果
      */
     public SkillRegisterResult saveDraft(String skillId, SkillRegisterRequest request) {
-        SkillRegisterResult result = registerService.saveDraft(skillId, request);
+        UserInfo user = UserUtils.getUserInfo();
+        SkillRegisterResult result = registerService.saveDraft(skillId, request, user);
         log.info("[SkillApplication] Saved draft for skill: {}", skillId);
         return result;
     }
 
     /**
-     * 获取技能活动日志（分页）。
+     * 获取技能操作日志（分页）。
      *
      * @param skillId 技能 UUID
      * @param page    页码（从 1 开始）
      * @param size    每页条数
      * @return 分页结果
      */
-    public PageResponse<SkillActionLogVO> getActivityLogs(String skillId, int page, int size) {
+    public PageResponse<SkillActionLog> getActionLogs(String skillId, int page, int size) {
         var result = actionLogService.pageBySkill(skillId, page, size);
-        return PageResponse.of(result.getItems(), result.getTotal(), result.getPage(), result.getPageSize());
+        return PageResponse.of(result.getList(), result.getTotal(), result.getPage(), result.getPageSize());
     }
 }

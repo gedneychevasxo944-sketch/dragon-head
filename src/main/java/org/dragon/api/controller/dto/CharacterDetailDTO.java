@@ -45,7 +45,7 @@ public class CharacterDetailDTO {
         private String skillId;
         private String name;
         private String displayName;
-        private String description;
+        private String introduction;
         private String category;
     }
 

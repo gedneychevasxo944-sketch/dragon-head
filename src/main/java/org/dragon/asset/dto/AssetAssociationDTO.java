@@ -30,6 +30,9 @@ public class AssetAssociationDTO {
 
     private String targetId;
 
+    /** 是否启用（true=启用，false=禁用） */
+    private Boolean enabled;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

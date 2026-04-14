@@ -25,9 +25,24 @@ public enum AssociationType {
     TOOL_SKILL,
 
     /**
+     * Tool 关联到 Character
+     */
+    TOOL_CHARACTER,
+
+    /**
+     * Tool 关联到 Workspace
+     */
+    TOOL_WORKSPACE,
+
+    /**
      * Observer 挂载到 Workspace
      */
     OBSERVER_WORKSPACE,
+
+    /**
+     * Skill 关联到 Workspace
+     */
+    SKILL_WORKSPACE,
 
     /**
      * Skill 关联到 Character

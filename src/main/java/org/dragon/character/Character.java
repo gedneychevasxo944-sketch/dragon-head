@@ -183,14 +183,6 @@ public class Character {
         profile.setMindConfig(mindConfig);
     }
 
-    public String getMbti() {
-        return profile.getMbti();
-    }
-
-    public void setMbti(String mbti) {
-        profile.setMbti(mbti);
-    }
-
     @JsonIgnore
     public Mind getMind() {
         return profile.getMind();
@@ -212,33 +204,33 @@ public class Character {
     // ==================== 执行代理 ====================
 
     public String run(String userInput) {
-        return acquireExecutor().run(userInput);
+        return getExecutor().run(userInput);
     }
 
     public String run(String userInput, Task task) {
-        return acquireExecutor().run(userInput, task);
+        return getExecutor().run(userInput, task);
     }
 
     public ReActResult runReAct(String userInput) {
-        return acquireExecutor().runReAct(userInput);
+        return getExecutor().runReAct(userInput);
     }
 
     public ReActResult runReAct(String userInput, boolean streaming, Task task,
                                 org.dragon.workspace.task.TaskBridgeContext bridgeContext) {
-        return acquireExecutor().runReAct(userInput, streaming, task, bridgeContext);
+        return getExecutor().runReAct(userInput, streaming, task, bridgeContext);
     }
 
     public ReActResult runReAct(String userInput, boolean streaming, Task task) {
-        return acquireExecutor().runReAct(userInput, streaming, task, null);
+        return getExecutor().runReAct(userInput, streaming, task, null);
     }
 
     public WorkflowResult runWorkflow(String workflowId) {
-        return acquireExecutor().runWorkflow(workflowId);
+        return getExecutor().runWorkflow(workflowId);
     }
 
     // ==================== 惰性初始化 ====================
 
-    private CharacterExecutor acquireExecutor() {
+    private CharacterExecutor getExecutor() {
         if (executor == null) {
             executor = CharacterExecutor.builder()
                     .profile(profile)

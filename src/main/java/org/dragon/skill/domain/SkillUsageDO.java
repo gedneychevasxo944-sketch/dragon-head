@@ -1,17 +1,17 @@
 package org.dragon.skill.domain;
 
-import org.dragon.skill.enums.ExecutionContext;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.dragon.skill.enums.ExecutionContext;
 
 import java.time.LocalDateTime;
 
 /**
  * SkillUsageDO — Skill 调用记录领域对象。
  *
- * <p>对应 {@code skill_usage_logs} 表，由 {@link org.dragon.datasource.entity.SkillUsageEntity} 转换而来。
+ * <p>对应 {@code skill_usage_log} 表，由 {@link org.dragon.datasource.entity.SkillUsageEntity} 转换而来。
  * 用于 {@link org.dragon.skill.store.SkillUsageStore} 和
  * {@link org.dragon.skill.service.SkillUsageService} 之间的数据传递。
  */

@@ -10,8 +10,8 @@ import org.dragon.agent.llm.LLMRequest;
 import org.dragon.agent.llm.LLMResponse;
 import org.dragon.config.context.InheritanceContext;
 import org.dragon.config.service.ConfigApplication;
-import org.springframework.context.annotation.Primary;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -192,11 +192,31 @@ public class KimiLLMCaller implements LLMCaller {
 
             JsonObject choice = json.getAsJsonArray("choices").get(0).getAsJsonObject();
             JsonObject message = choice.getAsJsonObject("message");
-            String content = message.get("content").getAsString();
 
             String finishReason = choice.has("finish_reason")
                     ? choice.get("finish_reason").getAsString()
                     : "stop";
+
+            String content = null;
+            LLMResponse.FunctionCall functionCall = null;
+
+            // 处理 tool_calls 模式
+            if (message.has("tool_calls")) {
+                JsonArray toolCalls = message.getAsJsonArray("tool_calls");
+                if (toolCalls != null && toolCalls.size() > 0) {
+                    JsonObject toolCall = toolCalls.get(0).getAsJsonObject();
+                    String funcName = toolCall.getAsJsonObject("function").get("name").getAsString();
+                    String arguments = toolCall.getAsJsonObject("function").get("arguments").getAsString();
+                    functionCall = LLMResponse.FunctionCall.builder()
+                            .name(funcName)
+                            .arguments(arguments)
+                            .build();
+                    log.info("[Kimi] tool_call detected: name={}, arguments={}", funcName, arguments);
+                }
+            } else if (message.has("content") && !message.get("content").isJsonNull()) {
+                // 处理普通文本模式
+                content = message.get("content").getAsString();
+            }
 
             // 用量统计
             LLMResponse.Usage usage = null;
@@ -214,6 +234,7 @@ public class KimiLLMCaller implements LLMCaller {
 
             return LLMResponse.builder()
                     .content(content)
+                    .functionCall(functionCall)
                     .finishReason(finishReason)
                     .usage(usage)
                     .lastChunk(true)

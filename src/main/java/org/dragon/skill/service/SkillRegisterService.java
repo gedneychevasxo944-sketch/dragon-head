@@ -1,12 +1,15 @@
 package org.dragon.skill.service;
 
-import org.dragon.skill.actionlog.SkillActionLogService;
+import org.dragon.actionlog.ActionType;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.asset.service.AssetMemberService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.dragon.skill.domain.ParsedSkillContent;
 import org.dragon.skill.domain.SkillDO;
-import org.dragon.skill.domain.StorageInfoVO;
+import org.dragon.skill.domain.SkillRuntimeConfig;
+import org.dragon.skill.domain.SkillVersionDO;
+import org.dragon.skill.dto.StorageInfo;
 import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillRegisterResult;
 import org.dragon.skill.enums.CreatorType;
@@ -15,14 +18,14 @@ import org.dragon.skill.enums.PersistMode;
 import org.dragon.skill.enums.SkillCategory;
 import org.dragon.skill.enums.SkillEffort;
 import org.dragon.skill.enums.SkillStatus;
+import org.dragon.skill.enums.SkillVersionStatus;
 import org.dragon.skill.enums.SkillVisibility;
-import org.dragon.skill.enums.StorageType;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.store.SkillStore;
+import org.dragon.skill.store.SkillVersionStore;
 import org.dragon.skill.util.SkillContentParser;
 import org.dragon.skill.util.SkillValidator;
 import org.dragon.util.bean.UserInfo;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,43 +37,31 @@ import java.util.UUID;
 /**
  * Skill 注册与更新服务。
  *
- * <p>核心设计：ZIP 方式统一处理注册和更新
- * <pre>
- *   1. 前端上传 ZIP 文件，解析 SKILL.md 获取元数据
- *   2. 前端将 ZIP + 解析的元数据一起发送到后端
- *   3. 后端合并元数据：ZIP 中的元数据优先，request body 作为补充
- *   4. 注册和更新分开：register() 用于首次注册，update() 用于更新已有技能
- * </pre>
- *
- * <p>版本策略：
+ * <p>核心设计：
  * <ul>
- *   <li>首次注册：skillId = 新生成的 UUID，version = 1</li>
- *   <li>更新：skillId 不变，version = MAX(version) + 1，INSERT 新记录</li>
- *   <li>新版本状态始终为 draft，旧版本记录保持原状态不变</li>
+ *   <li>SkillDO：技能元信息（不含版本内容）</li>
+ *   <li>SkillVersionDO：技能版本内容（每次更新生成新版本）</li>
+ *   <li>注册：创建 SkillDO + V1 draft 版本</li>
+ *   <li>更新：创建新 draft 版本（不改变已发布版本）</li>
  * </ul>
  */
 @Service
 @Transactional(rollbackFor = Exception.class)
 public class SkillRegisterService {
 
-    @Autowired private SkillStorageService storageService;
+    @Autowired private SkillFileService storageService;
     @Autowired private SkillStore          skillStore;
+    @Autowired private SkillVersionStore   skillVersionStore;
     @Autowired private SkillActionLogService actionLogService;
     @Autowired private AssetMemberService assetMemberService;
     @Autowired private AssetPublishStatusService publishStatusService;
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     // ── 注册接口 ─────────────────────────────────────────────────────
 
     /**
      * 注册新技能（ZIP 方式）。
-     *
-     * <p>元数据合并策略：ZIP 中的 frontmatter 元数据优先，request body 作为补充覆盖。
-     *
-     * @param zipFile  ZIP 文件（必填，包含 SKILL.md 和可选附件）
-     * @param request  前端已解析的元数据（会与 ZIP 元数据合并）
-     * @param user     操作者用户信息
-     * @return 注册结果
      */
     public SkillRegisterResult register(MultipartFile zipFile,
                                         SkillRegisterRequest request,
@@ -78,190 +69,51 @@ public class SkillRegisterService {
         String skillId = UUID.randomUUID().toString();
         Long operatorId = parseUserId(user.getUserId());
         String operatorName = user.getUsername();
-        SkillRegisterResult result = doSave(skillId, 1, null, null, zipFile, request, operatorId, operatorName);
+
+        // 创建技能元信息 + V1 版本
+        SkillDO skill = doCreateSkill(skillId, 1, operatorId, operatorName, zipFile, request, operatorId, operatorName);
+
         assetMemberService.addOwnerDirectly(ResourceType.SKILL, skillId, operatorId);
                 // 初始化发布状态（默认为 DRAFT）
-                
+
         publishStatusService.initializeStatus(ResourceType.SKILL, skillId, String.valueOf(operatorId));
         // 记录操作日志
-        actionLogService.log(skillId, request.getName(),
-                org.dragon.skill.enums.SkillActionType.REGISTER,
-                operatorId, operatorName, 1);
-        return result;
+        actionLogService.log(skillId, skill.getName(), skill.getDisplayName(),
+                ActionType.SKILL_REGISTER, operatorName, 1);
+
+        return SkillRegisterResult.builder()
+                .skillId(skillId)
+                .version(1)
+                .status(SkillStatus.DRAFT.getValue())
+                .build();
     }
 
     // ── 更新接口 ─────────────────────────────────────────────────────
 
     /**
      * 更新已有技能（ZIP 方式）。
-     *
-     * <p>元数据合并策略：ZIP 中的 frontmatter 元数据优先，request body 作为补充覆盖。
-     *
-     * @param skillId  技能 UUID
-     * @param zipFile  ZIP 文件（必填，包含 SKILL.md 和可选附件）
-     * @param request  前端已解析的元数据（会与 ZIP 元数据合并）
-     * @param user     操作者用户信息
-     * @return 更新结果
      */
     public SkillRegisterResult update(String skillId,
                                        MultipartFile zipFile,
                                        SkillRegisterRequest request,
                                        UserInfo user) {
         // 1. 校验 skillId 存在且未删除
-        SkillDO existing = requireLatestNotDeleted(skillId);
+        SkillDO existing = requireNotDeleted(skillId);
 
         // 2. 计算新版本号
-        int newVersion = skillStore.findMaxVersionBySkillId(skillId) + 1;
+        int newVersion = skillVersionStore.findMaxVersionBySkillId(skillId) + 1;
 
         Long operatorId = parseUserId(user.getUserId());
         String operatorName = user.getUsername();
-        SkillRegisterResult result = doSave(skillId, newVersion, existing.getCreatorId(), existing.getCreatorName(),
-                zipFile, request, operatorId, operatorName);
 
-        // 记录操作日志
-        actionLogService.log(skillId, request.getName() != null ? request.getName() : existing.getName(),
-                org.dragon.skill.enums.SkillActionType.UPDATE,
-                operatorId, operatorName, newVersion);
+        // 创建新版本（draft）
+        SkillVersionDO version = doCreateVersion(skillId, newVersion, existing.getCreatorId(),
+                existing.getCreatorName(), operatorId, operatorName, zipFile, request);
 
-        return result;
-    }
-
-    /**
-     * 保存草稿。
-     *
-     * <p>仅更新最新版本的元数据（content 等），不创建新版本，不上传文件。
-     * 状态保持 DRAFT 不变。
-     *
-     * @param skillId 技能 UUID
-     * @param request 草稿内容
-     * @return 注册结果
-     */
-    public SkillRegisterResult saveDraft(String skillId, SkillRegisterRequest request) {
-        // 1. 校验 skillId 存在且未删除
-        SkillDO existing = requireLatestNotDeleted(skillId);
-
-        // 2. 更新草稿字段
-        applyRequestToSkillDO(existing, request);
-        existing.setStatus(SkillStatus.DRAFT);
-        skillStore.update(existing);
-
-        // 记录操作日志
-        actionLogService.log(skillId, existing.getName(),
-                org.dragon.skill.enums.SkillActionType.SAVE_DRAFT,
-                null, null, existing.getVersion());
-
-        // 3. 返回注册结果
-        return SkillRegisterResult.builder()
-                .skillId(skillId)
-                .version(existing.getVersion())
-                .status(SkillStatus.DRAFT.getValue())
-                .build();
-    }
-
-    /**
-     * 将 request 的字段应用到 SkillDO（不覆盖 null 字段）。
-     */
-    private void applyRequestToSkillDO(SkillDO skill, SkillRegisterRequest request) {
-        if (request == null) {
-            return;
-        }
-        if (StringUtils.hasText(request.getName())) {
-            skill.setName(request.getName());
-        }
-        if (request.getDisplayName() != null) {
-            skill.setDisplayName(request.getDisplayName());
-        }
-        if (request.getDescription() != null) {
-            skill.setDescription(request.getDescription());
-        }
-        if (StringUtils.hasText(request.getContent())) {
-            skill.setContent(request.getContent());
-        }
-        if (StringUtils.hasText(request.getVisibility())) {
-            skill.setVisibility(SkillVisibility.fromValue(request.getVisibility()));
-        }
-        if (StringUtils.hasText(request.getCategory())) {
-            skill.setCategory(SkillCategory.fromValue(request.getCategory()));
-        }
-        if (request.getAliases() != null) {
-            skill.setAliases(toJson(request.getAliases()));
-        }
-        if (StringUtils.hasText(request.getWhenToUse())) {
-            skill.setWhenToUse(request.getWhenToUse());
-        }
-        if (StringUtils.hasText(request.getArgumentHint())) {
-            skill.setArgumentHint(request.getArgumentHint());
-        }
-        if (request.getAllowedTools() != null) {
-            skill.setAllowedTools(toJson(request.getAllowedTools()));
-        }
-        if (StringUtils.hasText(request.getModel())) {
-            skill.setModel(request.getModel());
-        }
-        if (StringUtils.hasText(request.getExecutionContext())) {
-            skill.setExecutionContext(ExecutionContext.fromValue(request.getExecutionContext()));
-        }
-        if (StringUtils.hasText(request.getEffort())) {
-            skill.setEffort(SkillEffort.fromValue(request.getEffort()));
-        }
-        if (request.getDisableModelInvocation() != null) {
-            skill.setDisableModelInvocation(request.getDisableModelInvocation() ? 1 : 0);
-        }
-        if (request.getUserInvocable() != null) {
-            skill.setUserInvocable(request.getUserInvocable() ? 1 : 0);
-        }
-        if (request.getTags() != null) {
-            skill.setTags(toJson(request.getTags()));
-        }
-    }
-
-    // ── 统一内部方法 ─────────────────────────────────────────────────
-
-    /**
-     * 统一的保存逻辑。
-     *
-     * @param skillId       技能 UUID（新建时为新生成的 UUID）
-     * @param newVersion    新版本号
-     * @param creatorId     创建者 ID（新建时为 operatorId，更新时沿用原创建者）
-     * @param creatorName   创建者名称
-     * @param zipFile       ZIP 文件
-     * @param request       请求体元数据
-     * @param operatorId    操作者 ID
-     * @param operatorName  操作者名称
-     */
-    private SkillRegisterResult doSave(String skillId, int newVersion,
-                                        Long creatorId, String creatorName,
-                                        MultipartFile zipFile, SkillRegisterRequest request,
-                                        Long operatorId, String operatorName) {
-        // 1. 校验 ZIP 文件
-        SkillValidator.validateZipFile(zipFile);
-
-        // 2. 解析 ZIP 获取 frontmatter 元数据
-        ParsedSkillContent parsed = SkillContentParser.parseFromZip(zipFile);
-
-        // 3. 用 request 元数据补充/覆盖（request 优先级高于 ZIP frontmatter）
-        mergeRequestToParsed(parsed, request);
-
-        // 4. 校验内容规则
-        SkillValidator.validateSkillContent(parsed);
-
-        // 5. 使用 operator 信息作为创建者（creatorId/creatorName 已在调用方处理）
-        if (creatorId == null) {
-            creatorId = operatorId;
-        }
-        if (creatorName == null) {
-            creatorName = operatorName;
-        }
-
-        // 6. 上传文件到 Storage
-        StorageInfoVO storageInfo = storageService.upload(skillId, newVersion, parsed.getFileMap());
-
-        // 7. 构建并保存 SkillDO
-        SkillDO skillDO = buildSkillDO(skillId, newVersion, parsed, storageInfo,
-                creatorId, creatorName, operatorId, operatorName, request);
-        skillStore.save(skillDO);
-
-        log.info("[SkillRegisterService] Saved skill: skillId={}, version={}", skillId, newVersion);
+        actionLogService.log(skillId,
+                request.getName() != null ? request.getName() : existing.getName(),
+                request.getDisplayName() != null ? request.getDisplayName() : existing.getDisplayName(),
+                ActionType.SKILL_UPDATE, operatorName, newVersion);
 
         return SkillRegisterResult.builder()
                 .skillId(skillId)
@@ -270,48 +122,187 @@ public class SkillRegisterService {
                 .build();
     }
 
-    // ── 兼容旧接口（保留用于其他模块调用）───────────────────────────────
+    /**
+     * 保存草稿。
+     */
+    public SkillRegisterResult saveDraft(String skillId, SkillRegisterRequest request, UserInfo user) {
+        SkillDO existing = requireNotDeleted(skillId);
+        Long operatorId = parseUserId(user.getUserId());
+        String operatorName = user.getUsername();
+
+        // 查找现有 draft 版本
+        SkillVersionDO draftVersion = skillVersionStore.findDraftBySkillId(skillId)
+                .orElse(null);
+
+        int versionToReturn;
+        if (draftVersion != null) {
+            // 更新现有草稿
+            updateVersionFromRequest(draftVersion, request, operatorId, operatorName);
+            skillVersionStore.update(draftVersion);
+            versionToReturn = draftVersion.getVersion();
+        } else {
+            // 创建新草稿版本
+            int newVersion = skillVersionStore.findMaxVersionBySkillId(skillId) + 1;
+            doCreateVersion(skillId, newVersion, existing.getCreatorId(),
+                    existing.getCreatorName(), operatorId, operatorName, null, request);
+            versionToReturn = newVersion;
+        }
+
+        actionLogService.log(skillId, existing.getName(), existing.getDisplayName(),
+                ActionType.SKILL_SAVE_DRAFT, operatorName, versionToReturn);
+
+        return SkillRegisterResult.builder()
+                .skillId(skillId)
+                .version(versionToReturn)
+                .status(SkillStatus.DRAFT.getValue())
+                .build();
+    }
+
+    // ── 统一内部方法 ─────────────────────────────────────────────────
 
     /**
-     * ZIP 包方式注册（兼容接口）。
-     * @deprecated 请使用 {@link #register(MultipartFile, SkillRegisterRequest, UserInfo)}
+     * 创建新技能：SkillDO + V1 版本。
      */
-    @Deprecated
-    public SkillRegisterResult registerByZip(org.dragon.skill.dto.SkillZipRegisterRequest req,
-                                              Long operatorId, String operatorName) {
-        UserInfo user = new UserInfo(String.valueOf(operatorId), operatorName, null, true);
-        return register(req.getZipFile(), new SkillRegisterRequest(), user);
+    private SkillDO doCreateSkill(String skillId, int version,
+                                   Long creatorId, String creatorName,
+                                   MultipartFile zipFile, SkillRegisterRequest request,
+                                   Long operatorId, String operatorName) {
+        // 1. 解析 ZIP
+        ParsedSkillContent parsed = parseAndMerge(zipFile, request);
+
+        // 2. 上传文件
+        StorageInfo storageInfo = storageService.upload(skillId, version, parsed.getFileMap());
+
+        // 3. 构建并保存 SkillDO
+        SkillDO skill = new SkillDO();
+        skill.setId(skillId);
+        skill.setName(parsed.getName());
+        skill.setIntroduction(parsed.getDescription());
+        skill.setCategory(SkillCategory.fromValue(parsed.getCategory()));
+        skill.setVisibility(SkillVisibility.fromValue(parsed.getVisibility()));
+        skill.setTags(toJson(request != null ? request.getTags() : null));
+        skill.setCreatorType(CreatorType.PERSONAL);
+        skill.setCreatorId(creatorId != null ? creatorId : operatorId);
+        skill.setCreatorName(creatorName != null ? creatorName : operatorName);
+        skill.setStatus(SkillStatus.DRAFT);
+        skillStore.save(skill);
+
+        // 4. 构建并保存 V1 版本
+        SkillVersionDO versionDO = buildSkillVersionDO(skillId, version, parsed, storageInfo,
+                operatorId, operatorName, request);
+        skillVersionStore.save(versionDO);
+
+        log.info("[SkillRegisterService] Created skill: skillId={}, version={}", skillId, version);
+        return skill;
     }
 
     /**
-     * ZIP 包方式更新（兼容接口）。
-     * @deprecated 请使用 {@link #update(String, MultipartFile, SkillRegisterRequest, UserInfo)}
+     * 创建新版本。
      */
-    @Deprecated
-    public SkillRegisterResult updateByZip(String skillId,
-                                           org.dragon.skill.dto.SkillZipRegisterRequest req,
-                                           Long operatorId, String operatorName) {
-        UserInfo user = new UserInfo(String.valueOf(operatorId), operatorName, null, true);
-        return update(skillId, req.getZipFile(), new SkillRegisterRequest(), user);
+    private SkillVersionDO doCreateVersion(String skillId, int version,
+                                          Long creatorId, String creatorName,
+                                          Long editorId, String editorName,
+                                          MultipartFile zipFile, SkillRegisterRequest request) {
+        // 1. 解析 ZIP
+        ParsedSkillContent parsed = parseAndMerge(zipFile, request);
+
+        // 2. 上传文件
+        StorageInfo storageInfo = storageService.upload(skillId, version, parsed.getFileMap());
+
+        // 3. 构建并保存版本
+        SkillVersionDO versionDO = buildSkillVersionDO(skillId, version, parsed, storageInfo,
+                editorId, editorName, request);
+        skillVersionStore.save(versionDO);
+
+        log.info("[SkillRegisterService] Created version: skillId={}, version={}", skillId, version);
+        return versionDO;
     }
 
-    // ── 私有辅助方法 ─────────────────────────────────────────────────
+    /**
+     * 解析并合并 ZIP 和 request 元数据。
+     */
+    private ParsedSkillContent parseAndMerge(MultipartFile zipFile, SkillRegisterRequest request) {
+        SkillValidator.validateZipFile(zipFile);
+        ParsedSkillContent parsed = SkillContentParser.parseFromZip(zipFile);
+        mergeRequestToParsed(parsed, request);
+        SkillValidator.validateSkillContent(parsed);
+        return parsed;
+    }
+
+    // ── 版本构建 ─────────────────────────────────────────────────────
+
+    /**
+     * 构建 SkillVersionDO。
+     */
+    private SkillVersionDO buildSkillVersionDO(String skillId, int version,
+                                               ParsedSkillContent parsed, StorageInfo storageInfo,
+                                               Long editorId, String editorName,
+                                               SkillRegisterRequest request) {
+        SkillVersionDO v = new SkillVersionDO();
+        v.setSkillId(skillId);
+        v.setVersion(version);
+        v.setName(parsed.getName());
+        v.setDescription(parsed.getDescription());
+        v.setContent(parsed.getBodyContent());
+        v.setFrontmatter(parsed.getFrontmatter());
+
+        // 构建运行时配置
+        SkillRuntimeConfig runtimeConfig = buildRuntimeConfigFromParsed(parsed);
+        v.setRuntimeConfig(toJson(runtimeConfig));
+
+        v.setEditorId(editorId);
+        v.setEditorName(editorName);
+        v.setStatus(SkillVersionStatus.DRAFT);
+        v.setStorageInfo(toJson(storageInfo));
+        return v;
+    }
+
+    /**
+     * 从 ParsedSkillContent 构建运行时配置对象。
+     */
+    private SkillRuntimeConfig buildRuntimeConfigFromParsed(ParsedSkillContent parsed) {
+        SkillRuntimeConfig config = new SkillRuntimeConfig();
+        config.setWhenToUse(parsed.getWhenToUse());
+        config.setArgumentHint(parsed.getArgumentHint());
+        config.setAliases(parsed.getAliases());
+        config.setAllowedTools(parsed.getAllowedTools());
+        config.setModel(parsed.getModel());
+        config.setDisableModelInvocation(parsed.getDisableModelInvocation());
+        config.setUserInvocable(parsed.getUserInvocable());
+        config.setExecutionContext(ExecutionContext.fromValue(
+                parsed.getExecutionContext() != null ? parsed.getExecutionContext() : "inline"));
+        config.setEffort(SkillEffort.fromValue(parsed.getEffort()));
+        config.setPersist(false);
+        config.setPersistMode(PersistMode.FULL);
+        return config;
+    }
+
+    /**
+     * 用 request 更新版本内容。
+     */
+    private void updateVersionFromRequest(SkillVersionDO version, SkillRegisterRequest request,
+                                         Long editorId, String editorName) {
+        if (request == null) return;
+
+        if (StringUtils.hasText(request.getContent())) {
+            version.setContent(request.getContent());
+        }
+        if (request.getAliases() != null) {
+            SkillRuntimeConfig runtimeConfig = parseRuntimeConfig(version.getRuntimeConfig());
+            if (runtimeConfig == null) runtimeConfig = new SkillRuntimeConfig();
+            runtimeConfig.setAliases(request.getAliases());
+            version.setRuntimeConfig(toJson(runtimeConfig));
+        }
+        version.setEditorId(editorId);
+        version.setEditorName(editorName);
+    }
 
     /**
      * 用 request 元数据补充/覆盖 ParsedContent。
-     *
-     * <p>合并规则：
-     * <ul>
-     *   <li>request 的字段有值时，覆盖 parsed 中的对应字段</li>
-     *   <li>request 的字段为空时，保留 parsed 中的原始值</li>
-     * </ul>
      */
     private void mergeRequestToParsed(ParsedSkillContent parsed, SkillRegisterRequest request) {
-        if (request == null) {
-            return;
-        }
+        if (request == null) return;
 
-        // 基本信息
         if (StringUtils.hasText(request.getName())) {
             parsed.setName(request.getName());
         }
@@ -319,21 +310,17 @@ public class SkillRegisterService {
             parsed.setDisplayName(request.getDisplayName());
         }
         if (request.getDescription() != null) {
-            parsed.setDescription(request.getDescription());
+            parsed.setDescription(request.getDescription()); // ParsedSkillContent 仍使用 description
         }
         if (StringUtils.hasText(request.getContent())) {
             parsed.setBodyContent(request.getContent());
         }
-
-        // 分类与可见性（visibility 常用作覆盖）
         if (StringUtils.hasText(request.getVisibility())) {
             parsed.setVisibility(request.getVisibility());
         }
         if (StringUtils.hasText(request.getCategory())) {
             parsed.setCategory(request.getCategory());
         }
-
-        // 执行配置
         if (request.getAliases() != null) {
             parsed.setAliases(request.getAliases());
         }
@@ -355,8 +342,6 @@ public class SkillRegisterService {
         if (StringUtils.hasText(request.getEffort())) {
             parsed.setEffort(request.getEffort());
         }
-
-        // 布尔配置
         if (request.getDisableModelInvocation() != null) {
             parsed.setDisableModelInvocation(request.getDisableModelInvocation());
         }
@@ -365,59 +350,25 @@ public class SkillRegisterService {
         }
     }
 
-    /**
-     * 组装 SkillDO 对象（不含 id、createdAt，由 DB 自动填充）。
-     */
-    private SkillDO buildSkillDO(String skillId, int version,
-                                  ParsedSkillContent parsed, StorageInfoVO storageInfo,
-                                  Long creatorId, String creatorName,
-                                  Long editorId, String editorName,
-                                  SkillRegisterRequest request) {
-        SkillDO d = new SkillDO();
-        d.setSkillId(skillId);
-        d.setVersion(version);
-        d.setName(parsed.getName());
-        d.setDisplayName(parsed.getDisplayName());
-        d.setDescription(parsed.getDescription());
-        d.setContent(parsed.getBodyContent());
-        d.setAliases(toJson(parsed.getAliases()));
-        d.setWhenToUse(parsed.getWhenToUse());
-        d.setArgumentHint(parsed.getArgumentHint());
-        d.setAllowedTools(toJson(parsed.getAllowedTools()));
-        d.setModel(parsed.getModel());
-        d.setDisableModelInvocation(Boolean.TRUE.equals(parsed.getDisableModelInvocation()) ? 1 : 0);
-        d.setUserInvocable(Boolean.FALSE.equals(parsed.getUserInvocable()) ? 0 : 1);
-        d.setExecutionContext(ExecutionContext.fromValue(parsed.getExecutionContext()));
-        d.setEffort(defaultIfNull(SkillEffort.fromValue(parsed.getEffort()), SkillEffort.AUTO));
-        // tags 从 request 直接获取，不走 frontmatter 解析
-        d.setTags(request != null && request.getTags() != null ? toJson(request.getTags()) : null);
-        d.setCategory(defaultIfNull(SkillCategory.fromValue(parsed.getCategory()), SkillCategory.OTHER));
-        d.setVisibility(SkillVisibility.fromValue(parsed.getVisibility()));
-        d.setCreatorType(CreatorType.PERSONAL);
-        d.setCreatorId(creatorId);
-        d.setCreatorName(creatorName);
-        d.setEditorId(editorId);
-        d.setEditorName(editorName);
-        d.setStatus(SkillStatus.DRAFT);  // 新版本始终为 DRAFT
-        d.setPersist(0);  // 默认不持续留存
-        d.setPersistMode(PersistMode.FULL);  // persist=1 时的默认模式
-        d.setStorageType(storageInfo.getBucket() != null ? StorageType.S3 : StorageType.LOCAL);
-        d.setStorageInfo(toJson(storageInfo));
-        return d;
-    }
+    // ── 私有辅助 ─────────────────────────────────────────────────────
 
-    /** 查询最新版本，若不存在或已删除则抛出异常 */
-    private SkillDO requireLatestNotDeleted(String skillId) {
-        SkillDO latest = skillStore.findLatestBySkillId(skillId)
+    /** 查询技能，若不存在或已删除则抛出异常 */
+    private SkillDO requireNotDeleted(String skillId) {
+        SkillDO skill = skillStore.findBySkillId(skillId)
                 .orElseThrow(() -> new SkillNotFoundException(skillId));
-        if (SkillStatus.DELETED == latest.getStatus()) {
+        if (skill.getDeletedAt() != null) {
             throw new SkillNotFoundException(skillId);
         }
-        return latest;
+        return skill;
     }
 
-    private <T> T defaultIfNull(T value, T defaultValue) {
-        return value != null ? value : defaultValue;
+    private SkillRuntimeConfig parseRuntimeConfig(String json) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            return OBJECT_MAPPER.readValue(json, SkillRuntimeConfig.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String toJson(Object obj) {
@@ -429,11 +380,8 @@ public class SkillRegisterService {
         }
     }
 
-    /** 将 String userId 转换为 Long */
     private Long parseUserId(String userId) {
-        if (userId == null || userId.isBlank()) {
-            return null;
-        }
+        if (userId == null || userId.isBlank()) return null;
         try {
             return Long.parseLong(userId);
         } catch (NumberFormatException e) {
@@ -441,6 +389,5 @@ public class SkillRegisterService {
         }
     }
 
-    // 日志
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SkillRegisterService.class);
 }

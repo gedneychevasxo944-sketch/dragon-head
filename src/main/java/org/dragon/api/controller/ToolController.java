@@ -6,18 +6,24 @@ import lombok.RequiredArgsConstructor;
 import org.dragon.application.ToolApplication;
 import org.dragon.api.controller.dto.ApiResponse;
 import org.dragon.api.controller.dto.PageResponse;
+import org.dragon.tool.dto.ToolActionLog;
+import org.dragon.tool.dto.ToolRegisterRequest;
+import org.dragon.tool.dto.ToolVO;
+import org.dragon.tool.dto.ToolVersionVO;
 import org.dragon.permission.checker.PermissionChecker;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * ToolController 工具模块 API
@@ -25,7 +31,7 @@ import java.util.Map;
  * <p>对应前端 /tools 页面，包含工具查询、注册、版本管理等接口。
  * Base URL: /api/v1/tools
  *
- * @author zhz
+ * @author ypf
  * @version 1.0
  */
 @Tag(name = "Tool", description = "工具模块")
@@ -37,15 +43,15 @@ public class ToolController {
     private final ToolApplication toolApplication;
     private final PermissionChecker permissionChecker;
 
-    // ==================== 15. Tool CRUD ====================
+    // ==================== Tool CRUD ====================
 
     /**
-     * 15.1 获取工具列表
+     * 获取工具列表（分页+筛选）
      * GET /api/v1/tools
      */
     @Operation(summary = "获取工具列表（分页+筛选）")
     @GetMapping
-    public ApiResponse<PageResponse<Map<String, Object>>> listTools(
+    public ApiResponse<PageResponse<ToolVO>> listTools(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
@@ -53,81 +59,122 @@ public class ToolController {
             @RequestParam(required = false) String toolType,
             @RequestParam(required = false) String runtimeStatus,
             @RequestParam(required = false) String category) {
-        PageResponse<Map<String, Object>> result = toolApplication.listTools(
+        PageResponse<ToolVO> result = toolApplication.listTools(
                 page, pageSize, search, visibility, toolType, runtimeStatus, category);
         return ApiResponse.success(result);
     }
 
     /**
-     * 15.2 创建工具
-     * POST /api/v1/tools
+     * 创建工具
+     * POST /api/v1/tools (multipart/form-data)
      */
     @Operation(summary = "创建工具")
-    @PostMapping
-    public ApiResponse<Map<String, Object>> createTool(@RequestBody Map<String, Object> toolData) {
-        // 获取工具名称进行权限检查
-        Map<String, Object> result = toolApplication.createTool(toolData);
-        if (Boolean.TRUE.equals(result.get("success"))) {
-            return ApiResponse.success(result);
-        }
-        return ApiResponse.error(500, (String) result.get("error"));
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ToolVO> createTool(
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            @RequestPart("data") ToolRegisterRequest request) {
+        ToolVO response = toolApplication.create(files, request);
+        return ApiResponse.success(response);
     }
 
     /**
-     * 15.3 获取工具详情
-     * GET /api/v1/tools/:id
+     * 获取工具详情
+     * GET /api/v1/tools/{id}
      */
     @Operation(summary = "获取工具详情")
     @GetMapping("/{id}")
-    public ApiResponse<Map<String, Object>> getTool(@PathVariable String id) {
+    public ApiResponse<ToolVO> getTool(@PathVariable String id) {
         permissionChecker.checkView("TOOL", id);
-        return toolApplication.getTool(id)
-                .map(ApiResponse::success)
-                .orElse(ApiResponse.error(404, "Tool not found: " + id));
+        ToolVO response = toolApplication.getDetail(id);
+        return ApiResponse.success(response);
     }
 
     /**
-     * 15.4 更新工具
-     * PUT /api/v1/tools/:id
+     * 更新工具
+     * PUT /api/v1/tools/{id} (multipart/form-data)
      */
     @Operation(summary = "更新工具")
-    @PutMapping("/{id}")
-    public ApiResponse<Map<String, Object>> updateTool(
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ToolVO> updateTool(
             @PathVariable String id,
-            @RequestBody Map<String, Object> toolData) {
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            @RequestPart("data") ToolRegisterRequest request) {
         permissionChecker.checkEdit("TOOL", id);
-        Map<String, Object> result = toolApplication.updateTool(id, toolData);
-        if (Boolean.TRUE.equals(result.get("success"))) {
-            return ApiResponse.success(result);
-        }
-        return ApiResponse.error(500, (String) result.get("error"));
+        ToolVO response = toolApplication.update(id, files, request);
+        return ApiResponse.success(response);
     }
 
     /**
-     * 15.5 发布工具版本
-     * POST /api/v1/tools/:id/publish
+     * 发布工具版本
+     * POST /api/v1/tools/{id}/publish
      */
     @Operation(summary = "发布工具版本")
     @PostMapping("/{id}/publish")
-    public ApiResponse<Map<String, Object>> publishTool(
+    public ApiResponse<ToolVO> publishTool(
             @PathVariable String id,
-            @RequestBody Map<String, Object> publishData) {
+            @RequestParam int version,
+            @RequestParam(required = false) String releaseNote) {
         permissionChecker.checkPermission("TOOL", id, "PUBLISH");
-        return ApiResponse.error(501, "Tool version publishing not yet implemented.");
+        ToolVO response = toolApplication.publishTool(id, version, releaseNote);
+        return ApiResponse.success(response);
     }
 
     /**
-     * 15.6 删除工具
-     * DELETE /api/v1/tools/:id
+     * 删除工具
+     * DELETE /api/v1/tools/{id}
      */
     @Operation(summary = "删除工具")
     @DeleteMapping("/{id}")
-    public ApiResponse<Map<String, Object>> deleteTool(@PathVariable String id) {
+    public ApiResponse<Void> deleteTool(@PathVariable String id) {
         permissionChecker.checkDelete("TOOL", id);
-        Map<String, Object> result = toolApplication.deleteTool(id);
-        if (Boolean.TRUE.equals(result.get("success"))) {
-            return ApiResponse.success(result);
-        }
-        return ApiResponse.error(500, (String) result.get("error"));
+        toolApplication.deleteTool(id);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 禁用工具
+     * POST /api/v1/tools/{id}/disable
+     */
+    @Operation(summary = "禁用工具")
+    @PostMapping("/{id}/disable")
+    public ApiResponse<Void> disableTool(@PathVariable String id) {
+        toolApplication.disableTool(id);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 启用工具
+     * POST /api/v1/tools/{id}/enable
+     */
+    @Operation(summary = "启用工具")
+    @PostMapping("/{id}/enable")
+    public ApiResponse<Void> enableTool(@PathVariable String id) {
+        toolApplication.enableTool(id);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 获取工具版本列表
+     * GET /api/v1/tools/{id}/versions
+     */
+    @Operation(summary = "获取工具版本列表")
+    @GetMapping("/{id}/versions")
+    public ApiResponse<List<ToolVersionVO>> listVersions(@PathVariable String id) {
+        List<ToolVersionVO> result = toolApplication.listVersions(id);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取工具操作日志
+     * GET /api/v1/tools/{id}/action-logs
+     */
+    @Operation(summary = "获取工具操作日志")
+    @GetMapping("/{id}/action-logs")
+    public ApiResponse<PageResponse<ToolActionLog>> getActionLogs(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        PageResponse<ToolActionLog> result = toolApplication.getActionLogs(id, page, pageSize);
+        return ApiResponse.success(result);
     }
 }

@@ -34,34 +34,7 @@ public class MySqlWorkspaceStore implements WorkspaceStore {
     @Override
     public void update(Workspace workspace) {
         WorkspaceEntity entity = WorkspaceEntity.fromWorkspace(workspace);
-        // Fetch existing entity first to preserve fields not being updated
-        WorkspaceEntity existing = mysqlDb.find(WorkspaceEntity.class, workspace.getId());
-        if (existing != null) {
-            entity.setCreatedAt(existing.getCreatedAt());
-            mergeIfNotNull(entity, existing);
-        }
         mysqlDb.update(entity);
-    }
-
-    private void mergeIfNotNull(WorkspaceEntity target, WorkspaceEntity source) {
-        if (target.getName() == null) {
-            target.setName(source.getName());
-        }
-        if (target.getDescription() == null) {
-            target.setDescription(source.getDescription());
-        }
-        if (target.getOwner() == null) {
-            target.setOwner(source.getOwner());
-        }
-        if (target.getStatus() == null) {
-            target.setStatus(source.getStatus());
-        }
-        if (target.getProperties() == null) {
-            target.setProperties(source.getProperties());
-        }
-        if (target.getPersonality() == null) {
-            target.setPersonality(source.getPersonality());
-        }
     }
 
     @Override

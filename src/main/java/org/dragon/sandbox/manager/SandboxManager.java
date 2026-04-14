@@ -104,13 +104,13 @@ public class SandboxManager {
     //  * 包含：workspace 专属 Skill + 所有内置 Skill（workspaceId=0）。
     //  */
     // public void syncSkillFiles(Long workspaceId, Path skillsDir) {
-    //     Collection<SkillRuntimeEntry> entries =
+    //     Collection<SkillDefinitionEntry> entries =
     //             skillRegistry.findAllActiveByWorkspace(workspaceId);
 
     //     log.info("同步 Skill 文件到 Sandbox: workspaceId={}, skillCount={}",
     //             workspaceId, entries.size());
 
-    //     for (SkillRuntimeEntry entry : entries) {
+    //     for (SkillDefinitionEntry entry : entries) {
     //         String skillName = entry.getSkillEntry().getSkill().getName();
     //         String storagePath = entry.getSkillEntry().getSkill().getStoragePath();
     //         Path skillTarget = skillsDir.resolve(skillName);
@@ -163,7 +163,7 @@ public class SandboxManager {
     //             deleteDirectory(skillTarget);
     //         }
     //         // 重新下载
-    //         SkillRuntimeEntry entry = skillRegistry.findByName(skillName).orElse(null);
+    //         SkillDefinitionEntry entry = skillRegistry.findByName(skillName).orElse(null);
     //         if (entry != null) {
     //             String storagePath = entry.getSkillEntry().getSkill().getStoragePath();
     //             storageBackend.download(storagePath, skillTarget);

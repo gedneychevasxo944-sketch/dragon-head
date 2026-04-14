@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dragon.character.config.CharacterExecutorConfig;
 import org.dragon.character.mind.Mind;
-import org.dragon.skill.runtime.SkillDirectoryBuilder;
+import org.dragon.skill.util.SkillDirectoryBuilder;
 import org.dragon.skill.runtime.SkillDefinition;
 import org.dragon.skill.runtime.SkillRegistry;
 import org.dragon.task.Task;

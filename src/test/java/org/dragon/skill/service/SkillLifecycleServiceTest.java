@@ -1,12 +1,15 @@
 package org.dragon.skill.service;
 
 import org.dragon.skill.domain.SkillDO;
-import org.dragon.skill.enums.ExecutionContext;
+import org.dragon.skill.domain.SkillVersionDO;
 import org.dragon.skill.enums.SkillCategory;
 import org.dragon.skill.enums.SkillStatus;
+import org.dragon.skill.enums.SkillVersionStatus;
+import org.dragon.skill.enums.SkillVisibility;
 import org.dragon.skill.exception.SkillNotFoundException;
 import org.dragon.skill.exception.SkillStatusException;
 import org.dragon.skill.store.SkillStore;
+import org.dragon.skill.store.SkillVersionStore;
 import org.dragon.util.bean.UserInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,10 +28,10 @@ import static org.mockito.Mockito.*;
  *
  * <p>测试状态流转逻辑：
  * <ol>
- *   <li>publish: draft → active</li>
+ *   <li>publish: draft version → published (old published → deprecated)</li>
  *   <li>disable: active → disabled</li>
  *   <li>republish: disabled → active</li>
- *   <li>delete: 任意 → deleted（所有版本）</li>
+ *   <li>delete: 任意 → soft deleted (deletedAt)</li>
  *   <li>状态前置条件校验</li>
  * </ol>
  */
@@ -39,6 +41,12 @@ class SkillLifecycleServiceTest {
     @Mock
     private SkillStore skillStore;
 
+    @Mock
+    private SkillVersionStore skillVersionStore;
+
+    @Mock
+    private SkillActionLogService actionLogService;
+
     private SkillLifecycleService lifecycleService;
     private UserInfo testUser;
 
@@ -46,10 +54,20 @@ class SkillLifecycleServiceTest {
     void setUp() {
         lifecycleService = new SkillLifecycleService();
         testUser = new UserInfo("1", "testUser", null, true);
+
+        // 使用反射注入依赖
         try {
-            var field = SkillLifecycleService.class.getDeclaredField("skillStore");
-            field.setAccessible(true);
-            field.set(lifecycleService, skillStore);
+            var skillStoreField = SkillLifecycleService.class.getDeclaredField("skillStore");
+            skillStoreField.setAccessible(true);
+            skillStoreField.set(lifecycleService, skillStore);
+
+            var versionStoreField = SkillLifecycleService.class.getDeclaredField("skillVersionStore");
+            versionStoreField.setAccessible(true);
+            versionStoreField.set(lifecycleService, skillVersionStore);
+
+            var actionLogField = SkillLifecycleService.class.getDeclaredField("actionLogService");
+            actionLogField.setAccessible(true);
+            actionLogField.set(lifecycleService, actionLogService);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -58,21 +76,28 @@ class SkillLifecycleServiceTest {
     // ==================== publish 测试 ====================
 
     /**
-     * 测试 draft → active 发布成功
+     * 测试发布 draft 版本成功
      */
     @Test
-    void testPublish_DraftToActive() {
+    void testPublish_DraftVersionSuccess() {
         // given
         String skillId = "skill-123";
-        SkillDO skill = createSkillDO(skillId, 1, SkillStatus.DRAFT);
-        when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
+        SkillDO skill = createSkillDO(skillId, SkillStatus.DRAFT);
+        SkillVersionDO draftVersion = createSkillVersionDO(skillId, 1, SkillVersionStatus.DRAFT);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
+        when(skillVersionStore.findBySkillIdAndVersion(skillId, 1)).thenReturn(Optional.of(draftVersion));
+        when(skillVersionStore.findById(any())).thenReturn(Optional.empty());
 
         // when
-        lifecycleService.publish(skillId, testUser);
+        lifecycleService.publish(skillId, 1, null, testUser);
 
         // then
+        assertEquals(SkillVersionStatus.PUBLISHED, draftVersion.getStatus());
+        assertNotNull(draftVersion.getPublishedAt());
+        assertEquals(skill.getPublishedVersionId(), draftVersion.getId());
         assertEquals(SkillStatus.ACTIVE, skill.getStatus());
-        assertNotNull(skill.getPublishedAt());
+        verify(skillVersionStore, times(1)).update(draftVersion);
         verify(skillStore, times(1)).update(skill);
     }
 
@@ -81,23 +106,68 @@ class SkillLifecycleServiceTest {
      */
     @Test
     void testPublish_SkillNotFound() {
-        when(skillStore.findLatestBySkillId("non-existent")).thenReturn(Optional.empty());
+        when(skillStore.findBySkillId("non-existent")).thenReturn(Optional.empty());
 
         assertThrows(SkillNotFoundException.class,
-                () -> lifecycleService.publish("non-existent", testUser));
+                () -> lifecycleService.publish("non-existent", 1, null, testUser));
     }
 
     /**
-     * 测试错误状态转换时抛出异常
+     * 测试发布时版本不存在抛出异常
      */
     @Test
-    void testPublish_InvalidStatus() {
+    void testPublish_VersionNotFound() {
         String skillId = "skill-123";
-        SkillDO skill = createSkillDO(skillId, 1, SkillStatus.ACTIVE);
-        when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
+        SkillDO skill = createSkillDO(skillId, SkillStatus.DRAFT);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
+        when(skillVersionStore.findBySkillIdAndVersion(skillId, 99)).thenReturn(Optional.empty());
+
+        assertThrows(SkillNotFoundException.class,
+                () -> lifecycleService.publish(skillId, 99, null, testUser));
+    }
+
+    /**
+     * 测试发布非 draft 版本时抛出异常
+     */
+    @Test
+    void testPublish_InvalidVersionStatus() {
+        String skillId = "skill-123";
+        SkillDO skill = createSkillDO(skillId, SkillStatus.DRAFT);
+        SkillVersionDO publishedVersion = createSkillVersionDO(skillId, 1, SkillVersionStatus.PUBLISHED);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
+        when(skillVersionStore.findBySkillIdAndVersion(skillId, 1)).thenReturn(Optional.of(publishedVersion));
 
         assertThrows(SkillStatusException.class,
-                () -> lifecycleService.publish(skillId, testUser));
+                () -> lifecycleService.publish(skillId, 1, null, testUser));
+    }
+
+    /**
+     * 测试发布时旧已发布版本标记为 DEPRECATED
+     */
+    @Test
+    void testPublish_OldVersionDeprecated() {
+        // given
+        String skillId = "skill-123";
+        SkillDO skill = createSkillDO(skillId, SkillStatus.ACTIVE);
+        skill.setPublishedVersionId(100L);
+
+        SkillVersionDO oldPublished = createSkillVersionDO(skillId, 1, SkillVersionStatus.PUBLISHED);
+        oldPublished.setId(100L);
+
+        SkillVersionDO newDraft = createSkillVersionDO(skillId, 2, SkillVersionStatus.DRAFT);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
+        when(skillVersionStore.findBySkillIdAndVersion(skillId, 2)).thenReturn(Optional.of(newDraft));
+        when(skillVersionStore.findById(100L)).thenReturn(Optional.of(oldPublished));
+
+        // when
+        lifecycleService.publish(skillId, 2, null, testUser);
+
+        // then
+        assertEquals(SkillVersionStatus.DEPRECATED, oldPublished.getStatus());
+        verify(skillVersionStore).update(oldPublished);
     }
 
     // ==================== disable 测试 ====================
@@ -108,8 +178,9 @@ class SkillLifecycleServiceTest {
     @Test
     void testDisable_ActiveToDisabled() {
         String skillId = "skill-123";
-        SkillDO skill = createSkillDO(skillId, 1, SkillStatus.ACTIVE);
-        when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
+        SkillDO skill = createSkillDO(skillId, SkillStatus.ACTIVE);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         lifecycleService.disable(skillId, testUser);
 
@@ -123,8 +194,9 @@ class SkillLifecycleServiceTest {
     @Test
     void testDisable_InvalidStatus() {
         String skillId = "skill-123";
-        SkillDO skill = createSkillDO(skillId, 1, SkillStatus.DRAFT);
-        when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
+        SkillDO skill = createSkillDO(skillId, SkillStatus.DRAFT);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         assertThrows(SkillStatusException.class,
                 () -> lifecycleService.disable(skillId, testUser));
@@ -138,13 +210,18 @@ class SkillLifecycleServiceTest {
     @Test
     void testRepublish_DisabledToActive() {
         String skillId = "skill-123";
-        SkillDO skill = createSkillDO(skillId, 1, SkillStatus.DISABLED);
-        when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
+        SkillDO skill = createSkillDO(skillId, SkillStatus.DISABLED);
+        skill.setPublishedVersionId(100L);
+
+        SkillVersionDO publishedVersion = createSkillVersionDO(skillId, 1, SkillVersionStatus.PUBLISHED);
+        publishedVersion.setId(100L);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
+        when(skillVersionStore.findById(100L)).thenReturn(Optional.of(publishedVersion));
 
         lifecycleService.republish(skillId, testUser);
 
         assertEquals(SkillStatus.ACTIVE, skill.getStatus());
-        assertNotNull(skill.getPublishedAt());
         verify(skillStore, times(1)).update(skill);
     }
 
@@ -154,8 +231,9 @@ class SkillLifecycleServiceTest {
     @Test
     void testRepublish_InvalidStatus() {
         String skillId = "skill-123";
-        SkillDO skill = createSkillDO(skillId, 1, SkillStatus.DRAFT);
-        when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
+        SkillDO skill = createSkillDO(skillId, SkillStatus.DRAFT);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         assertThrows(SkillStatusException.class,
                 () -> lifecycleService.republish(skillId, testUser));
@@ -164,36 +242,36 @@ class SkillLifecycleServiceTest {
     // ==================== delete 测试 ====================
 
     /**
-     * 测试删除技能将所有版本标记为 deleted
+     * 测试删除技能标记 deletedAt
      */
     @Test
-    void testDelete_AllVersionsMarked() {
+    void testDelete_SetsDeletedAt() {
         String skillId = "skill-123";
-        SkillDO v1 = createSkillDO(skillId, 1, SkillStatus.ACTIVE);
-        SkillDO v2 = createSkillDO(skillId, 2, SkillStatus.ACTIVE);
-        when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(v2));
-        when(skillStore.findAllVersionsBySkillId(skillId)).thenReturn(List.of(v1, v2));
+        SkillDO skill = createSkillDO(skillId, SkillStatus.ACTIVE);
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         lifecycleService.delete(skillId, testUser);
 
-        assertEquals(SkillStatus.DELETED, v1.getStatus());
-        assertEquals(SkillStatus.DELETED, v2.getStatus());
-        verify(skillStore, times(2)).update(any());
+        assertNotNull(skill.getDeletedAt());
+        verify(skillStore, times(1)).update(skill);
     }
 
     /**
-     * 测试删除已 deleted 的技能是幂等操作
+     * 测试删除已删除的技能是幂等操作
      */
     @Test
     void testDelete_Idempotent() {
         String skillId = "skill-123";
-        SkillDO skill = createSkillDO(skillId, 1, SkillStatus.DELETED);
-        when(skillStore.findLatestBySkillId(skillId)).thenReturn(Optional.of(skill));
+        SkillDO skill = createSkillDO(skillId, SkillStatus.ACTIVE);
+        skill.setDeletedAt(java.time.LocalDateTime.now().minusDays(1));
+
+        when(skillStore.findBySkillId(skillId)).thenReturn(Optional.of(skill));
 
         // should not throw
         lifecycleService.delete(skillId, testUser);
 
-        // update should not be called since status is already DELETED
+        // update should not be called since already deleted
         verify(skillStore, never()).update(any());
     }
 
@@ -202,7 +280,7 @@ class SkillLifecycleServiceTest {
      */
     @Test
     void testDelete_NotFound() {
-        when(skillStore.findLatestBySkillId("non-existent")).thenReturn(Optional.empty());
+        when(skillStore.findBySkillId("non-existent")).thenReturn(Optional.empty());
 
         assertThrows(SkillNotFoundException.class,
                 () -> lifecycleService.delete("non-existent", testUser));
@@ -210,16 +288,25 @@ class SkillLifecycleServiceTest {
 
     // ==================== 辅助方法 ====================
 
-    private SkillDO createSkillDO(String skillId, int version, SkillStatus status) {
+    private SkillDO createSkillDO(String skillId, SkillStatus status) {
         SkillDO skill = new SkillDO();
-        skill.setId(1L);
-        skill.setSkillId(skillId);
+        skill.setId(skillId);
         skill.setName("test-skill");
-        skill.setDisplayName("Test Skill");
-        skill.setCategory(SkillCategory.DEVELOPMENT);
+        skill.setCategory(SkillCategory.CODER);
+        skill.setVisibility(SkillVisibility.PUBLIC);
         skill.setStatus(status);
-        skill.setVersion(version);
-        skill.setExecutionContext(ExecutionContext.INLINE);
         return skill;
+    }
+
+    private SkillVersionDO createSkillVersionDO(String skillId, int version, SkillVersionStatus status) {
+        SkillVersionDO versionDO = new SkillVersionDO();
+        versionDO.setId((long) (Math.random() * 10000));
+        versionDO.setSkillId(skillId);
+        versionDO.setVersion(version);
+        versionDO.setName("test-skill");
+        versionDO.setDescription("Test description");
+        versionDO.setContent("# Test Content");
+        versionDO.setStatus(status);
+        return versionDO;
     }
 }

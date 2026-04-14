@@ -13,7 +13,7 @@ import java.util.Set;
  * <p>以下场景触发发布：
  * <ul>
  *   <li>Skill 状态变更（publish / disable / delete）— 由 SkillLifecycleService 发布</li>
- *   <li>Skill 绑定关系增删 — 由 SkillBindingService 发布</li>
+ *   <li>Skill 关联关系增删 — 由 AssetAssociationService 完成后发布</li>
  * </ul>
  *
  * <p>SkillRegistry 监听此事件：
@@ -61,7 +61,7 @@ public class SkillChangeEvent extends ApplicationEvent {
      *
      * <p>适用场景：
      * <ul>
-     *   <li>category='builtin' 的 Skill 状态变更（builtin 对所有 Character 全量可见）</li>
+     *   <li>builtin=true 的 Skill 状态变更（内置 Skill 对所有 Character 全量可见）</li>
      *   <li>其他无法精确定位受影响范围的系统级变更</li>
      * </ul>
      */

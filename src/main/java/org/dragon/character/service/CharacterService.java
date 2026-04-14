@@ -1,10 +1,7 @@
 package org.dragon.character.service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dragon.api.controller.dto.CharacterDetailDTO;
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.asset.enums.AssociationType;
@@ -14,15 +11,19 @@ import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
+import org.dragon.datasource.entity.TraitEntity;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
+import org.dragon.skill.service.SkillQueryService;
 import org.dragon.skill.store.SkillStore;
 import org.dragon.trait.store.TraitStore;
 import org.dragon.util.UserUtils;
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * CharacterService 角色领域服务
@@ -43,7 +44,7 @@ public class CharacterService {
     private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
     private final TraitStore traitStore;
-    private final SkillStore skillStore;
+    private final SkillQueryService skillQueryService;
     private final AssetAssociationService assetAssociationService;
 
     /**
@@ -113,7 +114,7 @@ public class CharacterService {
         characterRegistry.register(character);
 
         // 添加创建者为 Owner
-        Long userId = Long.valueOf(UserUtils.getUserId());
+        Long userId = Long.parseLong(UserUtils.getUserId());
         assetMemberService.addOwnerDirectly(ResourceType.CHARACTER, character.getId(), userId);
 
         // 初始化发布状态（默认为 DRAFT）
@@ -151,13 +152,13 @@ public class CharacterService {
         List<CharacterDetailDTO.SkillInfo> skillInfos = assetAssociationService
                 .findBySource(AssociationType.SKILL_CHARACTER, ResourceType.CHARACTER, characterId)
                 .stream()
-                .map(assoc -> skillStore.findLatestActiveBySkillId(assoc.getTargetId())
-                        .map(skillDO -> CharacterDetailDTO.SkillInfo.builder()
-                                .skillId(skillDO.getSkillId())
-                                .name(skillDO.getName())
-                                .displayName(skillDO.getDisplayName())
-                                .description(skillDO.getDescription())
-                                .category(skillDO.getCategory() != null ? skillDO.getCategory().name() : null)
+                .map(assoc -> Optional.ofNullable(skillQueryService.getDetail(assoc.getTargetId(), false))
+                        .map(skill -> CharacterDetailDTO.SkillInfo.builder()
+                                .skillId(skill.getId())
+                                .name(skill.getName())
+                                .displayName(skill.getDisplayName())
+                                .introduction(skill.getIntroduction())
+                                .category(skill.getCategory() != null ? skill.getCategory().name() : null)
                                 .build())
                         .orElse(null))
                 .filter(java.util.Objects::nonNull)

@@ -181,6 +181,7 @@ public final class SkillContentParser {
         Map<String, Object> fm = parseYaml(yamlBlock);
 
         ParsedSkillContent result = new ParsedSkillContent();
+        result.setFrontmatter(yamlBlock);  // 保存原始 frontmatter YAML
         result.setName(getString(fm, "name"));
         result.setDisplayName(getString(fm, "displayName"));
         result.setDescription(getString(fm, "description"));

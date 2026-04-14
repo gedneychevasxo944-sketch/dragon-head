@@ -293,7 +293,7 @@ public class AssetPublishStatusService {
      */
     public void setPending(ResourceType resourceType, String resourceId) {
         AssetPublishStatusEntity entity = publishStatusStore.findByResource(resourceType.name(), resourceId)
-                .orElseGet(() -> initializeStatus(resourceType, resourceId, "system"));
+                .orElseThrow(() -> new IllegalArgumentException("发布状态不存在: " + resourceType + ":" + resourceId));
 
         LocalDateTime now = LocalDateTime.now();
         entity.setStatus(PublishStatus.PENDING.name());

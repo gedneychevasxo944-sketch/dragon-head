@@ -10,7 +10,15 @@ import org.dragon.asset.enums.AssociationType;
 import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.permission.enums.ResourceType;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -149,6 +157,40 @@ public class AssetAssociationController {
     public ApiResponse<List<String>> getToolsForSkill(@PathVariable String skillId) {
         List<String> toolIds = assetAssociationService.getToolsForSkill(skillId);
         return ApiResponse.success(toolIds);
+    }
+
+    /**
+     * 启用资产关联（通过五元组定位）
+     * PUT /api/v1/asset-associations/enable
+     */
+    @Operation(summary = "启用资产关联")
+    @PutMapping("/enable")
+    public ApiResponse<Map<String, Object>> enableAssociation(@RequestBody CreateAssociationRequest request) {
+        assetAssociationService.enableAssociation(
+                request.getAssociationType(),
+                request.getSourceType(),
+                request.getSourceId(),
+                request.getTargetType(),
+                request.getTargetId()
+        );
+        return ApiResponse.success(Map.of("success", true, "message", "关联已启用"));
+    }
+
+    /**
+     * 禁用资产关联（保留记录但不生效，通过五元组定位）
+     * PUT /api/v1/asset-associations/disable
+     */
+    @Operation(summary = "禁用资产关联")
+    @PutMapping("/disable")
+    public ApiResponse<Map<String, Object>> disableAssociation(@RequestBody CreateAssociationRequest request) {
+        assetAssociationService.disableAssociation(
+                request.getAssociationType(),
+                request.getSourceType(),
+                request.getSourceId(),
+                request.getTargetType(),
+                request.getTargetId()
+        );
+        return ApiResponse.success(Map.of("success", true, "message", "关联已禁用"));
     }
 
     /**
