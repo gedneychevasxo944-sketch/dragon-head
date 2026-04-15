@@ -4,6 +4,7 @@ import org.dragon.asset.enums.AssociationType;
 import org.dragon.asset.enums.PublishStatus;
 import org.dragon.asset.factory.AssetFactory;
 import org.dragon.asset.service.AssetAssociationService;
+import org.dragon.asset.service.AssetMarkService;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.character.Character;
@@ -52,6 +53,7 @@ public class ExpertService {
     private final SkillStore skillStore;
     private final TraitStore traitStore;
     private final AssetFactory assetFactory;
+    private final AssetMarkService assetMarkService;
 
     private ExpertStore getExpertStore() {
         return storeFactory.get(ExpertStore.class);
@@ -98,6 +100,7 @@ public class ExpertService {
         ExpertEntity mark = ExpertEntity.builder()
                 .resourceType(request.getResourceType())
                 .resourceId(assetId)
+                .markType(ExpertEntity.MarkType.EXPERT)
                 .category(request.getCategory())
                 .preview(request.getPreview())
                 .targetAudience(request.getTargetAudience())
@@ -158,6 +161,7 @@ public class ExpertService {
         ExpertEntity mark = ExpertEntity.builder()
                 .resourceType(resourceType)
                 .resourceId(copiedAssetId)
+                .markType(ExpertEntity.MarkType.EXPERT)
                 .category(category)
                 .preview(preview)
                 .targetAudience(targetAudience)
@@ -251,7 +255,9 @@ public class ExpertService {
      * @return 是否是 Expert
      */
     public boolean isExpert(ResourceType resourceType, String resourceId) {
-        return getExpertStore().findByResource(resourceType, resourceId).isPresent();
+        return getExpertStore().findByResource(resourceType, resourceId)
+                .map(mark -> mark.getMarkType() == ExpertEntity.MarkType.EXPERT)
+                .orElse(false);
     }
 
     /**
@@ -279,6 +285,11 @@ public class ExpertService {
         } else {
             marks = getExpertStore().findAll();
         }
+
+        // 只返回 EXPERT 类型的标记
+        marks = marks.stream()
+                .filter(m -> m.getMarkType() == ExpertEntity.MarkType.EXPERT)
+                .toList();
 
         if (category != null && !category.isBlank()) {
             marks = marks.stream()
@@ -312,6 +323,7 @@ public class ExpertService {
         }
         Set<String> expertIds = getExpertStore().findByResourceType(resourceType)
                 .stream()
+                .filter(m -> m.getMarkType() == ExpertEntity.MarkType.EXPERT)
                 .map(ExpertEntity::getResourceId)
                 .collect(Collectors.toSet());
         return assetIds.stream()

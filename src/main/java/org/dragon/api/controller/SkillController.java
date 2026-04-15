@@ -11,7 +11,6 @@ import org.dragon.skill.actionlog.SkillActionLogVO;
 import org.dragon.skill.dto.SkillDetailVO;
 import org.dragon.skill.dto.SkillRegisterRequest;
 import org.dragon.skill.dto.SkillRegisterResult;
-import org.dragon.skill.dto.SkillSummaryVO;
 import org.dragon.permission.checker.PermissionChecker;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,25 +47,6 @@ public class SkillController {
     private final PermissionChecker permissionChecker;
 
     // ==================== Skill CRUD ====================
-
-    /**
-     * 获取技能列表（分页+筛选）
-     * GET /api/v1/skills
-     */
-    @Operation(summary = "获取技能列表（分页+筛选）")
-    @GetMapping
-    public ApiResponse<PageResponse<SkillSummaryVO>> listSkills(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String visibility,
-            @RequestParam(required = false) String assetState,
-            @RequestParam(required = false) String runtimeStatus,
-            @RequestParam(required = false) String category) {
-        PageResponse<SkillSummaryVO> result = skillApplication.listSkills(
-                page, pageSize, search, visibility, assetState, runtimeStatus, category);
-        return ApiResponse.success(result);
-    }
 
     /**
      * 创建技能

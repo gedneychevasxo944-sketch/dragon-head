@@ -1,8 +1,10 @@
 package org.dragon.character.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.dragon.api.controller.dto.CharacterDetailDTO;
@@ -14,7 +16,6 @@ import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.asset.tag.dto.AssetTagDTO;
 import org.dragon.asset.tag.service.AssetTagService;
 import org.dragon.character.Character;
-import org.dragon.expert.service.ExpertService;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.permission.enums.ResourceType;
@@ -49,16 +50,15 @@ public class CharacterService {
     private final SkillStore skillStore;
     private final AssetAssociationService assetAssociationService;
     private final AssetTagService assetTagService;
-    private final ExpertService expertService;
 
     /**
      * 分页获取角色列表，支持状态/搜索筛选。
      *
-     * @param page     页码（从 1 开始）
-     * @param pageSize 每页数量
-     * @param search   名称/描述搜索关键词
-     * @param status   状态筛选（null 表示全部）
-     * @param source   来源筛选（存储在 extensions.source，null 表示全部）
+     * @param page            页码（从 1 开始）
+     * @param pageSize        每页数量
+     * @param search          名称/描述搜索关键词
+     * @param status          状态筛选（null 表示全部）
+     * @param source          来源筛选（存储在 extensions.source，null 表示全部）
      * @return 分页结果
      */
     public PageResponse<Character> listCharacters(int page, int pageSize, String search,
@@ -66,23 +66,19 @@ public class CharacterService {
         List<Character> all = characterRegistry.listAll();
 
         // 按用户可见性过滤：成员资产 + 已发布资产
-        Long userId = Long.parseLong(UserUtils.getUserId());
+        Long userId = Long.valueOf(UserUtils.getUserId());
         List<String> memberCharacterIds = permissionService.getVisibleAssets(ResourceType.CHARACTER, userId);
         List<String> publishedCharacterIds = publishStatusService.getPublishedAssetIds(ResourceType.CHARACTER);
 
         // 合并可见性：成员资产 + 已发布资产
-        java.util.Set<String> visibleIds = new java.util.HashSet<>(memberCharacterIds);
+        Set<String> visibleIds = new HashSet<>(memberCharacterIds);
         visibleIds.addAll(publishedCharacterIds);
 
-        // 排除 Expert 标记的资产
-        java.util.Set<String> visibleNonExpertIds = expertService.filterOutExpertMarked(
-                ResourceType.CHARACTER, java.util.List.copyOf(visibleIds));
-
         // 过滤
+        final Set<String> finalVisibleIds = visibleIds;
         List<Character> filtered = all.stream()
                 .filter(c -> {
-                    // 可见性过滤（排除 Expert 标记的资产）
-                    if (!visibleNonExpertIds.contains(c.getId())) {
+                    if (!finalVisibleIds.contains(c.getId())) {
                         return false;
                     }
                     if (search != null && !search.isBlank()) {

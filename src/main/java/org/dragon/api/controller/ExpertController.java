@@ -17,10 +17,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -101,20 +99,6 @@ public class ExpertController {
     }
 
     // ==================== 查询 ====================
-
-    /**
-     * 获取 Expert 列表
-     * GET /api/v1/experts?resourceType=CHARACTER&category=助手
-     */
-    @Operation(summary = "获取 Expert 列表")
-    @GetMapping
-    public ApiResponse<List<ExpertVO>> listExperts(
-            @RequestParam(required = false) ResourceType resourceType,
-            @RequestParam(required = false) String category) {
-        List<ExpertEntity> marks = expertService.listExperts(resourceType, category);
-        List<ExpertVO> vos = marks.stream().map(this::toVOWithAsset).toList();
-        return ApiResponse.success(vos);
-    }
 
     /**
      * 获取 Expert 详情

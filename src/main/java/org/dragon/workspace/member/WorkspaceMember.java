@@ -53,6 +53,44 @@ public class WorkspaceMember {
     private String role;
 
     /**
+     * 角色名称（如 "HR Manager", "Project Manager"）
+     */
+    private String roleName;
+
+    /**
+     * 角色包/分类
+     */
+    private String rolePackage;
+
+    /**
+     * 岗位目的/职责
+     */
+    private String purpose;
+
+    /**
+     * Scope 标识，定义工作域（如 "hr", "member_selection"）
+     */
+    private String scope;
+
+    /**
+     * 处理方式
+     */
+    @Builder.Default
+    private HandlerType handlerType = HandlerType.BUILTIN_CHARACTER;
+
+    /**
+     * 当 handlerType=BUILTIN_CHARACTER 时为 Character ID
+     * 当 handlerType=EXTERNAL_HOOK 时为 Hook ID
+     */
+    private String handlerId;
+
+    /**
+     * 岗位是否启用
+     */
+    @Builder.Default
+    private boolean enabled = true;
+
+    /**
      * 层级
      */
     @Builder.Default

@@ -883,3 +883,39 @@ VALUES ('1::::::mbti.ESFP', 1, NULL, NULL, NULL, NULL, NULL, 'mbti.ESFP',
 '你是一个热情奔放且热爱生活的表演者型人格。你乐观开朗，善于调节气氛，让周围的人感到愉快。你具有强大的社交魅力，热爱分享美好的体验。你活在当下，对生活充满热情。',
 'STRING', 'MBTI-ESFP人格描述', 'ESFP表演者型人格的性格描述', NULL, NULL, 'PUBLISHED', 1, 'system', 'system', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW();
+
+-- ============================================================================
+-- Built-in Character 冷启动数据
+-- ============================================================================
+
+INSERT INTO `character` (id, name, description, allowed_tools, is_running, created_at, updated_at) VALUES
+('hr', 'HR Manager', '负责 Workspace 的人力资源管理，包括招聘、解雇、职责分配等', '["hire_character", "fire_character", "assign_duty", "list_candidates", "evaluate_character"]', true, NOW(), NOW()),
+('member_selector', 'Member Selector', '负责从 Workspace 中已雇佣的 Character 中选择最合适的执行者来完成特定任务', '["list_workspace_members", "get_member_profile", "select_member"]', true, NOW(), NOW()),
+('project_manager', 'Project Manager', '负责将复杂任务拆解为可执行的子任务，并管理任务执行进度', '["decompose_task", "assign_subtask", "get_task_status"]', true, NOW(), NOW()),
+('prompt_writer', 'Prompt Writer', '负责将 prompt 模板与动态数据拼接成完整的 prompt', '["get_workspace_common_sense"]', true, NOW(), NOW()),
+('commonsense_writer', 'Common Sense Writer', '负责将 CommonSense 常识转换成 prompt 格式', '[]', true, NOW(), NOW()),
+('material_summary', 'Material Summary', '负责为物料生成摘要', '[]', true, NOW(), NOW()),
+('observer_advisor_workspace', 'Observer Advisor', '提供 Workspace 级别的系统优化建议', '["explore_observation_needs", "get_character_state", "get_workspace_state", "get_recent_tasks", "get_evaluation_records"]', true, NOW(), NOW()),
+('observer_advisor_character', 'Observer Advisor', '提供 Character 级别的系统优化建议', '["explore_observation_needs", "get_character_state", "get_workspace_state", "get_recent_tasks", "get_evaluation_records"]', true, NOW(), NOW());
+
+-- Built-in Character Owner (system user id=2)
+INSERT INTO asset_member (resource_type, resource_id, user_id, role, accepted, created_at, updated_at) VALUES
+('CHARACTER', 'hr', 2, 'OWNER', true, NOW(), NOW()),
+('CHARACTER', 'member_selector', 2, 'OWNER', true, NOW(), NOW()),
+('CHARACTER', 'project_manager', 2, 'OWNER', true, NOW(), NOW()),
+('CHARACTER', 'prompt_writer', 2, 'OWNER', true, NOW(), NOW()),
+('CHARACTER', 'commonsense_writer', 2, 'OWNER', true, NOW(), NOW()),
+('CHARACTER', 'material_summary', 2, 'OWNER', true, NOW(), NOW()),
+('CHARACTER', 'observer_advisor_workspace', 2, 'OWNER', true, NOW(), NOW()),
+('CHARACTER', 'observer_advisor_character', 2, 'OWNER', true, NOW(), NOW());
+
+-- Built-in Character PublishStatus
+INSERT INTO asset_publish_status (id, resource_type, resource_id, status, version, published_at, published_by, snapshot, created_at, updated_at) VALUES
+('00000000-0000-0000-0000-000000000101', 'CHARACTER', 'hr', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000102', 'CHARACTER', 'member_selector', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000103', 'CHARACTER', 'project_manager', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000104', 'CHARACTER', 'prompt_writer', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000105', 'CHARACTER', 'commonsense_writer', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000106', 'CHARACTER', 'material_summary', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000107', 'CHARACTER', 'observer_advisor_workspace', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000108', 'CHARACTER', 'observer_advisor_character', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW());

@@ -19,9 +19,6 @@ public class PromptMaterialConfig {
     private boolean includeWorkspaceMembers = true;
 
     @Builder.Default
-    private boolean includeTeamPositions = true;
-
-    @Builder.Default
     private boolean includeWorkspaceBasicInfo = true;
 
     // ========== Character 级别开关 ==========
@@ -89,7 +86,6 @@ public class PromptMaterialConfig {
         return PromptMaterialConfig.builder()
                 .includeWorkspacePersonality(true)
                 .includeWorkspaceMembers(true)
-                .includeTeamPositions(true)
                 .includeTaskContext(true)
                 .includeCharacterPersonality(false)
                 .includeAvailableSkills(false)

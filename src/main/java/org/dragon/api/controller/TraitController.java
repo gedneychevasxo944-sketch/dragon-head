@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.dragon.api.controller.dto.ApiResponse;
-import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.permission.checker.PermissionChecker;
 import org.dragon.trait.service.TraitService;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -37,21 +35,6 @@ public class TraitController {
 
     private final TraitService traitService;
     private final PermissionChecker permissionChecker;
-
-    /**
-     * 获取 Trait 列表
-     * GET /api/v1/traits
-     */
-    @Operation(summary = "获取 Trait 列表")
-    @GetMapping
-    public ApiResponse<PageResponse<Map<String, Object>>> listTraits(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String tagName,
-            @RequestParam(required = false) String publishStatus) {
-        return ApiResponse.success(traitService.listTraits(page, pageSize, search, tagName, publishStatus));
-    }
 
     /**
      * 创建 Trait

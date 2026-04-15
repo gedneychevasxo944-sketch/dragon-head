@@ -3,6 +3,8 @@ package org.dragon.channel.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.dragon.channel.enums.ChatType;
+import org.dragon.channel.enums.ChannelType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,10 +23,10 @@ import java.util.Map;
 @NoArgsConstructor
 public class NormalizedMessage {
     // ================= 1. 身份与路由 (Identity & Routing) =================
-    private String channel;     // 来源渠道，如 "telegram", "wechat"
+    private ChannelType channel;     // 来源渠道
     private String senderId;    // 发送者全局唯一标识
     private String chatId;      // 会话ID
-    private String chatType;    // 会话类型
+    private ChatType chatType;    // 会话类型
     private String messageId;   // 原始消息 ID (用于引用回复)
     private String workspaceId; // 工作空间ID，为null表示未绑定Workspace，Gateway将走单Character Fallback路径
     // ================= 2. 引用与线程 (Reference & Threading) =================

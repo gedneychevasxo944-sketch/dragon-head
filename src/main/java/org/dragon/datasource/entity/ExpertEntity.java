@@ -2,6 +2,8 @@ package org.dragon.datasource.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -15,9 +17,9 @@ import org.dragon.permission.enums.ResourceType;
 import java.time.LocalDateTime;
 
 /**
- * ExpertEntity Expert 标记实体
+ * ExpertEntity 资产标记实体
  *
- * <p>用于标记某条资产记录是 Expert，并存储 Expert 特有的元信息。
+ * <p>用于标记某条资产记录是 Expert 或 Builtin，并存储特有的元信息。
  * expert_mark 表只做标记，不存储 name/description 等字段（这些直接在源资产表中）。
  *
  * @author yijunw
@@ -29,6 +31,14 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "expert_mark")
 public class ExpertEntity {
+
+    /**
+     * 标记类型
+     */
+    public enum MarkType {
+        EXPERT,   // Expert 资产（用户创建的模板）
+        BUILTIN   // Builtin 资产（系统预置）
+    }
 
     /**
      * 主键 UUID
@@ -49,7 +59,15 @@ public class ExpertEntity {
     private String resourceId;
 
     /**
-     * Expert 分类：助手/客服/创作/开发/研究/分析
+     * 标记类型：EXPERT, BUILTIN
+     */
+    @Column(name = "mark_type", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private MarkType markType = MarkType.EXPERT;
+
+    /**
+     * Expert 分类：助手/客服/创作/开发/研究/分析（BUILTIN 标记时为空）
      */
     @Column(name = "category", length = 64)
     private String category;
@@ -92,6 +110,9 @@ public class ExpertEntity {
         }
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
+        }
+        if (markType == null) {
+            markType = MarkType.EXPERT;
         }
     }
 

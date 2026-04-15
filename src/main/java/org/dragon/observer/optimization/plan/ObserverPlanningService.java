@@ -14,7 +14,6 @@ import org.dragon.config.service.ConfigApplication;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
 import org.dragon.observer.optimization.OptimizationExecutor;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.observer.optimization.plan.OptimizationAction.ActionType;
 import org.dragon.observer.optimization.plan.OptimizationAction.Status;
 import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
@@ -45,7 +44,7 @@ public class ObserverPlanningService {
     private static final Logger log = LoggerFactory.getLogger(ObserverPlanningService.class);
 
     private final OptimizationExecutor optimizationExecutor;
-    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final CharacterRegistry characterRegistry;
     private final CharacterCaller characterCaller;
     private final ConfigApplication configApplication;
     private final StoreFactory storeFactory;
@@ -127,7 +126,8 @@ public class ObserverPlanningService {
         List<OptimizationPlanItem> items = new ArrayList<>();
 
         // 获取 ObserverAdvisorCharacter
-        Character observerAdvisor = builtInCharacterFactory.getOrCreateObserverAdvisorForWorkspace(getWorkspaceId(evaluation));
+        Character observerAdvisor = characterRegistry.get("observer_advisor_workspace")
+                    .orElseThrow(() -> new IllegalArgumentException("Observer advisor not found"));
 
         // 构建请求 prompt
         String userPrompt = buildSuggestionPrompt(plan, evaluation);

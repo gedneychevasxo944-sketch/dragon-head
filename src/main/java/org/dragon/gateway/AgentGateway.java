@@ -51,7 +51,7 @@ public class AgentGateway implements Gateway {
     @Override
     public void dispatch(NormalizedMessage inboundMsg) {
         // 路由解析：用 (channel, chatId) 查找绑定的 workspaceId
-        Optional<String> workspaceIdOpt = channelBindingService.resolveWorkspaceId(inboundMsg.getChannel(), inboundMsg.getChatId());
+        Optional<String> workspaceIdOpt = channelBindingService.resolveWorkspaceId(inboundMsg.getChannel().getCode(), inboundMsg.getChatId());
         // 将解析结果写回消息，方便下游链路使用
         workspaceIdOpt.ifPresent(inboundMsg::setWorkspaceId);
         if (workspaceIdOpt.isPresent()) {
@@ -59,7 +59,7 @@ public class AgentGateway implements Gateway {
             dispatchToWorkspace(inboundMsg, workspaceIdOpt.get());
         } else {
             // ========== 路径 B：单 Character Fallback 路径 ==========
-            log.info("[Gateway] No workspace binding found for channel={} chatId={}, falling back to single character", inboundMsg.getChannel(), inboundMsg.getChatId());
+            log.info("[Gateway] No workspace binding found for channel={} chatId={}, falling back to single character", inboundMsg.getChannel().getCode(), inboundMsg.getChatId());
             dispatchToSingleCharacter(inboundMsg);
         }
     }
@@ -154,7 +154,7 @@ public class AgentGateway implements Gateway {
      */
     private ActionMessage buildActionMessage(NormalizedMessage inboundMsg, String content) {
         ActionMessage actionMessage = new ActionMessage();
-        actionMessage.setChannelName(inboundMsg.getChannel());
+        actionMessage.setChannelName(inboundMsg.getChannel().getCode());
         actionMessage.setActionType(ActionType.REPLY);
         actionMessage.setQuoteMessageId(inboundMsg.getMessageId());
         actionMessage.setMessageType("text");

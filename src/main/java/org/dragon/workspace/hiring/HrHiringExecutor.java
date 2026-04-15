@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.character.CharacterRegistry;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.store.StoreFactory;
@@ -30,7 +30,7 @@ public class HrHiringExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(HrHiringExecutor.class);
 
-    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final CharacterRegistry characterRegistry;
     private final CharacterCaller characterCaller;
     private final ConfigApplication promptManager;
     private final StoreFactory storeFactory;
@@ -51,7 +51,7 @@ public class HrHiringExecutor {
     public void hireAuto(String workspaceId, String characterId, List<Character> availableCharacters,
             Consumer<Character> hireAction) {
         // 1. 获取 HR Character
-        Character hrCharacter = builtInCharacterFactory.getOrCreateHrCharacter(workspaceId);
+        Character hrCharacter = characterRegistry.get("hr").orElse(null);
 
         Character characterToHire;
         String hrDecision;
@@ -127,7 +127,7 @@ public class HrHiringExecutor {
     @Deprecated
     public void hireAuto(String workspaceId, Character character, Runnable hireAction) {
         // 1. 获取 HR Character
-        Character hrCharacter = builtInCharacterFactory.getOrCreateHrCharacter(workspaceId);
+        Character hrCharacter = characterRegistry.get("hr").orElse(null);
 
         // 2. 构建决策提示词
         String decisionPrompt = buildHirePrompt(workspaceId, character);
@@ -167,7 +167,7 @@ public class HrHiringExecutor {
      */
     public void fireAuto(String workspaceId, String characterId, Runnable fireAction) {
         // 1. 获取 HR Character
-        Character hrCharacter = builtInCharacterFactory.getOrCreateHrCharacter(workspaceId);
+        Character hrCharacter = characterRegistry.get("hr").orElse(null);
 
         // 2. 构建决策提示词
         String decisionPrompt = buildFirePrompt(workspaceId, characterId);
@@ -237,7 +237,7 @@ public class HrHiringExecutor {
                 character.getDescription());
 
         // 调用 HR Character 生成职责描述
-        Character hrCharacter = builtInCharacterFactory.getOrCreateHrCharacter(workspaceId);
+        Character hrCharacter = characterRegistry.get("hr").orElse(null);
         String dutyDescription = characterCaller.call(hrCharacter, dutyPrompt);
         // 清理结果，只保留职责描述部分
         dutyDescription = cleanDutyDescription(dutyDescription);

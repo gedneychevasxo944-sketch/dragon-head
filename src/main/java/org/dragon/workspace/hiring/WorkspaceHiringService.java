@@ -8,7 +8,6 @@ import java.util.Optional;
 import org.dragon.actionlog.ActionType;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.observer.log.ObserverActionLogService;
 import org.dragon.store.StoreFactory;
@@ -37,7 +36,6 @@ public class WorkspaceHiringService {
     private final WorkspaceRegistry workspaceRegistry;
     private final CharacterRegistry characterRegistry;
     private final ObserverActionLogService actionLogService;
-    private final BuiltInCharacterFactory builtInCharacterFactory;
     private final HrHiringExecutor hrHiringExecutor;
     private final WorkspaceMemberService memberManagementService;
     private final StoreFactory storeFactory;
@@ -126,10 +124,8 @@ public class WorkspaceHiringService {
      * @return HR Character (如果存在)
      */
     public Optional<Character> getHrCharacter(String workspaceId) {
-        if (builtInCharacterFactory.hasForWorkspace("hr", workspaceId)) {
-            return Optional.of(builtInCharacterFactory.getOrCreateHrCharacter(workspaceId));
-        }
-        return Optional.empty();
+        // 直接从 characterRegistry 获取全局 Built-in HR Character
+        return characterRegistry.get("hr");
     }
 
     /**

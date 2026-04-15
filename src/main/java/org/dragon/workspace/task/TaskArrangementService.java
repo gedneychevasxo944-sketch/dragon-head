@@ -14,6 +14,7 @@ import org.dragon.agent.react.context.PromptMaterialContext;
 import org.dragon.agent.react.context.PromptMaterialConfig;
 import org.dragon.agent.react.context.PromptMaterialContextBuilder;
 import org.dragon.character.Character;
+import org.dragon.character.CharacterRegistry;
 import org.dragon.config.PromptKeys;
 import org.dragon.config.service.ConfigApplication;
 import org.dragon.store.StoreFactory;
@@ -26,7 +27,6 @@ import org.dragon.workspace.cooperation.chat.ChatRoom;
 import org.dragon.workspace.cooperation.task.CollaborationSessionCoordinator;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
-import org.dragon.workspace.plugin.WorkspacePluginService;
 import org.dragon.workspace.task.dto.AssignmentDecision;
 import org.dragon.workspace.task.dto.BatchMemberSelectionInput;
 import org.dragon.workspace.task.dto.ChildTaskPlan;
@@ -64,7 +64,7 @@ public class TaskArrangementService {
     private final ChatRoom chatRoom;
     private final TaskExecutionService taskExecutionService;
     private final CollaborationSessionCoordinator sessionCoordinator;
-    private final WorkspacePluginService workspacePluginService;
+    private final CharacterRegistry characterRegistry;
     private final CharacterCaller characterCaller;
     private final ConfigApplication configApplication;
     private final StoreFactory storeFactory;
@@ -255,12 +255,12 @@ public class TaskArrangementService {
      */
     private TaskDecompositionResult decompose(Task parentTask, Workspace workspace, List<WorkspaceMember> members) {
         try {
-            Character promptWriter = workspacePluginService.getBuiltinCharacter(workspace.getId(), "prompt_writer");
+            Character promptWriter = characterRegistry.get("prompt_writer").orElse(null);
             String promptTemplate = configApplication.getGlobalPrompt(PromptKeys.PROJECT_MANAGER_DECOMPOSE, "请将以下任务拆解为可执行的子任务。");
             String promptWriterInput = buildDecomposePromptWriterInput(parentTask, members, promptTemplate);
             String fullPrompt = characterCaller.call(promptWriter, promptWriterInput);
 
-            Character projectManager = workspacePluginService.getBuiltinCharacter(workspace.getId(), "project_manager");
+            Character projectManager = characterRegistry.get("project_manager").orElse(null);
             String result = characterCaller.call(projectManager, fullPrompt);
 
             return parseDecompositionResult(result);
@@ -278,8 +278,8 @@ public class TaskArrangementService {
             return result;
         }
 
-        Character promptWriter = workspacePluginService.getBuiltinCharacter(workspace.getId(), "prompt_writer");
-        Character memberSelector = workspacePluginService.getBuiltinCharacter(workspace.getId(), "member_selector");
+        Character promptWriter = characterRegistry.get("prompt_writer").orElse(null);
+        Character memberSelector = characterRegistry.get("member_selector").orElse(null);
         String promptTemplate = configApplication.getGlobalPrompt(PromptKeys.MEMBER_SELECTOR_SELECT, "请从可用成员中选择最合适的执行者来完成指定任务。");
 
         // 分离已分配和待分配的 plan

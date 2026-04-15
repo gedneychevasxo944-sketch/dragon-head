@@ -10,10 +10,10 @@ import java.util.stream.Collectors;
 
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
+import org.dragon.character.CharacterRegistry;
 import org.dragon.character.mind.Mind;
 import org.dragon.character.mind.PersonalityDescriptor;
 import org.dragon.commonsense.CommonSenseValidator;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.observer.evaluation.EvaluationRecord;
 import org.dragon.observer.evaluation.EvaluationRecordStore;
 import org.dragon.observer.log.ModificationLog;
@@ -44,7 +44,7 @@ public class OptimizationExecutor {
     private final StoreFactory storeFactory;
     private final CommonSenseValidator commonSenseValidator;
     private final List<OptimizationTargetApplier> appliers;
-    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final CharacterRegistry characterRegistry;
     private final CharacterCaller characterCaller;
 
     private OptimizationActionStore getOptimizationActionStore() {
@@ -297,7 +297,8 @@ public class OptimizationExecutor {
             String workspace = (String) action.getParameters().get("workspace");
 
             // 使用 ObserverAdvisorCharacter 生成建议
-            Character observerAdvisor = builtInCharacterFactory.getOrCreateObserverAdvisorForWorkspace(workspace);
+            Character observerAdvisor = characterRegistry.get("observer_advisor_workspace")
+                    .orElseThrow(() -> new IllegalArgumentException("Observer advisor not found"));
 
             String userPrompt = buildSuggestionPrompt(action);
 

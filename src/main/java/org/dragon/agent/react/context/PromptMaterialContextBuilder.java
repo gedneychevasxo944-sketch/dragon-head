@@ -172,7 +172,7 @@ public class PromptMaterialContextBuilder {
         });
 
         // TODO: 填充 availableMembers（需要 WorkspaceMemberService）
-        // TODO: 填充 teamPositions（需要 TeamPositionService）
+        // teamPositions 已删除，统一使用 WorkspaceMember 表示
     }
 
     private void fillTaskContext(PromptMaterialContext.PromptMaterialContextBuilder builder, Task task) {

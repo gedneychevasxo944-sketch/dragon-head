@@ -46,24 +46,6 @@ public class WorkspaceController {
     // ==================== Workspace CRUD ====================
 
     /**
-     * 获取 Workspace 列表
-     * GET /api/v1/workspaces
-     */
-    @Operation(summary = "获取 Workspace 列表（分页+筛选）")
-    @GetMapping
-    public ApiResponse<PageResponse<Workspace>> listWorkspaces(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String teamStatus,
-            @RequestParam(required = false) Boolean hasObserver) {
-        PageResponse<Workspace> result = workspaceApiApplication.listWorkspaces(
-                page, pageSize, search, status, teamStatus, hasObserver);
-        return ApiResponse.success(result);
-    }
-
-    /**
      * 创建 Workspace
      * POST /api/v1/workspaces
      */

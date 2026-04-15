@@ -9,7 +9,6 @@ import org.dragon.observer.evaluation.ObservationFinding;
 import org.dragon.skill.runtime.SkillDefinition;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.WorkspacePersonality;
-import org.dragon.workspace.member.TeamPosition;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.task.dto.TaskDecompositionResult;
 
@@ -37,11 +36,6 @@ public class PromptMaterialContext {
      * 可用成员列表（用于成员选择）
      */
     private List<WorkspaceMember> availableMembers;
-
-    /**
-     * TeamPosition 列表（purpose, scope）
-     */
-    private List<TeamPosition> teamPositions;
 
     /**
      * Workspace 基本信息

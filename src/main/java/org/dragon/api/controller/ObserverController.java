@@ -45,24 +45,6 @@ public class ObserverController {
     // ==================== 22. Observer CRUD ====================
 
     /**
-     * 22.1 获取 Observer 列表
-     * GET /api/v1/observers
-     */
-    @Operation(summary = "获取 Observer 列表")
-    @GetMapping
-    public ApiResponse<PageResponse<Observer>> listObservers(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String targetType,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String executionMode,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize) {
-        PageResponse<Observer> result = observerApplication.listObservers(
-                page, pageSize, search, status, executionMode);
-        return ApiResponse.success(result);
-    }
-
-    /**
      * 22.2 创建 Observer
      * POST /api/v1/observers
      */

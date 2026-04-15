@@ -52,22 +52,6 @@ public class CharacterController {
     // ==================== Character CRUD ====================
 
     /**
-     * 获取角色列表
-     * GET /api/v1/characters
-     */
-    @Operation(summary = "获取角色列表（分页+筛选）")
-    @GetMapping
-    public ApiResponse<PageResponse<Character>> listCharacters(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String source) {
-        PageResponse<Character> result = characterService.listCharacters(page, pageSize, search, status, source);
-        return ApiResponse.success(result);
-    }
-
-    /**
      * 创建角色
      * POST /api/v1/characters
      */

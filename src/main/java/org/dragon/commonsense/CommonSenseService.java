@@ -8,12 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.dragon.store.StoreFactory;
-import org.springframework.context.annotation.Lazy;
 
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.character.Character;
+import org.dragon.character.CharacterRegistry;
 import org.dragon.config.service.ConfigApplication;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
 import org.dragon.commonsense.content.CommonSenseContent;
 import org.dragon.commonsense.content.CommonSenseContentParser;
 import org.dragon.commonsense.store.WorkspaceCommonSenseStore;
@@ -34,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CommonSenseService {
 
     private final WorkspaceCommonSenseStore store;
-    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final CharacterRegistry characterRegistry;
     private final CharacterCaller characterCaller;
     private final ConfigApplication configApplication;
     private final CommonSenseContentParser contentParser;
@@ -45,12 +44,12 @@ public class CommonSenseService {
      */
     private final Map<String, CachedPrompt> promptCache = new ConcurrentHashMap<>();
 
-    public CommonSenseService(StoreFactory storeFactory, @Lazy BuiltInCharacterFactory builtInCharacterFactory,
+    public CommonSenseService(StoreFactory storeFactory, CharacterRegistry characterRegistry,
                               CharacterCaller characterCaller,
                               ConfigApplication configApplication,
                               CommonSenseContentParser contentParser) {
         this.store = storeFactory.get(WorkspaceCommonSenseStore.class);
-        this.builtInCharacterFactory = builtInCharacterFactory;
+        this.characterRegistry = characterRegistry;
         this.characterCaller = characterCaller;
         this.configApplication = configApplication;
         this.contentParser = contentParser;
@@ -247,7 +246,8 @@ public class CommonSenseService {
 
         try {
             // 获取 CommonSenseWriter Character
-            Character commonSenseWriter = builtInCharacterFactory.getOrCreateCommonSenseWriterCharacter(workspaceId);
+            Character commonSenseWriter = characterRegistry.get("commonsense_writer")
+                    .orElseThrow(() -> new IllegalArgumentException("CommonSense writer not found"));
 
             // 调用 Character 生成 prompt
             String generatedPrompt = characterCaller.call(commonSenseWriter, input);

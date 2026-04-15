@@ -19,7 +19,7 @@ import org.dragon.memory.entity.MemoryQuery;
 import org.dragon.memory.entity.MemorySearchResult;
 import org.dragon.memory.service.core.MemoryFacade;
 import org.dragon.task.Task;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.character.CharacterRegistry;
 import org.dragon.workspace.task.dto.PromptWriterInput;
 import org.dragon.agent.llm.util.CharacterCaller;
 import org.dragon.skill.runtime.SkillRegistry;
@@ -48,7 +48,7 @@ public class ReActExecutor {
     private final ModelRegistry modelRegistry;
     private final Gson gson;
     private final ConfigApplication configApplication;
-    private final ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider;
+    private final ObjectProvider<CharacterRegistry> characterRegistryProvider;
     private final ObjectProvider<CharacterCaller> characterCallerProvider;
     private final ThoughtPromptAssembler thoughtPromptAssembler;
     private final ActionParser actionParser;
@@ -61,7 +61,7 @@ public class ReActExecutor {
     public ReActExecutor(LLMCallerSelector callerSelector,
                          ModelRegistry modelRegistry,
                          ConfigApplication configApplication,
-                         ObjectProvider<BuiltInCharacterFactory> builtInCharacterFactoryProvider,
+                         ObjectProvider<CharacterRegistry> characterRegistryProvider,
                          ObjectProvider<CharacterCaller> characterCallerProvider,
                          ThoughtPromptAssembler thoughtPromptAssembler,
                          ActionParser actionParser,
@@ -73,7 +73,7 @@ public class ReActExecutor {
         this.callerSelector = callerSelector;
         this.modelRegistry = modelRegistry;
         this.configApplication = configApplication;
-        this.builtInCharacterFactoryProvider = builtInCharacterFactoryProvider;
+        this.characterRegistryProvider = characterRegistryProvider;
         this.characterCallerProvider = characterCallerProvider;
         this.gson = new Gson();
         this.thoughtPromptAssembler = thoughtPromptAssembler;
@@ -456,9 +456,9 @@ public class ReActExecutor {
             return null;
         }
 
-        BuiltInCharacterFactory builtInCharacterFactory = builtInCharacterFactoryProvider.getIfAvailable();
+        CharacterRegistry characterRegistry = characterRegistryProvider.getIfAvailable();
         CharacterCaller characterCaller = characterCallerProvider.getIfAvailable();
-        if (builtInCharacterFactory == null || characterCaller == null) {
+        if (characterRegistry == null || characterCaller == null) {
             return null;
         }
 
@@ -469,7 +469,7 @@ public class ReActExecutor {
             }
 
             // 获取 PromptWriter Character
-            Character promptWriterChar = builtInCharacterFactory.getOrCreatePromptWriterCharacter(workspaceId);
+            Character promptWriterChar = characterRegistry.get("prompt_writer").orElse(null);
             if (promptWriterChar == null) {
                 return null;
             }

@@ -11,11 +11,9 @@ import org.dragon.permission.service.PermissionService;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.util.UserUtils;
-import org.dragon.workspace.member.TeamPosition;
-import org.dragon.workspace.member.TeamPositionService;
+import org.dragon.workspace.member.HandlerType;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
-import org.dragon.workspace.plugin.WorkspacePluginService;
 import org.dragon.workspace.task.TaskArrangementService;
 import org.dragon.workspace.task.TaskArrangementService.TaskExecutionMode;
 import org.dragon.workspace.task.TaskExecutionService;
@@ -42,10 +40,8 @@ public class WorkspaceFacadeService {
 
     private final WorkspaceLifecycleService workspaceLifecycleService;
     private final WorkspaceMemberService memberService;
-    private final TeamPositionService teamPositionService;
     private final PermissionService permissionService;
     private final DeploymentService deploymentService;
-    private final WorkspacePluginService workspacePluginService;
     private final WorkspaceTaskService workspaceTaskService;
     private final TaskArrangementService taskArrangementService;
     private final TaskResumeService taskResumeService;
@@ -142,55 +138,72 @@ public class WorkspaceFacadeService {
     // ==================== 岗位管理 ====================
 
     public List<TeamPositionResponse> listTeamPositions(String workspaceId) {
-        List<TeamPosition> positions = teamPositionService.listPositions(workspaceId);
-        return teamPositionService.toResponseList(positions);
+        return memberService.listPositions(workspaceId).stream()
+                .map(TeamPositionResponse::from)
+                .toList();
     }
 
     public TeamPositionResponse addTeamPosition(String workspaceId, String roleName,
             String rolePackage, String purpose, String scope) {
-        TeamPosition position = teamPositionService.addPosition(
+        WorkspaceMember position = memberService.addPosition(
                 workspaceId, roleName, rolePackage, purpose, scope);
-        return teamPositionService.toResponse(position);
+        return TeamPositionResponse.from(position);
     }
 
     public TeamPositionResponse updateTeamPosition(String workspaceId, String positionId,
             String assignedCharacterId, String assignedBuiltinType, Boolean enabled) {
-        TeamPosition position = teamPositionService.updatePosition(
-                workspaceId, positionId, assignedCharacterId, assignedBuiltinType, enabled);
+        // assignedBuiltinType 格式: "builtin:{type}"，如 "builtin:hr"
+        HandlerType handlerType = HandlerType.BUILTIN_CHARACTER;
+        String handlerId = null;
 
         if (assignedBuiltinType != null && !assignedBuiltinType.isBlank()) {
-            try {
-                workspacePluginService.initializeWorkspacePlugins(workspaceId);
-                log.info("[WorkspaceFacadeService] Initialized built-in plugins for workspace {} via team position {}",
-                        workspaceId, positionId);
-            } catch (Exception e) {
-                log.warn("[WorkspaceFacadeService] Failed to initialize built-in plugins for workspace {}: {}",
-                        workspaceId, e.getMessage());
+            // 从 builtin:{type} 格式中提取 builtin type，然后获取对应的 character id
+            if (assignedBuiltinType.startsWith("builtin:")) {
+                String builtinType = assignedBuiltinType.substring("builtin:".length());
+                // builtin type 就是 character id，如 "hr", "member_selector" 等
+                handlerId = builtinType;
             }
         } else if (assignedCharacterId != null && !assignedCharacterId.isBlank()) {
+            handlerId = assignedCharacterId;
+        }
+
+        final String finalHandlerId = handlerId;
+        memberService.updatePositionHandler(workspaceId, positionId, handlerType, handlerId);
+
+        // 处理 enabled
+        if (enabled != null) {
+            memberService.getPosition(workspaceId, positionId).ifPresent(m -> {
+                m.setEnabled(enabled);
+                memberService.updateMemberRole(workspaceId, positionId, m.getRole());
+            });
+        }
+
+        // 如果分配了 character，自动部署
+        if (finalHandlerId != null) {
             try {
-                TeamPosition updated = teamPositionService.getPosition(workspaceId, positionId).orElse(null);
-                if (updated != null) {
+                memberService.getPosition(workspaceId, positionId).ifPresent(m -> {
                     deploymentService.deployCharacter(
-                            assignedCharacterId,
+                            finalHandlerId,
                             workspaceId,
-                            updated.getRoleName(),
-                            updated.getRoleName(),
+                            m.getRoleName(),
+                            m.getRoleName(),
                             3);
-                    log.info("[WorkspaceFacadeService] Auto deployed character {} to workspace {} via team position {}",
-                            assignedCharacterId, workspaceId, positionId);
-                }
+                    log.info("[WorkspaceFacadeService] Auto deployed character {} to workspace {} via position {}",
+                            finalHandlerId, workspaceId, positionId);
+                });
             } catch (Exception e) {
                 log.warn("[WorkspaceFacadeService] Failed to auto deploy character {} to workspace {}: {}",
-                        assignedCharacterId, workspaceId, e.getMessage());
+                        finalHandlerId, workspaceId, e.getMessage());
             }
         }
 
-        return teamPositionService.toResponse(position);
+        return memberService.getPosition(workspaceId, positionId)
+                .map(TeamPositionResponse::from)
+                .orElseThrow(() -> new IllegalArgumentException("Position not found: " + positionId));
     }
 
     public void deleteTeamPosition(String workspaceId, String positionId) {
-        teamPositionService.deletePosition(workspaceId, positionId);
+        memberService.removePosition(workspaceId, positionId);
     }
 
     // ==================== 任务管理 ====================
@@ -248,7 +261,7 @@ public class WorkspaceFacadeService {
                     .input(message)
                     .creatorId(creatorId)
                     .metadata(message.getMetadata())
-                    .sourceChannel(message.getChannel())
+                    .sourceChannel(message.getChannel().getCode())
                     .sourceMessageId(message.getMessageId())
                     .sourceChatId(message.getChatId())
                     .build();

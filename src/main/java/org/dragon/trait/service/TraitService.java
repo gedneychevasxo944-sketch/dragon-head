@@ -13,7 +13,6 @@ import org.dragon.asset.service.AssetPublishStatusService;
 import org.dragon.asset.tag.dto.AssetTagDTO;
 import org.dragon.asset.tag.service.AssetTagService;
 import org.dragon.datasource.entity.TraitEntity;
-import org.dragon.expert.service.ExpertService;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.store.StoreFactory;
 import org.dragon.trait.store.TraitStore;
@@ -33,7 +32,6 @@ public class TraitService {
     private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
     private final AssetTagService assetTagService;
-    private final ExpertService expertService;
 
     private TraitStore getStore() {
         return storeFactory.get(TraitStore.class);
@@ -132,7 +130,8 @@ public class TraitService {
      * @param tagName       可选，按标签名称筛选
      * @param publishStatus 可选，按发布状态筛选（DRAFT/PUBLISHED）
      */
-    public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String tagName, String publishStatus) {
+    public PageResponse<Map<String, Object>> listTraits(int page, int pageSize, String search, String tagName,
+                                                         String publishStatus) {
         // 获取当前用户可见的 Trait ID（用户作为成员拥有的 + 已发布的）
         Long userId = Long.valueOf(UserUtils.getUserId());
         List<String> memberTraitIds = assetMemberService.getMemberAssetIds(ResourceType.TRAIT, userId);
@@ -172,14 +171,6 @@ public class TraitService {
         final java.util.Set<String> finalVisibleIds = visibleTraitIds;
         allTraits = allTraits.stream()
                 .filter(t -> finalVisibleIds.contains(String.valueOf(t.getId())))
-                .toList();
-
-        // 过滤掉 Expert 标记的资产
-        java.util.Set<String> nonExpertIds = expertService.filterOutExpertMarked(
-                ResourceType.TRAIT,
-                allTraits.stream().map(TraitEntity::getId).collect(java.util.stream.Collectors.toList()));
-        allTraits = allTraits.stream()
-                .filter(t -> nonExpertIds.contains(t.getId()))
                 .toList();
 
         // 按发布状态筛选

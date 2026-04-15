@@ -68,32 +68,33 @@ public class TeamPositionResponse {
     private String status;
 
     /**
-     * 从 TeamPosition 转换
+     * 从 WorkspaceMember 转换（统一岗位和成员）
+     *
+     * @param member WorkspaceMember（作为岗位使用时）
      */
-    public static TeamPositionResponse from(
-            org.dragon.workspace.member.TeamPosition position) {
+    public static TeamPositionResponse from(org.dragon.workspace.member.WorkspaceMember member) {
         String status;
-        boolean isBuiltin = position.isBuiltin();
-        String assignedCharId = isBuiltin ? position.getBuiltinCharacterId() : position.getAssignedCharacterId();
+        boolean isBuiltin = member.getHandlerType() == org.dragon.workspace.member.HandlerType.BUILTIN_CHARACTER;
+        String assignedCharId = member.getHandlerId();
 
         if ((assignedCharId == null || assignedCharId.isEmpty()) && !isBuiltin) {
             status = "vacant";
-        } else if (position.isEnabled()) {
+        } else if (member.isEnabled()) {
             status = isBuiltin ? "filled_builtin" : "filled";
         } else {
             status = "inactive";
         }
 
         return TeamPositionResponse.builder()
-                .id(position.getId())
-                .roleName(position.getRoleName())
-                .rolePackage(position.getRolePackage())
-                .purpose(position.getPurpose())
-                .scope(position.getScope())
+                .id(member.getId())
+                .roleName(member.getRoleName())
+                .rolePackage(member.getRolePackage())
+                .purpose(member.getPurpose())
+                .scope(member.getScope())
                 .assignedCharacterId(assignedCharId)
-                .builtinType(isBuiltin ? position.getBuiltinType() : null)
+                .builtinType(isBuiltin ? assignedCharId : null)
                 .builtin(isBuiltin)
-                .enabled(position.isEnabled())
+                .enabled(member.isEnabled())
                 .status(status)
                 .build();
     }

@@ -1131,6 +1131,7 @@ CREATE TABLE IF NOT EXISTS expert_mark (
     id VARCHAR(64) PRIMARY KEY COMMENT '主键 UUID',
     resource_type VARCHAR(32) NOT NULL COMMENT '资产类型：CHARACTER, SKILL, TRAIT, OBSERVER, WORKSPACE, MEMORY',
     resource_id VARCHAR(64) NOT NULL COMMENT '资产 ID',
+    mark_type VARCHAR(20) NOT NULL DEFAULT 'EXPERT' COMMENT '标记类型：EXPERT, BUILTIN',
     category VARCHAR(64) COMMENT 'Expert 分类：助手/客服/创作/开发/研究/分析',
     preview TEXT COMMENT 'Expert 预览文本',
     target_audience VARCHAR(128) COMMENT '目标用户群体',
@@ -1138,6 +1139,8 @@ CREATE TABLE IF NOT EXISTS expert_mark (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_expert_mark (resource_type, resource_id),
+    INDEX idx_mark_type (mark_type),
     INDEX idx_category (category),
-    INDEX idx_resource_type (resource_type)
+    INDEX idx_resource_type (resource_type),
+    INDEX idx_resource_mark_type (resource_type, resource_id, mark_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Expert 标记表';

@@ -6,10 +6,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
+import org.dragon.asset.enums.AssociationType;
+import org.dragon.asset.factory.AssetFactory;
+import org.dragon.asset.service.AssetAssociationService;
+import org.dragon.asset.service.AssetMarkService;
 import org.dragon.asset.service.AssetMemberService;
 import org.dragon.asset.service.AssetPublishStatusService;
+import org.dragon.character.Character;
+import org.dragon.character.CharacterRegistry;
+import org.dragon.character.enums.BuiltinType;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.util.UserUtils;
+import org.dragon.workspace.member.HandlerType;
+import org.dragon.workspace.member.WorkspaceMember;
+import org.dragon.workspace.member.WorkspaceMemberService;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +40,11 @@ public class WorkspaceLifecycleService {
     private final WorkspaceRegistry workspaceRegistry;
     private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
+    private final WorkspaceMemberService memberService;
+    private final AssetFactory assetFactory;
+    private final CharacterRegistry characterRegistry;
+    private final AssetAssociationService assetAssociationService;
+    private final AssetMarkService assetMarkService;
 
     /**
      * 创建工作空间
@@ -60,9 +75,57 @@ public class WorkspaceLifecycleService {
         // 初始化发布状态（默认为 DRAFT）
         publishStatusService.initializeStatus(ResourceType.WORKSPACE, workspace.getId(), String.valueOf(ownerId));
 
+        // 为 Workspace 初始化 Built-in Character（fork 全局 Built-in Character）
+        initializeBuiltinCharacters(workspace.getId(), ownerId);
+
         log.info("[WorkspaceLifecycleService] Created workspace: {}", workspace.getId());
 
         return workspace;
+    }
+
+    /**
+     * 为 Workspace 初始化 Built-in Character
+     * <p>
+     * Fork 全局 Built-in Character 作为 Workspace 的本地副本，
+     * 并创建 WorkspaceMember 关联。
+     *
+     * @param workspaceId Workspace ID
+     * @param ownerId Owner 用户 ID
+     */
+    private void initializeBuiltinCharacters(String workspaceId, Long ownerId) {
+        for (BuiltinType builtinType : BuiltinType.values()) {
+            String globalCharacterId = builtinType.getId();
+
+            // 获取全局 Built-in Character
+            Character globalChar = characterRegistry.get(globalCharacterId).orElse(null);
+            if (globalChar == null) {
+                log.warn("[WorkspaceLifecycleService] Built-in character not found: {}", globalCharacterId);
+                continue;
+            }
+
+            // Fork 为 Workspace 本地副本
+            Character workspaceChar = assetFactory.copyCharacter(globalChar, ownerId);
+
+            // 重命名：添加 workspace 前缀
+            workspaceChar.setName(globalChar.getName() + " (" + workspaceId + ")");
+            characterRegistry.update(workspaceChar);
+
+            // 创建 WorkspaceMember 关联
+            memberService.addMember(workspaceId, workspaceChar.getId(), "BUILTIN",
+                    WorkspaceMember.Layer.MANAGEMENT);
+
+            // 创建 CHARACTER_WORKSPACE 关联
+            assetAssociationService.createAssociation(
+                    AssociationType.CHARACTER_WORKSPACE,
+                    ResourceType.CHARACTER, workspaceChar.getId(),
+                    ResourceType.WORKSPACE, workspaceId);
+
+            // 标记为 Builtin
+            assetMarkService.markAsBuiltin(ResourceType.CHARACTER, workspaceChar.getId());
+
+            log.info("[WorkspaceLifecycleService] Initialized built-in character {} for workspace {}",
+                    globalCharacterId, workspaceId);
+        }
     }
 
     /**

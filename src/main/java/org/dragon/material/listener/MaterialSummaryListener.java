@@ -9,7 +9,7 @@ import org.dragon.material.Material;
 import org.dragon.material.MaterialSummaryEvent;
 import org.dragon.material.ParsedMaterialContent;
 import org.dragon.workspace.material.WorkspaceMaterialService;
-import org.dragon.character.builtin.BuiltInCharacterFactory;
+import org.dragon.character.CharacterRegistry;
 import org.dragon.character.Character;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MaterialSummaryListener {
 
-    private final BuiltInCharacterFactory builtInCharacterFactory;
+    private final CharacterRegistry characterRegistry;
     private final WorkspaceMaterialService workspaceMaterialService;
     private final CharacterCaller characterCaller;
     private final ConfigApplication promptManager;
@@ -58,8 +58,7 @@ public class MaterialSummaryListener {
         try {
             // 获取 MaterialSummary Character
             String workspaceId = material.getWorkspaceId();
-            Character summaryChar = builtInCharacterFactory
-                    .getOrCreateMaterialSummaryCharacter(workspaceId);
+            Character summaryChar = characterRegistry.get("material_summary").orElse(null);
 
             // 获取原始解析内容（如果已有）
             var contentOpt = workspaceMaterialService.getParsedContent(material.getId());

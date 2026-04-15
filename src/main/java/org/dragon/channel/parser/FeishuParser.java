@@ -8,6 +8,8 @@ import org.dragon.channel.entity.ActionMessage;
 import org.dragon.channel.entity.NormalizedFile;
 import org.dragon.channel.entity.MentionConfig;
 import org.dragon.channel.entity.NormalizedMessage;
+import org.dragon.channel.enums.ChannelType;
+import org.dragon.channel.enums.ChatType;
 import org.dragon.channel.enums.FileSource;
 import org.dragon.channel.file.FeishuImStorageAdapter;
 import org.dragon.config.context.InheritanceContext;
@@ -76,10 +78,10 @@ public class FeishuParser {
                 }
                 // 组装系统标准的 NormalizedMessage
                 NormalizedMessage normalizedMessage = new NormalizedMessage();
-                normalizedMessage.setChannel(channelName);
+                normalizedMessage.setChannel(ChannelType.fromCode(channelName));
                 normalizedMessage.setSenderId(senderId);
                 normalizedMessage.setChatId(chatId);
-                normalizedMessage.setChatType(chatType);
+                normalizedMessage.setChatType(ChatType.fromCode(chatType));
                 normalizedMessage.setMessageId(message.getMessageId());
                 normalizedMessage.setTextContent(textContent);
                 return normalizedMessage;
@@ -87,10 +89,10 @@ public class FeishuParser {
             case "image" -> {
                 // 组装系统标准的 NormalizedMessage
                 NormalizedMessage normalizedMessageImg = new NormalizedMessage();
-                normalizedMessageImg.setChannel(channelName);
+                normalizedMessageImg.setChannel(ChannelType.fromCode(channelName));
                 normalizedMessageImg.setSenderId(senderId);
                 normalizedMessageImg.setChatId(chatId);
-                normalizedMessageImg.setChatType(chatType);
+                normalizedMessageImg.setChatType(ChatType.fromCode(chatType));
                 normalizedMessageImg.setMessageId(message.getMessageId());
                 normalizedMessageImg.setTextContent("[图片]");
                 NormalizedFile normalizedFileImg = new NormalizedFile();
@@ -111,10 +113,10 @@ public class FeishuParser {
             case "audio" -> {
                 // 组装系统标准的 NormalizedMessage
                 NormalizedMessage normalizedMessageAudio = new NormalizedMessage();
-                normalizedMessageAudio.setChannel(channelName);
+                normalizedMessageAudio.setChannel(ChannelType.fromCode(channelName));
                 normalizedMessageAudio.setSenderId(senderId);
                 normalizedMessageAudio.setChatId(chatId);
-                normalizedMessageAudio.setChatType(chatType);
+                normalizedMessageAudio.setChatType(ChatType.fromCode(chatType));
                 normalizedMessageAudio.setMessageId(message.getMessageId());
                 normalizedMessageAudio.setTextContent("[语音]");
                 NormalizedFile normalizedFileAudio = new NormalizedFile();
@@ -140,10 +142,10 @@ public class FeishuParser {
             case "file" -> {
                 // 组装系统标准的 NormalizedMessage
                 NormalizedMessage normalizedMessageFile = new NormalizedMessage();
-                normalizedMessageFile.setChannel(channelName);
+                normalizedMessageFile.setChannel(ChannelType.fromCode(channelName));
                 normalizedMessageFile.setSenderId(senderId);
                 normalizedMessageFile.setChatId(chatId);
-                normalizedMessageFile.setChatType(chatType);
+                normalizedMessageFile.setChatType(ChatType.fromCode(chatType));
                 normalizedMessageFile.setMessageId(message.getMessageId());
                 normalizedMessageFile.setTextContent("[文件]");
                 NormalizedFile normalizedFile = new NormalizedFile();
@@ -169,10 +171,10 @@ public class FeishuParser {
             default -> {
                 // 组装系统标准的 NormalizedMessage
                 NormalizedMessage normalizedMessageAudioNotSupported = new NormalizedMessage();
-                normalizedMessageAudioNotSupported.setChannel(channelName);
+                normalizedMessageAudioNotSupported.setChannel(ChannelType.fromCode(channelName));
                 normalizedMessageAudioNotSupported.setSenderId(senderId);
                 normalizedMessageAudioNotSupported.setChatId(chatId);
-                normalizedMessageAudioNotSupported.setChatType(chatType);
+                normalizedMessageAudioNotSupported.setChatType(ChatType.fromCode(chatType));
                 normalizedMessageAudioNotSupported.setMessageId(message.getMessageId());
                 normalizedMessageAudioNotSupported.setTextContent("[不支持的消息类型]");
                 return normalizedMessageAudioNotSupported;
