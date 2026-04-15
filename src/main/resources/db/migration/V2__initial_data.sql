@@ -919,3 +919,14 @@ INSERT INTO asset_publish_status (id, resource_type, resource_id, status, versio
 ('00000000-0000-0000-0000-000000000106', 'CHARACTER', 'material_summary', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
 ('00000000-0000-0000-0000-000000000107', 'CHARACTER', 'observer_advisor_workspace', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW()),
 ('00000000-0000-0000-0000-000000000108', 'CHARACTER', 'observer_advisor_character', 'PUBLISHED', 1, NOW(), 'system', NULL, NOW(), NOW());
+
+-- Built-in Character BUILTIN 标记
+INSERT INTO expert_mark (id, resource_type, resource_id, mark_type, category, created_at, updated_at) VALUES
+('builtin-0001', 'CHARACTER', 'hr', 'BUILTIN', '系统', NOW(), NOW()),
+('builtin-0002', 'CHARACTER', 'member_selector', 'BUILTIN', '系统', NOW(), NOW()),
+('builtin-0003', 'CHARACTER', 'project_manager', 'BUILTIN', '系统', NOW(), NOW()),
+('builtin-0004', 'CHARACTER', 'prompt_writer', 'BUILTIN', '系统', NOW(), NOW()),
+('builtin-0005', 'CHARACTER', 'commonsense_writer', 'BUILTIN', '系统', NOW(), NOW()),
+('builtin-0006', 'CHARACTER', 'material_summary', 'BUILTIN', '系统', NOW(), NOW()),
+('builtin-0007', 'CHARACTER', 'observer_advisor_workspace', 'BUILTIN', '系统', NOW(), NOW()),
+('builtin-0008', 'CHARACTER', 'observer_advisor_character', 'BUILTIN', '系统', NOW(), NOW());
