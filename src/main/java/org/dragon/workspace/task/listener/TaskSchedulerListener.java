@@ -1,20 +1,21 @@
 package org.dragon.workspace.task.listener;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
+import org.dragon.workspace.WorkspaceTaskExecutor;
 import org.dragon.workspace.cooperation.task.notify.WorkspaceTaskNotifier;
-import org.dragon.workspace.task.TaskDependencyService;
-import org.dragon.workspace.task.TaskExecutionService;
+import org.dragon.workspace.step.DependencyStep;
 import org.dragon.workspace.task.event.TaskChildCompletedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 任务调度监听器
@@ -28,8 +29,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskSchedulerListener {
 
-    private final TaskDependencyService taskDependencyService;
-    private final TaskExecutionService taskExecutionService;
+    private final DependencyStep dependencyStep;
+    private final WorkspaceTaskExecutor workspaceTaskExecutor;
     private final WorkspaceTaskNotifier taskNotifier;
     private final StoreFactory storeFactory;
 
@@ -44,15 +45,19 @@ public class TaskSchedulerListener {
     @Async
     @EventListener
     public void onChildTaskCompleted(TaskChildCompletedEvent event) {
+        Task completedChild = event.getCompletedChildTask();
         Task parentTask = event.getParentTask();
         log.info("[TaskSchedulerListener] Handling completion of child {} for parent {}",
-                event.getCompletedChildTask().getId(), parentTask.getId());
+                completedChild.getId(), parentTask.getId());
+
+        // 通知依赖解决，触发等待此依赖的任务重新调度
+        dependencyStep.notifyDependencyResolved(completedChild.getId());
 
         // 查找并执行可执行的兄弟任务
-        List<Task> runnableTasks = taskDependencyService.findRunnableChildTasks(parentTask.getId());
+        List<Task> runnableTasks = findRunnableChildTasks(parentTask.getId());
         for (Task runnableTask : runnableTasks) {
             try {
-                taskExecutionService.executeChildTask(runnableTask, parentTask);
+                workspaceTaskExecutor.resumeAndExecute(parentTask.getWorkspaceId(), runnableTask, null);
             } catch (Exception e) {
                 log.error("[TaskSchedulerListener] Error executing runnable child task {}: {}",
                         runnableTask.getId(), e.getMessage());
@@ -62,5 +67,12 @@ public class TaskSchedulerListener {
                 taskNotifier.notifyFailed(runnableTask, e.getMessage());
             }
         }
+    }
+
+    /**
+     * 查找父任务下所有可执行的子任务
+     */
+    private List<Task> findRunnableChildTasks(String parentTaskId) {
+        return getTaskStore().findRunnableChildTasks(parentTaskId);
     }
 }

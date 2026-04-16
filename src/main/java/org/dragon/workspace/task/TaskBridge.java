@@ -1,20 +1,20 @@
 package org.dragon.workspace.task;
 
 import org.dragon.task.Task;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 任务执行桥接器接口
- * <p>
- * 职责：纯执行抽象，不包含编排逻辑
+ * TaskBridge 接口（保留用于兼容性）
+ *
+ * <p>已被 Step 执行框架取代，此处仅保留用于兼容现有代码。
  *
  * @author wyj
- * @version 1.0
+ * @deprecated Use Step + TaskContext instead
  */
+@Deprecated
 public interface TaskBridge {
 
     /**
@@ -32,9 +32,6 @@ public interface TaskBridge {
      */
     Task resume(Task task, TaskBridge.ResumeContext context);
 
-    /**
-     * 任务暂停上下文
-     */
     @Data
     @Builder
     @NoArgsConstructor
@@ -44,9 +41,6 @@ public interface TaskBridge {
         private String suspendedAt;
     }
 
-    /**
-     * 任务恢复上下文
-     */
     @Data
     @Builder
     @NoArgsConstructor

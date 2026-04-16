@@ -64,8 +64,6 @@ public class TaskEntity {
     @Builder.Default
     private List<String> childTaskIds = new ArrayList<>();
 
-    private String collaborationSessionId;
-
     @DbJson
     @Builder.Default
     private List<String> assignedMemberIds = new ArrayList<>();
@@ -141,7 +139,6 @@ public class TaskEntity {
                 .result(this.result)
                 .errorMessage(this.errorMessage)
                 .childTaskIds(this.childTaskIds)
-                .collaborationSessionId(this.collaborationSessionId)
                 .assignedMemberIds(this.assignedMemberIds)
                 .executionSteps(this.executionSteps)
                 .executionMessages(this.executionMessages)
@@ -185,7 +182,6 @@ public class TaskEntity {
                 .result(task.getResult())
                 .errorMessage(task.getErrorMessage())
                 .childTaskIds(task.getChildTaskIds())
-                .collaborationSessionId(task.getCollaborationSessionId())
                 .assignedMemberIds(task.getAssignedMemberIds())
                 .executionSteps(task.getExecutionSteps())
                 .executionMessages(task.getExecutionMessages())

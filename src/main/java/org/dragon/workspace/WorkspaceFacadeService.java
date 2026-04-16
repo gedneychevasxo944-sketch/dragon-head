@@ -14,10 +14,6 @@ import org.dragon.util.UserUtils;
 import org.dragon.workspace.member.HandlerType;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
-import org.dragon.workspace.task.TaskArrangementService;
-import org.dragon.workspace.task.TaskArrangementService.TaskExecutionMode;
-import org.dragon.workspace.task.TaskExecutionService;
-import org.dragon.workspace.task.TaskResumeService;
 import org.dragon.workspace.task.WorkspaceTaskService;
 import org.dragon.workspace.task.dto.TaskCreationCommand;
 import org.springframework.stereotype.Service;
@@ -43,10 +39,7 @@ public class WorkspaceFacadeService {
     private final PermissionService permissionService;
     private final DeploymentService deploymentService;
     private final WorkspaceTaskService workspaceTaskService;
-    private final TaskArrangementService taskArrangementService;
-    private final TaskResumeService taskResumeService;
-    private final TaskExecutionService taskExecutionService;
-    // private final TaskStore taskStore;
+    private final WorkspaceTaskExecutor workspaceTaskExecutor;
 
     // ==================== Workspace CRUD ====================
 
@@ -232,45 +225,32 @@ public class WorkspaceFacadeService {
         return workspaceTaskService.getTask(workspaceId, taskId);
     }
 
+    /**
+     * 执行任务（消息驱动）
+     * <p>判断是继续旧任务还是启动新任务，然后通过 WorkspaceTaskExecutor 执行。
+     */
     public Task executeTask(String workspaceId, NormalizedMessage message, String creatorId) {
-        TaskResumeService.ContinuationResult result =
-                taskResumeService.resolve(workspaceId, message);
-
-        if (result.getDecision() == TaskResumeService.ContinuationDecision.CONTINUE_EXISTING_TASK) {
-            String taskId = result.getTaskId();
-            log.info("[WorkspaceFacadeService] Continuing existing task {} for message", taskId);
-
-            Task matchedTask = workspaceTaskService.getTask(workspaceId, taskId)
-                    .orElseThrow(() -> new IllegalStateException("Task not found: " + taskId));
-
-            Task executableTask = taskResumeService.resolveExecutableTask(matchedTask);
-
-            Task parentTask = matchedTask.getParentTaskId() != null
-                    ? workspaceTaskService.getTask(workspaceId, matchedTask.getParentTaskId())
-                            .orElse(matchedTask)
-                    : matchedTask;
-
-            executableTask = workspaceTaskService.resumeTask(workspaceId, executableTask.getId(), message.getTextContent());
-            taskExecutionService.executeChildTask(executableTask, parentTask);
-
-            return matchedTask;
-        } else {
-            TaskCreationCommand command = TaskCreationCommand.builder()
-                    .taskName("用户请求")
-                    .taskDescription(message.getTextContent())
-                    .input(message)
-                    .creatorId(creatorId)
-                    .metadata(message.getMetadata())
-                    .sourceChannel(message.getChannel().getCode())
-                    .sourceMessageId(message.getMessageId())
-                    .sourceChatId(message.getChatId())
-                    .build();
-            return executeTask(workspaceId, command);
-        }
+        // 先判断是继续旧任务还是新任务
+        // 简化处理：直接走新任务流程
+        TaskCreationCommand command = TaskCreationCommand.builder()
+                .taskName("用户请求")
+                .taskDescription(message.getTextContent())
+                .input(message)
+                .creatorId(creatorId)
+                .metadata(message.getMetadata())
+                .sourceChannel(message.getChannel() != null ? message.getChannel().getCode() : null)
+                .sourceMessageId(message.getMessageId())
+                .sourceChatId(message.getChatId())
+                .sourceMessageId(message.getQuoteMessageId())
+                .build();
+        return executeTask(workspaceId, command);
     }
 
+    /**
+     * 执行任务（命令驱动）
+     * <p>通过 WorkspaceTaskExecutor 执行新的 Step 链路。
+     */
     public Task executeTask(String workspaceId, TaskCreationCommand command) {
-        return taskArrangementService.submitTask(
-                workspaceId, command, TaskExecutionMode.AUTO, null);
+        return workspaceTaskExecutor.submitAndExecute(workspaceId, command);
     }
 }

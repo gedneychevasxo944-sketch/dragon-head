@@ -86,13 +86,6 @@ public class MemoryTaskStore implements TaskStore {
     }
 
     @Override
-    public List<Task> findByCollaborationSessionId(String collaborationSessionId) {
-        return store.values().stream()
-                .filter(task -> collaborationSessionId.equals(task.getCollaborationSessionId()))
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public List<Task> findWaitingTasksByWorkspaceId(String workspaceId) {
         return store.values().stream()
                 .filter(task -> workspaceId.equals(task.getWorkspaceId()))

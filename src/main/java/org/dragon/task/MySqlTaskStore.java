@@ -103,17 +103,6 @@ public class MySqlTaskStore implements TaskStore {
     }
 
     @Override
-    public List<Task> findByCollaborationSessionId(String collaborationSessionId) {
-        return mysqlDb.find(TaskEntity.class)
-                .where()
-                .eq("collaborationSessionId", collaborationSessionId)
-                .findList()
-                .stream()
-                .map(TaskEntity::toTask)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public List<Task> findWaitingTasksByWorkspaceId(String workspaceId) {
         return mysqlDb.find(TaskEntity.class)
                 .where()

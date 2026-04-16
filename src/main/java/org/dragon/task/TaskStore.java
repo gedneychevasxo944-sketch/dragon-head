@@ -83,14 +83,6 @@ public interface TaskStore extends Store {
     List<Task> findByCreatorId(String creatorId);
 
     /**
-     * 根据协作会话 ID 查询任务列表
-     *
-     * @param collaborationSessionId 协作会话 ID
-     * @return 任务列表
-     */
-    List<Task> findByCollaborationSessionId(String collaborationSessionId);
-
-    /**
      * 查询等待中的任务
      *
      * @param workspaceId 工作空间 ID

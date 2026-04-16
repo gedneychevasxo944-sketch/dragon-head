@@ -56,8 +56,8 @@ public class AssetCollectionController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String source,
-            @RequestParam(defaultValue = "true") boolean includeBuiltin,
-            @RequestParam(defaultValue = "true") boolean includeExpert) {
+            @RequestParam(defaultValue = "false") boolean includeBuiltin,
+            @RequestParam(defaultValue = "false") boolean includeExpert) {
         PageResponse<Character> result = assetCollectionService.listCharacters(
                 page, pageSize, search, status, source, includeBuiltin, includeExpert);
         return ApiResponse.success(result);
@@ -77,8 +77,8 @@ public class AssetCollectionController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String tagName,
             @RequestParam(required = false) String publishStatus,
-            @RequestParam(defaultValue = "true") boolean includeBuiltin,
-            @RequestParam(defaultValue = "true") boolean includeExpert) {
+            @RequestParam(defaultValue = "false") boolean includeBuiltin,
+            @RequestParam(defaultValue = "false") boolean includeExpert) {
         PageResponse<Map<String, Object>> result = assetCollectionService.listTraits(
                 page, pageSize, search, tagName, publishStatus, includeBuiltin, includeExpert);
         return ApiResponse.success(result);
@@ -100,8 +100,8 @@ public class AssetCollectionController {
             @RequestParam(required = false) String assetState,
             @RequestParam(required = false) String runtimeStatus,
             @RequestParam(required = false) String category,
-            @RequestParam(defaultValue = "true") boolean includeBuiltin,
-            @RequestParam(defaultValue = "true") boolean includeExpert) {
+            @RequestParam(defaultValue = "false") boolean includeBuiltin,
+            @RequestParam(defaultValue = "false") boolean includeExpert) {
         PageResponse<SkillSummaryVO> result = assetCollectionService.listSkills(
                 page, pageSize, search, visibility, assetState, runtimeStatus, category,
                 includeBuiltin, includeExpert);
@@ -121,8 +121,8 @@ public class AssetCollectionController {
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "true") boolean includeBuiltin,
-            @RequestParam(defaultValue = "true") boolean includeExpert) {
+            @RequestParam(defaultValue = "false") boolean includeBuiltin,
+            @RequestParam(defaultValue = "false") boolean includeExpert) {
         PageResponse<Workspace> result = assetCollectionService.listWorkspaces(
                 page, pageSize, search, status, includeBuiltin, includeExpert);
         return ApiResponse.success(result);
@@ -140,8 +140,8 @@ public class AssetCollectionController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "true") boolean includeBuiltin,
-            @RequestParam(defaultValue = "true") boolean includeExpert) {
+            @RequestParam(defaultValue = "false") boolean includeBuiltin,
+            @RequestParam(defaultValue = "false") boolean includeExpert) {
         PageResponse<Observer> result = assetCollectionService.listObservers(
                 page, pageSize, search, includeBuiltin, includeExpert);
         return ApiResponse.success(result);

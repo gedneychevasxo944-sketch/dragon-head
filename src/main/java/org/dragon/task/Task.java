@@ -140,11 +140,6 @@ public class Task {
     // ==================== 协作上下文 ====================
 
     /**
-     * 协作会话 ID
-     */
-    private String collaborationSessionId;
-
-    /**
      * 分配的成员 ID 列表
      */
     @Builder.Default
@@ -265,7 +260,6 @@ public class Task {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TaskCollaborationContext {
-        private String collaborationSessionId;
         private List<String> assignedMemberIds;
         private List<String> dependencyTaskIds;
         private String lastQuestion;

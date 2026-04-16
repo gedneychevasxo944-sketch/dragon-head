@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkspaceTaskService {
 
     private final WorkspaceRegistry workspaceRegistry;
-    private final TaskBridge taskBridge;
+    // private final TaskBridge taskBridge;
     private final StoreFactory storeFactory;
 
     private TaskStore getTaskStore() {
@@ -204,11 +204,13 @@ public class WorkspaceTaskService {
         Task task = getTask(workspaceId, taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
-        TaskBridge.SuspendContext context = TaskBridge.SuspendContext.builder()
-                .reason(reason)
-                .suspendedAt(LocalDateTime.now().toString())
-                .build();
-        return taskBridge.suspend(task, context);
+        task.setStatus(TaskStatus.SUSPENDED);
+        task.setErrorMessage(reason);
+        task.setUpdatedAt(LocalDateTime.now());
+        getTaskStore().update(task);
+
+        log.info("[WorkspaceTaskService] Task {} suspended: {}", taskId, reason);
+        return task;
     }
 
     /**
@@ -269,11 +271,16 @@ public class WorkspaceTaskService {
         Task task = getTask(workspaceId, taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
-        TaskBridge.ResumeContext context = TaskBridge.ResumeContext.builder()
-                .newInput(newInput)
-                .reason("User resumed")
-                .build();
-        return taskBridge.resume(task, context);
+        // 更新任务输入和状态
+        if (newInput != null) {
+            task.setInput(newInput.toString());
+        }
+        task.setStatus(TaskStatus.PENDING);
+        task.setUpdatedAt(LocalDateTime.now());
+        getTaskStore().update(task);
+
+        log.info("[WorkspaceTaskService] Task {} resumed", taskId);
+        return task;
     }
 
     /**

@@ -134,6 +134,11 @@ public class ChatMessage {
     private String correlationId;
 
     /**
+     * 响应的消息 ID（当本消息是对某个 DEMAND 的响应时）
+     */
+    private String inResponseTo;
+
+    /**
      * 检查是否已读
      */
     public boolean isRead() {

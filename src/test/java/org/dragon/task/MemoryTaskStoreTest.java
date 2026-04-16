@@ -176,22 +176,22 @@ class MemoryTaskStoreTest {
         assertEquals(testCreatorId, found.get(0).getCreatorId());
     }
 
-    @Test
-    void testFindByCollaborationSessionId() {
-        String sessionId = "session-" + UUID.randomUUID();
+    // @Test
+    // void testFindByCollaborationSessionId() {
+    //     String sessionId = "session-" + UUID.randomUUID();
 
-        Task task1 = createTestTask();
-        task1.setCollaborationSessionId(sessionId);
-        taskStore.save(task1);
+    //     Task task1 = createTestTask();
+    //     task1.setCollaborationSessionId(sessionId);
+    //     taskStore.save(task1);
 
-        Task task2 = createTestTask();
-        task2.setCollaborationSessionId("other-session");
-        taskStore.save(task2);
+    //     Task task2 = createTestTask();
+    //     task2.setCollaborationSessionId("other-session");
+    //     taskStore.save(task2);
 
-        List<Task> found = taskStore.findByCollaborationSessionId(sessionId);
-        assertEquals(1, found.size());
-        assertEquals(sessionId, found.get(0).getCollaborationSessionId());
-    }
+    //     List<Task> found = taskStore.findByCollaborationSessionId(sessionId);
+    //     assertEquals(1, found.size());
+    //     assertEquals(sessionId, found.get(0).getCollaborationSessionId());
+    // }
 
     @Test
     void testFindWaitingTasksByWorkspaceId() {
