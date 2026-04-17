@@ -1,4 +1,89 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Dragon Head 项目规范
+
+## 技术栈与构建
+
+- **Java 21**, Spring Boot 4.0.3, Spring AI, Ebean ORM, Flyway, MySQL 8.4, Maven (`mvnw`)
+- 应用主类: `org.dragon.DragonHeadApplication`
+
+### 常用命令
+
+```bash
+# 编译
+./mvnw compile -q
+
+# 打包（跳过测试）
+./mvnw clean package -DskipTests
+
+# 运行全部测试
+./mvnw test
+
+# 运行单个测试类 / 单个方法
+./mvnw test -Dtest=ClassName
+./mvnw test -Dtest=ClassName#methodName
+
+# 本地运行应用（需 MySQL 在 localhost:3306，库 adeptify）
+./mvnw spring-boot:run
+
+# Docker 开发环境（MySQL + 应用热重启；代码改后 `./mvnw compile -q` 即可触发容器重启）
+docker-compose -f docker-compose-dev.yml up -d
+docker-compose -f docker-compose-dev.yml logs -f
+```
+
+### 存储与数据库
+
+- `dragon.store.type=MYSQL|MEMORY|FILE` 决定 `StoreFactory` 返回的实现；本地默认 MYSQL
+- 数据库迁移脚本在 `src/main/resources/db/migration/`（Flyway）
+- Ebean **只扫描 `org.dragon.datasource.entity`** 包；Entity 必须放在此包，否则运行时报 `NOT an Entity Bean registered`
+
+## 高层架构
+
+按请求流向阅读（顶层模块位于 `org.dragon.{module}`）：
+
+```
+HTTP (controller) → application/service → {core modules} → store → DB
+                                              ↘ agent/react → LLMCaller → 外部 LLM
+```
+
+关键模块：
+
+| 模块 | 职责 |
+|------|------|
+| `agent` | ReAct 循环、Prompt 物料上下文、LLMCaller 抽象、ModelRegistry |
+| `character` | AI 智能体数据实体与执行器 (`CharacterExecutor`) |
+| `workspace` | 工作空间业务入口 (`WorkspaceService`)；人格、成员、调度 |
+| `asset` | **共享内核**：Owner/成员、发布状态机、资产关联、资产标签 |
+| `skill` / `trait` / `observer` / `memory` / `commonsense` / `template` | 资产类模块，均依赖 `asset` 做 Owner/状态/关联 |
+| `config` | `ConfigStore` + `ConfigKey` 语义工厂；`ConfigApplication` 4 级层次 Prompt 查询；`PromptKeys` / `PromptInitializer` |
+| `tools` | Tool 注册 (`ToolRegistry`) 与 `ToolConnector` |
+| `channel` | 外部渠道适配 (`ChannelAdapter` + `ChannelManager`，含飞书等) |
+| `approval` | 发布/协作审批流；通过后回调 `AssetPublishStatusService.publish()` 等 |
+| `permission` | 基于 `asset_member` role 做权限校验 |
+| `schedule` / `sandbox` / `notification` / `gateway` | 周边服务（定时任务、代码沙箱、通知、网关） |
+| `store` | `Store` 基础接口、`StoreFactory`、`StoreType` 枚举、`@StoreTypeAnn` |
+| `datasource.entity` | **所有 Ebean Entity 的唯一存放位置** |
+
+### 核心执行链路（ReAct）
+
+```
+Character.run() → OrchestrationService → CharacterExecutor.runReAct()
+  → PromptMaterialContextBuilder.buildForReAct()   // 收集 Workspace 人格、Skill、Task 等
+  → resolveSystemPrompt()                          // 4 级 Prompt 查询 + Mind fallback + Skill 目录
+  → ReActExecutor.execute() : think → act → observe (循环)
+```
+
+扩展 ReAct 只通过向 `ReActContext` 传参完成，**禁止修改 `ReActExecutor` 核心循环**。
+
+### 存储三层约定
+
+接口 (`org.dragon.{module}.store`) → 实现 (`MemoryXxxStore` / `MySqlXxxStore`，标 `@StoreTypeAnn`) → 通过 `storeFactory.get(XxxStore.class)` 获取。禁止直接注入实现类或直接 `new`。
+
+### Asset 模块的中心地位
+
+`org.dragon.asset` 是所有资产（Character/Skill/Workspace/Memory/Trait/Observer/Template/Commonsense）的共享内核。**任何 owner / publishStatus / association / tag 逻辑必须复用 asset 模块服务，禁止在业务模块内重复实现。** 详见 [rule_asset.md](.claude/rules/rule_asset.md)。
 
 ## 编码规范
 

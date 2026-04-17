@@ -134,6 +134,14 @@ public class PromptKeys {
      */
     public static final String MATERIAL_SUMMARY = "material.summary";
 
+    // ==================== Memory 模块 ====================
+
+    /**
+     * Memory 候选提取 prompt
+     * 基于会话快照和事件列表，让 LLM 识别可长期保存的候选记忆
+     */
+    public static final String MEMORY_EXTRACT = "memory.extract";
+
     // ==================== MBTI 模块 ====================
 
     /**

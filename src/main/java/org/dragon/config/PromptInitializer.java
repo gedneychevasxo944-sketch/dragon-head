@@ -59,7 +59,21 @@ public class PromptInitializer implements CommandLineRunner {
         // 初始化 MBTI 相关 prompts
         initMbtiPrompts();
 
+        // 初始化 Memory 相关 prompts
+        initMemoryPrompts();
+
         log.info("[PromptInitializer] Prompt initialization completed");
+    }
+
+    private void initMemoryPrompts() {
+        // Memory Extract Prompt
+        String memoryExtract = loadPromptFromFile("prompts/memory-extract-prompt.txt");
+        if (memoryExtract != null) {
+            configApplication.setGlobalPrompt(PromptKeys.MEMORY_EXTRACT, memoryExtract);
+        } else {
+            configApplication.setGlobalPrompt(PromptKeys.MEMORY_EXTRACT,
+                    "你是一个记忆提取专家，从会话快照和事件中识别可长期保存的候选记忆，输出 JSON 数组。");
+        }
     }
 
     private void initObserverPrompts() {
