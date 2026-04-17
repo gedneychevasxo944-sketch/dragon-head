@@ -142,4 +142,17 @@ public class MySqlTaskStore implements TaskStore {
                 .map(TaskEntity::toTask)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<Task> findByOriginalCharacterId(String originalCharacterId, String workspaceId) {
+        return mysqlDb.find(TaskEntity.class)
+                .where()
+                .eq("workspaceId", workspaceId)
+                .eq("status", TaskStatus.WAITING_DEPENDENCY.name())
+                .eq("originalCharacterId", originalCharacterId)
+                .findList()
+                .stream()
+                .map(TaskEntity::toTask)
+                .collect(Collectors.toList());
+    }
 }

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.dragon.memory.entity.MemorySearchResult;
+import org.dragon.step.ExecutionContext;
+import org.dragon.step.StepResult;
 import org.dragon.task.Task;
 
 import org.dragon.agent.react.context.PromptMaterialContext;
@@ -27,7 +29,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReActContext {
+public class ReActContext implements ExecutionContext {
 
     /**
      * 执行 ID
@@ -88,7 +90,7 @@ public class ReActContext {
     private List<String> observations = new ArrayList<>();
 
     /**
-     * 上下文变量
+     * 上下文变量（用于 Step 间传递数据）
      */
     @Builder.Default
     private Map<String, Object> context = new HashMap<>();
@@ -145,6 +147,12 @@ public class ReActContext {
      */
     @Builder.Default
     private List<SkillDefinition> activeSkills = new ArrayList<>();
+
+    /**
+     * Step 执行结果（用于 ReAct 内部 Step DAG）
+     */
+    @Builder.Default
+    private Map<String, StepResult> stepResults = new HashMap<>();
 
     // ==================== 协作上下文字段 ====================
 
@@ -210,18 +218,56 @@ public class ReActContext {
 
     /**
      * Prompt 物料上下文（所有 Prompt 生成相关的物料）
-     * <p>
-     * 通过 {@link PromptMaterialContextBuilder} 收集并填充，
-     * 便于统一管理和调优。
      */
     private PromptMaterialContext promptMaterialContext;
+
+    // ==================== ExecutionContext 实现 ====================
+
+    @Override
+    public Object getConfigValue(String key) {
+        return context != null ? context.get(key) : null;
+    }
+
+    @Override
+    public void setConfigValue(String key, Object value) {
+        if (this.context == null) {
+            this.context = new HashMap<>();
+        }
+        this.context.put(key, value);
+    }
+
+    @Override
+    public void recordStepResult(String stepName, StepResult result) {
+        if (this.stepResults == null) {
+            this.stepResults = new HashMap<>();
+        }
+        this.stepResults.put(stepName, result);
+    }
+
+    @Override
+    public Map<String, StepResult> getStepResultsForCurrentTask() {
+        return stepResults != null ? stepResults : Map.of();
+    }
+
+    @Override
+    public Task getTask() {
+        return task;
+    }
+
+    @Override
+    public int getCurrentIteration() {
+        return currentIteration;
+    }
+
+    @Override
+    public void setCurrentIteration(int iteration) {
+        this.currentIteration = iteration;
+    }
 
     // ==================== 业务方法 ====================
 
     /**
      * 获取当前模型 ID
-     *
-     * @return 模型 ID
      */
     public String getCurrentModelId() {
         return currentModelId != null ? currentModelId : defaultModelId;
@@ -229,8 +275,6 @@ public class ReActContext {
 
     /**
      * 添加思考
-     *
-     * @param thought 思考内容
      */
     public void addThought(String thought) {
         this.thoughts.add(thought);
@@ -238,8 +282,6 @@ public class ReActContext {
 
     /**
      * 添加动作
-     *
-     * @param action 动作
      */
     public void addAction(Action action) {
         this.actions.add(action);
@@ -247,8 +289,6 @@ public class ReActContext {
 
     /**
      * 添加观察结果
-     *
-     * @param observation 观察结果
      */
     public void addObservation(String observation) {
         this.observations.add(observation);
@@ -256,8 +296,6 @@ public class ReActContext {
 
     /**
      * 检查是否需要切换模型
-     *
-     * @return 是否需要切换
      */
     public boolean hasModelSwitch() {
         return modelSwitchRequested;
@@ -265,9 +303,8 @@ public class ReActContext {
 
     /**
      * 标记为完成
-     *
-     * @param response 最终响应
      */
+    @Override
     public void complete(String response) {
         this.complete = true;
         this.finalResponse = response;
@@ -275,8 +312,6 @@ public class ReActContext {
 
     /**
      * 递增迭代次数
-     *
-     * @return 当前迭代次数
      */
     public int incrementIteration() {
         return ++currentIteration;
@@ -284,11 +319,22 @@ public class ReActContext {
 
     /**
      * 检查工具是否允许使用
-     *
-     * @param toolName 工具名称
-     * @return 是否允许
      */
     public boolean isToolAllowed(String toolName) {
         return allowedTools == null || allowedTools.isEmpty() || allowedTools.contains(toolName);
+    }
+
+    /**
+     * 设置召回的记忆列表
+     */
+    public void setRecalledMemories(List<MemorySearchResult> recalledMemories) {
+        this.recalledMemories = recalledMemories;
+    }
+
+    /**
+     * 设置激活的 Skill 列表
+     */
+    public void setActiveSkills(List<SkillDefinition> activeSkills) {
+        this.activeSkills = activeSkills;
     }
 }

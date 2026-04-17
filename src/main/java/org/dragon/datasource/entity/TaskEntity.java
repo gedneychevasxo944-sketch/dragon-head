@@ -96,6 +96,14 @@ public class TaskEntity {
 
     private String waitingReason;
 
+    private String originalCharacterId;
+
+    @DbJson
+    @Builder.Default
+    private List<String> claimerIds = new ArrayList<>();
+
+    private String waitingForCharacterId;
+
     private String resumeToken;
 
     @DbJson
@@ -151,6 +159,9 @@ public class TaskEntity {
                 .workflowId(this.workflowId)
                 .dependencyTaskIds(this.dependencyTaskIds)
                 .waitingReason(this.waitingReason)
+                .originalCharacterId(this.originalCharacterId)
+                .claimerIds(this.claimerIds)
+                .waitingForCharacterId(this.waitingForCharacterId)
                 .resumeToken(this.resumeToken)
                 .resumeContext(this.resumeContext)
                 .sourceMessageId(this.sourceMessageId)
@@ -194,6 +205,9 @@ public class TaskEntity {
                 .workflowId(task.getWorkflowId())
                 .dependencyTaskIds(task.getDependencyTaskIds())
                 .waitingReason(task.getWaitingReason())
+                .originalCharacterId(task.getOriginalCharacterId())
+                .claimerIds(task.getClaimerIds())
+                .waitingForCharacterId(task.getWaitingForCharacterId())
                 .resumeToken(task.getResumeToken())
                 .resumeContext(task.getResumeContext())
                 .sourceMessageId(task.getSourceMessageId())

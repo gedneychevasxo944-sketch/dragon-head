@@ -11,6 +11,7 @@ import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.character.Character;
 import org.dragon.character.service.CharacterService;
 import org.dragon.permission.checker.PermissionChecker;
+import org.dragon.task.TaskExecutionService;
 import org.dragon.trait.service.TraitService;
 import org.dragon.workspace.DeploymentService;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -47,6 +48,7 @@ public class CharacterController {
     private final DeploymentService deploymentService;
     private final TraitService traitService;
     private final PermissionChecker permissionChecker;
+    private final TaskExecutionService taskExecutionService;
     private final AssetAssociationService assetAssociationService;
 
     // ==================== Character CRUD ====================
@@ -111,7 +113,13 @@ public class CharacterController {
             @PathVariable String id,
             @RequestBody RunCharacterRequest request) {
         permissionChecker.checkUse("CHARACTER", id);
-        Map<String, Object> result = characterService.runCharacter(id, request.getMessage(), request.getSessionId());
+        String reply = taskExecutionService.execute(id, request.getMessage());
+        String sid = request.getSessionId() != null ? request.getSessionId() : java.util.UUID.randomUUID().toString();
+        Map<String, Object> result = Map.of(
+                "sessionId", sid,
+                "reply", reply != null ? reply : "",
+                "timestamp", java.time.LocalDateTime.now().toString()
+        );
         return ApiResponse.success(result);
     }
 

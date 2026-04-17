@@ -70,6 +70,17 @@ public class ChatMessageEntity {
 
     private String correlationId;
 
+    private String inResponseTo;
+
+    private String assignedCharacterId;
+
+    private String responseStatus;
+
+    private String demandContent;
+
+    @DbJson
+    private Map<String, Object> demandContext;
+
     /**
      * 转换为ChatMessage
      */
@@ -91,6 +102,11 @@ public class ChatMessageEntity {
                 .messageSubtype(this.messageSubtype)
                 .relatedTaskId(this.relatedTaskId)
                 .correlationId(this.correlationId)
+                .inResponseTo(this.inResponseTo)
+                .assignedCharacterId(this.assignedCharacterId)
+                .responseStatus(this.responseStatus != null ? ChatMessage.ResponseStatus.valueOf(this.responseStatus) : null)
+                .demandContent(this.demandContent)
+                .demandContext(this.demandContext)
                 .build();
     }
 
@@ -115,6 +131,11 @@ public class ChatMessageEntity {
                 .messageSubtype(message.getMessageSubtype())
                 .relatedTaskId(message.getRelatedTaskId())
                 .correlationId(message.getCorrelationId())
+                .inResponseTo(message.getInResponseTo())
+                .assignedCharacterId(message.getAssignedCharacterId())
+                .responseStatus(message.getResponseStatus() != null ? message.getResponseStatus().name() : null)
+                .demandContent(message.getDemandContent())
+                .demandContext(message.getDemandContext())
                 .build();
     }
 }

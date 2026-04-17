@@ -116,4 +116,14 @@ public class MemoryTaskStore implements TaskStore {
                 .filter(task -> task.getDependencyTaskIds().contains(dependencyTaskId))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<Task> findByOriginalCharacterId(String originalCharacterId, String workspaceId) {
+        return store.values().stream()
+                .filter(task -> workspaceId.equals(task.getWorkspaceId()))
+                .filter(task -> task.getStatus() == TaskStatus.WAITING_DEPENDENCY)
+                .filter(task -> originalCharacterId.equals(task.getOriginalCharacterId()))
+                .filter(task -> task.getClaimerIds() == null || task.getClaimerIds().isEmpty())
+                .collect(Collectors.toList());
+    }
 }

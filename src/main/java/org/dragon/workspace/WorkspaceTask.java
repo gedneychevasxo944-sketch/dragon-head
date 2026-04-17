@@ -7,12 +7,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.dragon.workspace.context.StepResult;
+import org.dragon.step.StepResult;
 import org.dragon.workspace.context.TaskContext;
 import org.dragon.workspace.plugin.WorkspacePlugin;
 import org.dragon.workspace.plugin.WorkspacePluginRegistry;
-import org.dragon.workspace.step.Step;
-import org.dragon.workspace.step.StepRegistry;
+import org.dragon.step.Step;
+import org.dragon.step.workspace.StepRegistry;
+import org.dragon.step.Step;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

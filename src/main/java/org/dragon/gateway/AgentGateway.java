@@ -12,7 +12,8 @@ import org.dragon.channel.service.ChannelBindingService;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.material.Material;
 import org.dragon.task.Task;
-import org.dragon.workspace.WorkspaceFacadeService;
+import org.dragon.task.TaskExecutionService;
+import org.dragon.workspace.task.dto.TaskCreationCommand;
 import org.dragon.workspace.material.WorkspaceMaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -39,14 +40,14 @@ public class AgentGateway implements Gateway {
     private CharacterRegistry characterRegistry;
 
     @Autowired
-    private WorkspaceFacadeService workspaceService;
-
-    @Autowired
     private ChannelBindingService channelBindingService;
 
     @Autowired
     @Lazy
     private  WorkspaceMaterialService workspaceMaterialService;
+
+    @Autowired
+    private TaskExecutionService taskExecutionService;
 
     @Override
     public void dispatch(NormalizedMessage inboundMsg) {
@@ -68,11 +69,7 @@ public class AgentGateway implements Gateway {
      * 执行即时任务（单 Character 路径）。
      */
     public String executeInstantTask(String characterId, String userInput) {
-        Optional<org.dragon.character.Character> characterOpt = characterRegistry.get(characterId);
-        if (!characterOpt.isPresent()) {
-            throw new IllegalArgumentException("Character not found: " + characterId);
-        }
-        return characterOpt.get().run(userInput);
+        return taskExecutionService.execute(characterId, userInput);
     }
 
 
@@ -98,8 +95,18 @@ public class AgentGateway implements Gateway {
                     log.info("[Gateway] Ingested {} materials", materials.size());
                 }
 
-                // 将用户消息作为任务提交给 Workspace 编排层（走 NormalizedMessage 主入口）
-                Task task = workspaceService.executeTask(workspaceId, inboundMsg, inboundMsg.getSenderId());
+                // 将用户消息作为任务提交给 TaskExecutionService 执行
+                TaskCreationCommand command = TaskCreationCommand.builder()
+                        .taskName("用户请求")
+                        .taskDescription(inboundMsg.getTextContent())
+                        .input(inboundMsg)
+                        .creatorId(inboundMsg.getSenderId())
+                        .metadata(inboundMsg.getMetadata())
+                        .sourceChannel(inboundMsg.getChannel() != null ? inboundMsg.getChannel().getCode() : null)
+                        .sourceMessageId(inboundMsg.getMessageId())
+                        .sourceChatId(inboundMsg.getChatId())
+                        .build();
+                Task task = taskExecutionService.submitAndExecute(workspaceId, command);
                 log.info("[Gateway] Workspace task submitted, taskId={}", task.getId());
                 // Workspace 编排为异步执行，回复由各 Character 通过 ActionMessage 下行推送
                 // 此处无需再主动发消息，等待编排层回调

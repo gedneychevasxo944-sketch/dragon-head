@@ -113,4 +113,13 @@ public interface TaskStore extends Store {
      * @return 等待该依赖的任务列表
      */
     List<Task> findWaitingTasksByDependencyTaskId(String dependencyTaskId);
+
+    /**
+     * 根据原始发布者查询需求任务（用于认领检查）
+     *
+     * @param originalCharacterId 原始发布者 ID
+     * @param workspaceId 工作空间 ID
+     * @return 该发布者发布的未被认领的需求任务列表
+     */
+    List<Task> findByOriginalCharacterId(String originalCharacterId, String workspaceId);
 }

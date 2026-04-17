@@ -2,9 +2,9 @@ package org.dragon.workspace.plugin;
 
 import java.util.List;
 
-import org.dragon.workspace.context.StepResult;
+import org.dragon.step.StepResult;
 import org.dragon.workspace.context.TaskContext;
-import org.dragon.workspace.step.Step;
+import org.dragon.step.Step;
 
 /**
  * WorkspacePlugin 接口

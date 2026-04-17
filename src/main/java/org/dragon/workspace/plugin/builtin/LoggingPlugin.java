@@ -2,10 +2,10 @@ package org.dragon.workspace.plugin.builtin;
 
 import java.util.List;
 
-import org.dragon.workspace.context.StepResult;
+import org.dragon.step.StepResult;
 import org.dragon.workspace.context.TaskContext;
 import org.dragon.workspace.plugin.WorkspacePlugin;
-import org.dragon.workspace.step.Step;
+import org.dragon.step.Step;
 
 import lombok.extern.slf4j.Slf4j;
 

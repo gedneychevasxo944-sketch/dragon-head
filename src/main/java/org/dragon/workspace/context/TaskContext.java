@@ -3,6 +3,8 @@ package org.dragon.workspace.context;
 import java.util.List;
 import java.util.Map;
 
+import org.dragon.step.ExecutionContext;
+import org.dragon.step.StepResult;
 import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.cooperation.chat.ChatRoom;
@@ -20,7 +22,12 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class TaskContext {
+public class TaskContext implements ExecutionContext {
+
+    /**
+     * 执行 ID
+     */
+    private String executionId;
 
     /**
      * Workspace ID
@@ -78,6 +85,46 @@ public class TaskContext {
     private String materialContext;
 
     /**
+     * 是否完成
+     */
+    @Builder.Default
+    private boolean complete = false;
+
+    /**
+     * 最终响应
+     */
+    private String finalResponse;
+
+    // ==================== ExecutionContext 实现 ====================
+
+    @Override
+    public String getCharacterId() {
+        return task != null ? task.getCharacterId() : null;
+    }
+
+    @Override
+    public int getCurrentIteration() {
+        Object iteration = config != null ? config.get("currentIteration") : null;
+        return iteration != null ? (Integer) iteration : 0;
+    }
+
+    @Override
+    public void setCurrentIteration(int iteration) {
+        setConfigValue("currentIteration", iteration);
+    }
+
+    @Override
+    public boolean isComplete() {
+        return complete;
+    }
+
+    @Override
+    public void complete(String response) {
+        this.complete = true;
+        this.finalResponse = response;
+    }
+
+    /**
      * 设置配置值（用于 DecisionStep 动态设置后续 Step）
      */
     public void setConfigValue(String key, Object value) {
@@ -85,6 +132,13 @@ public class TaskContext {
             this.config = new java.util.HashMap<>();
         }
         this.config.put(key, value);
+    }
+
+    /**
+     * 获取配置值
+     */
+    public Object getConfigValue(String key) {
+        return this.config != null ? this.config.get(key) : null;
     }
 
     /**

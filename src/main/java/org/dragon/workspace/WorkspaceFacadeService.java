@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import org.dragon.api.controller.dto.PageResponse;
 import org.dragon.api.controller.dto.TeamPositionResponse;
-import org.dragon.channel.entity.NormalizedMessage;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.permission.service.PermissionService;
 import org.dragon.task.Task;
@@ -15,7 +14,6 @@ import org.dragon.workspace.member.HandlerType;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
 import org.dragon.workspace.task.WorkspaceTaskService;
-import org.dragon.workspace.task.dto.TaskCreationCommand;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -39,7 +37,6 @@ public class WorkspaceFacadeService {
     private final PermissionService permissionService;
     private final DeploymentService deploymentService;
     private final WorkspaceTaskService workspaceTaskService;
-    private final WorkspaceTaskExecutor workspaceTaskExecutor;
 
     // ==================== Workspace CRUD ====================
 
@@ -223,34 +220,5 @@ public class WorkspaceFacadeService {
 
     public Optional<Task> getTask(String workspaceId, String taskId) {
         return workspaceTaskService.getTask(workspaceId, taskId);
-    }
-
-    /**
-     * 执行任务（消息驱动）
-     * <p>判断是继续旧任务还是启动新任务，然后通过 WorkspaceTaskExecutor 执行。
-     */
-    public Task executeTask(String workspaceId, NormalizedMessage message, String creatorId) {
-        // 先判断是继续旧任务还是新任务
-        // 简化处理：直接走新任务流程
-        TaskCreationCommand command = TaskCreationCommand.builder()
-                .taskName("用户请求")
-                .taskDescription(message.getTextContent())
-                .input(message)
-                .creatorId(creatorId)
-                .metadata(message.getMetadata())
-                .sourceChannel(message.getChannel() != null ? message.getChannel().getCode() : null)
-                .sourceMessageId(message.getMessageId())
-                .sourceChatId(message.getChatId())
-                .sourceMessageId(message.getQuoteMessageId())
-                .build();
-        return executeTask(workspaceId, command);
-    }
-
-    /**
-     * 执行任务（命令驱动）
-     * <p>通过 WorkspaceTaskExecutor 执行新的 Step 链路。
-     */
-    public Task executeTask(String workspaceId, TaskCreationCommand command) {
-        return workspaceTaskExecutor.submitAndExecute(workspaceId, command);
     }
 }

@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkspaceTaskService {
 
     private final WorkspaceRegistry workspaceRegistry;
-    // private final TaskBridge taskBridge;
     private final StoreFactory storeFactory;
 
     private TaskStore getTaskStore() {

@@ -219,28 +219,6 @@ public class CharacterService {
     }
 
     /**
-     * 独立运行角色（向指定角色发送消息，用于 Studio 测试页面）。
-     *
-     * @param characterId 角色 ID
-     * @param message    用户消息
-     * @param sessionId  会话 ID（可选）
-     * @return 角色回复
-     */
-    public Map<String, Object> runCharacter(String characterId, String message, String sessionId) {
-        Character character = characterRegistry.get(characterId)
-                .orElseThrow(() -> new IllegalArgumentException("Character not found: " + characterId));
-
-        String reply = character.run(message);
-        String sid = sessionId != null ? sessionId : java.util.UUID.randomUUID().toString();
-
-        return Map.of(
-                "sessionId", sid,
-                "reply", reply != null ? reply : "",
-                "timestamp", java.time.LocalDateTime.now().toString()
-        );
-    }
-
-    /**
      * 获取角色统计数据。
      *
      * @return 统计信息 Map

@@ -32,7 +32,8 @@ public class ChatMessage {
         TASK_ASSIGNMENT, // 任务分配
         TASK_RESULT,     // 任务结果
         TASK_REQUEST,    // 任务请求
-        TASK_HELP_REQUEST // 请求帮助
+        TASK_HELP_REQUEST, // 请求帮助
+        RESPONSE          // 响应（认领/完成）
     }
 
     /**
@@ -47,6 +48,14 @@ public class ChatMessage {
         TASK_BLOCKED,    // 任务阻塞
         TASK_NEED_HELP,  // 请求帮助
         TASK_COMPLETE    // 任务完成
+    }
+
+    /**
+     * 响应状态
+     */
+    public enum ResponseStatus {
+        CLAIMED,    // 已认领
+        COMPLETED   // 已完成
     }
 
     /**
@@ -137,6 +146,26 @@ public class ChatMessage {
      * 响应的消息 ID（当本消息是对某个 DEMAND 的响应时）
      */
     private String inResponseTo;
+
+    /**
+     * 指定执行者（DEMAND 时使用，null = 开放认领）
+     */
+    private String assignedCharacterId;
+
+    /**
+     * 响应状态
+     */
+    private ResponseStatus responseStatus;
+
+    /**
+     * 需求内容副本（用于快速预览）
+     */
+    private String demandContent;
+
+    /**
+     * 需求上下文（额外信息，如优先级等）
+     */
+    private java.util.Map<String, Object> demandContext;
 
     /**
      * 检查是否已读

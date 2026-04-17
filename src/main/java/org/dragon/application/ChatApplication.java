@@ -2,9 +2,8 @@ package org.dragon.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
-import org.dragon.character.runtime.CharacterExecutionManager;
+import org.dragon.task.TaskExecutionService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatApplication {
 
     private final CharacterRegistry characterRegistry;
-    private final CharacterExecutionManager characterExecutionManager;
+    private final TaskExecutionService taskExecutionService;
 
     /** 会话消息存储：sessionId -> 消息列表 */
     private final Map<String, List<Map<String, Object>>> sessionMessages = new ConcurrentHashMap<>();
@@ -113,19 +112,17 @@ public class ChatApplication {
      */
     private String generateReply(String message, String characterId, String sessionId) {
         try {
-            Character character;
-            if (characterId != null && !characterId.isBlank()) {
-                character = characterRegistry.get(characterId)
-                        .orElse(null);
-            } else {
-                character = characterRegistry.getDefaultCharacter().orElse(null);
+            String targetCharacterId = characterId;
+            if ((targetCharacterId == null || targetCharacterId.isBlank())
+                    && characterRegistry.getDefaultCharacter().isPresent()) {
+                targetCharacterId = characterRegistry.getDefaultCharacter().get().getId();
             }
 
-            if (character == null) {
+            if (targetCharacterId == null || targetCharacterId.isBlank()) {
                 return "No character available. Please deploy a character first.";
             }
 
-            String reply = characterExecutionManager.execute(character, message);
+            String reply = taskExecutionService.execute(targetCharacterId, message);
             return reply != null ? reply : "No response generated.";
         } catch (IllegalArgumentException e) {
             log.warn("[ChatApplication] Invalid character request: {}", e.getMessage());

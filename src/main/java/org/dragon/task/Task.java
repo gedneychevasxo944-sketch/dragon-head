@@ -151,6 +151,47 @@ public class Task {
     @Builder.Default
     private List<String> dependencyTaskIds = new ArrayList<>();
 
+    // ==================== 需求协作字段 ====================
+
+    /**
+     * 发布需求的原始 Character（无人认领时交回）
+     */
+    private String originalCharacterId;
+
+    /**
+     * 当前认领者列表（开放需求时，多个认领者）
+     */
+    @Builder.Default
+    private List<String> claimerIds = new ArrayList<>();
+
+    /**
+     * 指定执行者（指定需求时，只有此执行者完成才唤醒）
+     */
+    private String waitingForCharacterId;
+
+    // ==================== 认领者管理 ====================
+
+    /**
+     * 添加认领者
+     */
+    public void addClaimerId(String characterId) {
+        if (this.claimerIds == null) {
+            this.claimerIds = new ArrayList<>();
+        }
+        if (!this.claimerIds.contains(characterId)) {
+            this.claimerIds.add(characterId);
+        }
+    }
+
+    /**
+     * 移除认领者
+     */
+    public void removeClaimerId(String characterId) {
+        if (this.claimerIds != null) {
+            this.claimerIds.remove(characterId);
+        }
+    }
+
     /**
      * 最后的问题（用于追问用户）
      */
