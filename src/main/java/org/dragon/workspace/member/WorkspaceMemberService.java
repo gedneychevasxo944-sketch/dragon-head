@@ -10,7 +10,7 @@ import org.dragon.permission.enums.ResourceType;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberStore;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.dragon.store.StoreFactory;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WorkspaceMemberService {
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final StoreFactory storeFactory;
     private final AssetAssociationService assetAssociationService;
 
@@ -48,7 +48,7 @@ public class WorkspaceMemberService {
     public WorkspaceMember addMember(String workspaceId, String characterId,
             String role, WorkspaceMember.Layer layer) {
         // 验证工作空间存在
-        Workspace workspace = workspaceRegistry.get(workspaceId)
+        Workspace workspace = workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         // 检查成员是否已存在
@@ -155,7 +155,7 @@ public class WorkspaceMemberService {
     public List<Workspace> getWorkspacesForCharacter(String characterId) {
         List<WorkspaceMember> memberships = getMemberStore().findByCharacterId(characterId);
         return memberships.stream()
-                .map(m -> workspaceRegistry.get(m.getWorkspaceId()))
+                .map(m -> workspaceFacadeService.getWorkspace(m.getWorkspaceId()))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toList();
@@ -236,7 +236,7 @@ public class WorkspaceMemberService {
     public WorkspaceMember addPosition(String workspaceId, String roleName,
             String rolePackage, String purpose, String scope) {
         // 验证工作空间存在
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         // 创建岗位（无 assigned character）

@@ -10,6 +10,7 @@ import org.dragon.character.CharacterRegistry;
 import org.dragon.permission.enums.ResourceType;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
+import org.dragon.workspace.store.WorkspaceStore;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 public class DeploymentService {
 
     private final CharacterRegistry characterRegistry;
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceStore workspaceStore;
     private final AssetAssociationService assetAssociationService;
     private final WorkspaceMemberService memberService;
 
@@ -134,7 +135,7 @@ public class DeploymentService {
         String charStatus = character != null && character.getStatus() != null
                 ? character.getStatus().name().toLowerCase() : "idle";
 
-        org.dragon.workspace.Workspace workspace = workspaceRegistry.get(wsId).orElse(null);
+        org.dragon.workspace.Workspace workspace = workspaceStore.findById(wsId).orElse(null);
         String wsName = workspace != null && workspace.getName() != null ? workspace.getName() : "Workspace " + wsId;
 
         java.util.HashMap<String, Object> record = new java.util.HashMap<>();

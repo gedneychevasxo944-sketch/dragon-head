@@ -10,7 +10,7 @@ import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.Workspace;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 public class LabApplication {
 
     private final CharacterRegistry characterRegistry;
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final StoreFactory storeFactory;
     private final AssetAssociationService assetAssociationService;
 
@@ -232,8 +232,8 @@ public class LabApplication {
 
         // 构建 Workspace 节点
         List<Workspace> workspaces = workspaceId != null && !workspaceId.isBlank()
-                ? workspaceRegistry.get(workspaceId).map(List::of).orElse(List.of())
-                : workspaceRegistry.listAll();
+                ? workspaceFacadeService.getWorkspace(workspaceId).map(List::of).orElse(List.of())
+                : workspaceFacadeService.listAllWorkspaces();
 
         if (includeWorkspace) {
             for (Workspace ws : workspaces) {
@@ -535,7 +535,7 @@ public class LabApplication {
     private List<Task> getAllTasks() {
         // 获取所有 Workspace 的任务
         List<Task> allTasks = new ArrayList<>();
-        workspaceRegistry.listAll().forEach(ws -> {
+        workspaceFacadeService.listAllWorkspaces().forEach(ws -> {
             try {
                 allTasks.addAll(getTaskStore().findByWorkspaceId(ws.getId()));
             } catch (Exception e) {

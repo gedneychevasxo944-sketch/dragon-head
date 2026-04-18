@@ -28,7 +28,7 @@ import org.dragon.step.workspace.ObserverEvalStep;
 import org.dragon.step.workspace.ResumeStep;
 import org.dragon.step.workspace.ResultStep;
 import org.dragon.step.workspace.StepRegistry;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.dragon.workspace.WorkspaceTask;
 import org.dragon.workspace.context.TaskContext;
 import org.dragon.workspace.context.TaskContextConfig;
@@ -68,7 +68,7 @@ public class TaskExecutionService {
     private final StoreFactory storeFactory;
 
     // Workspace Task execution dependencies
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final WorkspaceMemberService memberService;
     private final WorkspacePluginRegistry pluginRegistry;
 
@@ -153,7 +153,7 @@ public class TaskExecutionService {
      * 提交新任务并执行
      */
     public Task submitAndExecute(String workspaceId, TaskCreationCommand command) {
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         // 创建任务
@@ -198,7 +198,7 @@ public class TaskExecutionService {
         task.setUpdatedAt(LocalDateTime.now());
         storeFactory.get(TaskStore.class).update(task);
 
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         TaskContext ctx = buildContext(task, workspaceId);
@@ -285,7 +285,7 @@ public class TaskExecutionService {
 
         // 创建 ChatRoom 实例（按 workspace，不同于全局单例）
         // 使用 Supplier 延迟获取 this 来避免循环依赖
-        ChatRoom chatRoom = new ChatRoom(workspaceRegistry, storeFactory, () -> this);
+        ChatRoom chatRoom = new ChatRoom(workspaceFacadeService, storeFactory, () -> this);
 
         return TaskContext.builder()
                 .workspaceId(workspaceId)

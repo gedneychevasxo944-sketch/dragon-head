@@ -20,6 +20,7 @@ import org.dragon.util.UserUtils;
 import org.dragon.workspace.member.HandlerType;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.dragon.workspace.member.WorkspaceMemberService;
+import org.dragon.workspace.store.WorkspaceStore;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WorkspaceLifecycleService {
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceStore workspaceStore;
     private final AssetMemberService assetMemberService;
     private final AssetPublishStatusService publishStatusService;
     private final WorkspaceMemberService memberService;
@@ -66,7 +67,7 @@ public class WorkspaceLifecycleService {
             workspace.setStatus(Workspace.Status.INACTIVE);
         }
 
-        workspaceRegistry.register(workspace);
+        workspaceStore.save(workspace);
 
         // 添加创建者为 Owner
         Long ownerId = Long.valueOf(String.valueOf(workspace.getOwner()));
@@ -137,7 +138,7 @@ public class WorkspaceLifecycleService {
      * @return 更新后的工作空间
      */
     public Workspace updateWorkspace(Workspace workspace) {
-        Workspace existing = workspaceRegistry.get(workspace.getId())
+        Workspace existing = workspaceStore.findById(workspace.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspace.getId()));
 
         // 只更新非 null 属性
@@ -158,7 +159,7 @@ public class WorkspaceLifecycleService {
         }
 
         existing.setUpdatedAt(LocalDateTime.now());
-        workspaceRegistry.update(existing);
+        workspaceStore.update(existing);
         log.info("[WorkspaceLifecycleService] Updated workspace: {}", workspace.getId());
 
         return existing;
@@ -170,10 +171,10 @@ public class WorkspaceLifecycleService {
      * @param workspaceId 工作空间 ID
      */
     public void deleteWorkspace(String workspaceId) {
-        workspaceRegistry.get(workspaceId)
+        workspaceStore.findById(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
-        workspaceRegistry.unregister(workspaceId);
+        workspaceStore.delete(workspaceId);
         // 删除发布状态
         publishStatusService.deleteStatus(ResourceType.WORKSPACE, workspaceId);
         log.info("[WorkspaceLifecycleService] Deleted workspace: {}", workspaceId);
@@ -186,7 +187,7 @@ public class WorkspaceLifecycleService {
      * @return 工作空间
      */
     public Optional<Workspace> getWorkspace(String workspaceId) {
-        return workspaceRegistry.get(workspaceId);
+        return workspaceStore.findById(workspaceId);
     }
 
     /**
@@ -195,7 +196,7 @@ public class WorkspaceLifecycleService {
      * @return 工作空间列表
      */
     public List<Workspace> listWorkspaces() {
-        return workspaceRegistry.listAll();
+        return workspaceStore.findAll();
     }
 
     /**
@@ -205,7 +206,7 @@ public class WorkspaceLifecycleService {
      * @return 工作空间列表
      */
     public List<Workspace> listWorkspacesByStatus(Workspace.Status status) {
-        return workspaceRegistry.listByStatus(status);
+        return workspaceStore.findByStatus(status);
     }
 
     /**
@@ -215,7 +216,7 @@ public class WorkspaceLifecycleService {
      * @return 工作空间列表
      */
     public List<Workspace> listWorkspacesByIds(List<String> ids) {
-        return workspaceRegistry.listByIds(ids);
+        return workspaceStore.findByIds(ids);
     }
 
     /**
@@ -226,7 +227,7 @@ public class WorkspaceLifecycleService {
      * @return 工作空间列表
      */
     public List<Workspace> listWorkspacesByIdsAndStatus(List<String> ids, Workspace.Status status) {
-        return workspaceRegistry.listByIdsAndStatus(ids, status);
+        return workspaceStore.findByIdsAndStatus(ids, status);
     }
 
     /**
@@ -235,8 +236,11 @@ public class WorkspaceLifecycleService {
      * @param workspaceId 工作空间 ID
      */
     public void activateWorkspace(String workspaceId) {
-        workspaceRegistry.activate(workspaceId);
-        log.info("[WorkspaceLifecycleService] Activated workspace: {}", workspaceId);
+        workspaceStore.findById(workspaceId).ifPresent(workspace -> {
+            workspace.setStatus(Workspace.Status.ACTIVE);
+            workspaceStore.update(workspace);
+            log.info("[WorkspaceLifecycleService] Activated workspace: {}", workspaceId);
+        });
     }
 
     /**
@@ -245,8 +249,11 @@ public class WorkspaceLifecycleService {
      * @param workspaceId 工作空间 ID
      */
     public void deactivateWorkspace(String workspaceId) {
-        workspaceRegistry.deactivate(workspaceId);
-        log.info("[WorkspaceLifecycleService] Deactivated workspace: {}", workspaceId);
+        workspaceStore.findById(workspaceId).ifPresent(workspace -> {
+            workspace.setStatus(Workspace.Status.INACTIVE);
+            workspaceStore.update(workspace);
+            log.info("[WorkspaceLifecycleService] Deactivated workspace: {}", workspaceId);
+        });
     }
 
     /**
@@ -255,8 +262,11 @@ public class WorkspaceLifecycleService {
      * @param workspaceId 工作空间 ID
      */
     public void archiveWorkspace(String workspaceId) {
-        workspaceRegistry.archive(workspaceId);
-        log.info("[WorkspaceLifecycleService] Archived workspace: {}", workspaceId);
+        workspaceStore.findById(workspaceId).ifPresent(workspace -> {
+            workspace.setStatus(Workspace.Status.ARCHIVED);
+            workspaceStore.update(workspace);
+            log.info("[WorkspaceLifecycleService] Archived workspace: {}", workspaceId);
+        });
     }
 
     /**
@@ -265,6 +275,6 @@ public class WorkspaceLifecycleService {
      * @return 活跃工作空间数量
      */
     public long countActiveWorkspaces() {
-        return workspaceRegistry.listByStatus(Workspace.Status.ACTIVE).size();
+        return workspaceStore.findByStatus(Workspace.Status.ACTIVE).size();
     }
 }

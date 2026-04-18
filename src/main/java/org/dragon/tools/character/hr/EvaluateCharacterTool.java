@@ -6,7 +6,7 @@ import org.dragon.asset.service.AssetAssociationService;
 import org.dragon.character.Character;
 import org.dragon.character.CharacterRegistry;
 import org.dragon.tools.AgentTool;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 public class EvaluateCharacterTool implements AgentTool {
 
     private final CharacterRegistry characterRegistry;
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final AssetAssociationService assetAssociationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -77,7 +77,7 @@ public class EvaluateCharacterTool implements AgentTool {
                         .orElseThrow(() -> new IllegalArgumentException("Character not found: " + characterId));
 
                 // 验证 Workspace 存在
-                workspaceRegistry.get(workspaceId)
+                workspaceFacadeService.getWorkspace(workspaceId)
                         .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
                 // 构建评估结果

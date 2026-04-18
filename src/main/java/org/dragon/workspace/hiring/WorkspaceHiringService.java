@@ -11,7 +11,7 @@ import org.dragon.character.CharacterRegistry;
 import org.dragon.character.profile.CharacterProfile;
 import org.dragon.observer.log.ObserverActionLogService;
 import org.dragon.store.StoreFactory;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.dragon.workspace.duty.CharacterDuty;
 import org.dragon.workspace.duty.CharacterDutyStore;
 import org.dragon.workspace.member.WorkspaceMember;
@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WorkspaceHiringService {
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final CharacterRegistry characterRegistry;
     private final ObserverActionLogService actionLogService;
     private final HrHiringExecutor hrHiringExecutor;
@@ -65,7 +65,7 @@ public class WorkspaceHiringService {
      */
     public void hire(String workspaceId, String characterId, HireMode mode, List<String> defaultCharacterIds) {
         // 验证 workspace 存在
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         switch (mode) {
@@ -101,7 +101,7 @@ public class WorkspaceHiringService {
      */
     public void fire(String workspaceId, String characterId, HireMode mode) {
         // 验证 workspace 存在
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         switch (mode) {
@@ -137,7 +137,7 @@ public class WorkspaceHiringService {
      */
     public void setCharacterDuty(String workspaceId, String characterId, String dutyDescription) {
         // 验证 workspace 和 character 存在
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
         characterRegistry.get(characterId)
                 .orElseThrow(() -> new IllegalArgumentException("Character not found: " + characterId));

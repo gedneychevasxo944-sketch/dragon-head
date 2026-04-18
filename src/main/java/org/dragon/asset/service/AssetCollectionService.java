@@ -19,7 +19,7 @@ import org.dragon.skill.store.SkillStore;
 import org.dragon.trait.store.TraitStore;
 import org.dragon.util.UserUtils;
 import org.dragon.workspace.Workspace;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -55,7 +55,7 @@ public class AssetCollectionService {
     private final SkillStore skillStore;
 
     // Workspace
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
 
     // Observer
     private final ObserverRegistry observerRegistry;
@@ -270,7 +270,7 @@ public class AssetCollectionService {
      */
     public PageResponse<Workspace> listWorkspaces(int page, int pageSize, String search,
                                                  String status, boolean includeBuiltin, boolean includeExpert) {
-        List<Workspace> all = workspaceRegistry.listAll();
+        List<Workspace> all = workspaceFacadeService.listAllWorkspaces();
 
         // 过滤
         List<Workspace> filtered = all.stream()

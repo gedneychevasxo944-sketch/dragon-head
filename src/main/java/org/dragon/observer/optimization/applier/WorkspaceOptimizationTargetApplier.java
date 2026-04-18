@@ -5,7 +5,7 @@ import java.util.Map;
 import org.dragon.observer.optimization.plan.OptimizationAction;
 import org.dragon.observer.optimization.plan.OptimizationAction.TargetType;
 import org.dragon.workspace.Workspace;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ public class WorkspaceOptimizationTargetApplier implements OptimizationTargetApp
 
     private static final Logger log = LoggerFactory.getLogger(WorkspaceOptimizationTargetApplier.class);
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
 
     @Override
     public OptimizationAction.TargetType getTargetType() {
@@ -34,7 +34,7 @@ public class WorkspaceOptimizationTargetApplier implements OptimizationTargetApp
 
     @Override
     public ApplyResult apply(OptimizationAction action) {
-        Workspace workspace = workspaceRegistry.get(action.getTargetId())
+        Workspace workspace = workspaceFacadeService.getWorkspace(action.getTargetId())
                 .orElse(null);
 
         if (workspace == null) {
@@ -112,7 +112,7 @@ public class WorkspaceOptimizationTargetApplier implements OptimizationTargetApp
 
     @Override
     public String captureSnapshot(String targetId) {
-        return workspaceRegistry.get(targetId)
+        return workspaceFacadeService.getWorkspace(targetId)
                 .map(w -> {
                     if (w.getPersonality() != null) {
                         return w.getPersonality().toString();

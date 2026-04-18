@@ -8,7 +8,7 @@ import org.dragon.skill.runtime.SkillDirectoryBuilder;
 import org.dragon.skill.runtime.SkillDefinition;
 import org.dragon.skill.runtime.SkillRegistry;
 import org.dragon.task.Task;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.dragon.workspace.member.WorkspaceMember;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PromptMaterialContextBuilder {
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final SkillRegistry skillRegistry;
 
     /**
@@ -160,7 +160,7 @@ public class PromptMaterialContextBuilder {
             String workspaceId,
             PromptMaterialConfig config
     ) {
-        workspaceRegistry.get(workspaceId).ifPresent(workspace -> {
+        workspaceFacadeService.getWorkspace(workspaceId).ifPresent(workspace -> {
             if (config.isIncludeWorkspaceBasicInfo()) {
                 builder.workspaceName(workspace.getName())
                        .workspaceDescription(workspace.getDescription())

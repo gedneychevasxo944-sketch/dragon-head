@@ -9,7 +9,7 @@ import org.dragon.task.Task;
 import org.dragon.task.TaskExecutionService;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.dragon.workspace.task.dto.TaskCreationCommand;
 import java.util.function.Supplier;
 
@@ -37,13 +37,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ChatRoom {
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final StoreFactory storeFactory;
     private final Supplier<TaskExecutionService> taskExecutorProvider;
 
-    public ChatRoom(WorkspaceRegistry workspaceRegistry, StoreFactory storeFactory,
+    public ChatRoom(WorkspaceFacadeService workspaceFacadeService, StoreFactory storeFactory,
                     Supplier<TaskExecutionService> taskExecutorProvider) {
-        this.workspaceRegistry = workspaceRegistry;
+        this.workspaceFacadeService = workspaceFacadeService;
         this.storeFactory = storeFactory;
         this.taskExecutorProvider = taskExecutorProvider;
     }
@@ -65,7 +65,7 @@ public class ChatRoom {
      * @return 含 ID 的消息
      */
     public ChatMessage publish(ChatMessage message) {
-        workspaceRegistry.get(message.getWorkspaceId())
+        workspaceFacadeService.getWorkspace(message.getWorkspaceId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Workspace not found: " + message.getWorkspaceId()));
 

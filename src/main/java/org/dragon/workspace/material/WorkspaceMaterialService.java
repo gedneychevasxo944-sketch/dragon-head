@@ -18,7 +18,7 @@ import org.dragon.material.MaterialStore;
 import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WorkspaceMaterialService {
 
     private final MaterialStorage materialStorage;
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final List<MaterialParser> materialParsers;
     private final MaterialEventPublisher materialEventPublisher;
     private final StoreFactory storeFactory;
@@ -84,7 +84,7 @@ public class WorkspaceMaterialService {
     public Material upload(String workspaceId, InputStream inputStream, String filename,
                           long size, String contentType, String uploader) {
         // 验证工作空间存在
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         // 存储文件

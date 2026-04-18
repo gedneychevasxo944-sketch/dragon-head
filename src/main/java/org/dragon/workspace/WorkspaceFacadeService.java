@@ -106,6 +106,10 @@ public class WorkspaceFacadeService {
         workspaceLifecycleService.archiveWorkspace(workspaceId);
     }
 
+    public List<Workspace> listAllWorkspaces() {
+        return workspaceLifecycleService.listWorkspaces();
+    }
+
     // ==================== 成员管理 ====================
 
     public List<WorkspaceMember> listMembers(String workspaceId) {

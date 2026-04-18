@@ -9,7 +9,7 @@ import org.dragon.channel.entity.ChannelConfig;
 import org.dragon.channel.store.ChannelBindingStore;
 import org.dragon.channel.store.ChannelConfigStore;
 import org.dragon.store.StoreFactory;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ChannelBindingService {
 
     private final StoreFactory storeFactory;
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
 
     // ==================== ChannelConfig 管理 ====================
 
@@ -124,7 +124,7 @@ public class ChannelBindingService {
     public ChannelBinding createBinding(String channelName, String chatId,
                                         String chatType, String workspaceId, String description) {
         // 校验 workspace 存在
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         String bindingId = ChannelBinding.createId(channelName, chatId);
@@ -164,7 +164,7 @@ public class ChannelBindingService {
      */
     public ChannelBinding updateBinding(String channelName, String chatId, String newWorkspaceId) {
         // 校验新 workspace 存在
-        workspaceRegistry.get(newWorkspaceId)
+        workspaceFacadeService.getWorkspace(newWorkspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + newWorkspaceId));
 
         String bindingId = ChannelBinding.createId(channelName, chatId);

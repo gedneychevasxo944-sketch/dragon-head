@@ -13,7 +13,7 @@ import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.Workspace;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.dragon.step.StepResult;
 import org.dragon.step.Step;
 import org.dragon.step.ExecutionContext;
@@ -40,7 +40,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AssignStep implements Step {
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final WorkspaceMemberService memberService;
     private final CharacterRegistry characterRegistry;
     private final CharacterCaller characterCaller;
@@ -81,7 +81,7 @@ public class AssignStep implements Step {
                         .build();
             }
 
-            Workspace workspace = workspaceRegistry.get(workspaceId)
+            Workspace workspace = workspaceFacadeService.getWorkspace(workspaceId)
                     .orElseThrow(() -> new IllegalStateException("Workspace not found: " + workspaceId));
             List<WorkspaceMember> members = memberService.listMembers(workspaceId);
 

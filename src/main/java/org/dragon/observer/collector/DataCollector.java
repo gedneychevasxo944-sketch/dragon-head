@@ -21,7 +21,7 @@ import org.dragon.task.TaskStatus;
 import org.dragon.store.StoreFactory;
 import org.dragon.task.TaskStore;
 import org.dragon.workspace.Workspace;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,7 @@ public class DataCollector {
 
     private static final Logger log = LoggerFactory.getLogger(DataCollector.class);
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final CharacterRegistry characterRegistry;
     private final StoreFactory storeFactory;
 
@@ -246,7 +246,7 @@ public class DataCollector {
     public WorkspaceObservationSnapshot collectWorkspaceObservation(String workspaceId) {
         log.info("[DataCollector] Collecting workspace observation for: {}", workspaceId);
 
-        Workspace workspace = workspaceRegistry.get(workspaceId).orElse(null);
+        Workspace workspace = workspaceFacadeService.getWorkspace(workspaceId).orElse(null);
         if (workspace == null) {
             log.warn("[DataCollector] Workspace not found: {}", workspaceId);
             return null;
@@ -370,7 +370,7 @@ public class DataCollector {
             dataset.setWorkspaceSnapshot(collectWorkspaceObservation(workspaceId));
 
             // 采集 Workspace 下所有 Character 的快照
-            Workspace workspace = workspaceRegistry.get(workspaceId).orElse(null);
+            Workspace workspace = workspaceFacadeService.getWorkspace(workspaceId).orElse(null);
             if (workspace != null && workspace.getMembers() != null) {
                 List<CharacterObservationSnapshot> characterSnapshots = new ArrayList<>();
                 for (org.dragon.workspace.member.WorkspaceMember member : workspace.getMembers()) {

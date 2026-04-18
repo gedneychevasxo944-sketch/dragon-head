@@ -8,7 +8,7 @@ import org.dragon.store.StoreFactory;
 import org.dragon.task.Task;
 import org.dragon.task.TaskStatus;
 import org.dragon.task.TaskStore;
-import org.dragon.workspace.WorkspaceRegistry;
+import org.dragon.workspace.WorkspaceFacadeService;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WorkspaceTaskService {
 
-    private final WorkspaceRegistry workspaceRegistry;
+    private final WorkspaceFacadeService workspaceFacadeService;
     private final StoreFactory storeFactory;
 
     private TaskStore getTaskStore() {
@@ -42,7 +42,7 @@ public class WorkspaceTaskService {
      */
     public Optional<Task> getTask(String workspaceId, String taskId) {
         // 验证工作空间存在
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         return getTaskStore().findById(taskId)
@@ -176,7 +176,7 @@ public class WorkspaceTaskService {
      * @return 任务列表
      */
     public List<Task> listTasks(String workspaceId) {
-        workspaceRegistry.get(workspaceId)
+        workspaceFacadeService.getWorkspace(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
 
         return getTaskStore().findByWorkspaceId(workspaceId);
