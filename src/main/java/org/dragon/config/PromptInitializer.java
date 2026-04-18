@@ -74,6 +74,12 @@ public class PromptInitializer implements CommandLineRunner {
             configApplication.setGlobalPrompt(PromptKeys.MEMORY_EXTRACT,
                     "你是一个记忆提取专家，从会话快照和事件中识别可长期保存的候选记忆，输出 JSON 数组。");
         }
+
+        // Memory Recall Select Prompt
+        String memoryRecallSelect = loadPromptFromFile("prompts/memory-recall-select-prompt.txt");
+        if (memoryRecallSelect != null) {
+            configApplication.setGlobalPrompt(PromptKeys.MEMORY_RECALL_SELECT, memoryRecallSelect);
+        }
     }
 
     private void initObserverPrompts() {

@@ -142,6 +142,12 @@ public class PromptKeys {
      */
     public static final String MEMORY_EXTRACT = "memory.extract";
 
+    /**
+     * Memory 召回筛选 prompt
+     * 给定用户 query 和候选记忆列表，让 LLM 选出相关条目
+     */
+    public static final String MEMORY_RECALL_SELECT = "memory.recallSelect";
+
     // ==================== MBTI 模块 ====================
 
     /**

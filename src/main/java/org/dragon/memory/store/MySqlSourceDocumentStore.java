@@ -6,7 +6,6 @@ import org.dragon.store.StoreType;
 import org.dragon.store.StoreTypeAnn;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,7 +19,6 @@ import java.util.Optional;
  */
 @Slf4j
 @StoreTypeAnn(StoreType.MYSQL)
-@Component
 public class MySqlSourceDocumentStore implements SourceDocumentStore {
 
     private final Database mysqlDb;

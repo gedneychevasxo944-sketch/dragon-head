@@ -5,6 +5,8 @@ import org.dragon.agent.llm.LLMResponse;
 import org.dragon.agent.llm.caller.LLMCaller;
 import org.dragon.agent.llm.caller.LLMCallerSelector;
 import org.dragon.agent.model.ModelInstance;
+import org.dragon.config.PromptKeys;
+import org.dragon.config.service.ConfigApplication;
 import org.dragon.memory.entity.MemoryEntry;
 import org.dragon.memory.entity.MemoryQuery;
 import org.dragon.memory.entity.MemorySearchResult;
@@ -41,43 +43,37 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
     private final WorkspaceMemoryRepository workspaceMemoryRepository;
     private final SessionMemoryRepository sessionMemoryRepository;
     private final LLMCallerSelector llmCallerSelector;
-    private static final String SELECT_MEMORIES_SYSTEM_PROMPT = """
-            You are selecting memories that will be useful to 'adeptify' as it processes a user's query. You will be given the user's query and a list of available memory files with their filenames and descriptions.
-            
-            Return a list of filenames for the memories that will clearly be useful to 'adeptify' as it processes the user's query (up to 5). Only include memories that you are certain will be helpful based on their name and description.
-                    - If you are unsure if a memory will be useful in processing the user's query, then do not include it in your list. Be selective and discerning.
-                    - If there are no memories in the list that would clearly be useful, feel free to return an empty list.
-                    - If a list of recently-used tools is provided, do not select memories that are usage reference or API documentation for those tools ('adeptify' is already exercising them). DO still select memories containing warnings, gotchas, or known issues about those tools \u2014 active use is exactly when those matter.
-            Make sure response content is a purely json object with 'selected_memories' key.
-            """;
+    private final ConfigApplication configApplication;
 
     public MemoryRecallServiceImpl(CharacterMemoryRepository characterMemoryRepository,
                                    WorkspaceMemoryRepository workspaceMemoryRepository,
                                    SessionMemoryRepository sessionMemoryRepository,
-                                   LLMCallerSelector llmCallerSelector) {
+                                   LLMCallerSelector llmCallerSelector,
+                                   ConfigApplication configApplication) {
         this.characterMemoryRepository = characterMemoryRepository;
         this.workspaceMemoryRepository = workspaceMemoryRepository;
         this.sessionMemoryRepository = sessionMemoryRepository;
         this.llmCallerSelector = llmCallerSelector;
+        this.configApplication = configApplication;
     }
 
     @Override
     public List<MemorySearchResult> recallCharacter(String characterId, String query, int limit) {
-        log.info("[mem] recall character memo: {}", characterId);
+        log.info("[MemoryRecallServiceImpl] Recalling character memories: {}", characterId);
         List<MemoryEntry> allEntries = characterMemoryRepository.list(characterId);
         return searchRelevantEntries(allEntries, query, limit);
     }
 
     @Override
     public List<MemorySearchResult> recallWorkspace(String workspaceId, String query, int limit) {
-        log.info("[mem] recall workspace memo: {}", workspaceId);
+        log.info("[MemoryRecallServiceImpl] Recalling workspace memories: {}", workspaceId);
         List<MemoryEntry> allEntries = workspaceMemoryRepository.list(workspaceId);
         return searchRelevantEntries(allEntries, query, limit);
     }
 
     @Override
     public List<MemorySearchResult> recallSession(String sessionId, String query, int limit) {
-        log.info("[mem] recall session memo: {}", sessionId);
+        log.info("[MemoryRecallServiceImpl] Recalling session memories: {}", sessionId);
         Optional<SessionSnapshot> snapshotOpt = sessionMemoryRepository.get(sessionId);
         if (snapshotOpt.isEmpty()) {
             return new ArrayList<>();
@@ -89,7 +85,7 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
 
     @Override
     public List<MemorySearchResult> recallComposite(MemoryQuery query) {
-        log.info("[mem-recall] recall mem: workspaceId={}, characterId={}, sessionId={}", query.getWorkspaceId(), query.getCharacterId(), query.getSessionId());
+        log.info("[MemoryRecallServiceImpl] Recalling composite memories: workspaceId={}, characterId={}, sessionId={}", query.getWorkspaceId(), query.getCharacterId(), query.getSessionId());
         List<MemoryEntry> allEntries = new ArrayList<>();
 
         // 1. 先拿 session summary（最近上下文优先）
@@ -108,7 +104,7 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
         if (query.getWorkspaceId() != null) {
             allEntries.addAll(workspaceMemoryRepository.list(query.getWorkspaceId()));
         }
-        log.info("[mem-recall] recall mem: allEntrySize={}", allEntries.size());
+        log.info("[MemoryRecallServiceImpl] Total entries collected: {}", allEntries.size());
 
         // 4. LLM 筛选后应用过滤规则
         List<MemorySearchResult> results = searchRelevantEntries(allEntries, query.getText(), query.getLimit());
@@ -205,7 +201,7 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
         }
 
         if (query == null || query.isBlank()) {
-            log.info("[mem-recall] query is blank, cut to limit: {}", limit);
+            log.info("[MemoryRecallServiceImpl] Query is blank, cutting to limit: {}", limit);
             // 无查询词时全量返回，截取到 limit
             return toResults(limit > 0 ? entries.stream().limit(limit).collect(Collectors.toList()) : entries);
         }
@@ -213,7 +209,7 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
         List<MemoryEntry> llmSelected = selectByLLM(entries, query);
         if (llmSelected == null) {
             // LLM 调用异常，降级为全量截取
-            log.warn("[mem-recall] LLM 筛选失败，降级为全量返回");
+            log.warn("[MemoryRecallServiceImpl] LLM 筛选失败，降级为全量返回");
             return toResults(limit > 0 ? entries.stream().limit(limit).collect(Collectors.toList()) : entries);
         }
 
@@ -268,8 +264,9 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
                     .append("  description: ").append(description).append("\n");
         }
 
+        String systemPrompt = configApplication.getGlobalPrompt(PromptKeys.MEMORY_RECALL_SELECT, null);
         LLMRequest request = LLMRequest.builder()
-                .systemPrompt(SELECT_MEMORIES_SYSTEM_PROMPT)
+                .systemPrompt(systemPrompt)
                 .messages(List.of(
                         LLMRequest.LLMMessage.builder()
                                 .role(LLMRequest.LLMMessage.Role.USER)
@@ -280,7 +277,7 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
         try {
 //            LLMCaller llmCaller = llmCallerSelector.getDefault();
             LLMCaller llmCaller = llmCallerSelector.selectByProvider(ModelInstance.ModelProvider.MINIMAX);
-            log.info("[mem-recall] 调用 LLM 筛选记忆，模型: {}", llmCaller.getClass());
+            log.info("[MemoryRecallServiceImpl] 调用 LLM 筛选记忆，模型: {}", llmCaller.getClass());
             LLMResponse response = llmCaller.call(request);
             String content = response != null ? response.getContent() : null;
             if (content == null || content.isBlank()) {
@@ -312,7 +309,7 @@ public class MemoryRecallServiceImpl implements MemoryRecallService {
                 mentioned.add(trimmed.toLowerCase());
             }
         }
-        log.info("[mem-recall] LLM 筛选记忆，命中列表: {}", mentioned);
+        log.info("[MemoryRecallServiceImpl] LLM 筛选记忆，命中列表: {}", mentioned);
 
         return candidates.stream()
                 .filter(entry -> {
