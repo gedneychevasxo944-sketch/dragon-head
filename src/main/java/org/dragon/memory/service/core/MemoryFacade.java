@@ -42,13 +42,4 @@ public interface MemoryFacade {
     void closeSession(String sessionId);
 
     List<MemorySearchResult> recall(MemoryQuery query);
-
-    /**
-     * 为代理提供记忆召回功能
-     *
-     * @param context 代理记忆上下文
-     * @param query 查询条件
-     * @return 记忆搜索结果列表
-     */
-    List<MemorySearchResult> recallForAgent(AgentMemoryContext context, MemoryQuery query);
 }

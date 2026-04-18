@@ -11,7 +11,6 @@ import org.dragon.memory.service.core.CharacterMemoryService;
 import org.dragon.memory.service.core.WorkspaceMemoryService;
 import org.dragon.memory.service.core.SessionMemoryService;
 import org.dragon.memory.service.core.MemoryRecallService;
-import org.dragon.memory.entity.AgentMemoryContext;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -113,23 +112,6 @@ public class MemoryFacadeImpl implements MemoryFacade {
 
     @Override
     public List<MemorySearchResult> recall(MemoryQuery query) {
-        return memoryRecallService.recallComposite(query);
-    }
-
-    @Override
-    public List<MemorySearchResult> recallForAgent(AgentMemoryContext context, MemoryQuery query) {
-        // 使用代理上下文信息丰富查询条件
-        if (context.getCharacterId() != null) {
-            query.setCharacterId(context.getCharacterId());
-        }
-        if (context.getWorkspaceId() != null) {
-            query.setWorkspaceId(context.getWorkspaceId());
-        }
-        if (context.getSessionId() != null) {
-            query.setSessionId(context.getSessionId());
-        }
-
-        // 调用召回服务
         return memoryRecallService.recallComposite(query);
     }
 }
