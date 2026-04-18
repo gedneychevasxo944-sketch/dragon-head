@@ -4,23 +4,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.dragon.application.WorkspaceApiApplication;
 import org.dragon.api.controller.dto.ApiResponse;
-import org.dragon.api.controller.dto.PageResponse;
+import org.dragon.api.controller.dto.TeamPositionResponse;
+import org.dragon.application.WorkspaceApiApplication;
 import org.dragon.permission.checker.PermissionChecker;
-import org.dragon.task.Task;
 import org.dragon.workspace.Workspace;
 import org.dragon.workspace.member.WorkspaceMember;
-import org.dragon.api.controller.dto.TeamPositionResponse;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -197,23 +187,6 @@ public class WorkspaceController {
         permissionChecker.checkManage("WORKSPACE", workspaceId);
         workspaceApiApplication.deleteTeamPosition(workspaceId, positionId);
         return ApiResponse.success(Map.of("success", true));
-    }
-
-    // ==================== Task（任务）====================
-
-    /**
-     * 获取 Workspace 任务列表
-     * GET /api/v1/workspaces/:workspaceId/tasks
-     */
-    @Operation(summary = "获取 Workspace 任务列表")
-    @GetMapping("/{workspaceId}/tasks")
-    public ApiResponse<PageResponse<Task>> listTasks(
-            @PathVariable String workspaceId,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize) {
-        PageResponse<Task> result = workspaceApiApplication.listTasks(workspaceId, status, page, pageSize);
-        return ApiResponse.success(result);
     }
 
     // ==================== 请求体 DTO ====================

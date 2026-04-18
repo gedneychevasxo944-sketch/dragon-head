@@ -133,7 +133,7 @@ public class TaskExecutionService {
     }
 
     private void bindRuntime(Character character, String workspaceId) {
-        Long wsId = workspaceId != null ? Long.parseLong(workspaceId) : null;
+        Long wsId = workspaceId != null ? Long.valueOf(workspaceId) : null;
         CharacterRuntime runtime = CharacterRuntime.builder()
                 .configApplication(configApplication)
                 .modelRegistry(modelRegistry)
