@@ -173,7 +173,7 @@ public class SmsService {
                 .phone(phone)
                 .nickname("用户" + phone.substring(phone.length() - 4))
                 .passwordHash("") // 短信登录用户无密码
-                .status("NORMAL")
+                .status(UserEntity.Status.NORMAL)
                 .loginFailCount(0)
                 .build();
         userStore.save(user);

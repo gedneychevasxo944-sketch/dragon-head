@@ -62,7 +62,7 @@ public class UserService {
                 .username(request.getUsername())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname() != null ? request.getNickname() : request.getUsername())
-                .status("NORMAL")
+                .status(UserEntity.Status.NORMAL)
                 .loginFailCount(0)
                 .build();
 

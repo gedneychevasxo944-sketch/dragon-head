@@ -39,9 +39,10 @@ public class UserEntity {
     @Column(length = 512)
     private String avatar;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     @Builder.Default
-    private String status = "NORMAL";
+    private Status status = Status.NORMAL;
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
@@ -89,6 +90,6 @@ public class UserEntity {
      * 检查账户是否可用
      */
     public boolean isActive() {
-        return status.equals("NORMAL") && !isLocked();
+        return status == Status.NORMAL && !isLocked();
     }
 }
